@@ -1,0 +1,31 @@
+[strings]
+#该节配置大部分为configbase.txt所特有
+working_directory = working_directory/
+logging_directory = logging_directory/
+config_directory = config_directory/
+data_directory = data_directory/
+check_file = checkbook.json
+
+[ints]
+#该节配置大部分可以被模型参数配置文件（如configpdf.txt）所覆盖
+
+[floats]
+#该节配置可以被模型参数配置文件（如configpdf.txt）所覆盖
+
+
+[bools]
+#该节配置可以被模型参数配置文件（如configpdf.txt）所覆盖
+ckpt_used = True
+debugIsOn = True
+viewIsOn =True　
+unittestIsOn = False
+
+[lists]
+
+[sets]
+#该节配置为configbase.txt所特有
+
+[attrs]
+#描述数据集的参数，只有configbase.txt所特有
+
+
