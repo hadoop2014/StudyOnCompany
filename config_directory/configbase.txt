@@ -22,8 +22,10 @@ unittestIsOn = False
 
 [lists]
 
+
 [sets]
 #该节配置为configbase.txt所特有
+interpreterlist = calc,sql,finance
 
 [attrs]
 #描述数据集的参数，只有configbase.txt所特有
