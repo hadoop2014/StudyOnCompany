@@ -20,11 +20,11 @@ class docBasePdf(docBase):
     def __init__(self,gConfig):
         super(docBasePdf,self).__init__(gConfig)
         self.viewIsOn = self.gConfig['viewIsOn'.lower()]
-        self.max_to_keep = self.gConfig['max_to_keep']
-        self.max_queue = self.gConfig['max_queue']
 
-    def parse(slef,sourceFile):
+    def parse(self,sourceFile,targetFile):
         '''解析PDF文本，并保存到TXT文件中'''
+        sourceFile = os.path.join(self.data_directory,sourceFile)
+        targetFile = os.path.join(self.working_directory,targetFile)
         fp = open(sourceFile, 'rb')
         # 用文件对象创建一个PDF文档分析器
         parser = PDFParser(fp)
@@ -60,12 +60,10 @@ class docBasePdf(docBase):
                 # 想要获取文本就获得对象的text属性，
                 for x in layout:
                     if (isinstance(x, LTTextBoxHorizontal)):
-                        with open(r'2.txt', 'a') as f:
+                        with open(targetFile, 'a') as f:
                             results = x.get_text()
                             print(results)
                             f.write(results + "\n")
-
-
 
 
     def saveCheckpoint(self):
@@ -96,7 +94,7 @@ class docBasePdf(docBase):
     def debug(self,layer,name=''):
         pass
 
-    def initialize(self,ckpt_used):
+    def initialize(self):
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
         if os.path.exists(self.working_directory) == False:

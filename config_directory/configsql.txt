@@ -1,10 +1,13 @@
 [strings]
-sourcefile = 年报/千禾味业：2019年年度报告.PDF
-targetfile = 千禾味业.txt
 
 [ints]
 
+
+
+
 [floats]
+
+
 
 [bools]
 ckpt_used = False
