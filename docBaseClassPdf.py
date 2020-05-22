@@ -65,6 +65,9 @@ class docBasePdf(docBase):
                             print(results)
                             f.write(results + "\n")
 
+            outlines = doc.get_outlines()
+            for (level, title, dest, a, se) in outlines:
+                print(level, title)
 
     def saveCheckpoint(self):
         pass
