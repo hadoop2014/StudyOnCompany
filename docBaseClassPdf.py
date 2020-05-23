@@ -5,11 +5,13 @@ import importlib
 import sys
 import time
 import os.path
-from pdfminer.pdfparser import PDFParser,PDFDocument
+from pdfminer.pdfparser import PDFParser
+from pdfminer.pdfpage import PDFDocument
 from pdfminer.pdfinterp import PDFResourceManager,PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LTTextBoxHorizontal,LAParams
-from pdfminer.pdfinterp import PDFTextExtractionNotAllowed
+#from pdfminer.pdfinterp import PDFTextExtractionNotAllowed
+from pdfminer.pdfinterp import PDFTextState
 
 from PyPDF4 import PdfFileReader,PdfFileWriter
 
@@ -39,7 +41,7 @@ class docBasePdf(docBase):
 
         # 检测文档是否提供txt转换，不提供就忽略
         if not doc.is_extractable:
-            raise PDFTextExtractionNotAllowed
+            raise PDFTextState.PDFTextExtractionNotAllowed
         else:
             # 创建PDF，资源管理器，来共享资源
             rsrcmgr = PDFResourceManager()

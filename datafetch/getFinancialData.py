@@ -2,15 +2,17 @@
 
 # coding=utf-8
 import tushare as ts
-import talib as ta
+#import talib as ta
 import numpy as np
 import pandas as pd
 import os, time, sys, re, datetime
 import csv
 import scipy
-import re, urllib2
+#import re, urllib2
+import re,urllib3
+import urllib.request as urllib
 import xlwt
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 
 
 # 获取股票列表
@@ -26,9 +28,9 @@ def Get_Stock_List():
 # 抓取网页数据
 def Get_3_Cell(url, code, count):
     headers = {"User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
-    req = urllib2.Request(url, headers=headers)
+    req = urllib.Request(url, headers=headers)
     try:
-        content = urllib2.urlopen(req).read()
+        content = urllib.urlopen(req).read()
     except:
         return
     soup = BeautifulSoup(content)
@@ -43,7 +45,7 @@ def Get_3_Cell(url, code, count):
             if cells[0].text.find(u'应收票据') >= 0:
                 position = j
                 # print position
-                break;
+                break
 
     # 然后到第二张表中去抓对应位置的数据。
     lencell = 0
@@ -61,7 +63,7 @@ def Get_3_Cell(url, code, count):
                     # print cells[i].text
                     ws.write(count, i + 2, cells[i].text)
                     i = i + 1
-        break;
+        break
 
     return lencell
 
@@ -101,9 +103,9 @@ def GetData(df_Code, count):
 # 抓取网页数据
 def Get_Main_Cell(url, code, count):
     headers = {"User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
-    req = urllib2.Request(url, headers=headers)
+    req = urllib.Request(url, headers=headers)
     try:
-        content = urllib2.urlopen(req).read()
+        content = urllib.urlopen(req).read()
     except:
         return
     soup = BeautifulSoup(content)
@@ -123,14 +125,11 @@ def Get_Main_Cell(url, code, count):
 
                 if cells[0].text.find(u'资产负债率') >= 0:
                     # 找到有资产负债率的tr行，然后把td中的数字抓取出来写入excel文件。
-                    print
-                    cells[0].text
+                    #print cells[0].text
                     while j < lencell:
                         # print cells[j].text
-                        ws.write(count, j
-                        1, cells[j].text)
-                        j = j
-                        1
+                        ws.write(count, j+1, cells[j].text)
+                        j = j+1
 
 
     return years

@@ -15,3 +15,6 @@ tfdbgIsOn = False
 [lists]
 
 [sets]
+tableKeyword = 合并资产负债表,合并利润表,合并现金流量表
+fieldKeyword = 货币资金,管理费用,经营现金流入小计
+excludeKeyword =
