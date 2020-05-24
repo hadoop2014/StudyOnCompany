@@ -5,6 +5,8 @@ logging_directory = logging_directory/
 config_directory = config_directory/
 data_directory = data_directory/
 check_file = checkbook.json
+#gConfigJson会被更新为configjson.json文件的内容
+gConfigJson =
 
 docformat = pdf
 sourcefile =
@@ -31,6 +33,7 @@ unittestIsOn = False
 #该节配置为configbase.txt所特有
 interpreterlist = calc,sql,finance
 docformatlist = pdf,word,excel,sql
+tableKeyword = 合并资产负债表,合并利润表,合并现金流量表,主要会计数据
 
 [attrs]
 #描述数据集的参数，只有configbase.txt所特有

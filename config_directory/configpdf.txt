@@ -1,6 +1,6 @@
 [strings]
 sourcefile = 年报/千禾味业：2019年年度报告.PDF
-targetfile = 千禾味业.txt
+targetfile = 千禾味业.xlsx
 
 [ints]
 
@@ -15,6 +15,5 @@ tfdbgIsOn = False
 [lists]
 
 [sets]
-tableKeyword = 合并资产负债表,合并利润表,合并现金流量表
-fieldKeyword = 货币资金,管理费用,经营现金流入小计
-excludeKeyword =
+
+

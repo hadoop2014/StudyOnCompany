@@ -14,7 +14,7 @@ class docBase():
     def __init__(self,gConfig):
         self.gConfig = gConfig
         self.start_time = time.time()
-        self.working_directory = os.path.join(self.gConfig['working_directory'],self.get_parser_name(gConfig))
+        self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser',self.get_parser_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
         self.data_directory = self.gConfig['data_directory']
         self.logging_directory = os.path.join(self.logging_directory, self.get_parser_name(gConfig))
@@ -22,7 +22,19 @@ class docBase():
                                            self.get_parser_name(self.gConfig) + '.model')
         self.checkpoint_filename = self.get_parser_name(self.gConfig)+'.ckpt'
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
-        self.check_book = self.get_check_book()
+        #self.check_book = self.get_check_book()
+        self.gConfigJson = self.gConfig['gConfigJson']
+        self.tableKeyword = self.gConfig['tableKeyword'.lower()]
+        self.dictKeyword = self.get_keyword(self.tableKeyword)
+
+    def get_keyword(self,tableKeyword):
+        #获取解析文件所需的关键字
+        dictKeyword = {keyword:value for keyword,value in self.gConfigJson.items() if keyword in tableKeyword}
+        #self.fieldKeyword = self.gConfig['fieldKeyword'.lower()]
+        #self.excludeKeyword = self.gConfig['excludeKeyword'.lower()]
+        #if len(self.excludeKeyword) == 1 and self.excludeKeyword[0] == '':
+        #    self.excludeKeyword = list()  # 置空
+        return dictKeyword
 
     def get_check_book(self):
         check_file = os.path.join(self.gConfig['config_directory'], self.gConfig['check_file'])

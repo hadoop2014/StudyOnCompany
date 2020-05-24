@@ -18,7 +18,7 @@ def docParse(parser,docformat,gConfig,sourceFile,targetFile):
     start_time = time.time()
 
     print("\n\npase (%s) file is starting!\n\n"%docformat)
-    result = parser.parse(sourceFile,targetFile)
+    parser.parse(sourceFile,targetFile)
     print('\n\nparse %s file end, time used %.4f'%(docformat,(time.time()-start_time)))
 
 def parseStart(gConfig,docformat,unittestIsOn):
@@ -27,8 +27,8 @@ def parseStart(gConfig,docformat,unittestIsOn):
     docParse(parser,docformat, gConfig,sourceFile,targetFile)
 
 def parserManager(docformat,gConfig):
-    module = __import__(check_book[docformat]['parser'],
-                        fromlist=(check_book[docformat]['parser'].split('.')[-1]))
+    module = __import__(check_book[docformat]['docparser'],
+                        fromlist=(check_book[docformat]['docparser'].split('.')[-1]))
     parser = getattr(module,'create_model')(gConfig=gConfig)
     sourceFile = gConfig['sourcefile']
     targetFile = gConfig['targetfile']
@@ -38,9 +38,12 @@ def get_gConfig(docformat,gConfig,unittestIsOn):
     global check_book
     if check_book is not None:
         config_file = os.path.join(gConfig['config_directory'],check_book[docformat]['config_file'])
+        config_file_json = os.path.join(gConfig['config_directory'],check_book[docformat]['config_file_json'])
     else:
         raise ValueError('check_book is None ,it may be some error occured when open the checkbook.json!')
     gConfig = getConfig.get_config(config_file)
+    gConfigJson = getConfig.get_config_json(config_file_json)
+    gConfig.update({"gConfigJson":gConfigJson})
     #在unitest模式,这三个数据是从unittest.main中设置，而非从文件中读取．
     gConfig['docformat'] = docformat
     gConfig['unittestIsOn'.lower()] = unittestIsOn
@@ -62,7 +65,7 @@ def validate_parameter(docformat,gConfig):
                                                 (docformat, gConfig['docformatlist'])
     global check_book
     set_check_book(gConfig)
-    return check_book[docformat]["config_file"] != '' and check_book[docformat]['parser'] != ''
+    return check_book[docformat]["config_file"] != '' and check_book[docformat]['docparser'] != ''
 
 def main():
     gConfig = getConfig.get_config()

@@ -1,21 +1,23 @@
 {
   "pdf": {
     "config_file": "configpdf.txt",
-    "parser": "parser.docParserPdf"
+    "config_file_json": "configjson.json",
+    "docparser": "docparser.docParserPdf"
   },
   "word": {
     "config_file": "configword.txt",
-    "parser": "parser.docParserWord"
+    "config_file_json": "configjson.json",
+    "docparser": "docparser.docParserWord"
   },
   "excel": {
     "config_file": "configexcel.txt",
-    "parser": "parser.docParserExcel"
+    "config_file_json": "configjson.json",
+    "docparser": "docparser.docParserExcel"
   },
   "sql": {
     "config_file": "configsql.txt",
-    "parser": "parser.docParserSql"
+    "config_file_json": "configjson.json",
+    "docparser": "docparser.docParserSql"
   }
-
-
 
 }

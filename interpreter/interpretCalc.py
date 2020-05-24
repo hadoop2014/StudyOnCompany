@@ -119,7 +119,7 @@ class interpretCalc(interpretBase):
             else:
                 print("Syntax error at EOF")
 
-        # Build the parser
+        # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
 
