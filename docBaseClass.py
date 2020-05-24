@@ -21,6 +21,8 @@ class docBase():
         self.model_savefile = os.path.join(self.working_directory,
                                            self.get_parser_name(self.gConfig) + '.model')
         self.checkpoint_filename = self.get_parser_name(self.gConfig)+'.ckpt'
+        self.sourceFile = os.path.join(self.data_directory,self.gConfig['sourcefile'])
+        self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         #self.check_book = self.get_check_book()
         self.gConfigJson = self.gConfig['gConfigJson']

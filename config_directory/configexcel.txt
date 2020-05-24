@@ -2,12 +2,7 @@
 
 [ints]
 
-
-
-
 [floats]
-
-
 
 [bools]
 ckpt_used = False

@@ -1,15 +1,19 @@
 from docBaseClassPdf import *
 import pdfplumber
 import pandas as pd
+import glob
+from openpyxl import load_workbook,Workbook
 
-#深度学习模型的基类
 class docParserPdf(docBasePdf):
-    def __init__(self,gConfig):
+    def __init__(self,gConfig,writeParser):
         super(docParserPdf,self).__init__(gConfig)
+        self.writeParser = writeParser
+        self.workbook = Workbook()
 
     def parse(self,sourceFile,targetFile):
         sourceFile = os.path.join(self.data_directory,sourceFile)
-        targetFile = os.path.join(self.working_directory,targetFile)
+        #targetFile = os.path.join(self.working_directory,targetFile)
+        #self.writeParser.initialize(targetFile)
         dictKeyword = self.dictKeyword
         start1 = time.time()
 
@@ -26,7 +30,7 @@ class docParserPdf(docBasePdf):
         # for page in pdf.pages:
         # print(page.extract_text())
         findedTableKeyword = ""
-        begin_index = int(len(pdf.pages) / 2)
+        #begin_index = int(len(pdf.pages) / 2)
         begin_index = 1
         for page_no in range(begin_index, len(pdf.pages)):
             if find_table:
@@ -51,10 +55,11 @@ class docParserPdf(docBasePdf):
 
             if find_table or find_pre_table:
                 tables = page.extract_tables() #解析所有的表格
-                for table in tables:
-                    tb = pd.DataFrame(table[1:], columns=table[0],index=None)  # 以第一行为列变量
-                    tb.to_excel(targetFile,index=False)  #不显示索引
-                    #tb.to_csv(targetFile)
+                for index,table in enumerate(tables):
+                    dataframe = pd.DataFrame(table[1:], columns=table[0],index=None)  # 以第一行为列变量
+                    #tb.to_excel(targetFile,index=False)  #不显示索引
+                    self.writeParser.writeToExcel(dataframe,sheetName=findedTableKeyword+str(index))
+
                 data_list = data.strip().split()
                 fieldKeyword = dictKeyword[findedTableKeyword]['fieldKeyword']
                 for row_no in range(len(data_list)):
@@ -97,7 +102,7 @@ class docParserPdf(docBasePdf):
 
         return name_find, value_find, page_find
 
-def create_model(gConfig):
-    parser=docParserPdf(gConfig=gConfig)
+def create_model(gConfig,writeParser=None):
+    parser=docParserPdf(gConfig,writeParser)
     parser.initialize()
     return parser

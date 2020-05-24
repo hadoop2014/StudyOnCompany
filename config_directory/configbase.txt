@@ -9,8 +9,8 @@ check_file = checkbook.json
 gConfigJson =
 
 docformat = pdf
-sourcefile =
-targetfile =
+sourcefile = 年报/千禾味业：2019年年度报告.PDF
+targetfile = 千禾味业.xlsx
 
 [ints]
 #该节配置大部分可以被模型参数配置文件（如configpdf.txt）所覆盖
@@ -33,6 +33,10 @@ unittestIsOn = False
 #该节配置为configbase.txt所特有
 interpreterlist = calc,sql,finance
 docformatlist = pdf,word,excel,sql
+excelSuffix = xls,xlsx
+wordSuffix = doc,docx
+txetSuffix = txt,csv
+pdfSuffix = pdf
 tableKeyword = 合并资产负债表,合并利润表,合并现金流量表,主要会计数据
 
 [attrs]

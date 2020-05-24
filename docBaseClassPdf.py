@@ -16,7 +16,6 @@ importlib.reload(sys)
 class docBasePdf(docBase):
     def __init__(self,gConfig):
         super(docBasePdf,self).__init__(gConfig)
-        self.viewIsOn = self.gConfig['viewIsOn'.lower()]
 
     def parse(self,sourceFile,targetFile):
         '''解析PDF文本，并保存到TXT文件中'''
@@ -104,5 +103,9 @@ class docBasePdf(docBase):
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
         self.clear_logging_directory(self.logging_directory)
+        suffix = self.sourceFile.split('.')[-1]
+        assert suffix.lower() in self.gConfig['pdfSuffix'.lower()],\
+            'suffix of {} is invalid,it must one of {}'.format(self.sourceFile, self.gConfig['pdfSuffix'.lower()])
+
 
 

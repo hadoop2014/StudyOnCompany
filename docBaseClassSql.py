@@ -33,7 +33,7 @@ class docBaseSql(docBase):
     def debug(self,layer,name=''):
         pass
 
-    def initialize(self,ckpt_used):
+    def initialize(self):
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
         if os.path.exists(self.working_directory) == False:

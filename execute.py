@@ -27,12 +27,16 @@ def parseStart(gConfig,docformat,unittestIsOn):
     docParse(parser,docformat, gConfig,sourceFile,targetFile)
 
 def parserManager(docformat,gConfig):
+    module = __import__(check_book[docformat]['writeparser'],
+                        fromlist=(check_book[docformat]['writeparser'].split('.')[-1]))
+    writeParser = getattr(module,'create_model')(gConfig=gConfig)
+
     module = __import__(check_book[docformat]['docparser'],
                         fromlist=(check_book[docformat]['docparser'].split('.')[-1]))
-    parser = getattr(module,'create_model')(gConfig=gConfig)
+    docParser = getattr(module,'create_model')(gConfig,writeParser)
     sourceFile = gConfig['sourcefile']
     targetFile = gConfig['targetfile']
-    return parser,sourceFile,targetFile
+    return docParser,sourceFile,targetFile
 
 def get_gConfig(docformat,gConfig,unittestIsOn):
     global check_book
