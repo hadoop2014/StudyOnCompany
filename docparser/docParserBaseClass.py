@@ -10,7 +10,7 @@ import logging
 
 
 #深度学习模型的基类
-class docBase():
+class docParserBase():
     def __init__(self,gConfig):
         self.gConfig = gConfig
         self.start_time = time.time()
@@ -25,7 +25,6 @@ class docBase():
         self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        #self.check_book = self.get_check_book()
         self.gConfigJson = self.gConfig['gConfigJson']
         self.tableKeyword = self.gConfig['tableKeyword'.lower()]
         self.dictKeyword = self.get_keyword(self.tableKeyword)
@@ -59,7 +58,29 @@ class docBase():
     def saveCheckpoint(self):
         pass
 
-    def debug_info(self,*args):
+    def getSaveFile(self):
+        if self.model_savefile == '':
+            self.model_savefile = None
+            return None
+        if self.model_savefile is not None:
+            if os.path.exists(self.model_savefile) == False:
+                return None
+                # 文件不存在
+        return self.model_savefile
+
+    def removeSaveFile(self):
+        if self.model_savefile is not None:
+            filename = os.path.join(os.getcwd(), self.model_savefile)
+            if os.path.exists(filename):
+                os.remove(filename)
+
+    def debug_info(self, info=None):
+        if self.debugIsOn == False:
+            return
+        pass
+        return
+
+    def debug(self, layer, name=''):
         pass
 
     def clear_logging_directory(self,logging_directory):
@@ -75,3 +96,10 @@ class docBase():
                     os.remove(full_file)
                 except:
                    print('%s is not be removed'%full_file)
+
+    def initialize(self):
+        if os.path.exists(self.logging_directory) == False:
+            os.makedirs(self.logging_directory)
+        if os.path.exists(self.working_directory) == False:
+            os.makedirs(self.working_directory)
+        self.clear_logging_directory(self.logging_directory)

@@ -1,7 +1,5 @@
 import sys
 import time
-import numpy as np
-import matplotlib.pyplot as plt
 from time import sleep
 from threading import Thread
 from datafetch import getConfig
@@ -78,7 +76,7 @@ def main():
             #该模式为从unittest.main调用
             unittestIsOn = bool(sys.argv[5])
             assert unittestIsOn == True , \
-                'Now in unittest mode, the num of argvs must be 5 whitch is taskName, framework,dataset and unittestIsOn'
+                'Now in dounittest mode, the num of argvs must be 5 whitch is taskName, framework,dataset and unittestIsOn'
         else:
             #该模式为从python -m 方式调用
             unittestIsOn = gConfig['unittestIsOn'.lower()]
