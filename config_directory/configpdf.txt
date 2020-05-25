@@ -5,7 +5,7 @@
 [floats]
 
 [bools]
-ckpt_used = False
+checkpointIsOn = True
 debugIsOn =　True
 viewIsOn =True
 tfdbgIsOn = False

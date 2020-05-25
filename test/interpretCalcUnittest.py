@@ -8,7 +8,7 @@ class MyTestCase(unittest.TestCase):
         self.run_interpreter()
 
     def run_interpreter(self):
-        gConfig = getConfig.get_config('../../config_directory/configbase.txt')
+        gConfig = getConfig.get_config('config_directory/configbase.txt')
         interpreter = interpretCalc.create_interpreter(gConfig=gConfig)
         while True:
             try:

@@ -21,7 +21,7 @@ targetfile = 千禾味业.xlsx
 
 [bools]
 #该节配置可以被模型参数配置文件（如configpdf.txt）所覆盖
-ckpt_used = True
+checkpointIsOn = True
 debugIsOn = True
 viewIsOn =True　
 unittestIsOn = False

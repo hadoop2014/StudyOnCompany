@@ -24,6 +24,7 @@ class docBase():
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['sourcefile'])
         self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
+        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         #self.check_book = self.get_check_book()
         self.gConfigJson = self.gConfig['gConfigJson']
         self.tableKeyword = self.gConfig['tableKeyword'.lower()]

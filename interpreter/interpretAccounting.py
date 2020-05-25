@@ -5,14 +5,11 @@
 # "Lex and Yacc", p. 63.
 # -----------------------------------------------------------------------------
 from interpreter.interpretBaseClass import *
-import sys
 
-if sys.version_info[0] >= 3:
-    raw_input = input
 
-class interpretCalc(interpretBase):
+class interpretAccounting(interpretBase):
     def __init__(self,gConfig):
-        super(interpretCalc,self).__init__(gConfig)
+        super(interpretAccounting,self).__init__(gConfig)
         self.interpretDefine()
 
 
@@ -121,7 +118,7 @@ class interpretCalc(interpretBase):
 
 
 def create_interpreter(gConfig):
-    interpreter=interpretCalc(gConfig=gConfig)
+    interpreter=interpretAccounting(gConfig=gConfig)
     interpreter.initialize()
     return interpreter
 
