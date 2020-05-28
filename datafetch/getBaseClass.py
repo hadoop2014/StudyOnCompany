@@ -1,5 +1,4 @@
 import re
-import sys
 import os
 import matplotlib.pyplot as plt
 
@@ -11,6 +10,11 @@ class getdataBase():
         self.gConfig = gConfig
         self.dataset_name = self.get_dataset_name(self.gConfig)
         self.data_path = os.path.join(self.gConfig['data_directory'],self.dataset_name)
+        self.working_directory = os.path.join(self.gConfig['working_directory'], 'docparser',
+                                              self.get_dataset_name(gConfig))
+        self.logging_directory = self.gConfig['logging_directory']
+        self.data_directory = self.gConfig['data_directory']
+        self.logging_directory = os.path.join(self.logging_directory, 'docparser', self.get_dataset_name(gConfig))
         self.unitestIsOn = self.gConfig['unittestIsOn'.lower()]
         if os.path.exists(self.data_path) == False:
             os.makedirs(self.data_path)

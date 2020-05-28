@@ -17,8 +17,8 @@ class docParserBase():
         self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser',self.get_parser_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
         self.data_directory = self.gConfig['data_directory']
-        self.logging_directory = os.path.join(self.logging_directory, self.get_parser_name(gConfig))
-        self.model_savefile = os.path.join(self.working_directory,
+        self.logging_directory = os.path.join(self.logging_directory,'docparser', self.get_parser_name(gConfig))
+        self.model_savefile = os.path.join(self.working_directory,'docparser',
                                            self.get_parser_name(self.gConfig) + '.model')
         self.checkpoint_filename = self.get_parser_name(self.gConfig)+'.ckpt'
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['sourcefile'])

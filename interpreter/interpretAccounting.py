@@ -10,8 +10,8 @@ from interpreter.interpretBaseClass import *
 class interpretAccounting(interpretBase):
     def __init__(self,gConfig):
         super(interpretAccounting,self).__init__(gConfig)
+        #self.docParser = docParser
         self.interpretDefine()
-
 
     def interpretDefine(self):
         tokens = (
@@ -116,9 +116,11 @@ class interpretAccounting(interpretBase):
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
+    def doWork(self,docParser):
+        pass
 
-def create_interpreter(gConfig):
-    interpreter=interpretAccounting(gConfig=gConfig)
+def create_object(gConfig):
+    interpreter=interpretAccounting(gConfig)
     interpreter.initialize()
     return interpreter
 

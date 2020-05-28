@@ -3,24 +3,28 @@
     "config_file": "configpdf.txt",
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserPdf",
-    "writeparser": "docparser.docParserExcel"
+    "writeparser": "docparser.docParserExcel",
+    "interpreter": "interpreter.interpretAccounting"
   },
   "word": {
     "config_file": "configword.txt",
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserWord",
-    "writeparser": "docparser.docParserExcel"
+    "writeparser": "docparser.docParserExcel",
+    "interpreter": "interpreter.interpretAccounting"
   },
   "excel": {
     "config_file": "configexcel.txt",
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserExcel",
-    "writeparser": "docparser.docParserExcel"
+    "writeparser": "docparser.docParserExcel",
+    "interpreter": "interpreter.interpretAccounting"
   },
   "sql": {
     "config_file": "configsql.txt",
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserSql",
-    "writeparser": "docparser.docParserExcel"
+    "writeparser": "docparser.docParserExcel",
+    "interpreter": "interpreter.interpretAccounting"
   }
 }

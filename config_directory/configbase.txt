@@ -31,7 +31,7 @@ unittestIsOn = False
 
 [sets]
 #该节配置为configbase.txt所特有
-interpreterlist = calc,sql,finance
+interpreterlist = calc,sql,accounting
 docformatlist = pdf,word,excel,sql
 excelSuffix = xls,xlsx
 wordSuffix = doc,docx

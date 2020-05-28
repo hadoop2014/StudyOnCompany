@@ -169,7 +169,7 @@ class docParserPdf(docParserBase):
         assert suffix.lower() in self.gConfig['pdfSuffix'.lower()], \
             'suffix of {} is invalid,it must one of {}'.format(self.sourceFile, self.gConfig['pdfSuffix'.lower()])
 
-def create_model(gConfig,writeParser=None):
+def create_object(gConfig, writeParser=None):
     parser=docParserPdf(gConfig,writeParser)
     parser.initialize()
     return parser

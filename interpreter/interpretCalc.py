@@ -120,7 +120,7 @@ class interpretCalc(interpretBase):
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
 
-def create_interpreter(gConfig):
+def create_object(gConfig):
     interpreter=interpretCalc(gConfig=gConfig)
     interpreter.initialize()
     return interpreter

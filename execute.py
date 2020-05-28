@@ -8,7 +8,7 @@ import os
 
 check_book = None
 
-def docParse(parser,docformat,gConfig,sourceFile,targetFile):
+def docParse(parser,interpreter,docformat,gConfig,sourceFile,targetFile):
     if gConfig['unittestIsOn'.lower()] == True:
         pass
     else:
@@ -17,24 +17,30 @@ def docParse(parser,docformat,gConfig,sourceFile,targetFile):
 
     print("\n\npase (%s) file is starting!\n\n"%docformat)
     parser.parse(sourceFile,targetFile)
+    interpreter.doWork(parser)
     print('\n\nparse %s file end, time used %.4f'%(docformat,(time.time()-start_time)))
 
 def parseStart(gConfig,docformat,unittestIsOn):
     gConfig = get_gConfig(docformat,gConfig,unittestIsOn)
-    parser,sourceFile,targetFile = parserManager(docformat, gConfig)
-    docParse(parser,docformat, gConfig,sourceFile,targetFile)
+    parser,interpreter,sourceFile,targetFile = parserManager(docformat, gConfig)
+    docParse(parser,interpreter,docformat, gConfig,sourceFile,targetFile)
 
 def parserManager(docformat,gConfig):
     module = __import__(check_book[docformat]['writeparser'],
                         fromlist=(check_book[docformat]['writeparser'].split('.')[-1]))
-    writeParser = getattr(module,'create_model')(gConfig=gConfig)
+    writeParser = getattr(module,'create_object')(gConfig=gConfig)
 
     module = __import__(check_book[docformat]['docparser'],
                         fromlist=(check_book[docformat]['docparser'].split('.')[-1]))
-    docParser = getattr(module,'create_model')(gConfig,writeParser)
+    docParser = getattr(module,'create_object')(gConfig,writeParser)
+
+    module = __import__(check_book[docformat]['interpreter'],
+                        fromlist=(check_book[docformat]['interpreter'].split('.')[-1]))
+    interpreter = getattr(module,'create_object')(gConfig)
+
     sourceFile = gConfig['sourcefile']
     targetFile = gConfig['targetfile']
-    return docParser,sourceFile,targetFile
+    return docParser,interpreter,sourceFile,targetFile
 
 def get_gConfig(docformat,gConfig,unittestIsOn):
     global check_book

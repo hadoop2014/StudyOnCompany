@@ -9,7 +9,7 @@ class MyTestCase(unittest.TestCase):
 
     def run_interpreter(self):
         gConfig = getConfig.get_config('config_directory/configbase.txt')
-        interpreter = interpretCalc.create_interpreter(gConfig=gConfig)
+        interpreter = interpretCalc.create_object(gConfig=gConfig)
         while True:
             try:
                 s = input('calc > ')

@@ -78,7 +78,7 @@ class docParserExcel(docParserBase):
             self.writer.book = self.workbook
             self.writer.save()  # 生成一个新文件
 
-def create_model(gConfig,writeParser=None):
+def create_object(gConfig, writeParser=None):
     parser=docParserExcel(gConfig,writeParser)
     parser.initialize()
     return parser
