@@ -8,15 +8,32 @@ class docParserPdf(docParserBase):
         super(docParserPdf,self).__init__(gConfig)
         self.writeParser = writeParser
         self.workbook = Workbook()
+        self._load_data()
 
-    def parse(self,sourceFile,targetFile):
-        sourceFile = os.path.join(self.data_directory,sourceFile)
+    def _load_data(self):
+        self.pdf = pdfplumber.open(self.sourceFile,password='')
+        self._data = self.pdf.pages
+        self._index = 0
+        self._length = len(self._data)
+
+    def _get_text(self,page):
+        return page.extract_text()
+
+    def _get_tables(self,page):
+        return page.extract_tables()
+
+    def _close(self):
+        self.pdf.close()
+
+    def parse(self):
+        #sourceFile = os.path.join(self.data_directory,sourceFile)
         #targetFile = os.path.join(self.working_directory,targetFile)
         #self.writeParser.initialize(targetFile)
         dictKeyword = self.dictKeyword
         start1 = time.time()
 
-        pdf = pdfplumber.open(sourceFile, password='')
+        #pdf = pdfplumber.open(self.sourceFile, password='')
+        pages = self._data
         start2 = time.time()
 
         find_table = 0
@@ -31,15 +48,16 @@ class docParserPdf(docParserBase):
         findedTableKeyword = ""
         #begin_index = int(len(pdf.pages) / 2)
         begin_index = 1
-        for page_no in range(begin_index, len(pdf.pages)):
+        for page_no in range(begin_index, len(pages)):
             if find_table:
                 find_pre_table = 1
             else:
                 find_pre_table = 0
             find_table = 0
-            page = pdf.pages[page_no]
+            page = pages[page_no]
             # print(page.extract_text())
-            data = page.extract_text()
+            #data = page.extract_text()
+            data = self._get_text(page)
             if len(self.tableKeyword):
                 for keyword in self.tableKeyword:
                     if keyword in data:
@@ -53,7 +71,8 @@ class docParserPdf(docParserBase):
                 find_table = 1
 
             if find_table or find_pre_table:
-                tables = page.extract_tables() #解析所有的表格
+                #tables = page.extract_tables() #解析所有的表格
+                tables = self._get_tables(page)
                 for index,table in enumerate(tables):
                     dataframe = pd.DataFrame(table[1:], columns=table[0],index=None)  # 以第一行为列变量
                     #tb.to_excel(targetFile,index=False)  #不显示索引
@@ -93,7 +112,8 @@ class docParserPdf(docParserBase):
                             #print("*************find in page*******************{}".format(page_no))
                             #print("*************find*******************")
 
-        pdf.close()
+        #self.pdf.close()
+        self._close()
         start3 = time.time()
 
         print('****time to open PDF file is {}'.format((start2 - start1)))

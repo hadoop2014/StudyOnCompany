@@ -8,7 +8,7 @@ import os
 
 check_book = None
 
-def docParse(parser,interpreter,docformat,gConfig,sourceFile,targetFile):
+def docParse(parser,interpreter,docformat,gConfig):
     if gConfig['unittestIsOn'.lower()] == True:
         pass
     else:
@@ -16,14 +16,14 @@ def docParse(parser,interpreter,docformat,gConfig,sourceFile,targetFile):
     start_time = time.time()
 
     print("\n\npase (%s) file is starting!\n\n"%docformat)
-    parser.parse(sourceFile,targetFile)
+    #parser.parse()
     interpreter.doWork(parser)
     print('\n\nparse %s file end, time used %.4f'%(docformat,(time.time()-start_time)))
 
 def parseStart(gConfig,docformat,unittestIsOn):
     gConfig = get_gConfig(docformat,gConfig,unittestIsOn)
-    parser,interpreter,sourceFile,targetFile = parserManager(docformat, gConfig)
-    docParse(parser,interpreter,docformat, gConfig,sourceFile,targetFile)
+    parser,interpreter = parserManager(docformat, gConfig)
+    docParse(parser,interpreter,docformat, gConfig)
 
 def parserManager(docformat,gConfig):
     module = __import__(check_book[docformat]['writeparser'],
@@ -38,9 +38,9 @@ def parserManager(docformat,gConfig):
                         fromlist=(check_book[docformat]['interpreter'].split('.')[-1]))
     interpreter = getattr(module,'create_object')(gConfig)
 
-    sourceFile = gConfig['sourcefile']
-    targetFile = gConfig['targetfile']
-    return docParser,interpreter,sourceFile,targetFile
+    #sourceFile = gConfig['sourcefile']
+    #targetFile = gConfig['targetfile']
+    return docParser,interpreter#,sourceFile,targetFile
 
 def get_gConfig(docformat,gConfig,unittestIsOn):
     global check_book

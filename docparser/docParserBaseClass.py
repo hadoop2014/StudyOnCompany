@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 # @Time    : 9/25/2019 5:03 PM
-# @Author  : wuhao
-# @File    : modelBaseClass.py
+# @Author  : wu.hao
+# @File    : docParserBaseClass.py
 import os
 import time
 import re
 import json
 import logging
+from baseClass import *
 
 
 #深度学习模型的基类
-class docParserBase():
+class docParserBase(baseClass):
     def __init__(self,gConfig):
+        super(docParserBase, self).__init__()
         self.gConfig = gConfig
         self.start_time = time.time()
         self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser',self.get_parser_name(gConfig))

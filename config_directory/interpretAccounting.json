@@ -1,15 +1,15 @@
 {
   "#tokens": ["表名",  "数字",   "单位", "币种",     "公司",    "时间", "表头",  "百分数",      "变量名"],
-  "tokens":  ["TABLE","NUMBER","UNIT", "CURRENCY","COMPANY","TIME","HEADER","PENCENTAGE","NAME"],
+  "tokens":  ["TABLE","NUMBER","UNIT", "CURRENCY","COMPANY","TIME","HEADER","PERCENTAGE","NAME"],
 
   "TABLE": "主要会计数据|合并资产负债表|合并利润表|合并现金流量表",
-  "NUMBER": "d+",
+  "NUMBER": "\\d+",
   "UNIT": "元|千元|万元|百万元|千万元|亿",
   "CURRENCY": "人民币|美元|欧元|[\\u4E00-\\u9FA5]元",
   "COMPANY": ".*?[\\u4E00-\\u9FA5]+公司",
-  "TIME":"",
+  "TIME":"\\d+年\\d+月\\d+日",
   "HEADER": "科目|项目|分红年度",
-  "PERCENTAGE": "",
+  "PERCENTAGE": "\\d+[.\\d+]%",
   "NAME": "r'[a-zA-Z_][a-zA-Z0-9_]*'",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值",

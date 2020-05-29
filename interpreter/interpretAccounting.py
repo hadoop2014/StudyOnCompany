@@ -14,17 +14,36 @@ class interpretAccounting(interpretBase):
         self.interpretDefine()
 
     def interpretDefine(self):
-        tokens = (
-            'NAME',
-            'NUMBER',
-        )
+        #tokens = (
+        #    'NAME',
+        #    'NUMBER',
+        #)
+        tokens = self.tokens
 
-        literals = ['=', '+', '-', '*', '/', '(', ')']
+        #literals = ['=', '+', '-', '*', '/', '(', ')']
+        literals = self.literals
 
         # Tokens
 
-        t_NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
-
+        #"TABLE": "主要会计数据|合并资产负债表|合并利润表|合并现金流量表",
+        #"NUMBER": "d+",
+        #"UNIT": "元|千元|万元|百万元|千万元|亿",
+        #"CURRENCY": "人民币|美元|欧元|[\\u4E00-\\u9FA5]元",
+        #"COMPANY": ".*?[\\u4E00-\\u9FA5]+公司",
+        #"TIME": "",
+        #"HEADER": "科目|项目|分红年度",
+        #"PERCENTAGE": "",
+        #"NAME": "r'[a-zA-Z_][a-zA-Z0-9_]*'",
+        t_TABLE = self.dictTokens['TABLE']
+        #t_NUMBER = self.dictTokens['NUMBER']
+        t_UNIT = self.dictTokens['UNIT']
+        t_CURRENCY = self.dictTokens['CURRENCY']
+        t_COMPANY = self.dictTokens['COMPANY']
+        t_TIME = self.dictTokens['TIME']
+        t_HEADER = self.dictTokens['HEADER']
+        t_PERCENTAGE = self.dictTokens['PERCENTAGE']
+        #t_NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
+        t_NAME = self.dictTokens['NAME']
 
         def t_NUMBER(t):
             r'\d+'
@@ -32,8 +51,7 @@ class interpretAccounting(interpretBase):
             return t
 
 
-        t_ignore = " \t"
-
+        t_ignore = " \t\n"
 
         def t_newline(t):
             r'\n+'
@@ -57,6 +75,10 @@ class interpretAccounting(interpretBase):
 
         # dictionary of names
         names = {}
+
+        def p_statement_search(p):
+            'statement : TABLE'
+            print(p[1])
 
         def p_statement_assign(p):
             'statement : NAME "=" expression'
@@ -117,7 +139,9 @@ class interpretAccounting(interpretBase):
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
     def doWork(self,docParser):
-        pass
+        for data in docParser:
+            self.parser.parse(docParser._get_text(data))
+        docParser._close()
 
 def create_object(gConfig):
     interpreter=interpretAccounting(gConfig)

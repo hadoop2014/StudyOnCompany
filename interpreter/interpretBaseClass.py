@@ -2,10 +2,12 @@ import re
 import os
 import ply.lex as lex
 import ply.yacc as yacc
+from baseClass import *
 
 #数据读写处理的基类
-class interpretBase():
+class interpretBase(baseClass):
     def __init__(self,gConfig):
+        super(interpretBase,self).__init__()
         self.gConfig = gConfig
         self.gConfigJson = gConfig['gConfigJson']
         self.interpreter_name = self.get_interpreter_name(self.gConfig)
