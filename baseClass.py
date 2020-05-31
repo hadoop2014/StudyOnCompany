@@ -25,6 +25,9 @@ class baseClass():
     def __getitem__(self, item):
         return self._data[item]
 
+    def _get_item(self,item):
+        return self._data[item]
+
     def _load_data(self):
         pass
 

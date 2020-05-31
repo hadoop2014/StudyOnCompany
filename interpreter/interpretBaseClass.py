@@ -26,6 +26,7 @@ class interpretBase(baseClass):
         self.dictTokens = {token:value for token,value in self.gConfigJson.items() if token in self.tokens}
         self.tables = self.gConfigJson['TABLE'].split('|')
         self.dictTables = {keyword: value for keyword,value in self.gConfigJson.items() if keyword in self.tables}
+        #识别所有的关键字字符集
 
     def get_interpreter_name(self,gConfig):
         #获取解释器的名称

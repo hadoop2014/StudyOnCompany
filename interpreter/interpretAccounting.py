@@ -24,31 +24,22 @@ class interpretAccounting(interpretBase):
         literals = self.literals
 
         # Tokens
+        #采用动态变量名
+        local_name = locals()
+        for token in self.tokens:
+            local_name['t_'+token] = self.dictTokens[token]
+        print(str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
-        #"TABLE": "主要会计数据|合并资产负债表|合并利润表|合并现金流量表",
-        #"NUMBER": "d+",
-        #"UNIT": "元|千元|万元|百万元|千万元|亿",
-        #"CURRENCY": "人民币|美元|欧元|[\\u4E00-\\u9FA5]元",
-        #"COMPANY": ".*?[\\u4E00-\\u9FA5]+公司",
-        #"TIME": "",
-        #"HEADER": "科目|项目|分红年度",
-        #"PERCENTAGE": "",
-        #"NAME": "r'[a-zA-Z_][a-zA-Z0-9_]*'",
-        t_TABLE = self.dictTokens['TABLE']
-        #t_NUMBER = self.dictTokens['NUMBER']
-        t_UNIT = self.dictTokens['UNIT']
-        t_CURRENCY = self.dictTokens['CURRENCY']
-        t_COMPANY = self.dictTokens['COMPANY']
-        t_TIME = self.dictTokens['TIME']
-        t_HEADER = self.dictTokens['HEADER']
-        t_PERCENTAGE = self.dictTokens['PERCENTAGE']
-        #t_NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
-        t_NAME = self.dictTokens['NAME']
+        #def t_PERCENTAGE(t):
+        #    '\\d+[.\\d*]*%'
+        #    t.value = int(t.value[:-1])*0.01
+        #    print(t.value)
+        #    return t
 
-        def t_NUMBER(t):
-            r'\d+'
-            t.value = int(t.value)
-            return t
+        #def t_NUMBER(t):
+        #    r'\d+'
+        #    t.value = int(t.value)
+        #    return t
 
 
         t_ignore = " \t\n"
@@ -68,6 +59,7 @@ class interpretAccounting(interpretBase):
         # Parsing rules
 
         precedence = (
+            #('right', 'PERCENTAGE','NUMBER'),
             ('left', '+', '-'),
             ('left', '*', '/'),
             ('right', 'UMINUS'),
@@ -77,18 +69,29 @@ class interpretAccounting(interpretBase):
         names = {}
 
         def p_statement_search(p):
-            'statement : TABLE'
+            'statement : TABLE TIME'
+            print("search",p[1],p[2])
+
+        def p_statement_time(p):
+            'statement : TIME'
+            print(p[1])
+
+        def p_statement_number(p):
+            'statement : NUMBER'
             print(p[1])
 
         def p_statement_assign(p):
             'statement : NAME "=" expression'
             names[p[1]] = p[3]
 
+        def p_statement_discard(p):
+            'statement : DISCARD'
+            pass  #do nothing
+            #print(p[1])
 
         def p_statement_expr(p):
             'statement : expression'
             print(p[1])
-
 
         def p_expression_binop(p):
             '''expression : expression '+' expression
@@ -135,12 +138,21 @@ class interpretAccounting(interpretBase):
             else:
                 print("Syntax error at EOF")
 
+
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
     def doWork(self,docParser):
-        for data in docParser:
-            self.parser.parse(docParser._get_text(data))
+        #for data in docParser:
+        #    self.parser.parse(docParser._get_text(data))
+        item = 4
+        data = docParser._get_item(item)
+        text = docParser._get_text(data)
+        print(text)
+        self.parser.parse(text)
+        self.lexer.input(text)
+        for token in self.lexer:
+            print(token)
         docParser._close()
 
 def create_object(gConfig):

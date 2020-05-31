@@ -1,20 +1,26 @@
 {
-  "#tokens": ["表名",  "数字",   "单位", "币种",     "公司",    "时间", "表头",  "百分数",      "变量名"],
-  "tokens":  ["TABLE","NUMBER","UNIT", "CURRENCY","COMPANY","TIME","HEADER","PERCENTAGE","NAME"],
+  "#tokens": ["表名",  "数字",  "单位",  "币种",     "公司",    "时间", "表头",  "百分数",      "数值", "变量名","中文标点",
+    "网址",   "无效词语"],
+  "tokens":  ["TABLE","NUMBER","UNIT", "CURRENCY","COMPANY","TIME","HEADER","PERCENTAGE","VALUE","NAME","PUNCTUATION",
+    "WEBSITE","DISCARD"],
 
   "TABLE": "主要会计数据|合并资产负债表|合并利润表|合并现金流量表",
   "NUMBER": "\\d+",
   "UNIT": "元|千元|万元|百万元|千万元|亿",
   "CURRENCY": "人民币|美元|欧元|[\\u4E00-\\u9FA5]元",
   "COMPANY": ".*?[\\u4E00-\\u9FA5]+公司",
-  "TIME":"\\d+年\\d+月\\d+日",
+  "TIME":"\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年",
   "HEADER": "科目|项目|分红年度",
-  "PERCENTAGE": "\\d+[.\\d+]%",
-  "NAME": "r'[a-zA-Z_][a-zA-Z0-9_]*'",
+  "PERCENTAGE": "\\d+[,\\d]*[.\\d]*%",
+  "VALUE": "\\d+[,\\d]*[.\\d]*",
+  "NAME": "[a-zA-Z_][a-zA-Z0-9_]*",
+  "PUNCTUATION": "。|？|！|，|、|；|：|「|」|『|』|‘|’|“|”|（|）|〔|〕|【|】|—|…|–|．|《|》|〈|〉",
+  "WEBSITE": "[a-zA-Z_][a-zA-Z0-9_]*[.\\w]*",
+  "DISCARD": "[\\u4E00-\\u9FA5]+",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值",
   "ignores": " \t",
-  "literals": ["(",")","-","："],
+  "literals": ["(",")","-","：","（","）","%","/"],
 
   "合并资产负债表":{
     "fieldKeyword": ["流动资产","货币资金","结算备付金","拆出资金","交易性金融资产","以公允价值计量且其变动计入当期损益的金融资产"
