@@ -14,13 +14,8 @@ class interpretAccounting(interpretBase):
         self.interpretDefine()
 
     def interpretDefine(self):
-        #tokens = (
-        #    'NAME',
-        #    'NUMBER',
-        #)
         tokens = self.tokens
 
-        #literals = ['=', '+', '-', '*', '/', '(', ')']
         literals = self.literals
 
         # Tokens
@@ -42,7 +37,8 @@ class interpretAccounting(interpretBase):
         #    return t
 
 
-        t_ignore = " \t\n"
+        #t_ignore = " \t\n"
+        t_ignore = self.ignores
 
         def t_newline(t):
             r'\n+'
@@ -72,22 +68,18 @@ class interpretAccounting(interpretBase):
             'statement : TABLE TIME'
             print("search",p[1],p[2])
 
-        def p_statement_time(p):
-            'statement : TIME'
-            print(p[1])
-
-        def p_statement_number(p):
-            'statement : NUMBER'
-            print(p[1])
+        #def p_statement_number(p):
+        #    'statement : NUMBER'
+        #    print(p[1])
 
         def p_statement_assign(p):
             'statement : NAME "=" expression'
             names[p[1]] = p[3]
 
-        def p_statement_discard(p):
-            'statement : DISCARD'
-            pass  #do nothing
-            #print(p[1])
+        #def p_statement_discard(p):
+        #    'statement : DISCARD'
+        #    pass  #do nothing
+        #    #print(p[1])
 
         def p_statement_expr(p):
             'statement : expression'
@@ -121,7 +113,12 @@ class interpretAccounting(interpretBase):
         def p_expression_number(p):
             "expression : NUMBER"
             p[0] = p[1]
+            print(p[0])
 
+        def p_expression_time(p):
+            'expression : TIME'
+            p[0] = p[1]
+            print(p[0])
 
         def p_expression_name(p):
             "expression : NAME"
@@ -134,7 +131,7 @@ class interpretAccounting(interpretBase):
 
         def p_error(p):
             if p:
-                print("Syntax error at '%s'" % p.value)
+                print("Syntax error at '%s:%s'" % (p.value,p.type))
             else:
                 print("Syntax error at EOF")
 
@@ -143,9 +140,10 @@ class interpretAccounting(interpretBase):
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
     def doWork(self,docParser):
-        #for data in docParser:
-        #    self.parser.parse(docParser._get_text(data))
-        item = 4
+        for data in docParser:
+            self.parser.parse(docParser._get_text(data).replace(' ',''))
+        '''
+        item = 138
         data = docParser._get_item(item)
         text = docParser._get_text(data)
         print(text)
@@ -153,6 +151,7 @@ class interpretAccounting(interpretBase):
         self.lexer.input(text)
         for token in self.lexer:
             print(token)
+        '''
         docParser._close()
 
 def create_object(gConfig):

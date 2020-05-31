@@ -15,10 +15,16 @@ class MyTestCase(unittest.TestCase):
         interpreter = interpretAccounting.create_object(gConfig=gConfig)
         #test lexer
         input = ''
-        #input = input + '1,370,249,543.17'
-        #input = input + ' 45.01%'
+        input = input + '1,370,249,543.00'
+        #input = input + '  .00 元'
+        #input = input + ' 0.510%'
         #input = input + '2008 年 12月5  日'
-        input = input + 'www.1_0see.com'
+        #input = input + '0.051'
+        #input = input + 'www.see.com.cn'
+        #input = input + 'irm@qianhefood.com'
+        #input = input + ' ..' + '  ..................' + '  ).'+' 六.31 之 ' +' 五.41（. 3）'
+        input = input + ' 眉山.千禾博物馆'
+        input = input + ' 合并资产负债表\n2019 年 12 月 31 日 '
         interpreter.lexer.input(input)
         for tok in interpreter.lexer:
             print(tok)
