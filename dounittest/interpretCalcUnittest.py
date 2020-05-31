@@ -9,6 +9,8 @@ class MyTestCase(unittest.TestCase):
 
     def run_interpreter(self):
         gConfig = getConfig.get_config('config_directory/configbase.txt')
+        gConfigJson = getConfig.get_config_json('config_directory/interpretAccounting.json')
+        gConfig.update({"gConfigJson": gConfigJson})
         interpreter = interpretCalc.create_object(gConfig=gConfig)
         while True:
             try:
