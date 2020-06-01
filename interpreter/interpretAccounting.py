@@ -38,7 +38,7 @@ class interpretAccounting(interpretBase):
 
 
         #t_ignore = " \t\n"
-        t_ignore = self.ignores
+        t_ignore = self.ignores + local_name['t_PUNCTUATION']
 
         def t_newline(t):
             r'\n+'
@@ -67,10 +67,16 @@ class interpretAccounting(interpretBase):
         #def p_statement_assign(p):
         #    'statement : NAME "=" expression'
         #    names[p[1]] = p[3]
+        def p_statement_statement(p):
+            '''statement : statement statement'''
+            print(p[1],p[2])
 
+        def p_statement_discardshiftl(p):
+            '''statement : DISCARD statement'''
+            print(p[1],p[2])
 
         def p_statement_expr(p):
-            'statement : expression'
+            '''statement : expression'''
             print(p[1])
 
         def p_expression_search(p):
@@ -103,7 +109,7 @@ class interpretAccounting(interpretBase):
         #    print(p[0])
 
         def p_expression_discard(p):
-            'expression : DISCARD'
+            '''expression : DISCARD'''
             #p[0] = p[2]  #跳过DISCARD
             print(p[0])
 
@@ -111,7 +117,8 @@ class interpretAccounting(interpretBase):
             'expression : UNIT expression'
             #p[0] = p[2]  #跳过DISCARD
             names['unit'] = p[1]
-            print(p[0])
+            p[0] = p[1]
+            print(p[1])
 
         def p_expression_timeshiftl(p):
             'expression : TIME expression'
@@ -131,12 +138,19 @@ class interpretAccounting(interpretBase):
         def p_expression_value(p):
             'expression : VALUE'
             p[0] = float(p[1].replace(',',''))
-            print(p[0])
+            print(p[0],p[1])
 
-        def p_expression_uminus(p):
-            "expression : '-' expression %prec UMINUS"
+        #def p_expression_uminus(p):
+        #    "expression : '-' expression %prec UMINUS"
+        #    p[0] = -p[2]
+
+        def p_expression_valueuminus(p):
+            "expression : '-' VALUE %prec UMINUS"
+            p[0] = -float(p[2].replace(',',''))
+
+        def p_expression_numberuminus(p):
+            "expression : '-' NUMBER %prec UMINUS"
             p[0] = -int(p[2])
-
 
         def p_expression_group(p):
             "expression : '(' expression ')'"
@@ -145,10 +159,8 @@ class interpretAccounting(interpretBase):
 
         def p_expression_number(p):
             "expression : NUMBER"
-            p[0] = p[1]
+            p[0] = int(p[1])
             print(p[0])
-
-
 
         #def p_expression_name(p):
         #    "expression : NAME"
@@ -167,6 +179,11 @@ class interpretAccounting(interpretBase):
             'expression : CURRENCY'
             names['currency'] = p[1]
             p[0] = p[1]
+            print(p[0])
+
+        def p_expression_punctuation(p):
+            '''expression : PUNCTUATION'''
+            print(p[1])
 
         def p_error(p):
             if p:
@@ -186,10 +203,10 @@ class interpretAccounting(interpretBase):
         data = docParser._get_item(item)
         text = docParser._get_text(data)
         print(text)
-        self.parser.parse(text)
         self.lexer.input(text)
         for token in self.lexer:
             print(token)
+        self.parser.parse(text,lexer=self.lexer,debug=True)
 
         docParser._close()
 
