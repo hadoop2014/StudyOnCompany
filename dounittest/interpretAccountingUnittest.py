@@ -15,10 +15,10 @@ class MyTestCase(unittest.TestCase):
         interpreter = interpretAccounting.create_object(gConfig=gConfig)
         #test lexer
         input = ''
-        input = input + '1,370,249,543.00'
+        input = input + '-1,370,249,543.00  1234  1,234'
         input = input + '  .00 元'
-        input = input + ' 0.51%'
-        input = input + '0.051'
+        input = input + ' -0.51% 27.19%'
+        input = input + '(0.05) 0.0045'
         #input = input + 'www.see.com.cn'
         #input = input + 'irm@qianhefood.com'
         #input = input + ' + '  ).'+' 六.31 之 ' +' 五.41（. 3）''
