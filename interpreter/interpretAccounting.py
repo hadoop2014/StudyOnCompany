@@ -56,6 +56,13 @@ class interpretAccounting(interpretBase):
             '''statement : statement statement'''
             #print(p[1],p[2])
             p[0] = p[1]
+            #print(p[0])
+
+        def p_statement_group(p):
+            '''statement : '(' statement ')'
+                        | '（' statement '）' '''
+            #print(p[1],p[2])
+            p[0] = p[2]
 
 
         def p_statement_expr(p):
@@ -76,7 +83,7 @@ class interpretAccounting(interpretBase):
             names[p[1]] = {'table':p[1],'unit':names['unit'],'currency':names['currency']}
             print(names[p[1]])
 
-        def p_expression_searchnone(p):
+        def p_expression_tableshiftr(p):
             '''expression : TABLE expression'''
             p[0] = p[1]
 
@@ -93,8 +100,18 @@ class interpretAccounting(interpretBase):
             p[0] = p[1]
             print(p[0])
 
+        def p_expression_unit(p):
+            '''expression : UNIT'''
+            names['unit'] = p[1].split(':')[-1].split('：')[-1]
+            p[0] = p[1]
+            print(p[0])
+
         def p_expression_discardshiftr(p):
             '''expression : expression DISCARD'''
+            p[0] = p[1]
+
+        def p_expression_timeshiftr(p):
+            '''expression : expression TIME'''
             p[0] = p[1]
 
         def p_expression_nothing(p):
@@ -110,7 +127,8 @@ class interpretAccounting(interpretBase):
                        | NAME
                        | TIME
                        | HEADER
-                       | UNIT'''
+                       | UNIT
+                       | '-' '''
             print('nothing ',p[1])
 
         def p_expression_term(p):
@@ -146,11 +164,11 @@ class interpretAccounting(interpretBase):
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
     def doWork(self,docParser):
-        #for data in docParser:
-        #    self.parser.parse(docParser._get_text(data).replace(' ',''))
+        for data in docParser:
+            self.parser.parse(docParser._get_text(data).replace(' ',''))
 
-        #'''
-        item = 83
+        '''
+        item = 83,6
         data = docParser._get_item(item)
         text = docParser._get_text(data)
         print(text)
@@ -158,7 +176,7 @@ class interpretAccounting(interpretBase):
         for token in self.lexer:
             print(token)
         self.parser.parse(text,lexer=self.lexer,debug=True)
-        #'''
+        '''
         docParser._close()
 
 def create_object(gConfig):
