@@ -46,6 +46,8 @@ class interpretAccounting(interpretBase):
         #    #('right', 'PERCENTAGE','NUMBER'),
         #    ('left', '+', '-'),
         #    ('left', '*', '/'),
+            ('left', 'NOTHING','(',')'),
+            ('left', 'GROUP'),
             ('right', 'UMINUS'),
         )
 
@@ -128,11 +130,13 @@ class interpretAccounting(interpretBase):
                        | TIME
                        | HEADER
                        | UNIT
-                       | '-' '''
+                       | '-'
+                       | NUMERIC ')' %prec NOTHING '''
+
             print('nothing ',p[1])
 
         def p_expression_term(p):
-            '''expression : term'''
+            '''expression : term %prec GROUP'''
             p[0] = p[1]
 
         def p_term_percentage(p):
@@ -142,7 +146,10 @@ class interpretAccounting(interpretBase):
 
         def p_term_numeric(p):
             '''term : NUMERIC'''
-            p[0] = float(p[1].replace(',',''))
+            if p[1].find('.') < 0 :
+                p[0] = int(p[1].replace(',',''))
+            else:
+                p[0] = float(p[1].replace(',',''))
             print('value',p[0],p[1])
 
         def p_term_uminus(p):
@@ -150,7 +157,7 @@ class interpretAccounting(interpretBase):
             p[0] = -p[2]
 
         def p_term_group(p):
-            '''term : '(' term ')' '''
+            '''term : '(' term ')' %prec GROUP '''
             p[0] = -p[2]  #财务报表中()表示负值
 
         def p_error(p):
@@ -168,7 +175,8 @@ class interpretAccounting(interpretBase):
             self.parser.parse(docParser._get_text(data).replace(' ',''))
 
         '''
-        item = 83,6
+        #item = 83,6,120,111
+        item = 111
         data = docParser._get_item(item)
         text = docParser._get_text(data)
         print(text)
