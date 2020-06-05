@@ -30,6 +30,7 @@ class MyTestCase(unittest.TestCase):
         input = input + ' 眉山.千禾博物馆'
         input = input + ' ..' + '  ..................'
         input = input + '（＋，－） -稳富  5114002017043-L'
+        input = input + ' \t'
         #input = input + ' ). 1) 2） 六.31 之 ' +' 五.41（. 3） （前额和 安第几个 dijg）'
         #input = input + ' 司（以下简称“公司”或“本公司”，在包括子公司时统称“本\n集团”） -\n的其他应收'
         self.interpreter.lexer.input(input)
@@ -81,12 +82,16 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'5114002017043',3,314)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(-,'-',3,327)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NAME,'L',3,328)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"None")
 
     def run_interpreter_yacc(self):
         input = ''
         input = input + ' 合并资产负债表\n2019 年 12 月 31 日'
-        input = input + ' 元  人民币'
-        input = input + ' ). 1) 2） 六.31 之  五.41（. 3）'
+        input = input + ' 元  人民币 '
+        #input = input + ' ). 1) 2） 六.31 之  五.41（. 3）'
+        #input = input + ' --现金 --非现金资产的公允价值'
+        input = input + ' (现金) (1) 2)'
+        self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)
         #test yaac

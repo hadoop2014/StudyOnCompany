@@ -46,8 +46,8 @@ class interpretAccounting(interpretBase):
         #    #('right', 'PERCENTAGE','NUMBER'),
         #    ('left', '+', '-'),
         #    ('left', '*', '/'),
-            ('left', 'NOTHING','(',')'),
-            ('left', 'GROUP'),
+        #    ('left', 'NOTHING','(',')'),
+        #    ('left', 'GROUP'),
             ('right', 'UMINUS'),
         )
 
@@ -62,9 +62,15 @@ class interpretAccounting(interpretBase):
 
         def p_statement_group(p):
             '''statement : '(' statement ')'
-                        | '（' statement '）' '''
+                        | '（' statement '）'  '''
             #print(p[1],p[2])
             p[0] = p[2]
+
+        #def p_statement_grouphalf(p):
+        #    '''statement : statement ')' %prec GROUPHALF
+        #                 | statement '）' %prec GROUPHALF '''
+            #print(p[1],p[2])
+        #    p[0] = p[1]
 
 
         def p_statement_expr(p):
@@ -108,20 +114,24 @@ class interpretAccounting(interpretBase):
             p[0] = p[1]
             print(p[0])
 
-        def p_expression_discardshiftr(p):
-            '''expression : expression DISCARD'''
-            p[0] = p[1]
+        #def p_expression_discardshiftr(p):
+        #    '''expression : expression DISCARD'''
+        #    p[0] = p[1]
 
-        def p_expression_timeshiftr(p):
-            '''expression : expression TIME'''
-            p[0] = p[1]
+        #def p_expression_timeshiftr(p):
+        #    '''expression : expression TIME'''
+        #    p[0] = p[1]
 
         def p_expression_nothing(p):
             '''expression : nothing'''
             p[0] = p[1]
 
+        def p_nothing_reduce(p):
+            '''nothing : '-' nothing '''
+            p[0] = p[1]
+
         def p_nothing(p):
-            '''nothing : PUNCTUATION
+            '''nothing :  PUNCTUATION
                        | DISCARD
                        | WEBSITE
                        | EMAIL
@@ -129,14 +139,11 @@ class interpretAccounting(interpretBase):
                        | NAME
                        | TIME
                        | HEADER
-                       | UNIT
-                       | '-'
-                       | NUMERIC ')' %prec NOTHING '''
-
+                       | '-' '''
             print('nothing ',p[1])
 
         def p_expression_term(p):
-            '''expression : term %prec GROUP'''
+            '''expression : term '''
             p[0] = p[1]
 
         def p_term_percentage(p):
@@ -157,7 +164,7 @@ class interpretAccounting(interpretBase):
             p[0] = -p[2]
 
         def p_term_group(p):
-            '''term : '(' term ')' %prec GROUP '''
+            '''term : '(' term ')' '''
             p[0] = -p[2]  #财务报表中()表示负值
 
         def p_error(p):
@@ -176,7 +183,7 @@ class interpretAccounting(interpretBase):
 
         '''
         #item = 83,6,120,111
-        item = 111
+        item = 152
         data = docParser._get_item(item)
         text = docParser._get_text(data)
         print(text)
