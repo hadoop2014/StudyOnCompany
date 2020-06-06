@@ -36,7 +36,7 @@ def parserManager(docformat,gConfig):
 
     module = __import__(check_book[docformat]['interpreter'],
                         fromlist=(check_book[docformat]['interpreter'].split('.')[-1]))
-    interpreter = getattr(module,'create_object')(gConfig)
+    interpreter = getattr(module,'create_object')(gConfig,docParser)
 
     #sourceFile = gConfig['sourcefile']
     #targetFile = gConfig['targetfile']

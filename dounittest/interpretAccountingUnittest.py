@@ -87,10 +87,19 @@ class MyTestCase(unittest.TestCase):
     def run_interpreter_yacc(self):
         input = ''
         input = input + ' 合并资产负债表\n2019 年 12 月 31 日'
+        input = input + ' 编制单位: 千禾味业食品股份有限公司'
         input = input + ' 元  人民币 '
+        input = input + ' 合并资产负债表\n2019 年 12 月 31 日'
+        input = input + ' 元  人民币 '
+        input = input + ' 合并资产负债表\n编制单位：深圳华侨城股份有限公司'
+        input = input + ' 2017 年 12 月 31 日 单位：元'
+        input = input + ' 合并利润表\n单位：元 '
+        input = input + ' 现金流量表补充资料 '
+        input = input + ' (1).现金流量表补充资料 \n√适用 □不适用 \n 单位：元 币种：人民币'
         #input = input + ' ). 1) 2） 六.31 之  五.41（. 3）'
         input = input + ' --现金 --非现金资产的公允价值'
         input = input + ' (现金) (1) (12.33%) (%) 2)'
+        input = input + ' 应纳税增值额(应纳税额按应纳 16%、13%、10%、9%、6% \n税销售额乘以适用税率扣除当\n期允许抵扣的进项税后的余额\n计算) '
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)
