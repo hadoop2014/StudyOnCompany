@@ -55,76 +55,45 @@ class interpretAccounting(interpretBase):
         names = {}
 
         def p_statement_statement(p):
-            '''statement : statement statement'''
-            #print(p[1],p[2])
-            p[0] = p[1]
-            #print(p[0])
-
-        def p_statement_group(p):
-            '''statement : '(' statement ')'
-                        | '（' statement '）'  '''
-            #print(p[1],p[2])
-            p[0] = p[2]
-
-        #def p_statement_grouphalf(p):
-        #    '''statement : statement ')' %prec GROUPHALF
-        #                 | statement '）' %prec GROUPHALF '''
-            #print(p[1],p[2])
-        #    p[0] = p[1]
-
-
-        def p_statement_expr(p):
-            '''statement : expression'''
+            '''statement : statement expression
+                         | expression '''
             p[0] = p[1]
 
-        def p_expression_search(p):
-            '''expression : TABLE TIME UNIT expression'''
+        def p_statement_grouphalf(p):
+            '''statement : statement ')'
+                         | statement '）' '''
+            p[0] = p[1]
+
+        def p_statement_search(p):
+            '''statement : TABLE TIME UNIT CURRENCY expression'''
             print("search",p[1],p[2])
             names['unit'] = p[3].split(':')[-1].split('：')[-1]
+            names['currency'] = p[4].split(':')[-1].split('：')[-1]
             names[p[1]] = {'table':p[1],'time':p[2],'unit':names['unit'],'currency':names['currency']}
             print(names[p[1]])
 
-        def p_expression_searchealy(p):
-            '''expression : TABLE UNIT expression'''
+        def p_statement_searchealy(p):
+            '''statement : TABLE UNIT CURRENCY expression'''
             print("search",p[1],p[2])
             names['unit'] = p[2].split(':')[-1].split('：')[-1]
+            names['currency'] = p[3].split(':')[-1].split('：')[-1]
             names[p[1]] = {'table':p[1],'unit':names['unit'],'currency':names['currency']}
             print(names[p[1]])
 
-        def p_expression_tableshiftr(p):
-            '''expression : TABLE expression'''
+        #def p_statemnt_tableshiftr(p):
+        #    '''statement : TABLE expression'''
+        #    p[0] = p[1]
+
+        def p_expression_reduce(p):
+            '''expression : expression expression
+                          | term
+                          | nothing '''
             p[0] = p[1]
 
         def p_expression_group(p):
             '''expression : '(' expression ')'
-                          | '（' expression '）'
-                          | '(' '%' ')'
-                          | '（' '%' '）' '''
+                          | '（' expression '）' '''
             p[0] = p[2]
-
-        def p_expression_currency(p):
-            '''expression : CURRENCY'''
-            names['currency'] = p[1].split(':')[-1].split('：')[-1]
-            p[0] = p[1]
-            print(p[0])
-
-        def p_expression_unit(p):
-            '''expression : UNIT'''
-            names['unit'] = p[1].split(':')[-1].split('：')[-1]
-            p[0] = p[1]
-            print(p[0])
-
-        #def p_expression_discardshiftr(p):
-        #    '''expression : expression DISCARD'''
-        #    p[0] = p[1]
-
-        #def p_expression_timeshiftr(p):
-        #    '''expression : expression TIME'''
-        #    p[0] = p[1]
-
-        def p_expression_nothing(p):
-            '''expression : nothing'''
-            p[0] = p[1]
 
         def p_nothing_reduce(p):
             '''nothing : '-' nothing '''
@@ -139,12 +108,12 @@ class interpretAccounting(interpretBase):
                        | NAME
                        | TIME
                        | HEADER
-                       | '-' '''
+                       | CURRENCY
+                       | UNIT
+                       | TABLE
+                       | '-'
+                       | '%' '''
             print('nothing ',p[1])
-
-        def p_expression_term(p):
-            '''expression : term '''
-            p[0] = p[1]
 
         def p_term_percentage(p):
             '''term : NUMERIC '%' '''
@@ -183,7 +152,7 @@ class interpretAccounting(interpretBase):
 
         '''
         #item = 83,6,120,111
-        item = 152
+        item = 123
         data = docParser._get_item(item)
         text = docParser._get_text(data)
         print(text)

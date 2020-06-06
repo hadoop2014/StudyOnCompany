@@ -89,8 +89,8 @@ class MyTestCase(unittest.TestCase):
         input = input + ' 合并资产负债表\n2019 年 12 月 31 日'
         input = input + ' 元  人民币 '
         #input = input + ' ). 1) 2） 六.31 之  五.41（. 3）'
-        #input = input + ' --现金 --非现金资产的公允价值'
-        input = input + ' (现金) (1) 2)'
+        input = input + ' --现金 --非现金资产的公允价值'
+        input = input + ' (现金) (1) (12.33%) (%) 2)'
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)
