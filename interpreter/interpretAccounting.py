@@ -44,8 +44,6 @@ class interpretAccounting(interpretBase):
         # Parsing rules
 
         precedence = (
-            #('left', '+', '-'),
-            #('left', '*', '/'),
             ('right', 'UMINUS'),
         )
 
@@ -62,33 +60,11 @@ class interpretAccounting(interpretBase):
                          | expression '''
             p[0] = p[1]
 
-        #def p_expression_group(p):
-        #    '''expression : '(' expression ')'
-        #                  | '（' expression '）' '''
-        #    p[0] = p[2]
-
         def p_expression_reduce(p):
             '''expression : fetchtable expression
                           | skipword '''
             p[0] = p[1]
 
-        #def p_expression_currency(p):
-        #    '''expression : CURRENCY '''
-        #    names['currency'] = p[1].split(':')[-1].split('：')[-1]
-        #    p[0] = p[1]
-        #    print(p[0])
-
-        #def p_expression_unit(p):
-        #    '''expression : UNIT '''
-        #    names['unit'] = p[1].split(':')[-1].split('：')[-1]
-        #    p[0] = p[1]
-        #    print(p[0])
-
-        #def p_expression_time(p):
-        #    '''expression : TIME '''
-        #    names['time'] = p[1]
-        #    p[0] = p[1]
-        #    print(p[0])
 
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional TIME optional UNIT optional '''
@@ -111,17 +87,13 @@ class interpretAccounting(interpretBase):
             #去掉主要会计数据的表头
             print(p[1])
 
-        def p_fetchtable_skiptime(p):
-            '''fetchtable : TABLE optional TIME TIME '''
+        def p_fetchtable_skipheader(p):
+            '''fetchtable : TABLE HEADER '''
             #去掉合并资产负债表项目
             print(p[1])
 
         def p_fetchtable_skipterm(p):
             '''fetchtable : TABLE term '''
-            print(p[1])
-
-        def p_fetchtable_skipterm(p):
-            '''fetchtable : TABLE HEADER '''
             print(p[1])
 
         def p_skipword_group(p):
@@ -212,8 +184,8 @@ class interpretAccounting(interpretBase):
             self.parser.parse(docParser._get_text(data).replace(' ',''))
 
         '''
-        #item = 83,6,120,111,71,149,110,4,38
-        item = 108
+        #item = 83,6,120,111,71,149,110,4,38,108
+        item = 149
         data = docParser._get_item(item)
         text = docParser._get_text(data)
         print(text)
