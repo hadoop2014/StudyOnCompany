@@ -8,7 +8,7 @@ import os
 
 check_book = None
 
-def docParse(parser,interpreter,docformat,gConfig):
+def docParse(parser,interpreter,docformat,gConfig,lexer=None,debug=False,tracking=False):
     if gConfig['unittestIsOn'.lower()] == True:
         pass
     else:
@@ -17,7 +17,7 @@ def docParse(parser,interpreter,docformat,gConfig):
 
     print("\n\npase (%s) file is starting!\n\n"%docformat)
     #parser.parse()
-    interpreter.doWork(parser)
+    interpreter.doWork(parser,lexer=lexer,debug=debug,tracking=tracking)
     print('\n\nparse %s file end, time used %.4f'%(docformat,(time.time()-start_time)))
 
 def parseStart(gConfig,docformat,unittestIsOn):

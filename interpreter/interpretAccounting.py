@@ -62,6 +62,7 @@ class interpretAccounting(interpretBase):
 
         def p_expression_reduce(p):
             '''expression : fetchtable expression
+                          | fetchdata expression
                           | skipword '''
             p[0] = p[1]
 
@@ -104,6 +105,12 @@ class interpretAccounting(interpretBase):
             '''fetchtable : TABLE term '''
             print(p[1])
 
+        def p_fetchdata_title(p):
+            '''fetchdata : COMPANY TIME UNIT '''
+            self.names['company'].updata({'company':p[1]})
+            self.names['title'].update({'title':p[2]+p[3]})
+            print('fetchdata %s %s'%(self.names['company'],self.names['title']))
+
         def p_skipword_group(p):
             '''skipword : '(' skipword ')'
                         | '（' skipword '）' '''
@@ -135,6 +142,7 @@ class interpretAccounting(interpretBase):
                        | TIME
                        | UNIT
                        | CURRENCY
+                       | CRITICAL
                        | '-'
                        | '%' '''
             print('useless ',p[1])
@@ -186,7 +194,7 @@ class interpretAccounting(interpretBase):
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
-    def doWork(self,docParser,pageIndexs=None,lexer=None,debug=False,tracking=False):
+    def doWork(self,docParser,lexer=None,debug=False,tracking=False):
         #千和财报: 71 - 73 合并资产负债表
         for data in docParser:
             self.parser.parse(docParser._get_text(data).replace(' ',''),lexer=lexer,debug=debug,tracking=tracking)
@@ -208,7 +216,7 @@ class interpretAccounting(interpretBase):
         for tableName in self.tablesName:
             self.names.update({tableName:{'tableName':'','time':'','unit':'','currency':''
                                           ,'company':'','table':'','tableBegin':False,'tableEnd':False}})
-            self.names.update({'unit':'','currency':'','company':''})
+            self.names.update({'unit':'','currency':'','company':'','title':''})
 
 def create_object(gConfig,docParser=None):
     interpreter=interpretAccounting(gConfig,docParser)
