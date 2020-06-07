@@ -13,12 +13,13 @@ from baseClass import *
 #深度学习模型的基类
 class docParserBase(baseClass):
     def __init__(self,gConfig):
-        super(docParserBase, self).__init__()
+        super(docParserBase, self).__init__(gConfig['gConfigJson'])
         self.gConfig = gConfig
         self.start_time = time.time()
         self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser',self.get_parser_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
         self.data_directory = self.gConfig['data_directory']
+        self.mainprogram = self.gConfig['mainprogram']
         self.logging_directory = os.path.join(self.logging_directory,'docparser', self.get_parser_name(gConfig))
         self.model_savefile = os.path.join(self.working_directory,'docparser',
                                            self.get_parser_name(self.gConfig) + '.model')
@@ -27,18 +28,7 @@ class docParserBase(baseClass):
         self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        self.gConfigJson = self.gConfig['gConfigJson']
-        self.tableKeyword = self.gConfig['tableKeyword'.lower()]
-        self.dictKeyword = self.get_keyword(self.tableKeyword)
 
-    def get_keyword(self,tableKeyword):
-        #获取解析文件所需的关键字
-        dictKeyword = {keyword:value for keyword,value in self.gConfigJson.items() if keyword in tableKeyword}
-        #self.fieldKeyword = self.gConfig['fieldKeyword'.lower()]
-        #self.excludeKeyword = self.gConfig['excludeKeyword'.lower()]
-        #if len(self.excludeKeyword) == 1 and self.excludeKeyword[0] == '':
-        #    self.excludeKeyword = list()  # 置空
-        return dictKeyword
 
     def get_check_book(self):
         check_file = os.path.join(self.gConfig['config_directory'], self.gConfig['check_file'])

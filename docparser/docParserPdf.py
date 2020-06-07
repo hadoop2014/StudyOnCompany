@@ -8,23 +8,71 @@ class docParserPdf(docParserBase):
         super(docParserPdf,self).__init__(gConfig)
         self.writeParser = writeParser
         self.workbook = Workbook()
+        self.interpretPrefix = ''
         self._load_data()
 
-    def _load_data(self):
-        self.pdf = pdfplumber.open(self.sourceFile,password='')
-        self._data = self.pdf.pages
+    def _load_data(self,input=None):
+        self._pdf = pdfplumber.open(self.sourceFile,password='')
+        self._data = self._pdf.pages
         self._index = 0
         self._length = len(self._data)
 
-    def _get_text(self,page):
-        return page.extract_text()
+    def _get_text(self,page=None):
+        #page = self.__getitem__(self._index-1)
+        #interpretPrefix用于处理比如 合并资产负债表分布在多个page页面的情况
+        pageText = self.interpretPrefix + page.extract_text()
+        return pageText
 
-    def _get_tables(self,page):
+    def _get_tables(self,page = None):
+        page = self.__getitem__(self._index-1)
         return page.extract_tables()
 
-    def _close(self):
-        self.pdf.close()
+    def _merge_table(self, dictTable=None,interpretPrefix=''):
+        if dictTable is None:
+            dictTable = dict()
+        savedTable = dictTable['table']
+        tableName = dictTable['tableName']
+        fetchTables = self._get_tables()
+        processedTable,isTableEnd = self._process_table(fetchTables,tableName)
+        dictTable.update({'tableEnd':isTableEnd})
+        if isinstance(savedTable, list):
+            savedTable.extend(processedTable)
+        else:
+            savedTable = processedTable
 
+        self.interpretPrefix = interpretPrefix
+        if dictTable['tableBegin'] == True and dictTable['tableEnd'] == True:
+            self.interpretPrefix = ''
+            self._write_table(tableName,savedTable)
+
+        dictTable.update({'table':savedTable})
+        return dictTable
+
+    def _process_table(self,tables,tableName):
+        lastFiledName = self.dictTables[tableName]['fieldName'][-1] #获取表的最后一个字段
+        processedTable = [list(map(lambda x:str(x).replace('\n','').replace('None',''),row))
+                          for row in tables[-1]]
+        isTableEnd = (lastFiledName == processedTable[-1][0])
+        if isTableEnd == True or len(tables) == 1:
+            processedTable = processedTable
+            return processedTable, isTableEnd
+
+        for table in tables:
+            table = [list(map(lambda x: str(x).replace('\n','').replace('None',''),row)) for row in table]
+            isTableEnd = (lastFiledName == table[-1][0])
+            if isTableEnd == True:
+                processedTable = table
+                break
+        return processedTable,isTableEnd
+
+    def _close(self):
+        self._pdf.close()
+
+    def _write_table(self,tableName,table):
+        dataframe = pd.DataFrame(table[1:], columns=table[0], index=None)  # 以第一行为列变量
+        # tb.to_excel(targetFile,index=False)  #不显示索引
+        self.writeParser.writeToExcel(dataframe, sheetName=tableName)
+    '''
     def parse(self):
         #sourceFile = os.path.join(self.data_directory,sourceFile)
         #targetFile = os.path.join(self.working_directory,targetFile)
@@ -71,7 +119,7 @@ class docParserPdf(docParserBase):
                 find_table = 1
 
             if find_table or find_pre_table:
-                #tables = page.extract_tables() #解析所有的表格
+                #tablesName = page.extract_tables() #解析所有的表格
                 tables = self._get_tables(page)
                 for index,table in enumerate(tables):
                     dataframe = pd.DataFrame(table[1:], columns=table[0],index=None)  # 以第一行为列变量
@@ -79,7 +127,7 @@ class docParserPdf(docParserBase):
                     self.writeParser.writeToExcel(dataframe,sheetName=findedTableKeyword+str(index))
 
                 data_list = data.strip().split()
-                fieldKeyword = dictKeyword[findedTableKeyword]['fieldKeyword']
+                fieldKeyword = dictKeyword[findedTableKeyword]['fieldName']
                 for row_no in range(len(data_list)):
                     if len(fieldKeyword):
                         for keyword in fieldKeyword:
@@ -120,7 +168,8 @@ class docParserPdf(docParserBase):
         print('****time to processing PDF file is {}'.format((start3 - start2)))
 
         return name_find, value_find, page_find
-
+    '''
+    '''
     def parsePdfminer(self,sourceFile,targetFile):
         from pdfminer.pdfparser import PDFParser
         from pdfminer.pdfpage import PDFDocument, PDFPage
@@ -128,7 +177,7 @@ class docParserPdf(docParserBase):
         from pdfminer.converter import PDFPageAggregator
         from pdfminer.layout import LTTextBoxHorizontal, LAParams
         from pdfminer.pdfinterp import PDFTextState
-        '''解析PDF文本，并保存到TXT文件中'''
+        #解析PDF文本，并保存到TXT文件中
         sourceFile = os.path.join(self.data_directory,sourceFile)
         targetFile = os.path.join(self.working_directory,targetFile)
         targetFile = '.'.join([*targetFile.split('.')[:-1],'txt'])
@@ -178,6 +227,7 @@ class docParserPdf(docParserBase):
             outlines = doc.get_outlines()
             for (level, title, dest, a, se) in outlines:
                 print(level, title)
+    '''
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:

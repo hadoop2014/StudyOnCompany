@@ -1,16 +1,28 @@
 import unittest
-from datafetch import getConfig
 from interpreter import interpretAccounting
 from execute import *
+from baseClass import *
+
+class baseParser(baseClass):
+    def __init__(self,gConfig):
+        super(baseParser,self).__init__(gConfig['gConfigJson'])
+
+    def _load_data(self,input = None):
+        if input is None:
+            input = list()
+        self._data = input
+        self._index = 0
+        self._length = len(self._data)
 
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         self.gConfig = getConfig.get_config('config_directory/configbase.txt')
         gConfigJson = getConfig.get_config_json('config_directory/interpretAccounting.json')
         self.gConfig.update({"gConfigJson": gConfigJson})
-        self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig)
+        testParser = baseParser(self.gConfig)
+        self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig,docParser=testParser)
         self.run_interpreter_lexer()
-        self.run_interpreter_yacc()
+        self.run_interpreter_yacc(testParser)
 
     def run_interpreter_lexer(self):
         #test lexer
@@ -84,7 +96,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NAME,'L',3,328)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"None")
 
-    def run_interpreter_yacc(self):
+    def run_interpreter_yacc(self,testParser):
         input = ''
         input = input + ' 合并资产负债表\n2019 年 12 月 31 日'
         input = input + ' 编制单位: 千禾味业食品股份有限公司'
@@ -100,11 +112,14 @@ class MyTestCase(unittest.TestCase):
         input = input + ' --现金 --非现金资产的公允价值'
         input = input + ' (现金) (1) (12.33%) (%) 2)'
         input = input + ' 应纳税增值额(应纳税额按应纳 16%、13%、10%、9%、6% \n税销售额乘以适用税率扣除当\n期允许抵扣的进项税后的余额\n计算) '
+        input = input + ' (应纳税额按应纳 (16%、13%、10%、9%、6% 有) \n税销售额乘以适用税率扣除当)'
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)
         #test yaac
-        self.interpreter.parser.parse(input,lexer=self.interpreter.lexer,debug=True,tracking=True)
+        testParser._load_data(input)
+        self.interpreter.doWork(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
+        #self.interpreter.parser.parse(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
 
 if __name__ == '__main__':
     unittest.main()

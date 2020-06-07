@@ -4,6 +4,7 @@ working_directory = working_directory/
 logging_directory = logging_directory/
 config_directory = config_directory/
 data_directory = data_directory/
+mainprogram = mainprogram/
 check_file = checkbook.json
 #gConfigJson会被更新为configjson.json文件的内容
 gConfigJson =
@@ -37,7 +38,7 @@ excelSuffix = xls,xlsx
 wordSuffix = doc,docx
 txetSuffix = txt,csv
 pdfSuffix = pdf
-tableKeyword = 合并资产负债表,合并利润表,合并现金流量表,主要会计数据
+#tableKeyword = 合并资产负债表,合并利润表,合并现金流量表,主要会计数据
 
 [attrs]
 #描述数据集的参数，只有configbase.txt所特有

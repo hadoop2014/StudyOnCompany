@@ -11,7 +11,7 @@ class interpretAccounting(interpretBase):
     def __init__(self,gConfig,docParser):
         super(interpretAccounting,self).__init__(gConfig)
         self.docParser = docParser
-        self._page = None
+        #self.initialize()
         self.interpretDefine()
 
     def interpretDefine(self):
@@ -48,7 +48,7 @@ class interpretAccounting(interpretBase):
         )
 
         # dictionary of names
-        names = {}
+        self.names = {}
 
         def p_statement_grouphalf(p):
             '''statement : statement ')'
@@ -69,18 +69,26 @@ class interpretAccounting(interpretBase):
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional TIME optional UNIT optional '''
             print("search",p[1],p[3])
-            names['unit'] = p[5].split(':')[-1].split('：')[-1]
-            names[p[1]] = {'tableName':p[1],'time':p[3],'unit':names['unit'],'currency':names['currency']
-                           ,'company':names['company'],'table':'','tableBegin':True,'tableEnd':False}
-            print(names[p[1]])
+            self.names['unit'] = p[5].split(':')[-1].split('：')[-1]
+            self.names[p[1]].update({'tableName':p[1],'time':p[3],'unit':self.names['unit'],'currency':self.names['currency']
+                                     ,'company':self.names['company'],'tableBegin':True})
+            interpretPrefix = '\n'.join([self.names[p[1]]['tableName'], self.names[p[1]]['company'],
+                                         self.names[p[1]]['time'], self.names[p[1]]['unit']]) + '\n'
+            if self.names[p[1]]['tableEnd'] == False:
+                self.docParser._merge_table(self.names[p[1]],interpretPrefix)
+            print(self.names[p[1]])
 
-        def p_fetchtable_searchealy(p):
+        def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT optional '''
             print("search",p[1],p[3])
-            names['unit'] = p[3].split(':')[-1].split('：')[-1]
-            names[p[1]] = {'tableName':p[1],'unit':names['unit'],'currency':names['currency']
-                           ,'table':'','tableBegin':True,'tableEnd':False}
-            print(names[p[1]])
+            self.names['unit'] = p[3].split(':')[-1].split('：')[-1]
+            self.names[p[1]].update({'tableName':p[1],'unit':self.names['unit'],'currency':self.names['currency']
+                                ,'tableBegin':True})
+            interpretPrefix = '\n'.join([self.names[p[1]]['tableName'], self.names[p[1]]['unit'],
+                                         self.names[p[1]]['currency']]) + '\n'
+            if self.names[p[1]]['tableEnd'] == False:
+                self.docParser._merge_table(self.names[p[1]],interpretPrefix)
+            print(self.names[p[1]])
 
         def p_fetchtable_skiptime(p):
             '''fetchtable : TABLE optional TIME TIME '''
@@ -104,9 +112,9 @@ class interpretAccounting(interpretBase):
         def p_skipword(p):
             '''skipword : useless skipword
                         | term skipword
-                        | skipword DISCARD
                         | useless
-                        | term '''
+                        | term
+                        | '(' skipword error '''
             p[0] = p[1]
             #print('skipword',p[0])
 
@@ -159,9 +167,9 @@ class interpretAccounting(interpretBase):
                         | CURRENCY
                         | COMPANY '''
             if p.slice[1].type == 'CURRENCY':
-                names['currency'] = p[1].split(':')[-1].split('：')[-1]
+                self.names['currency'] = p[1].split(':')[-1].split('：')[-1]
             if p.slice[1].type == 'COMPANY':
-                names['company'] = p[1]
+                self.names['company'] = p[1]
             p[0] = p[1]
             print('optional',p[0])
 
@@ -178,14 +186,14 @@ class interpretAccounting(interpretBase):
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
-    def doWork(self,docParser):
+    def doWork(self,docParser,pageIndexs=None,lexer=None,debug=False,tracking=False):
+        #千和财报: 71 - 73 合并资产负债表
         for data in docParser:
-            self._page = data
-            self.parser.parse(docParser._get_text(data).replace(' ',''))
+            self.parser.parse(docParser._get_text(data).replace(' ',''),lexer=lexer,debug=debug,tracking=tracking)
 
         '''
-        #item = 83,6,120,111,71,149,110,4,38,108
-        item = 149
+        #item = 83,6,120,111,71,149,110,4,38,108,149
+        item = 38
         data = docParser._get_item(item)
         text = docParser._get_text(data)
         print(text)
@@ -195,6 +203,12 @@ class interpretAccounting(interpretBase):
         self.parser.parse(text,lexer=self.lexer,debug=True)
         '''
         docParser._close()
+
+    def initialize(self):
+        for tableName in self.tablesName:
+            self.names.update({tableName:{'tableName':'','time':'','unit':'','currency':''
+                                          ,'company':'','table':'','tableBegin':False,'tableEnd':False}})
+            self.names.update({'unit':'','currency':'','company':''})
 
 def create_object(gConfig,docParser=None):
     interpreter=interpretAccounting(gConfig,docParser)
