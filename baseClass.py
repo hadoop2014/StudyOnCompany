@@ -64,7 +64,7 @@ class baseClass():
             data = list()
         return data
 
-    def _merge_table(self, dictTable=None):
+    def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:
             dictTable = list()
         return dictTable

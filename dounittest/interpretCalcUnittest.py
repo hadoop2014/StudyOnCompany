@@ -23,7 +23,7 @@ class MyTestCase(unittest.TestCase):
                 if not tok: break  # No more input
                 print(tok)
             if not s: continue
-            interpreter.parser.parse(s)
+            interpreter.parser.parse(s,debug=True)
 
 if __name__ == '__main__':
     unittest.main()

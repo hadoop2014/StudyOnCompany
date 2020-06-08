@@ -107,9 +107,23 @@ class interpretAccounting(interpretBase):
 
         def p_fetchdata_title(p):
             '''fetchdata : COMPANY TIME UNIT '''
-            self.names['company'].updata({'company':p[1]})
-            self.names['title'].update({'title':p[2]+p[3]})
+            self.names.update({'company':p[1]})
+            self.names.update({'title':p[2]+p[3]})
             print('fetchdata %s %s'%(self.names['company'],self.names['title']))
+
+        def p_fetchdata_critical(p):
+            '''fetchdata : CRITICAL term'''
+            self.names.update({p[1]:p[2]})
+            print('critical',p[1],p[2])
+
+        def p_fetchdata_skipword(p):
+            '''fetchdata : COMPANY TIME DISCARD
+                         | COMPANY DISCARD
+                         | COMPANY PUNCTUATION
+                         | COMPANY NUMERIC
+                         | COMPANY UNIT
+                         | COMPANY error'''
+            p[0] = p[1]
 
         def p_skipword_group(p):
             '''skipword : '(' skipword ')'
@@ -138,11 +152,9 @@ class interpretAccounting(interpretBase):
                        | EMAIL
                        | NAME
                        | HEADER
-                       | COMPANY
                        | TIME
                        | UNIT
                        | CURRENCY
-                       | CRITICAL
                        | '-'
                        | '%' '''
             print('useless ',p[1])

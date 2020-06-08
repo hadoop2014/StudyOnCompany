@@ -117,7 +117,7 @@ class MyTestCase(unittest.TestCase):
         for tok in self.interpreter.lexer:
             print(tok)
         #test yaac
-        testParser._load_data(input)
+        testParser._load_data([input])
         self.interpreter.doWork(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
         #self.interpreter.parser.parse(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
 
