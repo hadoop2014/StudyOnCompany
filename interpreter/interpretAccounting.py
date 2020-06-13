@@ -1,9 +1,9 @@
-# -----------------------------------------------------------------------------
-# interpretCalc.py
-#
-# A simple calculator with variables.   This is from O'Reilly's
-# "Lex and Yacc", p. 63.
-# -----------------------------------------------------------------------------
+# -*- coding: utf-8 -*-
+# @Time    : 5/9/2020 5:03 PM
+# @Author  : wu.hao
+# @File    : interpretAccounting.py
+# @Note    : 用于从财务报表中提取财务数据
+
 from interpreter.interpretBaseClass import *
 
 
@@ -157,27 +157,28 @@ class interpretAccounting(interpretBase):
                        | CURRENCY
                        | '-'
                        | '%' '''
-            print('useless ',p[1])
+            #print('useless ',p[1])
 
         def p_term_group(p):
             '''term : '(' term ')'
                     |  '（' term '）'
                     | '-' term %prec UMINUS '''
             p[0] = -p[2]  #财务报表中()表示负值
-            print('uminus',p[0])
+            #print('uminus',p[0])
 
         def p_term_percentage(p):
             '''term : NUMERIC '%' '''
             p[0] = round(float(p[1]) * 0.01,4)
-            print('percentage',p[0])
+            #print('percentage',p[0])
 
         def p_term_numeric(p):
             '''term : NUMERIC '''
             if p[1].find('.') < 0 :
                 p[0] = int(p[1].replace(',',''))
+                print('number',p[0],p[1])
             else:
                 p[0] = float(p[1].replace(',',''))
-            print('value',p[0],p[1])
+            #print('value',p[0],p[1])
 
         def p_optional_optional(p):
             '''optional : DISCARD optional'''

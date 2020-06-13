@@ -1,7 +1,6 @@
 import re
 import os
-import ply.lex as lex
-import ply.yacc as yacc
+from ply import lex,yacc
 from baseClass import *
 
 #数据读写处理的基类
@@ -19,8 +18,6 @@ class interpretBase(baseClass):
             os.makedirs(self.working_directory)
         #self.get_interpreter_keyword()
         self.interpretDefine()
-
-
 
     def get_interpreter_name(self,gConfig):
         #获取解释器的名称

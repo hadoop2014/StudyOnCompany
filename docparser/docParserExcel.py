@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# @Time    : 12/9/2019 5:03 PM
+# @Author  : wu.hao
+# @File    : docParserExcel.py
+# @Note    : 用于excel文件的读写
+
 from docparser.docParserBaseClass import *
 from openpyxl import load_workbook,Workbook
 import pandas as pd

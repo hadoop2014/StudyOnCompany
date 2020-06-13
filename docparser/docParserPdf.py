@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# @Time    : 12/9/2019 5:03 PM
+# @Author  : wu.hao
+# @File    : docParserPdf.py
+# @Note    : 用于年报,半年报,季报pdf文件的读写
+
 from docparser.docParserBaseClass import *
 import pdfplumber
 import pandas as pd
@@ -72,6 +78,7 @@ class docParserPdf(docParserBase):
         dataframe = pd.DataFrame(table[1:], columns=table[0], index=None)  # 以第一行为列变量
         # tb.to_excel(targetFile,index=False)  #不显示索引
         self.writeParser.writeToExcel(dataframe, sheetName=tableName)
+
     '''
     def parse(self):
         #sourceFile = os.path.join(self.data_directory,sourceFile)
@@ -107,7 +114,7 @@ class docParserPdf(docParserBase):
             #data = page.extract_text()
             data = self._get_text(page)
             if len(self.tableKeyword):
-                for keyword in self.tableKeyword:
+                for keyword in self.tableKeyword.split('|'):
                     if keyword in data:
                         find_table = 1
                         findedTableKeyword = keyword
@@ -139,16 +146,16 @@ class docParserPdf(docParserBase):
                     if find_keyword:
                         find_keyword = 0
                         print('find %s in page %d'%(findedTableKeyword,page_no))
-                        excludeKeyword = dictKeyword[findedTableKeyword]['excludeKeyword']
-                        if len(excludeKeyword):
-                            for keyword in excludeKeyword:
-                                if keyword not in data_list[row_no]:
-                                    find_keyword_outside = 1
-                                else:
-                                    find_keyword_outside = 0
-                                    break
-                        else:
-                            find_keyword_outside = 1
+                        #excludeKeyword = dictKeyword[findedTableKeyword]['excludeKeyword']
+                        #if len(excludeKeyword):
+                        #    for keyword in excludeKeyword:
+                        #        if keyword not in data_list[row_no]:
+                        #            find_keyword_outside = 1
+                        #        else:
+                        #            find_keyword_outside = 0
+                        #            break
+                        #else:
+                        #    find_keyword_outside = 1
 
                         if find_keyword_outside:
                             find_keyword_outside = 0

@@ -10,7 +10,6 @@
 
 
 [bools]
-ckpt_used = False
 debugIsOn =　True
 viewIsOn =True
 tfdbgIsOn = False
