@@ -12,6 +12,7 @@ gConfigJson =
 docformat = pdf
 sourcefile = 年报/千禾味业：2019年年度报告.PDF
 targetfile = 千禾味业.xlsx
+database = financialdatabase.db
 
 [ints]
 #该节配置大部分可以被模型参数配置文件（如configpdf.txt）所覆盖
@@ -22,7 +23,7 @@ targetfile = 千禾味业.xlsx
 
 [bools]
 #该节配置可以被模型参数配置文件（如configpdf.txt）所覆盖
-checkpointIsOn = True
+checkpointIsOn = False
 debugIsOn = True
 viewIsOn =True　
 unittestIsOn = False

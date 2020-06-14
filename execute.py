@@ -30,9 +30,14 @@ def parserManager(docformat,gConfig):
                         fromlist=(check_book[docformat]['writeparser'].split('.')[-1]))
     writeParser = getattr(module,'create_object')(gConfig=gConfig)
 
+    module = __import__(check_book[docformat]['sqlparser'],
+                        fromlist=(check_book[docformat]['docparser'].split('.')[-1]))
+    sqlParser = getattr(module,'create_object')(gConfig)
+
     module = __import__(check_book[docformat]['docparser'],
                         fromlist=(check_book[docformat]['docparser'].split('.')[-1]))
     docParser = getattr(module,'create_object')(gConfig,writeParser)
+    #docParser = getattr(module, 'create_object')(gConfig, sqlParser)
 
     module = __import__(check_book[docformat]['interpreter'],
                         fromlist=(check_book[docformat]['interpreter'].split('.')[-1]))

@@ -49,7 +49,12 @@ class docParserPdf(docParserBase):
         self.interpretPrefix = interpretPrefix
         if dictTable['tableBegin'] == True and dictTable['tableEnd'] == True:
             self.interpretPrefix = ''
-            self._write_table(tableName,savedTable)
+            dataframe = pd.DataFrame(savedTable[1:], columns=savedTable[0], index=None)  # 以第一行为列变量
+            #dataframe前面插入公共字段
+            for index,(commonFiled,_) in enumerate(self.commonFileds.items()):
+                dataframe.loc[index] = [commonFiled,*[dictTable[commonFiled]]*(len(savedTable[0])-1)]
+                dataframe.insert(index,)
+            self._write_table(tableName,dataframe)
 
         dictTable.update({'table':savedTable})
         return dictTable
@@ -74,10 +79,9 @@ class docParserPdf(docParserBase):
     def _close(self):
         self._pdf.close()
 
-    def _write_table(self,tableName,table):
-        dataframe = pd.DataFrame(table[1:], columns=table[0], index=None)  # 以第一行为列变量
+    def _write_table(self,tableName,dataframe):
         # tb.to_excel(targetFile,index=False)  #不显示索引
-        self.writeParser.writeToExcel(dataframe, sheetName=tableName)
+        self.writeParser.writeToStore(dataframe, tableName=tableName)
 
     '''
     def parse(self):
@@ -126,12 +130,12 @@ class docParserPdf(docParserBase):
                 find_table = 1
 
             if find_table or find_pre_table:
-                #tablesName = page.extract_tables() #解析所有的表格
+                #tablesNames = page.extract_tables() #解析所有的表格
                 tables = self._get_tables(page)
                 for index,table in enumerate(tables):
                     dataframe = pd.DataFrame(table[1:], columns=table[0],index=None)  # 以第一行为列变量
                     #tb.to_excel(targetFile,index=False)  #不显示索引
-                    self.writeParser.writeToExcel(dataframe,sheetName=findedTableKeyword+str(index))
+                    self.writeParser.writeToExcel(dataframe,tableName=findedTableKeyword+str(index))
 
                 data_list = data.strip().split()
                 fieldKeyword = dictKeyword[findedTableKeyword]['fieldName']

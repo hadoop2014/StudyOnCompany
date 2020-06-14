@@ -70,24 +70,31 @@ class interpretAccounting(interpretBase):
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional TIME optional UNIT optional '''
             print("search",p[1],p[3])
-            self.names['unit'] = p[5].split(':')[-1].split('：')[-1]
-            self.names[p[1]].update({'tableName':p[1],'time':p[3],'unit':self.names['unit'],'currency':self.names['currency']
-                                     ,'company':self.names['company'],'tableBegin':True})
+            unit = p[5].split(':')[-1].split('：')[-1]
+            self.names[p[1]].update({'tableName':p[1],'time':p[3],'unit':unit,'currency':self.names['currency']
+                                     ,'company':self.names['company'],
+                                     'tableBegin':True})
             interpretPrefix = '\n'.join([self.names[p[1]]['tableName'], self.names[p[1]]['company'],
                                          self.names[p[1]]['time'], self.names[p[1]]['unit']]) + '\n'
             if self.names[p[1]]['tableEnd'] == False:
+                self.names[p[1]].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
+                                        ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
+                                        ,'报告类型':self.names['报告类型']})
                 self.docParser._merge_table(self.names[p[1]],interpretPrefix)
             print(self.names[p[1]])
 
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT optional '''
             print("search",p[1],p[3])
-            self.names['unit'] = p[3].split(':')[-1].split('：')[-1]
-            self.names[p[1]].update({'tableName':p[1],'unit':self.names['unit'],'currency':self.names['currency']
+            unit = p[3].split(':')[-1].split('：')[-1]
+            self.names[p[1]].update({'tableName':p[1],'unit':unit,'currency':self.names['currency']
                                 ,'tableBegin':True})
             interpretPrefix = '\n'.join([self.names[p[1]]['tableName'], self.names[p[1]]['unit'],
                                          self.names[p[1]]['currency']]) + '\n'
             if self.names[p[1]]['tableEnd'] == False:
+                self.names[p[1]].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
+                                        ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
+                                        ,'报告类型':self.names['报告类型']})
                 self.docParser._merge_table(self.names[p[1]],interpretPrefix)
             print(self.names[p[1]])
 
@@ -107,14 +114,23 @@ class interpretAccounting(interpretBase):
 
         def p_fetchdata_title(p):
             '''fetchdata : COMPANY TIME UNIT '''
-            self.names.update({'company':p[1]})
-            self.names.update({'title':p[2]+p[3]})
-            print('fetchdata %s %s'%(self.names['company'],self.names['title']))
+            self.names.update({'公司名称':p[1]})
+            self.names.update({'报告时间':p[2]})
+            self.names.update({'报告类型':p[3]})
+            print('fetchdata title %s %s%s'%(self.names['公司名称'],self.names['报告时间'],self.names['报告类型']))
+
+        def p_fetchdata_criticaldouble(p):
+            '''fetchdata : CRITICAL DISCARD CRITICAL term
+                         | CRITICAL term CRITICAL DISCARD '''
+            self.names.update({self.criticalAlias[p[1]]:p[2]})
+            self.names.update({self.criticalAlias[p[3]]:p[4]})
+            print('critical',p[1],'->',self.criticalAlias[p[1]],p[2],p[3],'->',self.criticalAlias[p[3]],p[4])
 
         def p_fetchdata_critical(p):
-            '''fetchdata : CRITICAL term'''
-            self.names.update({p[1]:p[2]})
-            print('critical',p[1],p[2])
+            '''fetchdata : CRITICAL term '''
+            critical = self.criticalAlias[p[1]]
+            self.names.update({critical:p[2]})
+            print('critical',p[1],'->',critical,p[2])
 
         def p_fetchdata_skipword(p):
             '''fetchdata : COMPANY TIME DISCARD
@@ -122,7 +138,8 @@ class interpretAccounting(interpretBase):
                          | COMPANY PUNCTUATION
                          | COMPANY NUMERIC
                          | COMPANY UNIT
-                         | COMPANY error'''
+                         | COMPANY error
+                         | CRITICAL CRITICAL'''
             p[0] = p[1]
 
         def p_skipword_group(p):
@@ -181,7 +198,7 @@ class interpretAccounting(interpretBase):
             #print('value',p[0],p[1])
 
         def p_optional_optional(p):
-            '''optional : DISCARD optional'''
+            '''optional : DISCARD optional '''
 
         def p_optional(p):
             '''optional :  empty
@@ -210,7 +227,7 @@ class interpretAccounting(interpretBase):
     def doWork(self,docParser,lexer=None,debug=False,tracking=False):
         #千和财报: 71 - 73 合并资产负债表
         for data in docParser:
-            self.parser.parse(docParser._get_text(data).replace(' ',''),lexer=lexer,debug=debug,tracking=tracking)
+            self.parser.parse(docParser._get_text(data),lexer=lexer,debug=debug,tracking=tracking)
 
         '''
         #item = 83,6,120,111,71,149,110,4,38,108,149
@@ -226,10 +243,15 @@ class interpretAccounting(interpretBase):
         docParser._close()
 
     def initialize(self):
-        for tableName in self.tablesName:
-            self.names.update({tableName:{'tableName':'','time':'','unit':'','currency':''
-                                          ,'company':'','table':'','tableBegin':False,'tableEnd':False}})
-            self.names.update({'unit':'','currency':'','company':'','title':''})
+        for tableName in self.tablesNames:
+            self.names.update({tableName:{'tableName':'','time':'','unit':'','currency':'','company':''
+                                          ,'公司名称':'','股票代码':'','股票简称':'','报告时间':'','报告类型':''
+                                          ,'table':'','tableBegin':False,'tableEnd':False}})
+        self.names.update({'unit':'','currency':'','company':'','time':''})
+        for commonField,_ in self.commonFileds.items():
+            self.names.update({commonField:''})
+        for cirtical in self.criticals:
+            self.names.update({self.criticalAlias[cirtical]:''})
 
 def create_object(gConfig,docParser=None):
     interpreter=interpretAccounting(gConfig,docParser)

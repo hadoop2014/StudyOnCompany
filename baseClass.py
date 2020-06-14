@@ -34,9 +34,12 @@ class baseClass():
         self.tokens = self.gConfigJson['tokens']
         self.literals = self.gConfigJson['literals']
         self.ignores = self.gConfigJson['ignores']
+        self.criticals = self.gConfigJson['CRITICAL'].split('|')
+        self.criticalAlias = self.gConfigJson['criticalAlias']
         self.dictTokens = {token:value for token,value in self.gConfigJson.items() if token in self.tokens}
-        self.tablesName = self.gConfigJson['TABLE'].split('|')
-        self.dictTables = {keyword: value for keyword,value in self.gConfigJson.items() if keyword in self.tablesName}
+        self.tablesNames = self.gConfigJson['TABLE'].split('|')
+        self.dictTables = {keyword: value for keyword,value in self.gConfigJson.items() if keyword in self.tablesNames}
+        self.commonFileds = self.gConfigJson['公共表字段定义']
         #识别所有的关键字字符集
 
     def _get_keyword(self,tableKeyword):

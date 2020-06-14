@@ -4,6 +4,7 @@
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserPdf",
     "writeparser": "docparser.docParserExcel",
+    "sqlparser": "docparser.docParserSql",
     "interpreter": "interpreter.interpretAccounting"
   },
   "word": {
@@ -11,6 +12,7 @@
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserWord",
     "writeparser": "docparser.docParserExcel",
+    "sqlparser": "docparser.docParserSql",
     "interpreter": "interpreter.interpretAccounting"
   },
   "excel": {
@@ -18,6 +20,7 @@
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserExcel",
     "writeparser": "docparser.docParserExcel",
+    "sqlparser": "docparser.docParserSql",
     "interpreter": "interpreter.interpretAccounting"
   },
   "sql": {
@@ -25,6 +28,7 @@
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserSql",
     "writeparser": "docparser.docParserExcel",
+    "sqlparser": "docparser.docParserSql",
     "interpreter": "interpreter.interpretAccounting"
   }
 }
