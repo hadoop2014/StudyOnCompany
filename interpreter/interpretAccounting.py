@@ -69,7 +69,7 @@ class interpretAccounting(interpretBase):
 
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional TIME optional UNIT optional '''
-            print("search",p[1],p[3])
+            print("fetchtable ",p[1],p[3])
             unit = p[5].split(':')[-1].split('：')[-1]
             self.names[p[1]].update({'tableName':p[1],'time':p[3],'unit':unit,'currency':self.names['currency']
                                      ,'company':self.names['company'],
@@ -85,7 +85,7 @@ class interpretAccounting(interpretBase):
 
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT optional '''
-            print("search",p[1],p[3])
+            print("fetchtable ",p[1],p[3])
             unit = p[3].split(':')[-1].split('：')[-1]
             self.names[p[1]].update({'tableName':p[1],'unit':unit,'currency':self.names['currency']
                                 ,'tableBegin':True})
@@ -101,16 +101,19 @@ class interpretAccounting(interpretBase):
         def p_fetchtable_skiptime(p):
             '''fetchtable : TABLE optional TIME TIME '''
             #去掉主要会计数据的表头
-            print(p[1])
+            #print(p[1])
+            pass
 
         def p_fetchtable_skipheader(p):
             '''fetchtable : TABLE HEADER '''
             #去掉合并资产负债表项目
-            print(p[1])
+            #print(p[1])
+            pass
 
         def p_fetchtable_skipterm(p):
             '''fetchtable : TABLE term '''
-            print(p[1])
+            #print(p[1])
+            pass
 
         def p_fetchdata_title(p):
             '''fetchdata : COMPANY TIME UNIT '''
@@ -124,13 +127,13 @@ class interpretAccounting(interpretBase):
                          | CRITICAL term CRITICAL DISCARD '''
             self.names.update({self.criticalAlias[p[1]]:p[2]})
             self.names.update({self.criticalAlias[p[3]]:p[4]})
-            print('critical',p[1],'->',self.criticalAlias[p[1]],p[2],p[3],'->',self.criticalAlias[p[3]],p[4])
+            print('fetchdata critical',p[1],'->',self.criticalAlias[p[1]],p[2],p[3],'->',self.criticalAlias[p[3]],p[4])
 
         def p_fetchdata_critical(p):
             '''fetchdata : CRITICAL term '''
             critical = self.criticalAlias[p[1]]
             self.names.update({critical:p[2]})
-            print('critical',p[1],'->',critical,p[2])
+            print('fetchdata critical',p[1],'->',critical,p[2])
 
         def p_fetchdata_skipword(p):
             '''fetchdata : COMPANY TIME DISCARD
@@ -199,6 +202,7 @@ class interpretAccounting(interpretBase):
 
         def p_optional_optional(p):
             '''optional : DISCARD optional '''
+            pass
 
         def p_optional(p):
             '''optional :  empty
