@@ -11,6 +11,7 @@ import pandas as pd
 class docParserExcel(docParserBase):
     def __init__(self,gConfig,writeParser):
         super(docParserExcel,self).__init__(gConfig)
+        self.targetFile = os.path.join(self.working_directory,'.'.join([self.sourceFile.split('/')[-1].split('.')[0],'.xlsx']))
         self.writeparser = writeParser
 
     def writeToStore(self, dataFrame, tableName):

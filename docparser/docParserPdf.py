@@ -49,10 +49,11 @@ class docParserPdf(docParserBase):
         self.interpretPrefix = interpretPrefix
         if dictTable['tableBegin'] == True and dictTable['tableEnd'] == True:
             self.interpretPrefix = ''
-            #dataframe = pd.DataFrame(savedTable[1:], columns=savedTable[0], index=None)  # 以第一行为列变量
+            dataframe = pd.DataFrame(savedTable[1:], columns=savedTable[0], index=None)  # 以第一行为列变量
+            self._write_table(tableName,dataframe)
             dataframe = pd.DataFrame(savedTable)
             #dataframe前面插入公共字段
-            #dataframe = dataframe.stack()
+            dataframe = dataframe.T
             header = dataframe.iloc[0]
             for index,(commonFiled,_) in enumerate(self.commonFileds.items()):
                 #dataframe.loc[index] = [commonFiled,*[dictTable[commonFiled]]*(len(savedTable[0])-1)]
@@ -61,7 +62,7 @@ class docParserPdf(docParserBase):
                     #dataframe.insert(index,commonFiled,[*[dictTable[commonFiled]]*(len(savedTable[0])-1)])
                 #dataframe.insert(index,)
             dataframe = header.append(dataframe.iloc[1:])
-            self._write_table(tableName,dataframe)
+            #self._write_table(tableName,dataframe)
 
         dictTable.update({'table':savedTable})
         return dictTable

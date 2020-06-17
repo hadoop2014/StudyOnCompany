@@ -147,7 +147,9 @@ class interpretAccounting(interpretBase):
 
         def p_skipword_group(p):
             '''skipword : '(' skipword ')'
-                        | '（' skipword '）' '''
+                        | '(' skipword '）'
+                        | '（' skipword '）'
+                        | '（' skipword ')' '''
             p[0] = p[2]
 
         def p_skipword(p):
@@ -161,7 +163,9 @@ class interpretAccounting(interpretBase):
 
         def p_useless_reduce(p):
             '''useless : '(' useless ')'
-                       |  '（' useless '）'
+                       | '(' useless '）'
+                       | '（' useless '）'
+                       | '（' useless ')'
                        | '-' useless '''
             p[0] = p[1]
 
@@ -176,7 +180,8 @@ class interpretAccounting(interpretBase):
                        | UNIT
                        | CURRENCY
                        | '-'
-                       | '%' '''
+                       | '%'
+                       | '％' '''
             #print('useless ',p[1])
 
         def p_term_group(p):
@@ -187,7 +192,8 @@ class interpretAccounting(interpretBase):
             #print('uminus',p[0])
 
         def p_term_percentage(p):
-            '''term : NUMERIC '%' '''
+            '''term : NUMERIC '%'
+                    | NUMERIC '％' '''
             p[0] = round(float(p[1]) * 0.01,4)
             #print('percentage',p[0])
 
@@ -229,21 +235,9 @@ class interpretAccounting(interpretBase):
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
     def doWork(self,docParser,lexer=None,debug=False,tracking=False):
-        #千和财报: 71 - 73 合并资产负债表
         for data in docParser:
             self.parser.parse(docParser._get_text(data),lexer=lexer,debug=debug,tracking=tracking)
 
-        '''
-        #item = 83,6,120,111,71,149,110,4,38,108,149
-        item = 38
-        data = docParser._get_item(item)
-        text = docParser._get_text(data)
-        print(text)
-        self.lexer.input(text)
-        for token in self.lexer:
-            print(token)
-        self.parser.parse(text,lexer=self.lexer,debug=True)
-        '''
         docParser._close()
 
     def initialize(self):
