@@ -26,25 +26,22 @@ def parseStart(gConfig,docformat,unittestIsOn):
     docParse(parser,interpreter,docformat, gConfig)
 
 def parserManager(docformat,gConfig):
-    module = __import__(check_book[docformat]['writeparser'],
-                        fromlist=(check_book[docformat]['writeparser'].split('.')[-1]))
-    writeParser = getattr(module,'create_object')(gConfig=gConfig)
+    module = __import__(check_book[docformat]['excelparser'],
+                        fromlist=(check_book[docformat]['excelparser'].split('.')[-1]))
+    excelParser = getattr(module,'create_object')(gConfig=gConfig)
 
     module = __import__(check_book[docformat]['sqlparser'],
-                        fromlist=(check_book[docformat]['docparser'].split('.')[-1]))
+                        fromlist=(check_book[docformat]['sqlparser'].split('.')[-1]))
     sqlParser = getattr(module,'create_object')(gConfig)
 
     module = __import__(check_book[docformat]['docparser'],
                         fromlist=(check_book[docformat]['docparser'].split('.')[-1]))
-    docParser = getattr(module,'create_object')(gConfig,writeParser)
-    #docParser = getattr(module, 'create_object')(gConfig, sqlParser)
+    docParser = getattr(module,'create_object')(gConfig)
 
     module = __import__(check_book[docformat]['interpreter'],
                         fromlist=(check_book[docformat]['interpreter'].split('.')[-1]))
-    interpreter = getattr(module,'create_object')(gConfig,docParser)
+    interpreter = getattr(module,'create_object')(gConfig,docParser,excelParser,sqlParser)
 
-    #sourceFile = gConfig['sourcefile']
-    #targetFile = gConfig['targetfile']
     return docParser,interpreter#,sourceFile,targetFile
 
 def get_gConfig(docformat,gConfig,unittestIsOn):

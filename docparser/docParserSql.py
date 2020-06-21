@@ -9,6 +9,9 @@ import sqlite3 as sqlite
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
+from pandas.io import sql
+import datetime
 
 Base = declarative_base()
 
@@ -19,8 +22,34 @@ class docParserSql(docParserBase):
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
         self._create_tables()
 
-    def writeToStore(self, dataFrame, tableName):
-        pass
+    def writeToStore(self, dictTable):
+        table = dictTable['table']
+        tableName = dictTable['tableName']
+        dataframe = pd.DataFrame(table[1:],columns=table[0],index=None)
+        isHorizontalTable = self.dictTables[tableName]['horizontalTable']
+        # dataframe前面插入公共字段
+        if not isHorizontalTable:
+            dataframe = dataframe.T
+        #header = pd.DataFrame(dataframe.loc[0]).T
+        countColumns = len(dataframe.columns)
+        for index, (commonFiled, _) in enumerate(self.commonFileds.items()):
+            # dataframe.loc[index] = [commonFiled,*[dictTable[commonFiled]]*(len(savedTable[0])-1)]
+            #if index == 0:
+            #    dataframe.loc[0][0] = commonFiled
+            #else:
+            dataframe.insert(index,column=countColumns,value=[commonFiled,*[dictTable[commonFiled]]*(len(table[0])-1)])
+            countColumns += 1
+        conn = sqlite.connect(self.database)
+        #dataframe = dataframe.T
+        for index,year in enumerate(dataframe[0]):
+            try:
+                year = datetime.datetime.strptime(year.split('年')[0],'%Y').date()
+                if isinstance(year, datetime.date):
+                    sql.write_frame(dataframe.loc[index], name=tableName, con=conn, if_exists='append')
+            except Exception as e:
+                pass
+        conn.commit()
+        conn.close()
 
     def _isTableExist(self,cursor,tableName):
         isTableExist = True

@@ -8,9 +8,11 @@ from interpreter.interpretBaseClass import *
 
 
 class interpretAccounting(interpretBase):
-    def __init__(self,gConfig,docParser):
+    def __init__(self,gConfig,docParser,excelParser,sqlParser):
         super(interpretAccounting,self).__init__(gConfig)
         self.docParser = docParser
+        self.excelParser = excelParser
+        self.sqlParser = sqlParser
         #self.initialize()
         self.interpretDefine()
 
@@ -32,7 +34,6 @@ class interpretAccounting(interpretBase):
         def t_newline(t):
             r'\n+'
             t.lexer.lineno += t.value.count("\n")
-
 
         def t_error(t):
             print("Illegal character '%s'" % t.value[0])
@@ -66,7 +67,6 @@ class interpretAccounting(interpretBase):
                           | skipword '''
             p[0] = p[1]
 
-
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional TIME optional UNIT optional '''
             print("fetchtable ",p[1],p[3])
@@ -81,6 +81,10 @@ class interpretAccounting(interpretBase):
                                         ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
                                         ,'报告类型':self.names['报告类型']})
                 self.docParser._merge_table(self.names[p[1]],interpretPrefix)
+                if self.names[p[1]]['tableEnd'] == True:
+                    self.excelParser.writeToStore(self.names[p[1]])
+                    self.sqlParser.writeToStore(self.names[p[1]])
+
             print(self.names[p[1]])
 
         def p_fetchtable_searchnotime(p):
@@ -96,6 +100,10 @@ class interpretAccounting(interpretBase):
                                         ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
                                         ,'报告类型':self.names['报告类型']})
                 self.docParser._merge_table(self.names[p[1]],interpretPrefix)
+                if self.names[p[1]]['tableEnd'] == True:
+                    self.excelParser.writeToStore(self.names[p[1]])
+                    self.sqlParser.writeToStore(self.names[p[1]])
+
             print(self.names[p[1]])
 
         def p_fetchtable_skiptime(p):
@@ -122,15 +130,17 @@ class interpretAccounting(interpretBase):
             self.names.update({'报告类型':p[3]})
             print('fetchdata title %s %s%s'%(self.names['公司名称'],self.names['报告时间'],self.names['报告类型']))
 
-        def p_fetchdata_criticaldouble(p):
-            '''fetchdata : CRITICAL DISCARD CRITICAL term
-                         | CRITICAL term CRITICAL DISCARD '''
-            self.names.update({self.criticalAlias[p[1]]:p[2]})
-            self.names.update({self.criticalAlias[p[3]]:p[4]})
-            print('fetchdata critical',p[1],'->',self.criticalAlias[p[1]],p[2],p[3],'->',self.criticalAlias[p[3]],p[4])
+        #def p_fetchdata_criticaldouble(p):
+        #    '''fetchdata : CRITICAL DISCARD CRITICAL term
+        #                 | CRITICAL term CRITICAL DISCARD '''
+        #    self.names.update({self.criticalAlias[p[1]]:p[2]})
+        #    self.names.update({self.criticalAlias[p[3]]:p[4]})
+        #    print('fetchdata critical',p[1],'->',self.criticalAlias[p[1]],p[2],p[3],'->',self.criticalAlias[p[3]],p[4])
 
         def p_fetchdata_critical(p):
-            '''fetchdata : CRITICAL term '''
+            '''fetchdata : CRITICAL term fetchdata
+                         | CRITICAL term
+                         | CRITICAL DISCARD '''
             critical = self.criticalAlias[p[1]]
             self.names.update({critical:p[2]})
             print('fetchdata critical',p[1],'->',critical,p[2])
@@ -251,8 +261,8 @@ class interpretAccounting(interpretBase):
         for cirtical in self.criticals:
             self.names.update({self.criticalAlias[cirtical]:''})
 
-def create_object(gConfig,docParser=None):
-    interpreter=interpretAccounting(gConfig,docParser)
+def create_object(gConfig,docParser=None,excelParser=None,sqlParser=None):
+    interpreter=interpretAccounting(gConfig,docParser,excelParser,sqlParser)
     interpreter.initialize()
     return interpreter
 

@@ -9,23 +9,27 @@ from openpyxl import load_workbook,Workbook
 import pandas as pd
 
 class docParserExcel(docParserBase):
-    def __init__(self,gConfig,writeParser):
+    def __init__(self,gConfig):
         super(docParserExcel,self).__init__(gConfig)
         self.targetFile = os.path.join(self.working_directory,'.'.join([self.sourceFile.split('/')[-1].split('.')[0],'.xlsx']))
-        self.writeparser = writeParser
+        self.workbook = Workbook()
 
-    def writeToStore(self, dataFrame, tableName):
+    def writeToStore(self, dictTable):
         # 专门用于写文件
         # assert self.targetFile != "", "target file %s must not be empty" % self.targetFile
+        table = dictTable['table']
+        tableName = dictTable['tableName']
         workbook = load_workbook(self.targetFile)
         if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
             workbook.remove(workbook['Sheet'])  # 删除空工作薄
         writer = pd.ExcelWriter(self.targetFile, engine='openpyxl')
         writer.book = workbook
+        dataFrame = pd.DataFrame(table[1:], columns=table[0], index=None)  # 以第一行为列变量
         dataFrame.to_excel(excel_writer=writer, sheet_name=tableName, index=None)
         # workbook._sheets.insert(0, workbook._sheets.pop())
         writer.save()
 
+    '''
     def adjustExcelStyle(self):
         # 调整excel的样式
         # 设置对齐、线性、边框、字体
@@ -66,6 +70,7 @@ class docParserExcel(docParserBase):
             sheet.column_dimensions[f'{i}'].width = 14
 
         self.workbook.save(filename=self.targetFile)
+    '''
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:
@@ -85,7 +90,7 @@ class docParserExcel(docParserBase):
             self.writer.book = self.workbook
             self.writer.save()  # 生成一个新文件
 
-def create_object(gConfig, writeParser=None):
-    parser=docParserExcel(gConfig,writeParser)
+def create_object(gConfig):
+    parser=docParserExcel(gConfig)
     parser.initialize()
     return parser
