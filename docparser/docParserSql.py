@@ -10,7 +10,8 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
-from pandas.io import sql
+import numpy as np
+#from pandas.io import sql
 import datetime
 
 Base = declarative_base()
@@ -39,17 +40,29 @@ class docParserSql(docParserBase):
             #else:
             dataframe.insert(index,column=countColumns,value=[commonFiled,*[dictTable[commonFiled]]*(len(table[0])-1)])
             countColumns += 1
-        conn = sqlite.connect(self.database)
-        #dataframe = dataframe.T
-        for index,year in enumerate(dataframe[0]):
+        conn = self._get_connect()
+        engine = self._get_engine()
+        dataframe[dataframe.iloc[0]=='']=np.nan
+        dataframe = dataframe.dropna(axis=1)
+        for i,year in enumerate(dataframe.index):
             try:
                 year = datetime.datetime.strptime(year.split('年')[0],'%Y').date()
-                if isinstance(year, datetime.date):
-                    sql.write_frame(dataframe.loc[index], name=tableName, con=conn, if_exists='append')
             except Exception as e:
-                pass
+                print(e)
+            if isinstance(year, datetime.date):
+                #sql.write_frame(dataframe.iloc[index], name=tableName, con=conn, if_exists='append')
+                sql_df = dataframe.iloc[i]
+                sql_df.columns = dataframe.iloc[0].values
+                sql_df.to_sql(name=tableName,con=engine,if_exists='append',index=None)
+                #pd.DataFrame(data=dataframe.iloc[index],index=dataframe.iloc[0]).to_sql(name=tableName,con=engine,if_exists='append',index=None)
         conn.commit()
         conn.close()
+
+    def _get_connect(self):
+        return sqlite.connect(self.database)
+
+    def _get_engine(self):
+        return create_engine(os.path.join('sqlite:///',self.database))
 
     def _isTableExist(self,cursor,tableName):
         isTableExist = True
@@ -67,7 +80,7 @@ class docParserSql(docParserBase):
         return cursor.fetchall()
 
     def _create_tables(self):
-        conn = sqlite.connect(self.database)
+        conn = self._get_connect()
         cursor = conn.cursor()
         allTables = self._fetchAllTables(cursor)
         allTables = list(map(lambda x:x[0],allTables))
