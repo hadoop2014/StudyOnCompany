@@ -26,24 +26,22 @@ class docParserSql(docParserBase):
     def writeToStore(self, dictTable):
         table = dictTable['table']
         tableName = dictTable['tableName']
+        firstFieldHasValue = self.dictTables[tableName]['firstFieldHasValue']
         dataframe = pd.DataFrame(table[1:],columns=table[0],index=None)
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
+        dataframe[dataframe.iloc[:,0].isin([''])] = np.nan
+        dataframe = dataframe.dropna(axis=0)
+        firstFieldValue = dataframe[dataframe.iloc[:,0].isin[str(firstFieldHasValue)]]
         # dataframe前面插入公共字段
         if not isHorizontalTable:
             dataframe = dataframe.T
         #header = pd.DataFrame(dataframe.loc[0]).T
-        countColumns = len(dataframe.columns)
+        countColumns = len(dataframe.columns) + 1
         for index, (commonFiled, _) in enumerate(self.commonFileds.items()):
-            # dataframe.loc[index] = [commonFiled,*[dictTable[commonFiled]]*(len(savedTable[0])-1)]
-            #if index == 0:
-            #    dataframe.loc[0][0] = commonFiled
-            #else:
+
             dataframe.insert(index,column=countColumns,value=[commonFiled,*[dictTable[commonFiled]]*(len(table[0])-1)])
             countColumns += 1
-        conn = self._get_connect()
-        engine = self._get_engine()
-        dataframe[dataframe.iloc[0]=='']=np.nan
-        dataframe = dataframe.dropna(axis=1)
+
         for i,year in enumerate(dataframe.index):
             try:
                 year = datetime.datetime.strptime(year.split('年')[0],'%Y').date()
@@ -51,12 +49,29 @@ class docParserSql(docParserBase):
                 print(e)
             if isinstance(year, datetime.date):
                 #sql.write_frame(dataframe.iloc[index], name=tableName, con=conn, if_exists='append')
-                sql_df = dataframe.iloc[i]
+                sql_df = pd.DataFrame(dataframe.iloc[i]).T
                 sql_df.columns = dataframe.iloc[0].values
-                sql_df.to_sql(name=tableName,con=engine,if_exists='append',index=None)
-                #pd.DataFrame(data=dataframe.iloc[index],index=dataframe.iloc[0]).to_sql(name=tableName,con=engine,if_exists='append',index=None)
+                self.writeToSqlite3(tableName,sql_df)
+
+    def writeToSqlite3(self,tableName,dataFrame):
+        conn = self._get_connect()
+        isRecordExist = self._isRecordExist(tableName,dataFrame)
+        if not isRecordExist:
+            dataFrame.to_sql(name=tableName,con=conn,if_exists='append',index=None)
         conn.commit()
         conn.close()
+
+    def _isRecordExist(self,tableName,dataFrame):
+        conn = self._get_connect()
+        primaryKey = [key for key,value in self.commonFileds.items() if value.find('primary') >= 0]
+        condition = ' and '.join([str(key) + '=\"' + str(dataFrame[key].values[0]) + '\"' for key in primaryKey])
+        sql = 'select count(*) from {} where '.format(tableName) + condition
+        result = conn.execute(sql).fetchall()
+        isRecordExist = False
+        if len(result) > 0:
+            isRecordExist = (result[0][0] > 0)
+        conn.close()
+        return isRecordExist
 
     def _get_connect(self):
         return sqlite.connect(self.database)
