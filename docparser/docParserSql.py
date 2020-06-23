@@ -26,51 +26,78 @@ class docParserSql(docParserBase):
     def writeToStore(self, dictTable):
         table = dictTable['table']
         tableName = dictTable['tableName']
-        firstFieldHasValue = self.dictTables[tableName]['firstFieldHasValue']
         dataframe = pd.DataFrame(table[1:],columns=table[0],index=None)
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
-        dataframe[dataframe.iloc[:,0].isin([''])] = np.nan
+        discardField = self.dictTables[tableName]['discardField']
+        discardHeader = self.dictTables[tableName]['discardHeader']
+        #去掉空字段
+        dataframe[dataframe.iloc[:,0].isin(discardField)] = np.nan
         dataframe = dataframe.dropna(axis=0)
-        firstFieldValue = dataframe[dataframe.iloc[:,0].isin[str(firstFieldHasValue)]]
-        # dataframe前面插入公共字段
         if not isHorizontalTable:
             dataframe = dataframe.T
-        #header = pd.DataFrame(dataframe.loc[0]).T
-        countColumns = len(dataframe.columns) + 1
-        for index, (commonFiled, _) in enumerate(self.commonFileds.items()):
+        #去掉无用的表头
+        dataframe[dataframe.index.isin(discardHeader)] = np.nan
+        dataframe = dataframe.dropna(axis=0)
+        # dataframe前面插入公共字段
+        self._addCommonField(dataframe,dictTable)
 
-            dataframe.insert(index,column=countColumns,value=[commonFiled,*[dictTable[commonFiled]]*(len(table[0])-1)])
-            countColumns += 1
-
-        for i,year in enumerate(dataframe.index):
-            try:
-                year = datetime.datetime.strptime(year.split('年')[0],'%Y').date()
-            except Exception as e:
-                print(e)
-            if isinstance(year, datetime.date):
-                #sql.write_frame(dataframe.iloc[index], name=tableName, con=conn, if_exists='append')
-                sql_df = pd.DataFrame(dataframe.iloc[i]).T
-                sql_df.columns = dataframe.iloc[0].values
-                self.writeToSqlite3(tableName,sql_df)
+        for i in range(1,len(dataframe.index)):
+            sql_df = pd.DataFrame(dataframe.iloc[i]).T
+            sql_df.columns = dataframe.iloc[0].values
+            self.writeToSqlite3(tableName,sql_df)
 
     def writeToSqlite3(self,tableName,dataFrame):
         conn = self._get_connect()
-        isRecordExist = self._isRecordExist(tableName,dataFrame)
+        isRecordExist = self._isRecordExist(conn,tableName,dataFrame)
         if not isRecordExist:
             dataFrame.to_sql(name=tableName,con=conn,if_exists='append',index=None)
-        conn.commit()
+            conn.commit()
         conn.close()
 
-    def _isRecordExist(self,tableName,dataFrame):
-        conn = self._get_connect()
-        primaryKey = [key for key,value in self.commonFileds.items() if value.find('primary') >= 0]
+    def _addCommonField(self,dataFrame,dictTable):
+        #在dataFrame前面插入公共字段
+        tableName = dictTable["tableName"]
+        fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
+        countColumns = len(dataFrame.columns) + 1
+        index = 0
+        for (commonFiled, _) in self.commonFileds.items():
+            if commonFiled == "ID":
+                #跳过ID字段,该字段为数据库自增字段
+                continue
+            if commonFiled == "报告时间":
+                #公共字段为报告时间时,需要特殊处理
+                if fieldFromHeader != "":
+                    #针对分季度财务指标,指标都是同一年的,但是分了四个季度
+                    value =  [commonFiled,*[str(int(dictTable[commonFiled].split('年')[0])) + '年'
+                                       for i in range(len(dataFrame.iloc[:,0])-1)]]
+                else:
+                    value = [commonFiled,*[str(int(dictTable[commonFiled].split('年')[0]) - i) + '年'
+                                       for i in range(len(dataFrame.iloc[:,0])-1)]]
+            else:
+                value = [commonFiled,*[dictTable[commonFiled]]*(len(dataFrame.iloc[:,0])-1)]
+            dataFrame.insert(index,column=countColumns,value=value)
+            countColumns += 1
+            index += 1
+        #在公共字段后插入由表头转换来的字段
+        if fieldFromHeader != "":
+            value = dataFrame.index.values
+            value[0] = fieldFromHeader
+            dataFrame.insert(index,column=countColumns,value=value)
+
+        return dataFrame
+
+    def _isRecordExist(self,conn,tableName,dataFrame):
+        fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
+        primaryKey = [key for key,value in self.commonFileds.items() if value.find('NOT NULL') >= 0]
         condition = ' and '.join([str(key) + '=\"' + str(dataFrame[key].values[0]) + '\"' for key in primaryKey])
         sql = 'select count(*) from {} where '.format(tableName) + condition
+        if fieldFromHeader != "":
+            #对于分季度财务数据,报告时间都是同一年,所以必须通过季度来判断记录是否唯一
+            sql = sql + ' and {} = \"{}\"'.format(fieldFromHeader,dataFrame[fieldFromHeader].values[0])
         result = conn.execute(sql).fetchall()
         isRecordExist = False
         if len(result) > 0:
             isRecordExist = (result[0][0] > 0)
-        conn.close()
         return isRecordExist
 
     def _get_connect(self):
@@ -105,6 +132,10 @@ class docParserSql(docParserBase):
                 # if self._isTableExist(cursor,tableName) == False:
                 for commonFiled, type in self.commonFileds.items():
                     sql = sql + "[%s] %s\n\t\t\t\t\t," % (commonFiled, type)
+                #由表头转换生产的字段
+                fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
+                if fieldFromHeader != "":
+                    sql = sql + "[%s] CHAR(20)\n\t\t\t\t\t,"%fieldFromHeader
                 sql = sql[:-1]  # 去掉最后一个逗号
                 #创建新表
                 for filedName in self.dictTables[tableName]['fieldName']:
