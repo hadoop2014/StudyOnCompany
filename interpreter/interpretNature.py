@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # @Time    : 6/9/2020 5:03 PM
 # @Author  : wu.hao

@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Time    : 12/9/2019 5:03 PM
+# @Author  : wu.hao
+# @File    : docParserPdf.py
+# @Note    : 用于年报,半年报,季报pdf文件的读写
+
 import unittest
 from interpreter import interpretAccounting
 from execute import *
@@ -16,8 +23,8 @@ class MyTestCase(unittest.TestCase):
         if validate_parameter(docformat, self.gConfig) == True:
             parser, interpreter = parserManager(docformat, self.gConfig)
             # 2019年千和味业年报合并资产负债表所在的页数为71,72,73,合并利润表为76,77,78
-            parser._set_dataset(list([92]))
-            docParse(parser, interpreter, docformat, self.gConfig,lexer=None,debug=True,tracking=False)
+            parser._set_dataset(list([0,1,83,84,91,92]))
+            docParse(parser, interpreter, docformat, self.gConfig,lexer=None,debug=False,tracking=False)
         else:
             raise ValueError("(%s %s %s %s) is not supported now!" % (self.gConfig))
         #self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig,docParser=testParser)
