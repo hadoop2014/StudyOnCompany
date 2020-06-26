@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env Python
+# coding=utf-8
 # @Time    : 6/13/2020 5:03 PM
 # @Author  : wu.hao
 # @File    : interpretAnalysis.py

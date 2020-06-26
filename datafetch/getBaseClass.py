@@ -1,3 +1,6 @@
+#!/usr/bin/env Python
+# coding=utf-8
+
 import re
 import os
 import matplotlib.pyplot as plt

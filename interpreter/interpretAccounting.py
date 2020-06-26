@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env Python
+# coding=utf-8
 # @Time    : 5/9/2020 5:03 PM
 # @Author  : wu.hao
 # @File    : interpretAccounting.py

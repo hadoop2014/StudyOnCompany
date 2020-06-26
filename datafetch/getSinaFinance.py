@@ -1,3 +1,5 @@
+#!/usr/bin/env Python
+# coding=utf-8
 #作者：知乎用户
 #链接：https://www.zhihu.com/question/29979949/answer/49553763
 #来源：知乎

@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env Python
+# coding=utf-8
 # coding: utf-8
 # @Time    : 12/9/2019 5:03 PM
 # @Author  : wu.hao
@@ -32,26 +32,18 @@ class docParserSql(docParserBase):
     def writeToStore(self, dictTable):
         table = dictTable['table']
         tableName = dictTable['tableName']
-        table = self._merge_header(table, tableName)
-        #dataframe = pd.DataFrame(table)
+
         dataframe = pd.DataFrame(table[1:],columns=table[0],index=None)
-        isHorizontalTable = self.dictTables[tableName]['horizontalTable']
-        discardField = self.dictTables[tableName]['discardField']
-        discardHeader = self.dictTables[tableName]['discardHeader']
         #针对合并所有者权益表的前三列空表头进行合并
-        #dataframe = self._merge_header(dataframe,tableName)
+        dataframe = self._merge_header(dataframe,tableName)
         #去掉空字段
-        indexDiscardField = dataframe.iloc[:,0].isin(discardField)
-        countDiscardField = indexDiscardField.sum()
-        dataframe.loc[indexDiscardField] = np.nan
-        dataframe = dataframe.dropna(axis=0)
-        if not isHorizontalTable:
-            dataframe = dataframe.T.copy()
-        #去掉无用的表头
-        dataframe.loc[dataframe.index.isin(discardHeader)] = np.nan
-        dataframe = dataframe.dropna(axis=0)
-        # dataframe前面插入公共字段
-        self._add_common_field(dataframe, dictTable, countDiscardField)
+        dataframe,countDiscardField = self._discard_field(dataframe,tableName)
+        #去掉无用的表头;同时对水平表进行转置,把字段名由index转为column
+        dataframe = self._discard_header(dataframe,tableName)
+        #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称
+        dataframe = self._process_field_alias(dataframe,tableName)
+        #dataframe前面插入公共字段
+        dataframe = self._process_common_field(dataframe, dictTable, countDiscardField)
 
         for i in range(1,len(dataframe.index)):
             sql_df = pd.DataFrame(dataframe.iloc[i]).T
@@ -66,6 +58,28 @@ class docParserSql(docParserBase):
             conn.commit()
         conn.close()
 
+    def _discard_header(self,dataFrame,tableName):
+        #去掉无用的表头;同时对水平表进行转置,把字段名由index转为column
+        isHorizontalTable = self.dictTables[tableName]['horizontalTable']
+        discardHeader = self.dictTables[tableName]['discardHeader']
+        if not isHorizontalTable:
+            #同时对水平表进行转置,把字段名由index转为column,便于插入sqlite3数据库
+            dataFrame = dataFrame.T.copy()
+            dataFrame.loc[dataFrame.index.isin(discardHeader)] = np.nan
+            dataFrame = dataFrame.dropna(axis=0).copy()
+        return dataFrame
+
+    def _discard_field(self,dataFrame,tableName):
+        #去掉空字段,针对主要会计数据这张表,需要提出掉其空字段
+        #对于普通股现金分红情况表,则忽略这一过程
+        discardField = self.dictTables[tableName]['discardField']
+        indexDiscardField = dataFrame.iloc[:,0].isin(discardField)
+        countDiscardField = indexDiscardField.sum()
+        dataFrame.loc[indexDiscardField] = np.nan
+        dataFrame = dataFrame.dropna(axis=0).copy()
+        return dataFrame,countDiscardField
+
+    '''
     def _merge_header(self,table,tableName):
         #针对合并所有者权益表的前三空表头进行合并
         #去掉第一行
@@ -102,9 +116,6 @@ class docParserSql(docParserBase):
     '''
     def _merge_header(self,dataFrame,tableName):
         #针对合并所有者权益表的前三空表头进行合并
-        #去掉第一行
-        dataFrame.iloc[0] = np.nan
-        dataFrame = dataFrame.dropna(axis=0).copy()
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
         mergedHeader = None
 
@@ -114,24 +125,23 @@ class docParserSql(docParserBase):
                     break
                 else:
                     if index == 0:
-                        mergedHeader = dataFrame.iloc[index].tolist() #tolist把data
+                        mergedHeader = dataFrame.iloc[index].tolist()
                     else:
-                        mergedHeader = [self.select(field1,field2) for field1,field2 in zip(mergedHeader,dataFrame.iloc[index].tolist())]
+                        mergedHeader = [self.select_header(field1,field2) for field1,field2
+                                        in zip(mergedHeader,dataFrame.iloc[index].tolist())]
                     dataFrame.iloc[index] = np.nan
             if mergedHeader is not None :
-                #pandas的columns不支持中文字符
-                mergedHeader = [field.replace('：','') for field in mergedHeader]
                 dataFrame.columns = mergedHeader
                 dataFrame = dataFrame.dropna(axis=0)
         return dataFrame
-        '''
-    def select(self,x1,x2):
-            if x2 != '':
-                return x2
-            else:
-                return x1
 
-    def _add_common_field(self, dataFrame, dictTable, countDiscardField):
+    def select_header(self,field1, field2):
+        if field2 != '':
+            return field2
+        else:
+            return field1
+
+    def _process_common_field(self, dataFrame, dictTable, countDiscardField):
         #在dataFrame前面插入公共字段
         tableName = dictTable["tableName"]
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
@@ -160,10 +170,26 @@ class docParserSql(docParserBase):
             value = dataFrame.index.values
             value[0] = fieldFromHeader
             dataFrame.insert(index,column=countColumns,value=value)
-
         return dataFrame
 
+    def _process_field_alias(self,dataFrame,tableName):
+        #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称
+        fieldAlias = self.dictTables[tableName]['fieldAlias']
+        fieldAliasKeys = list(self.dictTables[tableName]['fieldAlias'].keys())
+
+        if len(fieldAliasKeys) > 0:
+            fields = dataFrame.iloc[0].values.tolist()
+            fieldsAliased = [self.select(field,fieldAliasKeys,fieldAlias) for field in fields]
+            dataFrame.iloc[0] = fieldsAliased
+        return dataFrame
+
+    def select(self,field,fieldAliasKeys,fieldAlias):
+        if field in fieldAliasKeys:
+            field = fieldAlias[field]
+        return field
+
     def _is_record_exist(self, conn, tableName, dataFrame):
+        #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
         primaryKey = [key for key,value in self.commonFileds.items() if value.find('NOT NULL') >= 0]
         condition = ' and '.join([str(key) + '=\"' + str(dataFrame[key].values[0]) + '\"' for key in primaryKey])
@@ -178,20 +204,24 @@ class docParserSql(docParserBase):
         return isRecordExist
 
     def _get_connect(self):
+        #用于获取数据库连接
         return sqlite.connect(self.database)
 
     def _get_engine(self):
         return create_engine(os.path.join('sqlite:///',self.database))
 
+    '''
     def _is_table_exist(self, cursor, tableName):
         isTableExist = True
-        sql = '''select count(*) from sqlite_master where type = 'table' and name = %s'''%tableName
+        sql = 'select count(*) from sqlite_master where type = 'table' and name = %s'%tableName
         result = cursor.execute(sql)
         if result.getInt(0) == 0 :
             isTableExist = True
         return isTableExist
+    '''
 
     def _fetch_all_tables(self, cursor):
+        #获取数据库中所有的表,用于判断待新建的表是否已经存在
         try:
             cursor.execute("select name from sqlite_master where type='table' order by name")
         except Exception as e:
@@ -199,13 +229,14 @@ class docParserSql(docParserBase):
         return cursor.fetchall()
 
     def _create_tables(self):
+        #用于向Sqlite3数据库中创建新表
         conn = self._get_connect()
         cursor = conn.cursor()
         allTables = self._fetch_all_tables(cursor)
         allTables = list(map(lambda x:x[0],allTables))
         for tableName in self.tablesNames:
             if tableName not in allTables:
-                sql = ''' CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t''' % tableName
+                sql = " CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t" % tableName
                 # if self._isTableExist(cursor,tableName) == False:
                 for commonFiled, type in self.commonFileds.items():
                     sql = sql + "[%s] %s\n\t\t\t\t\t," % (commonFiled, type)
@@ -216,7 +247,7 @@ class docParserSql(docParserBase):
                 sql = sql[:-1]  # 去掉最后一个逗号
                 #创建新表
                 for filedName in self.dictTables[tableName]['fieldName']:
-                    sql = sql + '''\n\t\t\t\t\t,[%s]  NUMERIC'''%filedName
+                    sql = sql + "\n\t\t\t\t\t,[%s]  NUMERIC"%filedName
                 sql = sql + '\n\t\t\t\t\t)'
                 try:
                     conn.execute(sql)
@@ -226,11 +257,22 @@ class docParserSql(docParserBase):
                     # 回滚
                     conn.rollback()
                     print(e,' 创建数据库表%s失败' % tableName)
+
+                #创建索引
+                sql = "CREATE INDEX IF NOT EXISTS [%s索引] on [%s] (\n\t\t\t\t\t"%(tableName,tableName)
+                sql = sql + ", ".join(str(field) for field,value in self.commonFileds.items()
+                                     if value.find('NOT NULL') >= 0)
+                sql = sql + '\n\t\t\t\t\t)'
+                try:
+                    conn.execute(sql)
+                    conn.commit()
+                    print('创建数据库%s索引成功' % (tableName))
+                except Exception as e:
+                    # 回滚
+                    conn.rollback()
+                    print(e,' 创建数据库%s索引失败' % tableName)
         cursor.close()
         conn.close()
-
-    def _write_table(self,tableName,dataframe):
-        pass
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:

@@ -1,3 +1,5 @@
+#!/usr/bin/env Python
+# coding=utf-8
 #本文计划实现对网页财经上的上市公司财务报表中某个特定财务数据的抓取，例如历年的应收票据，全部抓取后存放到excel文件中。
 
 # coding=utf-8

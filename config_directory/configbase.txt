@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env Python
+# coding=utf-8
 
 [strings]
 #该节配置大部分为configbase.txt所特有
@@ -47,5 +47,4 @@ pdfSuffix = pdf
 
 [attrs]
 #描述数据集的参数，只有configbase.txt所特有
-
 

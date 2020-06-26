@@ -1,3 +1,5 @@
+#!/usr/bin/env Python
+# coding=utf-8
 import configparser
 import platform
 import json
