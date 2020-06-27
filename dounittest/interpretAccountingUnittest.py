@@ -45,6 +45,9 @@ class MyTestCase(unittest.TestCase):
         input = input + ' ..' + '  ..................'
         input = input + '（＋，－） -稳富  5114002017043-L'
         input = input + ' \t'
+        input = input + ' 1．不能重分类进损益的其他综合收益'
+        input = input + ' 减：所得税费用'
+        input = input + ' （一）归属母公司所有者的其他综合收益的税后净额'
         #input = input + ' ). 1) 2） 六.31 之 ' +' 五.41（. 3） （前额和 安第几个 dijg）'
         #input = input + ' 司（以下简称“公司”或“本公司”，在包括子公司时统称“本\n集团”） -\n的其他应收'
         self.interpreter.lexer.input(input)
@@ -96,6 +99,14 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'5114002017043',3,314)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(-,'-',3,327)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NAME,'L',3,328)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'1',3,332)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'不能重分类进损益的其他综合收益',3,334)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'减',3,350)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'所得税费用',3,352)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(（,'（',3,358)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'一',3,359)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(）,'）',3,360)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'归属母公司所有者的其他综合收益的税后净额',3,361)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"None")
 
     def run_interpreter_yacc(self,testParser):

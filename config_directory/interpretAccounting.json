@@ -52,10 +52,12 @@
     "fieldName": ["营业收入","归属于上市公司股东的净利润","归属于上市公司股东的扣除非经常性损益的净利润","经营活动产生的现金流量净额"
       ,"归属于上市公司股东的净资产","总资产"],
     "horizontalTable": false,
-    "discardHeader": ["本期比上年同期增减(%)"],
-    "discardField": [""],
+    "headerDiscard": ["本期比上年同期增减(%)"],
+    "fieldDiscard": [""],
     "fieldFromHeader": "",
-    "fieldAlias": {}
+    "fieldAlias": {},
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   },
 
   "合并资产负债表":{
@@ -75,20 +77,20 @@
       ,"专项储备","盈余公积","一般风险准备","未分配利润","归属于母公司所有者权益（或股东权益）合计","少数股东权益","所有者权益（或股东权益）合计"
       ,"负债和所有者权益（或股东权益）总计"],
     "horizontalTable": false,
-    "discardHeader": ["附注"],
-    "discardField": [""],
+    "headerDiscard": ["附注"],
+    "fieldDiscard": [""],
     "fieldFromHeader": "",
     "fieldAlias": {
-      "其中：应收票据": "应收票据",
-      "归属于母公司所有者权益合计": "归属于母公司所有者权益（或股东权益）合计"
-    }
+    },
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   },
 
   "合并利润表": {
     "header": ["项目","附注","本期金额","上期金额"],
     "fieldName": ["一、营业总收入","其中：营业收入","利息收入","已赚保费","手续费及佣金收入","二、营业总成本","其中：营业成本"
       ,"利息支出","手续费及佣金支出","退保金","赔付支出净额","提取保险责任准备金净额","保单红利支出","分保费用","税金及附加","销售费用"
-      ,"管理费用","研发费用","财务费用","其中：利息费用","利息收入1","资产减值损失","加：其他收益","投资收益（损失以“－”号填列）","其中：对联营企业和合营企业的投资收益"
+      ,"管理费用","研发费用","财务费用","其中：利息费用","利息收入1","加：其他收益","投资收益（损失以“－”号填列）","其中：对联营企业和合营企业的投资收益"
       ,"以摊余成本计量的金融资产终止确认收益","汇兑收益（损失以“－”号填列）","净敞口套期收益（损失以“-”号填列）","公允价值变动收益（损失以“－”号填列）"
       ,"信用减值损失（损失以“-”号填列）","资产减值损失（损失以“-”号填列）","资产处置收益（损失以“－”号填列）","三、营业利润（亏损以“－”号填列）"
       ,"加：营业外收入","减：营业外支出","四、利润总额（亏损总额以“－”号填列）","减：所得税费用","五、净利润（净亏损以“－”号填列）","（一）按经营持续性分类"
@@ -101,17 +103,15 @@
       ,"七、综合收益总额","（一）归属于母公司所有者的综合收益总额","（二）归属于少数股东的综合收益总额","八、每股收益：","（一）基本每股收益(元/股)"
       ,"（二）稀释每股收益(元/股)"],
     "horizontalTable": false,
-    "discardHeader": ["附注"],
-    "discardField": [""],
+    "headerDiscard": ["附注"],
+    "fieldDiscard": ["其他"],
     "fieldFromHeader": "",
     "fieldAlias": {
       "提取保险合同准备金净额": "提取保险责任准备金净额",
-      "1.少数股东损益": "2.少数股东损益（净亏损以“-”号填列）",
-      "2.归属于母公司股东的净利润": "1.归属于母公司股东的净利润（净亏损以“-”号填列）",
-      "归属母公司所有者的其他综合收益的税后净额": "（一）归属母公司所有者的其他综合收益的税后净额",
-      "（一）不能重分类进损益的其他综合收益": "1．不能重分类进损益的其他综合收益",
-      "1.重新计量设定受益计划变动额": ""
-    }
+      "现金流量套期损益的有效部分": "现金流量套期储备"
+    },
+    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}",
+    "fieldDuplicate": ["利息收入"]
   },
 
   "合并现金流量表": {
@@ -130,10 +130,15 @@
       ,"筹资活动现金流出小计","筹资活动产生的现金流量净额","四、汇率变动对现金及现金等价物的影响","五、现金及现金等价物净增加额","加：期初现金及现金等价物余额"
       ,"六、期末现金及现金等价物余额"],
     "horizontalTable": false,
-    "discardHeader": ["附注"],
-    "discardField": [""],
+    "headerDiscard": ["附注"],
+    "fieldDiscard": ["处置以公允价值计量且其变动计入当期损益的金融资产净增加额"],
     "fieldFromHeader": "",
-    "fieldAlias": {}
+    "fieldAlias": {
+      "收到再保险业务现金净额": "收到再保业务现金净额",
+      "支付给职工以及为职工支付的现金": "支付给职工及为职工支付的现金"
+    },
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   },
 
   "合并所有者权益变动表": {
@@ -145,10 +150,12 @@
       ,"2．盈余公积转增资本（或股本）","3．盈余公积弥补亏损","4．设定受益计划变动额结转留存收益","5．其他综合收益结转留存收益","6．其他","（五）专项储备","1．本期提取"
       ,"2．本期使用","（六）其他","四、本期期末余额"],
     "horizontalTable": false,
-    "discardHeader": ["全部保留"],
-    "discardField": [""],
+    "headerDiscard": ["全部保留"],
+    "fieldDiscard": [""],
     "fieldFromHeader": "项目",
-    "fieldAlias": {}
+    "fieldAlias": {},
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   },
 
   "现金流量表补充资料": {
@@ -161,20 +168,25 @@
       ,"3．现金及现金等价物净变动情况：","现金的期末余额","减：现金的期初余额","加：现金等价物的期末余额","减：现金等价物的期初余额"
       ,"现金及现金等价物净增加额"],
     "horizontalTable": false,
-    "discardHeader": ["全部保留"],
-    "discardField": [""],
+    "headerDiscard": ["全部保留"],
+    "fieldDiscard": [""],
     "fieldFromHeader": "",
-    "fieldAlias": {}
+    "fieldAlias": {},
+    "#fieldStandardize": "[(1|2|3|4|5|6|7|8|9|0)．]*[\\u4E00-\\u9FA5]{2,}",
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   },
 
   "分季度主要财务": {
     "header": ["第一季度（1-3 月份）","第二季度（4-6 月份）","第三季度（7-9 月份）","第四季度（10-12 月份）"],
     "fieldName": ["营业收入","归属于上市公司股东的净利润","归属于上市公司股东的扣除非经常性损益后的净利润","经营活动产生的现金流量净额"],
     "horizontalTable": false,
-    "discardHeader": ["全部保留"],
-    "discardField": [""],
+    "headerDiscard": ["全部保留"],
+    "fieldDiscard": [""],
     "fieldFromHeader": "季度",
-    "fieldAlias": {}
+    "fieldAlias": {},
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   },
 
   "普通股现金分红情况表": {
@@ -184,10 +196,12 @@
       ,"以其他方式现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比例","现金分红总额（含其他方式）"
       ,"现金分红总额（含其他方式）占合并报表中归属于上市公司普通股股东的净利润的比率"],
     "horizontalTable": true,
-    "discardHeader": ["全部保留"],
-    "discardField": [""],
+    "headerDiscard": ["全部保留"],
+    "fieldDiscard": [""],
     "fieldFromHeader": "",
-    "fieldAlias": {}
+    "fieldAlias": {},
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   },
 
   "#母公司和主要子公司的员工情况": {
@@ -196,10 +210,12 @@
       ,"专业构成","专业构成类别","生产人员","销售人员","技术人员","财务人员","行政人员","合计","教育程度","教育程度类别","硕士及以上"
       ,"大专及本科","高中、中专","初中及以下","合计"],
     "horizontalTable": false,
-    "discardHeader": ["全部保留"],
-    "discardField": [""],
+    "headerDiscard": ["全部保留"],
+    "fieldDiscard": [""],
     "fieldFromHeader": "",
-    "fieldAlias": {}
+    "fieldAlias": {},
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   },
 
   "#研发投入情况": {
@@ -207,10 +223,12 @@
     "fieldName": ["本期费用化研发投入","本期资本化研发投入","研发投入合计","研发投入总额占营业收入比例（%）","公司研发人员的数量"
       ,"研发人员数量占公司总人数的比例（%）","研发投入资本化的比重（%）"],
     "horizontalTable": false,
-    "discardHeader": ["全部保留"],
-    "discardField": [""],
+    "headerDiscard": ["全部保留"],
+    "fieldDiscard": [""],
     "fieldFromHeader": "",
-    "fieldAlias": {}
+    "fieldAlias": {},
+    "fieldStandardize": "",
+    "fieldDuplicate": ""
   }
 
 }
