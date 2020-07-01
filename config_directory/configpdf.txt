@@ -13,4 +13,22 @@ tfdbgIsOn = False
 
 [sets]
 
+[table_settings]
+vertical_strategy: lines
+horizontal_strategy: lines
+#explicit_vertical_lines: []
+#explicit_horizontal_lines": []
+#snap_tolerance: DEFAULT_SNAP_TOLERANCE
+#join_tolerance: DEFAULT_JOIN_TOLERANCE
+#edge_min_length: 3
+#min_words_vertical: DEFAULT_MIN_WORDS_VERTICAL
+#min_words_horizontal: DEFAULT_MIN_WORDS_HORIZONTAL
+#keep_blank_chars: False
+text_tolerance: 3
+text_x_tolerance: 3
+#text_y_tolerance: 3
+#intersection_tolerance: 3
+intersection_x_tolerance: None
+intersection_y_tolerance: None
+
 

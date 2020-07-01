@@ -14,6 +14,7 @@ class docParserPdf(docParserBase):
     def __init__(self,gConfig):
         super(docParserPdf,self).__init__(gConfig)
         self.interpretPrefix = ''
+        self.table_settings = gConfig["table_settings"]
         self._load_data()
 
     def _load_data(self,input=None):
@@ -29,8 +30,47 @@ class docParserPdf(docParserBase):
 
     def _get_tables(self,page = None):
         page = self.__getitem__(self._index-1)
-        page.extract_table()
-        return page.extract_tables()
+        #page.extract_table()
+        '''
+        table_settings = {
+            "vertical_strategy": "lines",
+            "horizontal_strategy": "lines",
+            "explicit_vertical_lines": [],
+            "explicit_horizontal_lines": [],
+            #"snap_tolerance": DEFAULT_SNAP_TOLERANCE,
+            #"join_tolerance": DEFAULT_JOIN_TOLERANCE,
+            #"edge_min_length": 3,
+            #"min_words_vertical": DEFAULT_MIN_WORDS_VERTICAL,
+            #"min_words_horizontal": DEFAULT_MIN_WORDS_HORIZONTAL,
+            #"keep_blank_chars": False,
+            #"text_tolerance": 3,
+            #"text_x_tolerance": 3,
+            #"text_y_tolerance": 3,
+            #"intersection_tolerance": 3,
+            #"intersection_x_tolerance": 3,
+            #"intersection_y_tolerance": 3,
+
+        }
+        '''
+
+        def valueTransfer(key,value):
+            if key not in ["vertical_strategy","horizontal_strategy","explicit_vertical_lines","explicit_horizontal_lines",
+                           "keep_blank_chars","intersection_x_tolerance","intersection_y_tolerance"]:
+                value = int(value)
+            elif key in ["keep_blank_chars"]:
+                value = (value.lower() == "true")
+            elif key in ["intersection_x_tolerance","intersection_y_tolerance"]:
+                if value == "None":
+                    value = None
+                else:
+                    value = int(value)
+            #elif key in ["explicit_vertical_lines","explicit_horizontal_lines"]:
+            #    value = list([value.split('[')[-1].split(']')[0].split(',')])
+            else:
+                value = str(value)
+            return value
+        table_settings = dict([(key,valueTransfer(key,value)) for key,value in self.table_settings.items()])
+        return page.extract_tables(table_settings=table_settings)
 
     def _merge_table(self, dictTable=None,interpretPrefix=''):
         if dictTable is None:

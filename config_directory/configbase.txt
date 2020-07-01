@@ -13,8 +13,11 @@ check_file = checkbook.json
 gConfigJson =
 
 docformat = pdf
-sourcefile = 年报/千禾味业：2019年年度报告.PDF
-#sourcefile = 年报/千禾味业：2018年年度报告.pdf
+source_directory = 年报
+#sourcefile = %(source_directory)s/千禾味业：2019年年度报告.PDF
+sourcefile = %(source_directory)s/千禾味业：2018年年度报告.pdf
+#sourcefile = %(source_directory)s/上峰水泥：2019年年度报告.PDF
+#sourcefile = %(source_directory)s/良信电器：2019年年度报告.PDF
 targetfile = 千禾味业.xlsx
 database = financialdatabase.db
 

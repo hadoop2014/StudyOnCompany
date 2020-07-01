@@ -15,15 +15,28 @@ def get_config(config_file='',config_file_base='config_directory/configbase.txt'
     else:
         parser.read([config_file_base,config_file],encoding='utf-8')
     # get the ints, floats and strings
-    _conf_ints = [(key, int(value)) for key, value in parser.items('ints')]
-    _conf_floats = [(key, float(value)) for key, value in parser.items('floats')]
-    _conf_strings = [(key, str(value)) for key, value in parser.items('strings')]
-    _conf_bools = [(key,parser.getboolean('bools',key)) for key, value in parser.items('bools')]
-    _conf_lists = [(key,eval(str(value))) for key, value in parser.items('lists')]
-    _conf_sets = [(key,list(map(str.strip,str(value).split(',')))) for key, value in parser.items('sets')] #去掉空格
-    _conf_attrs = [(key, int(value)) for key, value in parser.items('attrs')]
+    _conf_ints=_conf_floats=_conf_strings=_conf_bools=_conf_lists=_conf_sets=_conf_attrs=[]
+    _conf_dicts = {}
+    for section in parser.sections():
+        if section == "int":
+            _conf_ints = [(key, int(value)) for key, value in parser.items(section)]
+        elif section == "floats":
+            _conf_floats = [(key, float(value)) for key, value in parser.items(section)]
+        elif section == "strings":
+            _conf_strings = [(key, str(value)) for key, value in parser.items(section)]
+        elif section == "bools":
+            _conf_bools = [(key,parser.getboolean('bools',key)) for key, value in parser.items(section)]
+        elif section == "lists":
+            _conf_lists = [(key,eval(str(value))) for key, value in parser.items(section)]
+        elif section == "sets":
+            _conf_sets = [(key,list(map(str.strip,str(value).split(',')))) for key, value in parser.items(section)] #去掉空格
+        elif section == "attrs":
+            _conf_attrs = [(key, int(value)) for key, value in parser.items('attrs')]
+        else:
+            _conf_dicts = dict({section:dict(parser[section])},**_conf_dicts)
+
     return dict(_conf_ints + _conf_floats + _conf_strings + _conf_bools +
-                _conf_lists + _conf_sets + _conf_attrs)
+                _conf_lists + _conf_sets + _conf_attrs,**_conf_dicts)
 
 def get_config_json(config_file_json = 'config_directory/checkbook.json'):
     assert os.path.exists(config_file_json),"%s is not exist,you must create first!" % config_file_json

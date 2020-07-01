@@ -36,7 +36,10 @@ class docParserSql(docParserBase):
         dataframe = pd.DataFrame(table[1:],columns=table[0],index=None)
 
         #针对合并所有者权益表的前三列空表头进行合并
-        dataframe,countHeaderMerge = self._header_merge(dataframe,tableName)
+        dataframe,countHeaderMerge = self._process_header_merge(dataframe, tableName)
+
+        #把跨多个单元格的表字段名合并成一个
+        #dataframe = self._process_field_merge(dataframe,tableName)
 
         #去掉空字段
         dataframe,countFieldDiscard = self._process_field_discard(dataframe, tableName)
@@ -70,7 +73,7 @@ class docParserSql(docParserBase):
                 conn.commit()
         conn.close()
 
-    def _header_merge(self,dataFrame,tableName):
+    def _process_header_merge(self, dataFrame, tableName):
         #针对合并所有者权益表的前三空表头进行合并
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
         mergedHeader = None
@@ -98,6 +101,10 @@ class docParserSql(docParserBase):
                 dataFrame.columns = mergedHeader
                 dataFrame = dataFrame.dropna(axis=0)
         return dataFrame,countMergeHeader
+
+    def _process_field_merge(self,dataFrame,tableName):
+        standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
+        return dataFrame
 
     def _add_common_field(self, dataFrame, dictTable, countFieldDiscard):
         #在dataFrame前面插入公共字段
@@ -192,19 +199,35 @@ class docParserSql(docParserBase):
         #把表字段进行标准化,把所有的字段名提取为两种模式,如:利息收入,一、营业总收入
         fieldStandardize = self.dictTables[tableName]['fieldStandardize']
         countFieldStandardize = 0
-        def standardize(field):
-            matched = re.search(fieldStandardize,field)
-            if matched is not None:
-                return  matched[0]
-            else:
-                return  np.nan
+        #def standardize(field):
+        #    matched = re.search(fieldStandardize,field)
+        #    if matched is not None:
+        #        return  matched[0]
+        #    else:
+        #        return  np.nan
         if fieldStandardize != "":
-            fields = dataFrame.iloc[0].apply(standardize)
+            #fields = dataFrame.iloc[0].apply(standardize)
+            fields = self._get_standardized_field(dataFrame.iloc[0].tolist(),tableName)
             dataFrame.iloc[0] = fields
             countFieldStandardize = fields.isna().sum()
             dataFrame = dataFrame.dropna(axis = 1).copy()
 
         return dataFrame,countFieldStandardize
+
+    def _get_standardized_field(self,filedList,tableName):
+        #fields = pd.DataFrame(self.dictTables[tableName]['fieldName'])
+        dataFrame = pd.DataFrame(filedList)
+        fieldStandardize = self.dictTables[tableName]['fieldStandardize']
+
+        def standardize(field):
+            matched = re.search(fieldStandardize, field)
+            if matched is not None:
+                return matched[0]
+            else:
+                return np.nan
+
+        fields = dataFrame.apply(standardize)
+        return fields
 
     def _is_record_exist(self, conn, tableName, dataFrame):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
