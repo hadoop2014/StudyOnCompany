@@ -113,24 +113,31 @@ class docParserSql(docParserBase):
         #aliasedFields = self._get_aliased_field(
         #    self._get_standardized_field(dataFrame.iloc[:,0].tolist(),tableName)
         #    ,tableName)
-        standardizedFields.extend(aliasFields)
+        standardizedFields += aliasFields
         for index,field in enumerate(self._get_standardized_field(dataFrame.iloc[:,0].tolist(),tableName)):
             if field in standardizedFields:
+                if mergedRow is not None and index > 1:
+                    mergedRow[0] = mergedField
+                    dataFrame.iloc[index - 1] = mergedRow
                 mergedField = ''
                 mergedRow = None
                 continue
             else:
                 if mergedRow is None:
                     mergedRow = dataFrame.iloc[index].tolist()
+                    dataFrame.iloc[index] = np.nan
                     if self._is_field_valid(field):
                         mergedField = field
                 else:
                     mergedRow = self._get_merged_field(dataFrame.iloc[index].tolist(),mergedRow)
+                    dataFrame.iloc[index] = np.nan
                     if self._is_field_valid(field):
                         mergedField += field
                     if mergedField in standardizedFields:
                         mergedRow[0] = mergedField
                         dataFrame.iloc[index] = mergedRow
+                        mergedRow = None
+                        mergedField = ''
 
         return dataFrame
 
