@@ -70,7 +70,8 @@ class docParserPdf(docParserBase):
                 value = str(value)
             return value
         table_settings = dict([(key,valueTransfer(key,value)) for key,value in self.table_settings.items()])
-        return page.extract_tables(table_settings=table_settings)
+        #return page.extract_tables(table_settings=table_settings)
+        return page.extract_tables()
 
     def _merge_table(self, dictTable=None,interpretPrefix=''):
         if dictTable is None:
@@ -95,7 +96,9 @@ class docParserPdf(docParserBase):
     def _process_table(self,tables,tableName):
         lastFiledName = self.dictTables[tableName]['fieldName'][-1] #获取表的最后一个字段
         firstHeaderName = self.dictTables[tableName]['header'][0]
-        processedTable = [list(map(lambda x:str(x).replace('\n','').replace('None',''),row))
+        #processedTable = [list(map(lambda x:str(x).replace('\n','').replace('None',''),row))
+        #                  for row in tables[-1]]
+        processedTable = [list(map(lambda x:str(x).replace('\n',''),row))
                           for row in tables[-1]]
         isTableEnd = (lastFiledName == processedTable[-1][0])
         if isTableEnd == True or len(tables) == 1:
@@ -103,7 +106,8 @@ class docParserPdf(docParserBase):
             return processedTable, isTableEnd
 
         for table in tables:
-            table = [list(map(lambda x: str(x).replace('\n','').replace('None',''),row)) for row in table]
+            #table = [list(map(lambda x: str(x).replace('\n','').replace('None',''),row)) for row in table]
+            table = [list(map(lambda x: str(x).replace('\n', ''), row)) for row in table]
             isTableEnd = (lastFiledName == table[-1][0])
             isTableStart = (firstHeaderName == table[0][0])
             if isTableStart == True:

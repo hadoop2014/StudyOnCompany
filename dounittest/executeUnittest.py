@@ -12,7 +12,7 @@ from execute import *
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         self.assertEqual(True, True)
-        self.gConfig = getConfig.get_config('config_directory/configbase.txt')
+        self.gConfig = getConfig.get_config('config_directory/configbase.txt','config_directory/configpdf.txt')
         gConfigJson = getConfig.get_config_json('config_directory/interpretAccounting.json')
         self.gConfig.update({"gConfigJson": gConfigJson})
         self.run_interpreter_yacc()

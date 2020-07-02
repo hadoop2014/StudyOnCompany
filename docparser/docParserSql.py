@@ -36,19 +36,20 @@ class docParserSql(docParserBase):
         dataframe = pd.DataFrame(table[1:],columns=table[0],index=None)
 
         #针对合并所有者权益表的前三列空表头进行合并
-        dataframe,countHeaderMerge = self._process_header_merge(dataframe, tableName)
+        dataframe = self._process_header_merge(dataframe, tableName)
+        countTotalFields = len(dataframe.index.values)
 
         #把跨多个单元格的表字段名合并成一个
-        #dataframe = self._process_field_merge(dataframe,tableName)
+        dataframe = self._process_field_merge(dataframe,tableName)
 
         #去掉空字段
-        dataframe,countFieldDiscard = self._process_field_discard(dataframe, tableName)
+        dataframe = self._process_field_discard(dataframe, tableName)
 
         #去掉无用的表头;同时对水平表进行转置,把字段名由index转为column
         dataframe = self._process_header_discard(dataframe, tableName)
 
         #把表字段名进行标准化,标准化之后再去重复
-        dataframe,countFieldStandardize = self._process_field_standardize(dataframe,tableName)
+        dataframe = self._process_field_standardize(dataframe,tableName)
 
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称,统一后再去重
         dataframe = self._process_field_alias(dataframe,tableName)
@@ -57,7 +58,7 @@ class docParserSql(docParserBase):
         dataframe = self._process_field_duplicate(dataframe,tableName)
 
         #dataframe前面插入公共字段
-        dataframe = self._add_common_field(dataframe, dictTable, countFieldDiscard + countHeaderMerge + countFieldStandardize)
+        dataframe = self._add_common_field(dataframe, dictTable, countTotalFields)#countFieldDiscard + countHeaderMerge + countFieldStandardize)
 
         #把dataframe写入sqlite3数据库
         self._write_to_sqlite3(tableName, dataframe)
@@ -77,33 +78,60 @@ class docParserSql(docParserBase):
         #针对合并所有者权益表的前三空表头进行合并
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
         mergedHeader = None
-        countMergeHeader = 0
+        #countMergeHeader = 0
 
-        def select_header(field1, field2):
-            if field2 != '':
-                return field2
-            else:
-                return field1
+        #def select_header(field1, field2):
+        #    if field2 != '':
+        #        return field2
+        #    else:
+        #        return field1
 
         if fieldFromHeader != "":
             for index,field in enumerate(dataFrame.iloc[:,0]):
-                if field != '':
+                #if field != '':
+                if self._is_field_valid(field):
                     break
                 else:
                     if index == 0:
                         mergedHeader = dataFrame.iloc[index].tolist()
                     else:
-                        mergedHeader = [select_header(field1,field2) for field1,field2
-                                        in zip(mergedHeader,dataFrame.iloc[index].tolist())]
+                        #mergedHeader = [select_header(field1,field2) for field1,field2
+                        #                in zip(mergedHeader,dataFrame.iloc[index].tolist())]
+                        mergedHeader = self._get_merged_field(dataFrame.iloc[index].tolist(),mergedHeader)
                     dataFrame.iloc[index] = np.nan
-                    countMergeHeader += 1
+                    #countMergeHeader += 1
             if mergedHeader is not None :
                 dataFrame.columns = mergedHeader
                 dataFrame = dataFrame.dropna(axis=0)
-        return dataFrame,countMergeHeader
+        return dataFrame#,countMergeHeader
 
     def _process_field_merge(self,dataFrame,tableName):
         standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
+        aliasFields = list(self.dictTables[tableName]['fieldAlias'].keys())
+        mergedField = ''
+        mergedRow = None
+        #aliasedFields = self._get_aliased_field(
+        #    self._get_standardized_field(dataFrame.iloc[:,0].tolist(),tableName)
+        #    ,tableName)
+        standardizedFields.extend(aliasFields)
+        for index,field in enumerate(self._get_standardized_field(dataFrame.iloc[:,0].tolist(),tableName)):
+            if field in standardizedFields:
+                mergedField = ''
+                mergedRow = None
+                continue
+            else:
+                if mergedRow is None:
+                    mergedRow = dataFrame.iloc[index].tolist()
+                    if self._is_field_valid(field):
+                        mergedField = field
+                else:
+                    mergedRow = self._get_merged_field(dataFrame.iloc[index].tolist(),mergedRow)
+                    if self._is_field_valid(field):
+                        mergedField += field
+                    if mergedField in standardizedFields:
+                        mergedRow[0] = mergedField
+                        dataFrame.iloc[index] = mergedRow
+
         return dataFrame
 
     def _add_common_field(self, dataFrame, dictTable, countFieldDiscard):
@@ -133,7 +161,6 @@ class docParserSql(docParserBase):
         dataFrame = self._process_field_from_header(dataFrame,fieldFromHeader,index,countColumns)
         return dataFrame
 
-
     def _process_field_from_header(self,dataFrame,fieldFromHeader,index,countColumns):
         #在公共字段后插入由表头转换来的字段
         if fieldFromHeader != "":
@@ -144,19 +171,19 @@ class docParserSql(docParserBase):
 
     def _process_field_duplicate(self,dataFrame,tableName):
         # 重复字段处理,放在字段标准化之后
-        fieldDuplicate = self.dictTables[tableName]['fieldDuplicate']
-        dictFieldDuplicate = {}
-        def duplicate(fieldName):
-            if fieldName in fieldDuplicate:
-                dictFieldDuplicate.update({fieldName: dictFieldDuplicate[fieldName] + 1})
-                if dictFieldDuplicate[fieldName] > 1:
-                    fieldName = fieldName + str(dictFieldDuplicate[fieldName] - 1)
-            return fieldName
+        #fieldDuplicate = self.dictTables[tableName]['fieldDuplicate']
+        #dictFieldDuplicate = {}
+        #def duplicate(fieldName):
+        #    if fieldName in fieldDuplicate:
+        #        dictFieldDuplicate.update({fieldName: dictFieldDuplicate[fieldName] + 1})
+        #        if dictFieldDuplicate[fieldName] > 1:
+        #            fieldName = fieldName + str(dictFieldDuplicate[fieldName] - 1)
+        #    return fieldName
 
-        if fieldDuplicate != "":
-            dictFieldDuplicate = dict(zip(fieldDuplicate, [0] * len(fieldDuplicate)))
-            fields = dataFrame.iloc[0].apply(duplicate)
-            dataFrame.iloc[0] = fields
+        #if fieldDuplicate != "":
+        duplicatedFields = self._get_duplicated_field(dataFrame.iloc[0].tolist(),tableName)#dict(zip(fieldDuplicate, [0] * len(fieldDuplicate)))
+        #fields = dataFrame.iloc[0].apply(duplicate)
+        dataFrame.iloc[0] = duplicatedFields
         return dataFrame
 
     def _process_header_discard(self, dataFrame, tableName):
@@ -175,13 +202,47 @@ class docParserSql(docParserBase):
         #对于普通股现金分红情况表,则忽略这一过程
         fieldDiscard = self.dictTables[tableName]['fieldDiscard']
         indexDiscardField = dataFrame.iloc[:,0].isin(fieldDiscard)
-        countDiscardField = indexDiscardField.sum()
+        #countDiscardField = indexDiscardField.sum()
         dataFrame.loc[indexDiscardField] = np.nan
         dataFrame = dataFrame.dropna(axis=0).copy()
-        return dataFrame,countDiscardField
+        return dataFrame#,countDiscardField
 
     def _process_field_alias(self,dataFrame,tableName):
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称
+        #fieldAlias = self.dictTables[tableName]['fieldAlias']
+        #fieldAliasKeys = list(self.dictTables[tableName]['fieldAlias'].keys())
+
+        #def alias(field):
+        #    if field in fieldAliasKeys:
+        #        field = fieldAlias[field]
+        #    return field
+
+        #if len(fieldAliasKeys) > 0:
+        aliasedFields = self._get_aliased_field(dataFrame.iloc[0].tolist(),tableName)
+        dataFrame.iloc[0] = aliasedFields
+        return dataFrame
+
+    def _process_field_standardize(self,dataFrame,tableName):
+        #把表字段进行标准化,把所有的字段名提取为两种模式,如:利息收入,一、营业总收入
+        #fieldStandardize = self.dictTables[tableName]['fieldStandardize']
+        #countFieldStandardize = 0
+        #def standardize(field):
+        #    matched = re.search(fieldStandardize,field)
+        #    if matched is not None:
+        #        return  matched[0]
+        #    else:
+        #        return  np.nan
+        #if fieldStandardize != "":
+            #fields = dataFrame.iloc[0].apply(standardize)
+        standardizedFields = self._get_standardized_field(dataFrame.iloc[0].tolist(),tableName)
+        dataFrame.iloc[0] = standardizedFields
+        #countFieldStandardize = dataFrame.iloc[0].isna().sum()
+        dataFrame = dataFrame.dropna(axis = 1).copy()
+
+        return dataFrame#,countFieldStandardize
+
+    def _get_aliased_field(self,fieldList,tableName):
+        aliasedField = fieldList
         fieldAlias = self.dictTables[tableName]['fieldAlias']
         fieldAliasKeys = list(self.dictTables[tableName]['fieldAlias'].keys())
 
@@ -191,33 +252,36 @@ class docParserSql(docParserBase):
             return field
 
         if len(fieldAliasKeys) > 0:
-            fields = dataFrame.iloc[0].apply(alias)
-            dataFrame.iloc[0] = fields
-        return dataFrame
+            aliasedField = [alias(field) for field in fieldList]
+        return aliasedField
 
-    def _process_field_standardize(self,dataFrame,tableName):
-        #把表字段进行标准化,把所有的字段名提取为两种模式,如:利息收入,一、营业总收入
-        fieldStandardize = self.dictTables[tableName]['fieldStandardize']
-        countFieldStandardize = 0
-        #def standardize(field):
-        #    matched = re.search(fieldStandardize,field)
-        #    if matched is not None:
-        #        return  matched[0]
-        #    else:
-        #        return  np.nan
-        if fieldStandardize != "":
-            #fields = dataFrame.iloc[0].apply(standardize)
-            fields = self._get_standardized_field(dataFrame.iloc[0].tolist(),tableName)
-            dataFrame.iloc[0] = fields
-            countFieldStandardize = fields.isna().sum()
-            dataFrame = dataFrame.dropna(axis = 1).copy()
+    def _get_merged_field(self,fieldList,fieldMerge):
+        def merge(field1, field2):
+            if self._is_field_valid(field2):
+                return field2
+            else:
+                return field1
 
-        return dataFrame,countFieldStandardize
+        mergedField = [merge(field1,field2) for field1,field2 in zip(fieldMerge,fieldList)]
+        return mergedField
 
-    def _get_standardized_field(self,filedList,tableName):
+    def _get_duplicated_field(self,fieldList,tableName):
+        #duplicatedField = fieldList
+        dictFieldDuplicate = dict(zip(fieldList,[0]*len(fieldList)))
+        def duplicate(fieldName):
+            dictFieldDuplicate.update({fieldName:dictFieldDuplicate[fieldName] + 1})
+            if dictFieldDuplicate[fieldName] > 1:
+                fieldName += str(dictFieldDuplicate[fieldName] - 1)
+            return fieldName
+
+        duplicatedField = [duplicate(fieldName) for fieldName in fieldList]
+        return duplicatedField
+
+    def _get_standardized_field(self,fieldList,tableName):
         #fields = pd.DataFrame(self.dictTables[tableName]['fieldName'])
-        dataFrame = pd.DataFrame(filedList)
+        #dataFrame = pd.DataFrame(fieldList)
         fieldStandardize = self.dictTables[tableName]['fieldStandardize']
+        standardizedField = fieldList
 
         def standardize(field):
             matched = re.search(fieldStandardize, field)
@@ -226,8 +290,17 @@ class docParserSql(docParserBase):
             else:
                 return np.nan
 
-        fields = dataFrame.apply(standardize)
-        return fields
+        if fieldStandardize != "":
+            standardizedField = [standardize(field) for field in fieldList]
+        #fields = dataFrame.apply(standardize)
+        return standardizedField
+
+    def _is_field_valid(self,field):
+        isFieldValid = False
+        if isinstance(field,str):
+            if field not in self.valueNone:
+                isFieldValid = True
+        return isFieldValid
 
     def _is_record_exist(self, conn, tableName, dataFrame):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
@@ -288,32 +361,35 @@ class docParserSql(docParserBase):
                     sql = sql + "[%s] VARCHAR(20)\n\t\t\t\t\t,"%fieldFromHeader
                 sql = sql[:-1]  # 去掉最后一个逗号
                 #创建新表
-                fieldStandardize = self.dictTables[tableName]['fieldStandardize']
-                fieldDuplicate = self.dictTables[tableName]['fieldDuplicate']
-                dictFieldDuplicate = {}
-                if fieldDuplicate != "":
-                    dictFieldDuplicate = dict(zip(fieldDuplicate,[0]*len(fieldDuplicate)))
-                for fieldName in self.dictTables[tableName]['fieldName']:
-                    if fieldStandardize == "":
-                        sql = sql + "\n\t\t\t\t\t,[%s]  NUMERIC"%fieldName
-                    else:
+                #fieldStandardize = self.dictTables[tableName]['fieldStandardize']
+                #fieldDuplicate = self.dictTables[tableName]['fieldDuplicate']
+                standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
+                duplicatedFields = self._get_duplicated_field(standardizedFields,tableName)
+                #dictFieldDuplicate = {}
+                #if fieldDuplicate != "":
+                #    dictFieldDuplicate = dict(zip(fieldDuplicate,[0]*len(fieldDuplicate)))
+                for fieldName in duplicatedFields:#self.dictTables[tableName]['fieldName']:
+                    #if fieldStandardize == "":
+                    #    sql = sql + "\n\t\t\t\t\t,[%s]  NUMERIC"%fieldName
+                    #else:
                         #对表字段进行标准化,去掉不必要的字符
-                        matched = re.search(fieldStandardize,fieldName)
-                        if matched is not None:
-                            fieldName = matched[0]
-                        else:
-                            fieldName = ""
+                    #    matched = re.search(fieldStandardize,fieldName)
+                    #    if matched is not None:
+                    #        fieldName = matched[0]
+                    #    else:
+                    #        fieldName = ""
 
                         # 重复字段处理,放在字段标准化之后
-                        if fieldDuplicate != "":
-                            if fieldName in fieldDuplicate:
-                                dictFieldDuplicate.update({fieldName: dictFieldDuplicate[fieldName] + 1})
-                                if dictFieldDuplicate[fieldName] > 1:
-                                    fieldName = fieldName + str(dictFieldDuplicate[fieldName] - 1)
+                     #   if fieldDuplicate != "":
+                     #       if fieldName in fieldDuplicate:
+                     #           dictFieldDuplicate.update({fieldName: dictFieldDuplicate[fieldName] + 1})
+                     #           if dictFieldDuplicate[fieldName] > 1:
+                     #               fieldName = fieldName + str(dictFieldDuplicate[fieldName] - 1)
 
-                        #合并利率表中有:（9）其他,模式匹配后为空,需要剔除掉
-                        if fieldName != "":
-                            sql = sql + "\n\t\t\t\t\t,[%s]  NUMERIC"%fieldName
+                     #合并利率表中有:（9）其他,模式匹配后为空,需要剔除掉
+                     #if fieldName != "":
+                    if fieldName is not np.nan:
+                        sql = sql + "\n\t\t\t\t\t,[%s]  NUMERIC"%fieldName
                 sql = sql + '\n\t\t\t\t\t)'
                 try:
                     conn.execute(sql)

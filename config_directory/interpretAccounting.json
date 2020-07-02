@@ -59,7 +59,7 @@
     "fieldFromHeader": "",
     "fieldAlias": {},
     "fieldStandardize": "",
-    "fieldDuplicate": ""
+    "#fieldDuplicate": ""
   },
 
   "合并资产负债表":{
@@ -85,14 +85,14 @@
     "fieldAlias": {
     },
     "fieldStandardize": "",
-    "fieldDuplicate": ""
+    "#fieldDuplicate": ""
   },
 
   "合并利润表": {
     "header": ["项目","附注","本期金额","上期金额"],
     "fieldName": ["一、营业总收入","其中：营业收入","利息收入","已赚保费","手续费及佣金收入","二、营业总成本","其中：营业成本"
       ,"利息支出","手续费及佣金支出","退保金","赔付支出净额","提取保险责任准备金净额","保单红利支出","分保费用","税金及附加","销售费用"
-      ,"管理费用","研发费用","财务费用","其中：利息费用","利息收入1","加：其他收益","投资收益（损失以“－”号填列）","其中：对联营企业和合营企业的投资收益"
+      ,"管理费用","研发费用","财务费用","其中：利息费用","利息收入","加：其他收益","投资收益（损失以“－”号填列）","其中：对联营企业和合营企业的投资收益"
       ,"以摊余成本计量的金融资产终止确认收益","汇兑收益（损失以“－”号填列）","净敞口套期收益（损失以“-”号填列）","公允价值变动收益（损失以“－”号填列）"
       ,"信用减值损失（损失以“-”号填列）","资产减值损失（损失以“-”号填列）","资产处置收益（损失以“－”号填列）","三、营业利润（亏损以“－”号填列）"
       ,"加：营业外收入","减：营业外支出","四、利润总额（亏损总额以“－”号填列）","减：所得税费用","五、净利润（净亏损以“－”号填列）","（一）按经营持续性分类"
@@ -113,7 +113,7 @@
       "现金流量套期损益的有效部分": "现金流量套期储备"
     },
     "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}",
-    "fieldDuplicate": ["利息收入"]
+    "#fieldDuplicate": ["利息收入"]
   },
 
   "合并现金流量表": {
@@ -140,7 +140,7 @@
       "支付给职工以及为职工支付的现金": "支付给职工及为职工支付的现金"
     },
     "fieldStandardize": "",
-    "fieldDuplicate": ""
+    "#fieldDuplicate": ""
   },
 
   "合并所有者权益变动表": {
@@ -156,8 +156,8 @@
     "fieldDiscard": ["3．对所有者（或股东）的","分配"],
     "fieldFromHeader": "项目",
     "fieldAlias": {},
-    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}|其他",
-    "fieldDuplicate": ["其他"]
+    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}(（.*）)?(?(1)([\\u4E00-\\u9FA5]+))|其他",
+    "#fieldDuplicate": ["其他"]
   },
 
   "现金流量表补充资料": {
@@ -176,7 +176,7 @@
     "fieldAlias": {},
     "#fieldStandardize": "[(1|2|3|4|5|6|7|8|9|0)．]*[\\u4E00-\\u9FA5]{2,}",
     "fieldStandardize": "",
-    "fieldDuplicate": ""
+    "#fieldDuplicate": ""
   },
 
   "分季度主要财务": {
@@ -186,9 +186,11 @@
     "headerDiscard": ["全部保留"],
     "fieldDiscard": [""],
     "fieldFromHeader": "季度",
-    "fieldAlias": {},
+    "fieldAlias": {
+      "归属于上市公司股东的扣除非经常性损益的净利润": "归属于上市公司股东的扣除非经常性损益后的净利润"
+    },
     "fieldStandardize": "",
-    "fieldDuplicate": ""
+    "#fieldDuplicate": ""
   },
 
   "普通股现金分红情况表": {
@@ -203,7 +205,7 @@
     "fieldFromHeader": "",
     "fieldAlias": {},
     "fieldStandardize": "",
-    "fieldDuplicate": ""
+    "#fieldDuplicate": ""
   },
 
   "#母公司和主要子公司的员工情况": {
@@ -217,7 +219,7 @@
     "fieldFromHeader": "",
     "fieldAlias": {},
     "fieldStandardize": "",
-    "fieldDuplicate": ""
+    "#fieldDuplicate": ""
   },
 
   "#研发投入情况": {
@@ -230,7 +232,7 @@
     "fieldFromHeader": "",
     "fieldAlias": {},
     "fieldStandardize": "",
-    "fieldDuplicate": ""
+    "#fieldDuplicate": ""
   }
 
 }

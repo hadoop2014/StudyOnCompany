@@ -29,7 +29,7 @@ class docParserBase(baseClass):
         self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-
+        self.valueNone = self.gConfig['valueNone'.lower()]
 
     def get_check_book(self):
         check_file = os.path.join(self.gConfig['config_directory'], self.gConfig['check_file'])
