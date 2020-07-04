@@ -1,5 +1,6 @@
 #!/usr/bin/env Python
-# coding=utf-8
+# coding   : utf-8
+
 import unittest
 from interpreter import interpretAccounting
 from execute import *

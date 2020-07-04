@@ -24,13 +24,12 @@ class docParserPdf(docParserBase):
         self._length = len(self._data)
 
     def _get_text(self,page=None):
-        #interpretPrefix用于处理比如 合并资产负债表分布在多个page页面的情况
+        #interpretPrefix用于处理比如合并资产负债表分布在多个page页面的情况
         pageText = self.interpretPrefix + page.extract_text()
         return pageText
 
     def _get_tables(self,page = None):
         page = self.__getitem__(self._index-1)
-        #page.extract_table()
         '''
         table_settings = {
             "vertical_strategy": "lines",
@@ -79,7 +78,8 @@ class docParserPdf(docParserBase):
         savedTable = dictTable['table']
         tableName = dictTable['tableName']
         fetchTables = self._get_tables()
-        processedTable,isTableEnd = self._process_table(fetchTables,tableName)
+        pages = dictTable['pages']
+        processedTable,isTableEnd = self._process_table(fetchTables,tableName,pages)
         dictTable.update({'tableEnd':isTableEnd})
         if isinstance(savedTable, list):
             savedTable.extend(processedTable)
@@ -93,48 +93,65 @@ class docParserPdf(docParserBase):
         dictTable.update({'table':savedTable})
         return dictTable
 
-    def _process_table(self,tables,tableName):
-        lastFiledName = self.dictTables[tableName]['fieldName'][-1] #获取表的最后一个字段
-        firstHeaderName = self.dictTables[tableName]['header'][0]
-        #processedTable = [list(map(lambda x:str(x).replace('\n','').replace('None',''),row))
-        #                  for row in tables[-1]]
+    def _process_table(self,tables,tableName,pages):
+        #firstHeaderName = self.dictTables[tableName]['header'][0]
         processedTable = [list(map(lambda x:str(x).replace('\n',''),row))
                           for row in tables[-1]]
-        #isTableEnd = (lastFiledName == processedTable[-1][0])
         isTableEnd = self._is_table_end(tableName,processedTable[-1][0])
         if isTableEnd == True or len(tables) == 1:
-            processedTable = processedTable
+            #processedTable = processedTable
             return processedTable, isTableEnd
 
-        for table in tables:
-            #table = [list(map(lambda x: str(x).replace('\n','').replace('None',''),row)) for row in table]
+        for index,table in enumerate(tables):
             table = [list(map(lambda x: str(x).replace('\n', ''), row)) for row in table]
-            #isTableEnd = (lastFiledName == table[-1][0])
             isTableEnd = self._is_table_end(tableName,table[-1][0])
-            isTableStart = (firstHeaderName == table[0][0])
+            #isTableStart = (firstHeaderName == table[0][0])
+            isTableStart = self._is_table_start(tableName,table)
             if isTableStart == True:
                 processedTable = table
 
             if isTableEnd == True:
                 processedTable = table
                 break
+            else:
+                #对于合并所所有者权益变动表,对某些情况下因为表尾字段做了拆分,很难通过表尾字段做判断,可以通过下一张表的开头来判断,上一张表的结束.
+                if isTableStart == True:
+                    if len(pages) > 1 and index > 0:
+                        processedTable = tables[index - 1]
+                        isTableEnd = True
+                        break
+
         return processedTable,isTableEnd
+
+    def _is_table_start(self,tableName,table):
+        #针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
+        isTableStart = False
+        firstHeaderName = self.dictTables[tableName]['header'][0]
+        headerList = [row[0] for row in table]
+        for header in headerList:
+            if self._is_field_valid(header):
+                if firstHeaderName == header:
+                    isTableStart = True
+                break
+        return isTableStart
 
     def _is_table_end(self,tableName,lastField):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
+        #针对合并所有者权益表,表尾字段"四、本期期末余额",并不是出现在talbe[-1][0],而是出现在第一列的最后两个字段,且有可能是分裂的
         isTableEnd = False
         fieldLast = self.dictTables[tableName]["fieldLast"]
-        fieldStandardize = self.dictTables[tableName]["fieldStandardize"]
-        if fieldStandardize != "":
-            matched = re.search(fieldStandardize, lastField)
+        #fieldStandardize = self.dictTables[tableName]["fieldStandardize"]
+        #if fieldStandardize != "":
+        #    matched = re.search(fieldStandardize, lastField)
+        #    if matched is not None:
+        #        lastField = matched[0]
+        #    else:
+        #        raise ValueError("Field(%s) an not match the standardize pattern(%s)"%(lastField,fieldStandardize))
+        if isinstance(lastField,str) and isinstance(fieldLast,str):
+            matched = re.search(fieldLast,lastField)
             if matched is not None:
-                lastField = matched[0]
-            else:
-                raise ValueError("Field(%s) an not match the standardize pattern(%d)"%(lastField,fieldStandardize))
-        matched = re.search(fieldLast,lastField)
-        if matched is not None:
-            isTableEnd = True
+                isTableEnd = True
         return isTableEnd
 
     def _close(self):

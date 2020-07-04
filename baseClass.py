@@ -1,5 +1,5 @@
 #!/usr/bin/env Python
-# coding=utf-8
+# coding   : utf-8
 # @Time    : 9/25/2019 5:03 PM
 # @Author  : wu.hao
 # @File    : docParserBaseClass.py
@@ -46,10 +46,6 @@ class baseClass():
     def _get_keyword(self,tableKeyword):
         #获取解析文件所需的关键字
         dictKeyword = {keyword:value for keyword,value in self.gConfigJson.items() if keyword in tableKeyword}
-        #self.fieldKeyword = self.gConfig['fieldKeyword'.lower()]
-        #self.excludeKeyword = self.gConfig['excludeKeyword'.lower()]
-        #if len(self.excludeKeyword) == 1 and self.excludeKeyword[0] == '':
-        #    self.excludeKeyword = list()  # 置空
         return dictKeyword
 
 
@@ -78,4 +74,11 @@ class baseClass():
 
     def _close(self):
         pass
+
+    def _debug_info(self):
+        pass
+
+    @property
+    def index(self):
+        return self._index - 1
 

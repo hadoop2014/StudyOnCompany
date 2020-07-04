@@ -1,5 +1,5 @@
 #!/usr/bin/env Python
-# coding=utf-8
+# coding   : utf-8
 # @Time    : 5/9/2020 5:03 PM
 # @Author  : wu.hao
 # @File    : interpretAccounting.py
@@ -15,6 +15,7 @@ class interpretAccounting(interpretBase):
         self.excelParser = excelParser
         self.sqlParser = sqlParser
         #self.initialize()
+        self.currentPage = 0
         self.interpretDefine()
 
     def interpretDefine(self):
@@ -73,8 +74,9 @@ class interpretAccounting(interpretBase):
             print("fetchtable ",p[1],p[3])
             unit = p[5].split(':')[-1].split('：')[-1]
             self.names[p[1]].update({'tableName':p[1],'time':p[3],'unit':unit,'currency':self.names['currency']
-                                     ,'company':self.names['company'],
-                                     'tableBegin':True})
+                                     ,'company':self.names['company']
+                                     ,'tableBegin':True
+                                     ,'pages':self.names[p[1]]['pages'] + list([self.currentPage])})
             interpretPrefix = '\n'.join([self.names[p[1]]['tableName'], self.names[p[1]]['company'],
                                          self.names[p[1]]['time'], self.names[p[1]]['unit']]) + '\n'
             if self.names[p[1]]['tableEnd'] == False:
@@ -93,7 +95,8 @@ class interpretAccounting(interpretBase):
             print("fetchtable ",p[1],p[3])
             unit = p[3].split(':')[-1].split('：')[-1]
             self.names[p[1]].update({'tableName':p[1],'unit':unit,'currency':self.names['currency']
-                                ,'tableBegin':True})
+                                ,'tableBegin':True
+                                ,'pages': self.names[p[1]]['pages'] + list([self.currentPage])})
             interpretPrefix = '\n'.join([self.names[p[1]]['tableName'], self.names[p[1]]['unit'],
                                          self.names[p[1]]['currency']]) + '\n'
             if self.names[p[1]]['tableEnd'] == False:
@@ -247,15 +250,17 @@ class interpretAccounting(interpretBase):
 
     def doWork(self,docParser,lexer=None,debug=False,tracking=False):
         for data in docParser:
+            self.currentPage = docParser.index
             self.parser.parse(docParser._get_text(data),lexer=lexer,debug=debug,tracking=tracking)
-
+        print(self.sqlParser.process_info)
         docParser._close()
 
     def initialize(self):
         for tableName in self.tablesNames:
             self.names.update({tableName:{'tableName':'','time':'','unit':'','currency':'','company':''
                                           ,'公司名称':'','股票代码':'','股票简称':'','报告时间':'','报告类型':''
-                                          ,'table':'','tableBegin':False,'tableEnd':False}})
+                                          ,'table':'','tableBegin':False,'tableEnd':False
+                                          ,"pages":list()}})
         self.names.update({'unit':'','currency':'','company':'','time':''})
         for commonField,_ in self.commonFileds.items():
             self.names.update({commonField:''})

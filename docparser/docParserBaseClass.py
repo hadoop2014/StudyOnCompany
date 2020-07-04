@@ -1,5 +1,5 @@
 #!/usr/bin/env Python
-# coding=utf-8
+# coding   : utf-8
 # @Time    : 9/25/2019 5:03 PM
 # @Author  : wu.hao
 # @File    : docParserBaseClass.py
@@ -17,21 +17,21 @@ class docParserBase(baseClass):
         super(docParserBase, self).__init__(gConfig['gConfigJson'])
         self.gConfig = gConfig
         self.start_time = time.time()
-        self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser',self.get_parser_name(gConfig))
+        self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser', self._get_parser_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
         self.data_directory = self.gConfig['data_directory']
         self.mainprogram = self.gConfig['mainprogram']
-        self.logging_directory = os.path.join(self.logging_directory,'docparser', self.get_parser_name(gConfig))
+        self.logging_directory = os.path.join(self.logging_directory,'docparser', self._get_parser_name(gConfig))
         self.model_savefile = os.path.join(self.working_directory,'docparser',
-                                           self.get_parser_name(self.gConfig) + '.model')
-        self.checkpoint_filename = self.get_parser_name(self.gConfig)+'.ckpt'
+                                           self._get_parser_name(self.gConfig) + '.model')
+        self.checkpoint_filename = self._get_parser_name(self.gConfig) + '.ckpt'
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['sourcefile'])
         self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.valueNone = self.gConfig['valueNone'.lower()]
 
-    def get_check_book(self):
+    def _get_check_book(self):
         check_file = os.path.join(self.gConfig['config_directory'], self.gConfig['check_file'])
         check_book = None
         if os.path.exists(check_file):
@@ -41,12 +41,19 @@ class docParserBase(baseClass):
             raise ValueError("%s is not exist,you must create first!" % check_file)
         return check_book
 
-    def get_parser_name(self,gConfig):
+    def _get_parser_name(self, gConfig):
         parser_name = re.findall('docParser(.*)', self.__class__.__name__).pop().lower()
         assert parser_name in gConfig['docformatlist'], \
             'docformatlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
             (gConfig['docformatlist'], parser_name, self.__class__.__name__)
         return parser_name
+
+    def _is_field_valid(self,field):
+        isFieldValid = False
+        if isinstance(field,str):
+            if field not in self.valueNone:
+                isFieldValid = True
+        return isFieldValid
 
     def saveCheckpoint(self):
         pass
