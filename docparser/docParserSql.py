@@ -116,6 +116,7 @@ class DocParserSql(DocParserBase):
         #针对普通股现金分红情况表进行表头合并,因为其为转置表,实际是对其字段进行了合并.在合并完后进行预转置,使得其后续处理和其他表保持一致
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
         mergedHeader = None
+        firstHader = self.dictTables[tableName]['header'][0]
 
         for index,field in enumerate(dataFrame.iloc[:,0]):
             if self._is_field_valid(field):
@@ -123,7 +124,7 @@ class DocParserSql(DocParserBase):
                     if self._is_field_first(tableName,field):
                         break
                 else:
-                    if not (dataFrame.iloc[index] == 'None').any():
+                    if not (dataFrame.iloc[index] == 'None').any() and field != firstHader:
                         break
             if mergedHeader is not None and not (dataFrame.iloc[index] == 'None').any():
                 #在启动合并后,碰到第一行非全为None的即退出
@@ -172,13 +173,14 @@ class DocParserSql(DocParserBase):
                              dataFrame.iloc[lastIndex + 1:index] = np.nan
                         mergedRow = None
                 else:
-                    mergedField = mergedRow[0]
-                    if self._is_field_valid(mergedField):
-                        if self._is_field_in_standardize_strict(mergedField,tableName):
-                            if index > lastIndex + 1 and mergedRow is not None:
-                                dataFrame.iloc[lastIndex] = mergedRow
-                                dataFrame.iloc[lastIndex + 1:index] = np.nan
-                            mergedRow = None
+                    if mergedRow is not None:
+                        mergedField = mergedRow[0]
+                        if self._is_field_valid(mergedField):
+                            if self._is_field_in_standardize_strict(mergedField,tableName):
+                                if index > lastIndex + 1 and mergedRow is not None:
+                                    dataFrame.iloc[lastIndex] = mergedRow
+                                    dataFrame.iloc[lastIndex + 1:index] = np.nan
+                                mergedRow = None
                 #elif field != 'None' and not (dataFrame.iloc[index][1:] == 'None').all():
                 #    if index > lastIndex + 1 and mergedRow is not None:
                 #        dataFrame.iloc[lastIndex] = mergedRow

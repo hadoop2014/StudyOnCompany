@@ -209,7 +209,7 @@ class InterpretAccounting(InterpretBase):
         def p_term_percentage(p):
             '''term : NUMERIC '%'
                     | NUMERIC '％' '''
-            p[0] = round(float(p[1]) * 0.01,4)
+            p[0] = round(float(p[1].replace(',','')) * 0.01,4)
             #print('percentage',p[0])
 
         def p_term_numeric(p):
