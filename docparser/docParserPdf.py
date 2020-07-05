@@ -10,9 +10,9 @@ import pdfplumber
 import pandas as pd
 from openpyxl import Workbook
 
-class docParserPdf(docParserBase):
+class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
-        super(docParserPdf,self).__init__(gConfig)
+        super(DocParserPdf, self).__init__(gConfig)
         self.interpretPrefix = ''
         self.table_settings = gConfig["table_settings"]
         self._load_data()
@@ -168,6 +168,6 @@ class docParserPdf(docParserBase):
             'suffix of {} is invalid,it must one of {}'.format(self.sourceFile, self.gConfig['pdfSuffix'.lower()])
 
 def create_object(gConfig):
-    parser=docParserPdf(gConfig)
+    parser=DocParserPdf(gConfig)
     parser.initialize()
     return parser

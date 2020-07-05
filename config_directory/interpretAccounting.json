@@ -113,7 +113,7 @@
       ,"（二）稀释每股收益(元/股)"],
     "horizontalTable": false,
     "headerDiscard": ["附注"],
-    "fieldDiscard": ["其他"],
+    "fieldDiscard": [],
     "fieldFirst": "一、营业总收入",
     "fieldLast": "稀释每股收益",
     "fieldFromHeader": "",
@@ -123,7 +123,7 @@
       "现金流量套期损益的有效部分": "现金流量套期储备",
       "归属于母公司所有者的净利润": "归属于母公司股东的净利润"
     },
-    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}"
+    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}|其他"
   },
 
   "合并现金流量表": {

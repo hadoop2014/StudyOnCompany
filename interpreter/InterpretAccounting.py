@@ -2,15 +2,15 @@
 # coding   : utf-8
 # @Time    : 5/9/2020 5:03 PM
 # @Author  : wu.hao
-# @File    : interpretAccounting.py
+# @File    : InterpretAccounting.py
 # @Note    : 用于从财务报表中提取财务数据
 
 from interpreter.interpretBaseClass import *
 
 
-class interpretAccounting(interpretBase):
+class InterpretAccounting(InterpretBase):
     def __init__(self,gConfig,docParser,excelParser,sqlParser):
-        super(interpretAccounting,self).__init__(gConfig)
+        super(InterpretAccounting, self).__init__(gConfig)
         self.docParser = docParser
         self.excelParser = excelParser
         self.sqlParser = sqlParser
@@ -268,7 +268,7 @@ class interpretAccounting(interpretBase):
             self.names.update({self.criticalAlias[cirtical]:''})
 
 def create_object(gConfig,docParser=None,excelParser=None,sqlParser=None):
-    interpreter=interpretAccounting(gConfig,docParser,excelParser,sqlParser)
+    interpreter=InterpretAccounting(gConfig, docParser, excelParser, sqlParser)
     interpreter.initialize()
     return interpreter
 

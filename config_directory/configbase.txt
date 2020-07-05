@@ -9,15 +9,15 @@ config_directory = config_directory/
 data_directory = data_directory/
 mainprogram = mainprogram/
 check_file = checkbook.json
-#gConfigJson会被更新为configjson.json文件的内容
+#gConfigJson默认为空,执行execute时会被更新为configjson.json文件的内容
 gConfigJson =
 
 docformat = pdf
 source_directory = 年报
-sourcefile = %(source_directory)s/千禾味业：2019年年度报告.PDF
+#sourcefile = %(source_directory)s/千禾味业：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/千禾味业：2018年年度报告.pdf
 #sourcefile = %(source_directory)s/上峰水泥：2019年年度报告.PDF
-#sourcefile = %(source_directory)s/良信电器：2019年年度报告.PDF
+sourcefile = %(source_directory)s/良信电器：2019年年度报告.PDF
 targetfile = 千禾味业.xlsx
 database = financialdatabase.db
 
@@ -51,4 +51,16 @@ valueNone = None,
 
 [attrs]
 #描述数据集的参数，只有configbase.txt所特有
+
+[logger]
+# 名字
+LOGGING_NAME = global_logger
+# 等级列表
+LOGGING_LEVEL_LIST = NOTSET,DEBUG,INFO,WARNING,WARN,ERROR,FATAL,CRITICAL
+# 默认等级
+DEFAULT_LOG_LEVEL = INFO
+# 默认日志文件名称
+DEFAULT_LOG_FILENAME = logging_directory/financial.log
+# 循环备份数
+LOGGING_BACKUP_COUNT = 7
 

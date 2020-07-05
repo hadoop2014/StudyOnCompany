@@ -2,13 +2,13 @@
 # coding   : utf-8
 
 import unittest
-from interpreter import interpretAccounting
+from interpreter import InterpretAccounting
 from execute import *
 from baseClass import *
 
-class baseParser(baseClass):
+class BaseParser(BaseClass):
     def __init__(self,gConfig):
-        super(baseParser,self).__init__(gConfig['gConfigJson'])
+        super(BaseParser, self).__init__(gConfig['gConfigJson'])
 
     def _load_data(self,input = None):
         if input is None:
@@ -20,10 +20,10 @@ class baseParser(baseClass):
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         self.gConfig = getConfig.get_config('config_directory/configbase.txt')
-        gConfigJson = getConfig.get_config_json('config_directory/interpretAccounting.json')
+        gConfigJson = getConfig.get_config_json('config_directory/InterpretAccounting.json')
         self.gConfig.update({"gConfigJson": gConfigJson})
-        testParser = baseParser(self.gConfig)
-        self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig,docParser=testParser)
+        testParser = BaseParser(self.gConfig)
+        self.interpreter = InterpretAccounting.create_object(gConfig=self.gConfig, docParser=testParser)
         self.run_interpreter_lexer()
         self.run_interpreter_yacc(testParser)
 

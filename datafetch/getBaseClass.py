@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 numeric_types = (int,float)
 
 #数据读写处理的基类
-class getdataBase():
+class GetdataBase():
     def __init__(self,gConfig):
         self.gConfig = gConfig
         self.dataset_name = self.get_dataset_name(self.gConfig)

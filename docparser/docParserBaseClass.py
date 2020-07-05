@@ -7,14 +7,13 @@ import os
 import time
 import re
 import json
-import logging
 from baseClass import *
 
 
 #深度学习模型的基类
-class docParserBase(baseClass):
+class DocParserBase(BaseClass):
     def __init__(self,gConfig):
-        super(docParserBase, self).__init__(gConfig['gConfigJson'])
+        super(DocParserBase, self).__init__(gConfig)
         self.gConfig = gConfig
         self.start_time = time.time()
         self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser', self._get_parser_name(gConfig))
@@ -29,6 +28,7 @@ class docParserBase(baseClass):
         self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
+        self.unittestIsOn = self.gConfig['unittestIsOn'.lower()]
         self.valueNone = self.gConfig['valueNone'.lower()]
 
     def _get_check_book(self):
@@ -42,7 +42,7 @@ class docParserBase(baseClass):
         return check_book
 
     def _get_parser_name(self, gConfig):
-        parser_name = re.findall('docParser(.*)', self.__class__.__name__).pop().lower()
+        parser_name = re.findall('DocParser(.*)', self.__class__.__name__).pop().lower()
         assert parser_name in gConfig['docformatlist'], \
             'docformatlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
             (gConfig['docformatlist'], parser_name, self.__class__.__name__)
@@ -96,6 +96,26 @@ class docParserBase(baseClass):
                     os.remove(full_file)
                 except:
                    print('%s is not be removed'%full_file)
+
+    # 装饰器，用于在unittest模式下，只返回一个数据，快速迭代
+    @staticmethod
+    def getdataForUnittest(getdata):
+        def wapper(self, batch_size):
+            if self.unitestIsOn == True:
+                # 仅用于unitest测试程序
+                def reader():
+                    for (X, y) in getdata(self,batch_size):
+                        yield (X, y)
+                        break
+                return reader()
+            else:
+                return getdata(self,batch_size)
+        return wapper
+
+    @getdataForUnittest.__get__(object)
+    def getTrainData(self,batch_size):
+        return
+
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:

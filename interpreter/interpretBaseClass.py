@@ -7,9 +7,9 @@ from ply import lex,yacc
 from baseClass import *
 
 #数据读写处理的基类
-class interpretBase(baseClass):
+class InterpretBase(BaseClass):
     def __init__(self,gConfig):
-        super(interpretBase,self).__init__(gConfig['gConfigJson'])
+        super(InterpretBase, self).__init__(gConfig)
         self.gConfig = gConfig
         self.gConfigJson = gConfig['gConfigJson']
         self.interpreter_name = self.get_interpreter_name(self.gConfig)
@@ -24,7 +24,7 @@ class interpretBase(baseClass):
 
     def get_interpreter_name(self,gConfig):
         #获取解释器的名称
-        dataset_name = re.findall('interpret(.*)', self.__class__.__name__).pop().lower()
+        dataset_name = re.findall('Interpret(.*)', self.__class__.__name__).pop().lower()
         assert dataset_name in gConfig['interpreterlist'], \
             'interpreterlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
             (gConfig['datasetlist'], dataset_name, self.__class__.__name__)

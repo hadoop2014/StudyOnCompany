@@ -6,7 +6,7 @@
     "docparser": "docparser.docParserPdf",
     "excelparser": "docparser.docParserExcel",
     "sqlparser": "docparser.docParserSql",
-    "interpreter": "interpreter.interpretAccounting"
+    "interpreter": "interpreter.InterpretAccounting"
   },
   "word": {
     "config_file": "configword.txt",

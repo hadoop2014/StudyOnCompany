@@ -22,19 +22,29 @@ reload(sys)
 Base = declarative_base()
 
 #深度学习模型的基类
-class docParserSql(docParserBase):
+class DocParserSql(DocParserBase):
     def __init__(self,gConfig):
-        super(docParserSql,self).__init__(gConfig)
+        super(DocParserSql, self).__init__(gConfig)
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
         self._create_tables()
         self.process_info = {}
+
+    def loginfo(text = 'DocParserSql'):
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(self,*args, **kwargs):
+                result = func(self,*args, **kwargs)
+                self._logger.info('%s %s() %s:\n\t%s' % (text, func.__name__,args[-1],result))
+                return result
+            return wrapper
+        return decorator
 
     def writeToStore(self, dictTable):
         table = dictTable['table']
         tableName = dictTable['tableName']
 
         self.process_info.update({tableName:time.time()})
-        dataframe,countTotalFields = self._table_to_dataframe(tableName,table)#pd.DataFrame(table[1:],columns=table[0],index=None)
+        dataframe,countTotalFields = self._table_to_dataframe(table,tableName)#pd.DataFrame(table[1:],columns=table[0],index=None)
 
         #针对合并所有者权益表的前三列空表头进行合并,对转置表进行预转置,使得其处理和其他表一致
         dataframe = self._process_header_merge(dataframe, tableName)
@@ -58,13 +68,14 @@ class docParserSql(docParserBase):
         dataframe = self._process_field_duplicate(dataframe,tableName)
 
         #dataframe前面插入公共字段
-        dataframe = self._process_field_common(dataframe, dictTable, countTotalFields)
+        dataframe = self._process_field_common(dataframe, dictTable, countTotalFields,tableName)
 
         #把dataframe写入sqlite3数据库
-        self._write_to_sqlite3(tableName, dataframe)
+        self._write_to_sqlite3(dataframe,tableName)
         self.process_info.update({tableName:time.time() - self.process_info[tableName]})
 
-    def _table_to_dataframe(self,tableName,table):
+    @loginfo()
+    def _table_to_dataframe(self,table,tableName):
         horizontalTable = self.dictTables[tableName]['horizontalTable']
         if horizontalTable == True:
             #对于装置表,如普通股现金分红情况表,不需要表头
@@ -75,7 +86,7 @@ class docParserSql(docParserBase):
             countTotalFields = len(dataFrame.index.values)
         return dataFrame,countTotalFields
 
-    def _write_to_sqlite3(self, tableName, dataFrame):
+    def _write_to_sqlite3(self, dataFrame,tableName):
         conn = self._get_connect()
         for i in range(1,len(dataFrame.index)):
             sql_df = pd.DataFrame(dataFrame.iloc[i]).T
@@ -98,11 +109,16 @@ class docParserSql(docParserBase):
                     if self._is_field_first(tableName,field):
                         break
                 else:
-                    break
+                    if not (dataFrame.iloc[index] == 'None').any():
+                        break
+            if mergedHeader is not None and not (dataFrame.iloc[index] == 'None').any():
+                #在启动合并后,碰到第一行非全为None的即退出
+                break
+
             if mergedHeader is None:
                 mergedHeader = dataFrame.iloc[index].tolist()
             else:
-                mergedHeader = self._get_merged_field(dataFrame.iloc[index].tolist(),mergedHeader,isHorizontalTable)
+                mergedHeader = self._get_merged_field(dataFrame.iloc[index].tolist(),mergedHeader,isFieldJoin=True)
             dataFrame.iloc[index] = np.nan
         if isHorizontalTable == True:
             #如果是转置表,则在此处做一次转置,后续的处理就和非转置表保持一致了
@@ -118,30 +134,23 @@ class docParserSql(docParserBase):
                 dataFrame = dataFrame.dropna(axis=0)
         return dataFrame
 
+    @loginfo()
     def _process_field_merge(self,dataFrame,tableName):
         standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
         aliasFields = list(self.dictTables[tableName]['fieldAlias'].keys())
-        discardFields = list(self.dictTables[tableName]['fieldDiscard'])
+        #discardFields = list(self.dictTables[tableName]['fieldDiscard'])
         standardizedFields.extend(aliasFields)
         mergedRow = None
         lastIndex = 0
 
         for index, field in enumerate(dataFrame.iloc[:, 0]):
-            #if self._is_field_valid(field):
-            #    if isHorizontalTable == True:
-            #        if self._is_field_first(tableName, field):
-            #            break
-            #    else:
-            #        break
-            #if self._standardize(field) in standardizedFields:
-            #    continue
             #情况1: 当前field和standardizedFields匹配成功,表示新的字段开始,则处理之前的mergedRow
             #情况2: 当前field和standardizedFields匹配不成功,又有两种情况:
             #    a)上一个mergedRow已经拼出了完整的field,和standardizedFields匹配成功,此时当前row为[field,非None,非None,...]
             #    b)上一个mergedRow还没有拼出完整的field,但是仍和standardizedFields匹配成功,此时要么当前field='None'
             #      或则当前row为[field,None,None,None,...]
+            #    c)2019良信电器合并所有者权益变动表,"同一控制下企业合并"分成了多行,且全是空字符'',而非None
             if self._is_field_in_list(standardizedFields,field) and not (dataFrame.iloc[index][1:] == 'None').all():
-                #or self._is_field_in_list(standardizedFields,mergedRow[0]):
                 #把前期合并的行赋值到dataframe的上一行
                 if index > lastIndex + 1 and mergedRow is not None:
                     dataFrame.iloc[lastIndex] = mergedRow
@@ -153,11 +162,6 @@ class docParserSql(docParserBase):
                     dataFrame.iloc[lastIndex + 1:index] = np.nan
                 mergedRow = None
 
-            #elif self._is_field_in_list(standardizedFields,mergedRow[0]):
-                #continue
-                #else:
-                #    raise ValueError('somthing is error in (field:%s,index:%d,mergedRow:%s)'
-                #                     %(field,index,mergedRow))
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
                 lastIndex = index
@@ -192,9 +196,10 @@ class docParserSql(docParserBase):
             '''
         return dataFrame
 
-    def _process_field_common(self, dataFrame, dictTable, countFieldDiscard):
+    @loginfo()
+    def _process_field_common(self, dataFrame, dictTable, countFieldDiscard,tableName):
         #在dataFrame前面插入公共字段
-        tableName = dictTable["tableName"]
+        #tableName = dictTable["tableName"]
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
         countColumns = len(dataFrame.columns) + countFieldDiscard
         index = 0
@@ -466,6 +471,7 @@ class docParserSql(docParserBase):
         cursor.close()
         conn.close()
 
+
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
@@ -474,6 +480,6 @@ class docParserSql(docParserBase):
         self.clear_logging_directory(self.logging_directory)
 
 def create_object(gConfig):
-    parser = docParserSql(gConfig)
+    parser = DocParserSql(gConfig)
     parser.initialize()
     return parser

@@ -9,9 +9,9 @@ from docparser.docParserBaseClass import *
 from openpyxl import load_workbook,Workbook
 import pandas as pd
 
-class docParserExcel(docParserBase):
+class DocParserExcel(DocParserBase):
     def __init__(self,gConfig):
-        super(docParserExcel,self).__init__(gConfig)
+        super(DocParserExcel, self).__init__(gConfig)
         self.targetFile = os.path.join(self.working_directory,'.'.join([self.sourceFile.split('/')[-1].split('.')[0],'.xlsx']))
         self.workbook = Workbook()
 
@@ -92,6 +92,6 @@ class docParserExcel(docParserBase):
             self.writer.save()  # 生成一个新文件
 
 def create_object(gConfig):
-    parser=docParserExcel(gConfig)
+    parser=DocParserExcel(gConfig)
     parser.initialize()
     return parser

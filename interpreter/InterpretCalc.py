@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# interpretCalc.py
+# InterpretCalc.py
 #
 # A simple calculator with variables.   This is from O'Reilly's
 # "Lex and Yacc", p. 63.
@@ -10,9 +10,9 @@ import sys
 if sys.version_info[0] >= 3:
     raw_input = input
 
-class interpretCalc(interpretBase):
+class InterpretCalc(InterpretBase):
     def __init__(self,gConfig):
-        super(interpretCalc,self).__init__(gConfig)
+        super(InterpretCalc, self).__init__(gConfig)
         self.interpretDefine()
 
 
@@ -119,7 +119,7 @@ class interpretCalc(interpretBase):
 
 
 def create_object(gConfig):
-    interpreter=interpretCalc(gConfig=gConfig)
+    interpreter=InterpretCalc(gConfig=gConfig)
     interpreter.initialize()
     return interpreter
 

@@ -8,6 +8,6 @@
 from docparser.docParserBaseClass import  *
 
 #深度学习模型的基类
-class docBaseWord(docParserBase):
+class DocBaseWord(DocParserBase):
     def __init__(self,gConfig):
-        super(docBaseWord,self).__init__(gConfig)
+        super(DocBaseWord, self).__init__(gConfig)

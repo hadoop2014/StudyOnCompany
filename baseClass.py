@@ -3,18 +3,18 @@
 # @Time    : 9/25/2019 5:03 PM
 # @Author  : wu.hao
 # @File    : docParserBaseClass.py
-
-
+from loggerClass import *
+import functools
 #数据读写处理的基类
-class baseClass():
-    def __init__(self,gConfigJson):
-        self.gConfigJson = gConfigJson
+class BaseClass():
+    def __init__(self,gConfig):
+        self.gConfigJson = gConfig['gConfigJson']
         self._get_interpreter_keyword()
-        self.tableKeyword = gConfigJson['TABLE']
-        self.dictKeyword = self._get_keyword(self.tableKeyword)
         self._data = list()
         self._index = 0
         self._length = len(self._data)
+        self._logger = Logger(gConfig).logger
+        #self._logger = Logger(gConfig)._logger
 
     def __iter__(self):
         return self
@@ -41,6 +41,8 @@ class baseClass():
         self.tablesNames = self.gConfigJson['TABLE'].split('|')
         self.dictTables = {keyword: value for keyword,value in self.gConfigJson.items() if keyword in self.tablesNames}
         self.commonFileds = self.gConfigJson['公共表字段定义']
+        self.tableKeyword = self.gConfigJson['TABLE']
+        self.dictKeyword = self._get_keyword(self.tableKeyword)
         #识别所有的关键字字符集
 
     def _get_keyword(self,tableKeyword):
@@ -82,3 +84,17 @@ class baseClass():
     def index(self):
         return self._index - 1
 
+    @property
+    def logger(self):
+        return self._logger
+
+    #@staticmethod
+    def loginfo(text = ''):
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(self,*args, **kwargs):
+                result = func(self,*args, **kwargs)
+                self._logger.info('%s %s() %s:\n\t%s' % (text, func.__name__, list([*args]), result))
+                return result
+            return wrapper
+        return decorator
