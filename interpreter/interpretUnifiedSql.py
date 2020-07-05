@@ -2,7 +2,7 @@
 # coding   : utf-8
 # @Time    : 6/13/2020 5:03 PM
 # @Author  : wu.hao
-# @File    : InterpretUnifiedSql.py
+# @File    : interpretUnifiedSql.py
 # @Note    : 用统一的SQL语言处理excel表格,操作数据库等
 
 from interpreter.interpretBaseClass import *

@@ -1,5 +1,5 @@
 import unittest
-from interpreter import InterpretCalc
+from interpreter import interpretCalc
 from datafetch import getConfig
 
 class MyTestCase(unittest.TestCase):
@@ -11,7 +11,7 @@ class MyTestCase(unittest.TestCase):
         gConfig = getConfig.get_config('config_directory/configbase.txt')
         gConfigJson = getConfig.get_config_json('config_directory/InterpretAccounting.json')
         gConfig.update({"gConfigJson": gConfigJson})
-        interpreter = InterpretCalc.create_object(gConfig=gConfig)
+        interpreter = interpretCalc.create_object(gConfig=gConfig)
         while True:
             try:
                 s = input('calc > ')

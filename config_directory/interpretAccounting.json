@@ -25,7 +25,8 @@
 
   "ignores": "\t +[]<>;,:：./。？！，、；「」『』‘’“”〔〕【】—…–．《》〈〉√□／○〇",
   "tableAlias": {
-    "主要会计数据和财务指标": "主要会计数据"
+    "主要会计数据和财务指标": "主要会计数据",
+    "普通股股利分配方案": "普通股现金分红情况表"
   },
   "criticalAlias": {
     "股票代码": "股票代码",
@@ -55,12 +56,13 @@
       ,"归属于上市公司股东的净资产","总资产"],
     "horizontalTable": false,
     "headerDiscard": ["本期比上年同期增减(%)"],
-    "fieldDiscard": [""],
+    "fieldDiscard": [],
     "fieldFirst": "营业收入",
     "fieldLast": "总资产",
     "fieldFromHeader": "",
     "fieldAlias": {},
-    "fieldStandardize": ""
+    "fieldStandardize": "",
+    "fieldStandardizeStrict": ""
   },
 
   "合并资产负债表":{
@@ -81,7 +83,7 @@
       ,"负债和所有者权益（或股东权益）总计"],
     "horizontalTable": false,
     "headerDiscard": ["附注"],
-    "fieldDiscard": ["","合同资产","合同负债"],
+    "fieldDiscard": ["合同资产","合同负债"],
     "fieldFirst": "流动资产",
     "fieldLast": "负债和所有者权益（或股东权益）总计|负债和所有者权益总计",
     "fieldFromHeader": "",
@@ -92,7 +94,8 @@
       "所有者权益合计": "所有者权益（或股东权益）合计",
       "负债和所有者权益总计": "负债和所有者权益（或股东权益）总计"
     },
-    "fieldStandardize": ""
+    "fieldStandardize": "",
+    "fieldStandardizeStrict": ""
   },
 
   "合并利润表": {
@@ -123,7 +126,8 @@
       "现金流量套期损益的有效部分": "现金流量套期储备",
       "归属于母公司所有者的净利润": "归属于母公司股东的净利润"
     },
-    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}|其他"
+    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}|其他",
+    "fieldStandardizeStrict": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}(（.*）)?(?(1)([\\u4E00-\\u9FA5]*))|其他"
   },
 
   "合并现金流量表": {
@@ -151,7 +155,8 @@
       "收到再保险业务现金净额": "收到再保业务现金净额",
       "支付给职工以及为职工支付的现金": "支付给职工及为职工支付的现金"
     },
-    "fieldStandardize": ""
+    "fieldStandardize": "",
+    "fieldStandardizeStrict": ""
   },
 
   "合并所有者权益变动表": {
@@ -169,7 +174,8 @@
     "fieldLast": "四、本期期末余额",
     "fieldFromHeader": "项目",
     "fieldAlias": {},
-    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}(（.*）)?(?(1)([\\u4E00-\\u9FA5]+))|其他"
+    "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}(（.*）)?(?(1)([\\u4E00-\\u9FA5]+))|其他",
+    "fieldStandardizeStrict": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{3,}(（.*）)?(?(1)([\\u4E00-\\u9FA5]*))|其他"
   },
 
   "现金流量表补充资料": {
@@ -183,13 +189,14 @@
       ,"现金及现金等价物净增加额"],
     "horizontalTable": false,
     "headerDiscard": [],
-    "fieldDiscard": [""],
+    "fieldDiscard": [],
     "fieldFirst": "将净利润调节为经营活动现金流量",
     "fieldLast": "现金及现金等价物净增加额",
     "fieldFromHeader": "",
     "fieldAlias": {},
     "#fieldStandardize": "[(1|2|3|4|5|6|7|8|9|0)．]*[\\u4E00-\\u9FA5]{2,}",
-    "fieldStandardize": ""
+    "fieldStandardize": "",
+    "fieldStandardizeStrict": ""
   },
 
   "分季度主要财务": {
@@ -197,14 +204,15 @@
     "fieldName": ["营业收入","归属于上市公司股东的净利润","归属于上市公司股东的扣除非经常性损益后的净利润","经营活动产生的现金流量净额"],
     "horizontalTable": false,
     "headerDiscard": [],
-    "fieldDiscard": [""],
+    "fieldDiscard": [],
     "fieldFirst": "营业收入",
     "fieldLast": "经营活动产生的现金流量净额",
     "fieldFromHeader": "季度",
     "fieldAlias": {
       "归属于上市公司股东的扣除非经常性损益的净利润": "归属于上市公司股东的扣除非经常性损益后的净利润"
     },
-    "fieldStandardize": ""
+    "fieldStandardize": "",
+    "fieldStandardizeStrict": ""
   },
 
   "普通股现金分红情况表": {
@@ -215,12 +223,13 @@
       ,"现金分红总额（含其他方式）占合并报表中归属于上市公司普通股股东的净利润的比率"],
     "horizontalTable": true,
     "headerDiscard": [],
-    "fieldDiscard": [""],
+    "fieldDiscard": [],
     "fieldFirst": "\\d+\\s*年",
     "fieldLast": "\\d+\\s*年",
     "fieldFromHeader": "",
     "fieldAlias": {},
-    "fieldStandardize": ""
+    "fieldStandardize": "",
+    "fieldStandardizeStrict": ""
   },
 
   "#母公司和主要子公司的员工情况": {
@@ -232,10 +241,11 @@
     "headerDiscard": [],
     "fieldFirst": "母公司在职员工的数量",
     "fieldLast": "合计",
-    "fieldDiscard": [""],
+    "fieldDiscard": [],
     "fieldFromHeader": "",
     "fieldAlias": {},
-    "fieldStandardize": ""
+    "fieldStandardize": "",
+    "fieldStandardizeStrict": ""
   },
 
   "#研发投入情况": {
@@ -246,10 +256,11 @@
     "headerDiscard": [],
     "fieldFirst": "本期费用化研发投入",
     "fieldLast": "发投入资本化的比重",
-    "fieldDiscard": [""],
+    "fieldDiscard": [],
     "fieldFromHeader": "",
     "fieldAlias": {},
-    "fieldStandardize": ""
+    "fieldStandardize": "",
+    "fieldStandardizeStrict": ""
   }
 
 }

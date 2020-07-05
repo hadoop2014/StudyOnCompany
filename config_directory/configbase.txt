@@ -54,7 +54,7 @@ valueNone = None,
 
 [logger]
 # 名字
-LOGGING_NAME = global_logger
+LOGGING_NAME = run_logger
 # 等级列表
 LOGGING_LEVEL_LIST = NOTSET,DEBUG,INFO,WARNING,WARN,ERROR,FATAL,CRITICAL
 # 默认等级

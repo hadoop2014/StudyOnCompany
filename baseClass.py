@@ -13,8 +13,8 @@ class BaseClass():
         self._data = list()
         self._index = 0
         self._length = len(self._data)
-        self._logger = Logger(gConfig).logger
-        #self._logger = Logger(gConfig)._logger
+        #不同的类继承BaseClass时,logger采用不同的名字
+        self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
 
     def __iter__(self):
         return self
@@ -78,6 +78,9 @@ class BaseClass():
         pass
 
     def _debug_info(self):
+        pass
+
+    def _get_class_name(self,*args):
         pass
 
     @property

@@ -15,10 +15,11 @@ DEFUALT_LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
 
 class Logger():
 
-    def __init__(self,gConfig):
+    def __init__(self,gConfig,suffixName):
         # 1. 获取一个logger对象
         dictLogger = gConfig['logger']
-        self._logger = logging.getLogger(dictLogger['LOGGING_NAME'.lower()])
+        logging_name = dictLogger['LOGGING_NAME'.lower()] + '_' + suffixName
+        self._logger = logging.getLogger(logging_name)
         # 2. 设置format对象
         self.formatter = logging.Formatter(fmt=DEFAULT_LOG_FMT, datefmt=DEFUALT_LOG_DATEFMT)
         # 3. 设置日志输出

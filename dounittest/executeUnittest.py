@@ -6,14 +6,14 @@
 # @Note    : 用于年报,半年报,季报pdf文件的读写
 
 import unittest
-from interpreter import InterpretAccounting
+from interpreter import interpretAccounting
 from execute import *
 
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         self.assertEqual(True, True)
         self.gConfig = getConfig.get_config('config_directory/configbase.txt','config_directory/configpdf.txt')
-        gConfigJson = getConfig.get_config_json('config_directory/InterpretAccounting.json')
+        gConfigJson = getConfig.get_config_json('config_directory/interpretAccounting.json')
         self.gConfig.update({"gConfigJson": gConfigJson})
         self.run_interpreter_yacc()
 
@@ -23,7 +23,7 @@ class MyTestCase(unittest.TestCase):
         if validate_parameter(docformat, self.gConfig) == True:
             parser, interpreter = parserManager(docformat, self.gConfig)
             # 2019年千和味业年报合并资产负债表所在的页数为71,72,73,合并利润表为76,77,78
-            parser._set_dataset(list([0,1,23,83,84,91,92,94,95,96,97]))
+            parser._set_dataset(list([0,1,94,95,96,97]))
             docParse(parser, interpreter, docformat, self.gConfig,lexer=None,debug=False,tracking=False)
         else:
             raise ValueError("(%s %s %s %s) is not supported now!" % (self.gConfig))

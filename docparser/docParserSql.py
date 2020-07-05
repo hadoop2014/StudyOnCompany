@@ -28,18 +28,29 @@ class DocParserSql(DocParserBase):
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
         self._create_tables()
         self.process_info = {}
+        self.dataTable = {}
 
-    def loginfo(text = 'DocParserSql'):
+    def loginfo(text = 'running '):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self,*args, **kwargs):
                 result = func(self,*args, **kwargs)
-                self._logger.info('%s %s() %s:\n\t%s' % (text, func.__name__,args[-1],result))
+                resultForLog = result
+                columns = 0
+                if isinstance(result,tuple):
+                    resultForLog = result[0].T.copy()
+                    columns = result[0].iloc[0]
+                self.logger.info('%s %s() \n\t%s,%s%s,\t%s:\n\t%s\n\t columns=%s'
+                                  % (text, func.__name__,
+                                     self.dataTable['公司名称'],self.dataTable['报告时间'],self.dataTable['报告类型'],
+                                     args[-1],
+                                     resultForLog,columns))
                 return result
             return wrapper
         return decorator
 
     def writeToStore(self, dictTable):
+        self.dataTable = dictTable
         table = dictTable['table']
         tableName = dictTable['tableName']
 
@@ -70,6 +81,8 @@ class DocParserSql(DocParserBase):
         #dataframe前面插入公共字段
         dataframe = self._process_field_common(dataframe, dictTable, countTotalFields,tableName)
 
+        dataframe = self._process_value_standardize(dataframe,tableName)
+
         #把dataframe写入sqlite3数据库
         self._write_to_sqlite3(dataframe,tableName)
         self.process_info.update({tableName:time.time() - self.process_info[tableName]})
@@ -84,6 +97,7 @@ class DocParserSql(DocParserBase):
         else:
             dataFrame = pd.DataFrame(table[1:],columns=table[0],index=None)
             countTotalFields = len(dataFrame.index.values)
+        dataFrame.fillna('None',inplace=True)
         return dataFrame,countTotalFields
 
     def _write_to_sqlite3(self, dataFrame,tableName):
@@ -136,12 +150,10 @@ class DocParserSql(DocParserBase):
 
     @loginfo()
     def _process_field_merge(self,dataFrame,tableName):
-        standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
-        aliasFields = list(self.dictTables[tableName]['fieldAlias'].keys())
-        #discardFields = list(self.dictTables[tableName]['fieldDiscard'])
-        standardizedFields.extend(aliasFields)
         mergedRow = None
         lastIndex = 0
+        lastField = None
+        countIndex = len(dataFrame.index.values)
 
         for index, field in enumerate(dataFrame.iloc[:, 0]):
             #情况1: 当前field和standardizedFields匹配成功,表示新的字段开始,则处理之前的mergedRow
@@ -150,50 +162,51 @@ class DocParserSql(DocParserBase):
             #    b)上一个mergedRow还没有拼出完整的field,但是仍和standardizedFields匹配成功,此时要么当前field='None'
             #      或则当前row为[field,None,None,None,...]
             #    c)2019良信电器合并所有者权益变动表,"同一控制下企业合并"分成了多行,且全是空字符'',而非None
-            if self._is_field_in_list(standardizedFields,field) and not (dataFrame.iloc[index][1:] == 'None').all():
-                #把前期合并的行赋值到dataframe的上一行
-                if index > lastIndex + 1 and mergedRow is not None:
-                    dataFrame.iloc[lastIndex] = mergedRow
-                    dataFrame.iloc[lastIndex + 1:index] = np.nan
-                mergedRow = None
-            elif field != 'None' and not (dataFrame.iloc[index][1:] == 'None').all():
-                if index > lastIndex + 1 and mergedRow is not None:
-                    dataFrame.iloc[lastIndex] = mergedRow
-                    dataFrame.iloc[lastIndex + 1:index] = np.nan
-                mergedRow = None
+            if self._is_field_valid(field):
+                if self._is_field_in_standardize(field,tableName) and not (dataFrame.iloc[index][1:] == 'None').all():
+                    if lastField != '':
+                        #前面一个空字段所在行必定合入到下一个非空字段中
+                        if index > lastIndex + 1 and mergedRow is not None:
+                            # 把前期合并的行赋值到dataframe的上一行
+                             dataFrame.iloc[lastIndex] = mergedRow
+                             dataFrame.iloc[lastIndex + 1:index] = np.nan
+                        mergedRow = None
+                else:
+                    mergedField = mergedRow[0]
+                    if self._is_field_valid(mergedField):
+                        if self._is_field_in_standardize_strict(mergedField,tableName):
+                            if index > lastIndex + 1 and mergedRow is not None:
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = np.nan
+                            mergedRow = None
+                #elif field != 'None' and not (dataFrame.iloc[index][1:] == 'None').all():
+                #    if index > lastIndex + 1 and mergedRow is not None:
+                #        dataFrame.iloc[lastIndex] = mergedRow
+                #        dataFrame.iloc[lastIndex + 1:index] = np.nan
+                #    mergedRow = None
+            elif field == '' and mergedRow is not None:
+                #如果field为空的情况下,下一行的field仍旧是空行,则当前行空字段行需要并入mergedRow
+                aheaderField = None
+                if index + 1 < countIndex:
+                    aheaderField = dataFrame.iloc[index + 1,0]
+                if aheaderField != '':
+                    mergedField = mergedRow[0]
+                    if self._is_field_valid(mergedField):
+                        if self._is_field_in_standardize_strict(mergedField,tableName):
+                            if index > lastIndex + 1 and mergedRow is not None:
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = np.nan
+                            mergedRow = None
+            else:
+                #针对field = 'None'或则其他非法情况,则继续合并
+                pass
 
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
                 lastIndex = index
             else:
                 mergedRow = self._get_merged_field(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
-
-        '''
-        for index,field in enumerate(self._get_standardized_field(dataFrame.iloc[:,0].tolist(),tableName)):
-            if field in standardizedFields:
-                if mergedRow is not None and index > 1:
-                    mergedRow[0] = mergedField
-                    dataFrame.iloc[index - 1] = mergedRow
-                mergedField = ''
-                mergedRow = None
-                continue
-            else:
-                if mergedRow is None:
-                    mergedRow = dataFrame.iloc[index].tolist()
-                    dataFrame.iloc[index] = np.nan
-                    if self._is_field_valid(field):
-                        mergedField = field
-                else:
-                    mergedRow = self._get_merged_field(dataFrame.iloc[index].tolist(),mergedRow)
-                    dataFrame.iloc[index] = np.nan
-                    if self._is_field_valid(field):
-                        mergedField += field
-                    if mergedField in standardizedFields:
-                        mergedRow[0] = mergedField
-                        dataFrame.iloc[index] = mergedRow
-                        mergedRow = None
-                        mergedField = ''
-            '''
+            lastField = field
         return dataFrame
 
     @loginfo()
@@ -222,6 +235,26 @@ class DocParserSql(DocParserBase):
             countColumns += 1
             index += 1
         dataFrame = self._process_field_from_header(dataFrame,fieldFromHeader,index,countColumns)
+        return dataFrame
+
+    def _process_value_standardize(self,dataFrame,tableName):
+        #对非法值进行统一处理
+        def valueStandardize(value):
+            try:
+                #if isinstance(value,pd.Series):
+                #    value = value.tolist()
+                #    if len(value) > 0:
+                #        value = value[0]
+                #        if isinstance(value,str):
+                #            value = value.replace('\n','').replace(' ','')
+                #else:
+                if isinstance(value,str):
+                    value = value.replace('\n', '').replace(' ', '').replace('None','')
+            except Exception as e:
+                print(e)
+            return value
+        #dataFrame = dataFrame.loc[:].apply(lambda x:x.apply(valueStandardize))
+        dataFrame = dataFrame.apply(lambda x: x.apply(valueStandardize))
         return dataFrame
 
     def _process_field_from_header(self,dataFrame,fieldFromHeader,index,countColumns):
@@ -311,22 +344,24 @@ class DocParserSql(DocParserBase):
         duplicatedField = [duplicate(fieldName) for fieldName in fieldList]
         return duplicatedField
 
+    def _get_standardized_field_strict(self,fieldList,tableName):
+        assert fieldList is not None, 'fieldList(%s) must not be None' % fieldList
+        fieldStandardizeStrict = self.dictTables[tableName]['fieldStandardizeStrict']
+        if isinstance(fieldList, list):
+            standardizedFields = [self._standardize(fieldStandardizeStrict, field) for field in fieldList]
+            #standardizedFields = [field for field in standardizedFields if self._is_field_valid(field)]
+        else:
+            standardizedFields = self._standardize(fieldStandardizeStrict, fieldList)
+        return standardizedFields
+
     def _get_standardized_field(self,fieldList,tableName):
+        assert fieldList is not None,'fieldList(%s) must not be None'%fieldList
         fieldStandardize = self.dictTables[tableName]['fieldStandardize']
-        standardizedFields = fieldList
-
-        #def standardize(field):
-        #    if isinstance(field,str) and isinstance(fieldStandardize,str):
-        #        matched = re.search(fieldStandardize, field)
-        #        if matched is not None:
-        #            return matched[0]
-        #        else:
-        #            return np.nan
-        #    else:
-        #        return field
-
-        #if fieldStandardize != "":
-        standardizedFields = [self._standardize(fieldStandardize,field) for field in fieldList]
+        if isinstance(fieldList,list):
+            standardizedFields = [self._standardize(fieldStandardize,field) for field in fieldList]
+            #standardizedFields = [field for field in standardizedFields if self._is_field_valid(field)]
+        else:
+            standardizedFields = self._standardize(fieldStandardize,fieldList)
         return standardizedFields
 
     def _standardize(self,fieldStandardize,field):
@@ -337,14 +372,10 @@ class DocParserSql(DocParserBase):
                 standardizedField = matched[0]
             else:
                 standardizedField = np.nan
+        else:
+            if not self._is_field_valid(field):
+                standardizedField = np.nan
         return standardizedField
-
-    #def _is_field_valid(self,field):
-    #    isFieldValid = False
-    #    if isinstance(field,str):
-    #        if field not in self.valueNone:
-    #            isFieldValid = True
-    #    return isFieldValid
 
     def _is_field_first(self,tableName,firstField):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
@@ -365,13 +396,35 @@ class DocParserSql(DocParserBase):
         isFieldFirst = self._is_field_matched(fieldFirst,firstField)
         return isFieldFirst
 
-    def _is_field_in_list(self,patternList,field):
+    def _is_field_in_standardize(self, field,tableName):
         isFieldInList = False
-        assert isinstance(patternList,list),"patternList(%s) must be a list of string"%patternList
-        for pattern in patternList:
+        standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
+        aliasFields = list(self.dictTables[tableName]['fieldAlias'].keys())
+        discardFields = list(self.dictTables[tableName]['fieldDiscard'])
+        standardizedFields.extend(aliasFields)
+        standardizedFields.extend(discardFields)
+        standardizedFields = [field for field in standardizedFields if self._is_field_valid(field)]
+        assert isinstance(standardizedFields,list),"patternList(%s) must be a list of string"%standardizedFields
+        for pattern in standardizedFields:
             if self._is_field_matched(pattern,field):
                 isFieldInList = True
                 break
+        return isFieldInList
+
+    def _is_field_in_standardize_strict(self, field,tableName):
+        #把field按严格标准进行标准化,然后和判断该字段是否和同样方法标准化后的某个字段相同.
+        isFieldInList = False
+        standardizedFieldsStrict = self._get_standardized_field_strict(self.dictTables[tableName]['fieldName'],tableName)
+        aliasFields = list(self.dictTables[tableName]['fieldAlias'].keys())
+        discardFields = list(self.dictTables[tableName]['fieldDiscard'])
+        standardizedFieldsStrict.extend(aliasFields)
+        standardizedFieldsStrict.extend(discardFields)
+        standardizedFieldsStrict = [field for field in standardizedFieldsStrict if self._is_field_valid(field)]
+        assert isinstance(standardizedFieldsStrict,list),"patternList(%s) must be a list of string"%standardizedFieldsStrict
+        fieldStrict = self._get_standardized_field_strict(field,tableName)
+
+        if fieldStrict in standardizedFieldsStrict:
+            isFieldInList = True
         return isFieldInList
 
     def _is_field_matched(self,pattern,field):
@@ -404,16 +457,6 @@ class DocParserSql(DocParserBase):
 
     def _get_engine(self):
         return create_engine(os.path.join('sqlite:///',self.database))
-
-    '''
-    def _is_table_exist(self, cursor, tableName):
-        isTableExist = True
-        sql = 'select count(*) from sqlite_master where type = 'table' and name = %s'%tableName
-        result = cursor.execute(sql)
-        if result.getInt(0) == 0 :
-            isTableExist = True
-        return isTableExist
-    '''
 
     def _fetch_all_tables(self, cursor):
         #获取数据库中所有的表,用于判断待新建的表是否已经存在

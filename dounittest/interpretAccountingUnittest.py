@@ -2,7 +2,7 @@
 # coding   : utf-8
 
 import unittest
-from interpreter import InterpretAccounting
+from interpreter import interpretAccounting
 from execute import *
 from baseClass import *
 
@@ -23,7 +23,7 @@ class MyTestCase(unittest.TestCase):
         gConfigJson = getConfig.get_config_json('config_directory/InterpretAccounting.json')
         self.gConfig.update({"gConfigJson": gConfigJson})
         testParser = BaseParser(self.gConfig)
-        self.interpreter = InterpretAccounting.create_object(gConfig=self.gConfig, docParser=testParser)
+        self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig, docParser=testParser)
         self.run_interpreter_lexer()
         self.run_interpreter_yacc(testParser)
 

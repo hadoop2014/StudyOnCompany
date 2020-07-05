@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# InterpretCalc.py
+# interpretCalc.py
 #
 # A simple calculator with variables.   This is from O'Reilly's
 # "Lex and Yacc", p. 63.

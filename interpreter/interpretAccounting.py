@@ -2,7 +2,7 @@
 # coding   : utf-8
 # @Time    : 5/9/2020 5:03 PM
 # @Author  : wu.hao
-# @File    : InterpretAccounting.py
+# @File    : interpretAccounting.py
 # @Note    : 用于从财务报表中提取财务数据
 
 from interpreter.interpretBaseClass import *
@@ -28,7 +28,7 @@ class InterpretAccounting(InterpretBase):
         local_name = locals()
         for token in self.tokens:
             local_name['t_'+token] = self.dictTokens[token]
-        print(str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
+        self.logger.info('\n'+str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
         #t_ignore = " \t\n"
         t_ignore = self.ignores
@@ -71,7 +71,7 @@ class InterpretAccounting(InterpretBase):
 
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional TIME optional UNIT optional '''
-            print("fetchtable ",p[1],p[3])
+            self.logger.info("fetchtable %s %s page %d"%(p[1],p[3],self.currentPage))
             unit = p[5].split(':')[-1].split('：')[-1]
             self.names[p[1]].update({'tableName':p[1],'time':p[3],'unit':unit,'currency':self.names['currency']
                                      ,'company':self.names['company']
@@ -88,11 +88,11 @@ class InterpretAccounting(InterpretBase):
                     self.excelParser.writeToStore(self.names[p[1]])
                     self.sqlParser.writeToStore(self.names[p[1]])
 
-            print(self.names[p[1]])
+            self.logger.info('\n'+ str(self.names[p[1]]))
 
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT optional '''
-            print("fetchtable ",p[1],p[3])
+            self.logger.info("fetchtable %s %s page %d"%(p[1],p[3],self.currentPage))
             unit = p[3].split(':')[-1].split('：')[-1]
             self.names[p[1]].update({'tableName':p[1],'unit':unit,'currency':self.names['currency']
                                 ,'tableBegin':True
@@ -108,7 +108,7 @@ class InterpretAccounting(InterpretBase):
                     self.excelParser.writeToStore(self.names[p[1]])
                     self.sqlParser.writeToStore(self.names[p[1]])
 
-            print(self.names[p[1]])
+            self.logger.info('\n' + str(self.names[p[1]]))
 
         def p_fetchtable_skiptime(p):
             '''fetchtable : TABLE optional TIME TIME '''
@@ -132,7 +132,8 @@ class InterpretAccounting(InterpretBase):
             self.names.update({'公司名称':p[1]})
             self.names.update({'报告时间':p[2]})
             self.names.update({'报告类型':p[3]})
-            print('fetchdata title %s %s%s'%(self.names['公司名称'],self.names['报告时间'],self.names['报告类型']))
+            self.logger.info('fetchdata title %s %s%s page %d'
+                             %(self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPage))
 
         #def p_fetchdata_criticaldouble(p):
         #    '''fetchdata : CRITICAL DISCARD CRITICAL term
@@ -147,7 +148,7 @@ class InterpretAccounting(InterpretBase):
                          | CRITICAL DISCARD '''
             critical = self.criticalAlias[p[1]]
             self.names.update({critical:p[2]})
-            print('fetchdata critical',p[1],'->',critical,p[2])
+            self.logger.info('fetchdata critical %s->%s %s page %d'%(p[1],critical,p[2],self.currentPage))
 
         def p_fetchdata_skipword(p):
             '''fetchdata : COMPANY TIME DISCARD
@@ -215,7 +216,7 @@ class InterpretAccounting(InterpretBase):
             '''term : NUMERIC '''
             if p[1].find('.') < 0 :
                 p[0] = int(p[1].replace(',',''))
-                print('number',p[0],p[1])
+                #print('number',p[0],p[1])
             else:
                 p[0] = float(p[1].replace(',',''))
             #print('value',p[0],p[1])
@@ -252,7 +253,9 @@ class InterpretAccounting(InterpretBase):
         for data in docParser:
             self.currentPage = docParser.index
             self.parser.parse(docParser._get_text(data),lexer=lexer,debug=debug,tracking=tracking)
-        print(self.sqlParser.process_info)
+        self._logger.info(','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
+                          ,str(self.names['股票代码']),self.names['股票简称']]))
+        self._logger.info(self.sqlParser.process_info)
         docParser._close()
 
     def initialize(self):

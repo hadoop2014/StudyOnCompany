@@ -2,7 +2,7 @@
 # coding   : utf-8
 # @Time    : 6/13/2020 5:03 PM
 # @Author  : wu.hao
-# @File    : InterpretAnalysis.py
+# @File    : interpretAnalysis.py
 # @Note    : 用于财务数据分析
 
 from interpreter.interpretBaseClass import *

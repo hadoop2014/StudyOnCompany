@@ -11,13 +11,13 @@ numeric_types = (int,float)
 class GetdataBase():
     def __init__(self,gConfig):
         self.gConfig = gConfig
-        self.dataset_name = self.get_dataset_name(self.gConfig)
+        self.dataset_name = self._get_class_name(self.gConfig)
         self.data_path = os.path.join(self.gConfig['data_directory'],self.dataset_name)
         self.working_directory = os.path.join(self.gConfig['working_directory'], 'docparser',
-                                              self.get_dataset_name(gConfig))
+                                              self._get_class_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
         self.data_directory = self.gConfig['data_directory']
-        self.logging_directory = os.path.join(self.logging_directory, 'docparser', self.get_dataset_name(gConfig))
+        self.logging_directory = os.path.join(self.logging_directory, 'docparser', self._get_class_name(gConfig))
         self.unitestIsOn = self.gConfig['unittestIsOn'.lower()]
         if os.path.exists(self.data_path) == False:
             os.makedirs(self.data_path)
@@ -25,7 +25,7 @@ class GetdataBase():
     def load_data(self,*args):
         pass
 
-    def get_dataset_name(self,gConfig):
+    def _get_class_name(self, gConfig):
         dataset_name = re.findall('get(.*)Data', self.__class__.__name__).pop().lower()
         assert dataset_name in gConfig['datasetlist'], \
             'datasetlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \

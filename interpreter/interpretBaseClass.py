@@ -12,7 +12,7 @@ class InterpretBase(BaseClass):
         super(InterpretBase, self).__init__(gConfig)
         self.gConfig = gConfig
         self.gConfigJson = gConfig['gConfigJson']
-        self.interpreter_name = self.get_interpreter_name(self.gConfig)
+        self.interpreter_name = self._get_class_name(self.gConfig)
         self.working_directory = os.path.join(self.gConfig['working_directory'],'interpreter',self.interpreter_name)
         self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)
         self.mainprogram = self.gConfig['mainprogram']
@@ -22,7 +22,7 @@ class InterpretBase(BaseClass):
         #self.get_interpreter_keyword()
         self.interpretDefine()
 
-    def get_interpreter_name(self,gConfig):
+    def _get_class_name(self, gConfig):
         #获取解释器的名称
         dataset_name = re.findall('Interpret(.*)', self.__class__.__name__).pop().lower()
         assert dataset_name in gConfig['interpreterlist'], \
