@@ -16,10 +16,14 @@ docformat = pdf
 source_directory = 年报
 #sourcefile = %(source_directory)s/千禾味业：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/千禾味业：2018年年度报告.pdf
-sourcefile = %(source_directory)s/上峰水泥：2019年年度报告.PDF
+#sourcefile = %(source_directory)s/上峰水泥：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/良信电器：2019年年度报告.PDF
+sourcefile = %(source_directory)s/上峰水泥：2018年年度报告.PDF
 targetfile = 千禾味业.xlsx
 database = financialdatabase.db
+
+#用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
+EOF = None
 
 [ints]
 #该节配置大部分可以被模型参数配置文件（如configpdf.txt）所覆盖

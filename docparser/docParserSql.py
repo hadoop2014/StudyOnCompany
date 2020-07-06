@@ -474,7 +474,7 @@ class DocParserSql(DocParserBase):
         cursor = conn.cursor()
         allTables = self._fetch_all_tables(cursor)
         allTables = list(map(lambda x:x[0],allTables))
-        for tableName in self.tablesNames:
+        for tableName in self.tableNames:
             if tableName not in allTables:
                 sql = " CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t" % tableName
                 for commonFiled, type in self.commonFileds.items():

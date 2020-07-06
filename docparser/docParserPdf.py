@@ -15,6 +15,7 @@ class DocParserPdf(DocParserBase):
         super(DocParserPdf, self).__init__(gConfig)
         self.interpretPrefix = ''
         self.table_settings = gConfig["table_settings"]
+        self.EOF = gConfig['EOF'.lower()]
         self._load_data()
 
     def _load_data(self,input=None):
@@ -25,7 +26,8 @@ class DocParserPdf(DocParserBase):
 
     def _get_text(self,page=None):
         #interpretPrefix用于处理比如合并资产负债表分布在多个page页面的情况
-        pageText = self.interpretPrefix + page.extract_text()
+        #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
+        pageText = self.interpretPrefix + page.extract_text() + self.EOF
         return pageText
 
     def _get_tables(self,page = None):
@@ -73,27 +75,30 @@ class DocParserPdf(DocParserBase):
         return page.extract_tables()
 
     def _merge_table(self, dictTable=None,interpretPrefix=''):
-        if dictTable is None:
-            dictTable = dict()
+        #if dictTable is None:
+        #    dictTable = dict()
+        assert dictTable is not None,"dictTable must not be None"
+        self.interpretPrefix = interpretPrefix
+        if dictTable['tableBegin'] == False:
+            return dictTable
         savedTable = dictTable['table']
         tableName = dictTable['tableName']
         fetchTables = self._get_tables()
-        pages = dictTable['pages']
-        processedTable,isTableEnd = self._process_table(fetchTables,tableName,pages)
+        page_numbers = dictTable['page_numbers']
+        processedTable,isTableEnd = self._process_table(fetchTables, tableName, page_numbers)
         dictTable.update({'tableEnd':isTableEnd})
         if isinstance(savedTable, list):
             savedTable.extend(processedTable)
         else:
             savedTable = processedTable
 
-        self.interpretPrefix = interpretPrefix
         if dictTable['tableBegin'] == True and dictTable['tableEnd'] == True:
             self.interpretPrefix = ''
 
         dictTable.update({'table':savedTable})
         return dictTable
 
-    def _process_table(self,tables,tableName,pages):
+    def _process_table(self,tables,tableName,page_numbers):
         #firstHeaderName = self.dictTables[tableName]['header'][0]
         processedTable = [list(map(lambda x:str(x).replace('\n',''),row))
                           for row in tables[-1]]
@@ -116,7 +121,7 @@ class DocParserPdf(DocParserBase):
             else:
                 #对于合并所所有者权益变动表,对某些情况下因为表尾字段做了拆分,很难通过表尾字段做判断,可以通过下一张表的开头来判断,上一张表的结束.
                 if isTableStart == True:
-                    if len(pages) > 1 and index > 0:
+                    if len(page_numbers) > 1 and index > 0:
                         processedTable = tables[index - 1]
                         isTableEnd = True
                         break

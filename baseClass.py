@@ -38,12 +38,33 @@ class BaseClass():
         self.criticals = self.gConfigJson['CRITICAL'].split('|')
         self.criticalAlias = self.gConfigJson['criticalAlias']
         self.dictTokens = {token:value for token,value in self.gConfigJson.items() if token in self.tokens}
-        self.tablesNames = self.gConfigJson['TABLE'].split('|')
-        self.dictTables = {keyword: value for keyword,value in self.gConfigJson.items() if keyword in self.tablesNames}
+        self.tableAlias = self.gConfigJson['tableAlias']
+        self.tableNames = self.gConfigJson['TABLE'].split('|')
+        self.tableNames = list(set([self._get_tablename_alias(tableName) for tableName in self.tableNames]))
+        self.dictTables = {keyword: value for keyword,value in self.gConfigJson.items() if keyword in self.tableNames}
         self.commonFileds = self.gConfigJson['公共表字段定义']
         self.tableKeyword = self.gConfigJson['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
         #识别所有的关键字字符集
+
+    def _get_critical_alias(self,critical):
+        #criticalAliasKeys = self.criticalAlias()
+        aliasedCritical = self._get_alias(critical,self.criticalAlias)
+        return aliasedCritical
+
+    def _get_tablename_alias(self,tablename):
+        #tableAliasKeys = self.tableAlias()
+        aliasedTablename = self._get_alias(tablename,self.tableAlias)
+        return aliasedTablename
+
+    def _get_alias(self,name,dictAlias):
+        aliase = name
+        aliasKeys = dictAlias.keys()
+
+        if len(aliasKeys) > 0:
+            if name in aliasKeys:
+                aliase = dictAlias[name]
+        return aliase
 
     def _get_keyword(self,tableKeyword):
         #获取解析文件所需的关键字
@@ -81,7 +102,7 @@ class BaseClass():
         pass
 
     def _get_class_name(self,*args):
-        pass
+        return 'Base'
 
     @property
     def index(self):
