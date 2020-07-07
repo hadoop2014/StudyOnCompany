@@ -15,7 +15,6 @@ class DocParserPdf(DocParserBase):
         super(DocParserPdf, self).__init__(gConfig)
         self.interpretPrefix = ''
         self.table_settings = gConfig["table_settings"]
-        self.EOF = gConfig['EOF'.lower()]
         self._load_data()
 
     def _load_data(self,input=None):
@@ -75,8 +74,6 @@ class DocParserPdf(DocParserBase):
         return page.extract_tables()
 
     def _merge_table(self, dictTable=None,interpretPrefix=''):
-        #if dictTable is None:
-        #    dictTable = dict()
         assert dictTable is not None,"dictTable must not be None"
         self.interpretPrefix = interpretPrefix
         if dictTable['tableBegin'] == False:
@@ -99,18 +96,20 @@ class DocParserPdf(DocParserBase):
         return dictTable
 
     def _process_table(self,tables,tableName,page_numbers):
-        #firstHeaderName = self.dictTables[tableName]['header'][0]
-        processedTable = [list(map(lambda x:str(x).replace('\n',''),row))
-                          for row in tables[-1]]
-        isTableEnd = self._is_table_end(tableName,processedTable[-1][0])
+        processedTable = [list(map(lambda x:str(x).replace('\n',''),row)) for row in tables[-1]]
+        fieldList = [row[0] for row in processedTable]
+        mergedFields = reduce(self._merge,fieldList)
+        #isTableEnd = self._is_table_end(tableName,processedTable[-1][0])
+        isTableEnd = self._is_table_end(tableName,mergedFields)
         if isTableEnd == True or len(tables) == 1:
-            #processedTable = processedTable
             return processedTable, isTableEnd
 
         for index,table in enumerate(tables):
             table = [list(map(lambda x: str(x).replace('\n', ''), row)) for row in table]
-            isTableEnd = self._is_table_end(tableName,table[-1][0])
-            #isTableStart = (firstHeaderName == table[0][0])
+            fieldList = [row[0] for row in table]
+            mergedFields = reduce(self._merge, fieldList)
+            # isTableEnd = self.self._is_table_end(tableName,table[-1][0])
+            isTableEnd = self._is_table_end(tableName, mergedFields)
             isTableStart = self._is_table_start(tableName,table)
             if isTableStart == True:
                 processedTable = table
@@ -134,7 +133,7 @@ class DocParserPdf(DocParserBase):
         firstHeaderName = self.dictTables[tableName]['header'][0]
         headerList = [row[0] for row in table]
         for header in headerList:
-            if self._is_field_valid(header):
+            if self._is_valid(header):
                 if firstHeaderName == header:
                     isTableStart = True
                 break
@@ -146,14 +145,7 @@ class DocParserPdf(DocParserBase):
         #针对合并所有者权益表,表尾字段"四、本期期末余额",并不是出现在talbe[-1][0],而是出现在第一列的最后两个字段,且有可能是分裂的
         isTableEnd = False
         fieldLast = self.dictTables[tableName]["fieldLast"]
-        #fieldStandardize = self.dictTables[tableName]["fieldStandardize"]
-        #if fieldStandardize != "":
-        #    matched = re.search(fieldStandardize, lastField)
-        #    if matched is not None:
-        #        lastField = matched[0]
-        #    else:
-        #        raise ValueError("Field(%s) an not match the standardize pattern(%s)"%(lastField,fieldStandardize))
-        if isinstance(lastField,str) and isinstance(fieldLast,str):
+        if isinstance(lastField,str) and isinstance(fieldLast,str) and fieldLast != '':
             matched = re.search(fieldLast,lastField)
             if matched is not None:
                 isTableEnd = True

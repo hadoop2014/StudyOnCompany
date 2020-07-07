@@ -5,6 +5,8 @@
 # @File    : docParserBaseClass.py
 from loggerClass import *
 import functools
+import re
+import numpy as np
 #数据读写处理的基类
 class BaseClass():
     def __init__(self,gConfig):
@@ -14,6 +16,9 @@ class BaseClass():
         self._index = 0
         self._length = len(self._data)
         #不同的类继承BaseClass时,logger采用不同的名字
+        self.NONE = gConfig['NONE'.lower()]
+        self.EOF = gConfig['EOF'.lower()]
+        self.NaN = np.nan
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
 
     def __iter__(self):
@@ -45,26 +50,56 @@ class BaseClass():
         self.commonFileds = self.gConfigJson['公共表字段定义']
         self.tableKeyword = self.gConfigJson['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
-        #识别所有的关键字字符集
+
 
     def _get_critical_alias(self,critical):
-        #criticalAliasKeys = self.criticalAlias()
-        aliasedCritical = self._get_alias(critical,self.criticalAlias)
+        aliasedCritical = self._alias(critical, self.criticalAlias)
         return aliasedCritical
 
     def _get_tablename_alias(self,tablename):
-        #tableAliasKeys = self.tableAlias()
-        aliasedTablename = self._get_alias(tablename,self.tableAlias)
+        aliasedTablename = self._alias(tablename, self.tableAlias)
         return aliasedTablename
 
-    def _get_alias(self,name,dictAlias):
-        aliase = name
+    def _alias(self, name, dictAlias):
+        alias = name
         aliasKeys = dictAlias.keys()
 
         if len(aliasKeys) > 0:
             if name in aliasKeys:
-                aliase = dictAlias[name]
-        return aliase
+                alias = dictAlias[name]
+        return alias
+
+    def _merge(self,field1, field2,isFieldJoin=True):
+        if self._is_valid(field2):
+            if self._is_valid(field1):
+                if isFieldJoin == True:
+                    return field1 + field2
+                else:
+                    return field2
+            else:
+                return field2
+        else:
+            return field1
+
+    def _standardize(self,fieldStandardize,field):
+        standardizedField = field
+        if isinstance(field, str) and isinstance(fieldStandardize, str) and fieldStandardize !="":
+            matched = re.search(fieldStandardize, field)
+            if matched is not None:
+                standardizedField = matched[0]
+            else:
+                standardizedField = self.NaN
+        else:
+            if not self._is_valid(field):
+                standardizedField = self.NaN
+        return standardizedField
+
+    def _is_valid(self, field):
+        isFieldValid = False
+        if isinstance(field,str):
+            if field not in self.NONE:
+                isFieldValid = True
+        return isFieldValid
 
     def _get_keyword(self,tableKeyword):
         #获取解析文件所需的关键字
@@ -79,7 +114,6 @@ class BaseClass():
             self._length = len(self._data)
 
     def _get_text(self,page):
-        #page = self.__getitem__(self._index)
         return page
 
     def _get_tables(self,data=None):

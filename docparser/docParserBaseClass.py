@@ -8,6 +8,7 @@ import time
 import re
 import json
 from baseClass import *
+from functools import reduce
 
 
 #深度学习模型的基类
@@ -29,7 +30,6 @@ class DocParserBase(BaseClass):
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.unittestIsOn = self.gConfig['unittestIsOn'.lower()]
-        self.valueNone = self.gConfig['valueNone'.lower()]
 
     def _get_check_book(self):
         check_file = os.path.join(self.gConfig['config_directory'], self.gConfig['check_file'])
@@ -48,12 +48,6 @@ class DocParserBase(BaseClass):
             (gConfig['docformatlist'], parser_name, self.__class__.__name__)
         return parser_name
 
-    def _is_field_valid(self,field):
-        isFieldValid = False
-        if isinstance(field,str):
-            if field not in self.valueNone:
-                isFieldValid = True
-        return isFieldValid
 
     def saveCheckpoint(self):
         pass

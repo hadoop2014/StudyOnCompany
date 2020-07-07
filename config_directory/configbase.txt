@@ -50,7 +50,7 @@ excelSuffix = xls,xlsx
 wordSuffix = doc,docx
 txetSuffix = txt,csv
 pdfSuffix = pdf
-valueNone = None,
+NONE = None,
 #tableKeyword = 合并资产负债表,合并利润表,合并现金流量表,主要会计数据
 
 [attrs]

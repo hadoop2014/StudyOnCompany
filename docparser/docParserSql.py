@@ -119,7 +119,7 @@ class DocParserSql(DocParserBase):
         firstHader = self.dictTables[tableName]['header'][0]
 
         for index,field in enumerate(dataFrame.iloc[:,0]):
-            if self._is_field_valid(field):
+            if self._is_valid(field):
                 if isHorizontalTable == True:
                     if self._is_field_first(tableName,field):
                         break
@@ -128,13 +128,16 @@ class DocParserSql(DocParserBase):
                         break
             if mergedHeader is not None and not (dataFrame.iloc[index] == 'None').any():
                 #在启动合并后,碰到第一行非全为None的即退出
-                break
+                mergedRow = reduce(self._merge,dataFrame.iloc[index].tolist())
+                headerStandardize = self.dictTables[tableName]['headerStandardize']
+                if self._is_field_matched(headerStandardize,mergedRow) == False:
+                    break
 
             if mergedHeader is None:
                 mergedHeader = dataFrame.iloc[index].tolist()
             else:
-                mergedHeader = self._get_merged_field(dataFrame.iloc[index].tolist(),mergedHeader,isFieldJoin=True)
-            dataFrame.iloc[index] = np.nan
+                mergedHeader = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedHeader, isFieldJoin=True)
+            dataFrame.iloc[index] = self.NaN
         if isHorizontalTable == True:
             #如果是转置表,则在此处做一次转置,后续的处理就和非转置表保持一致了
             if mergedHeader is not None:
@@ -163,29 +166,25 @@ class DocParserSql(DocParserBase):
             #    b)上一个mergedRow还没有拼出完整的field,但是仍和standardizedFields匹配成功,此时要么当前field='None'
             #      或则当前row为[field,None,None,None,...]
             #    c)2019良信电器合并所有者权益变动表,"同一控制下企业合并"分成了多行,且全是空字符'',而非None
-            if self._is_field_valid(field):
-                if self._is_field_in_standardize(field,tableName) and not (dataFrame.iloc[index][1:] == 'None').all():
+            if self._is_valid(field):
+                if self._is_field_match_standardize(field, tableName) and not (dataFrame.iloc[index][1:] == 'None').all():
                     if lastField != '':
                         #前面一个空字段所在行必定合入到下一个非空字段中
                         if index > lastIndex + 1 and mergedRow is not None:
                             # 把前期合并的行赋值到dataframe的上一行
                              dataFrame.iloc[lastIndex] = mergedRow
-                             dataFrame.iloc[lastIndex + 1:index] = np.nan
+                             dataFrame.iloc[lastIndex + 1:index] = self.NaN
                         mergedRow = None
                 else:
                     if mergedRow is not None:
                         mergedField = mergedRow[0]
-                        if self._is_field_valid(mergedField):
+                        if self._is_valid(mergedField):
                             if self._is_field_in_standardize_strict(mergedField,tableName):
                                 if index > lastIndex + 1 and mergedRow is not None:
                                     dataFrame.iloc[lastIndex] = mergedRow
-                                    dataFrame.iloc[lastIndex + 1:index] = np.nan
+                                    dataFrame.iloc[lastIndex + 1:index] = self.NaN
                                 mergedRow = None
-                #elif field != 'None' and not (dataFrame.iloc[index][1:] == 'None').all():
-                #    if index > lastIndex + 1 and mergedRow is not None:
-                #        dataFrame.iloc[lastIndex] = mergedRow
-                #        dataFrame.iloc[lastIndex + 1:index] = np.nan
-                #    mergedRow = None
+
             elif field == '' and mergedRow is not None:
                 #如果field为空的情况下,下一行的field仍旧是空行,则当前行空字段行需要并入mergedRow
                 aheaderField = None
@@ -193,11 +192,11 @@ class DocParserSql(DocParserBase):
                     aheaderField = dataFrame.iloc[index + 1,0]
                 if aheaderField != '':
                     mergedField = mergedRow[0]
-                    if self._is_field_valid(mergedField):
+                    if self._is_valid(mergedField):
                         if self._is_field_in_standardize_strict(mergedField,tableName):
                             if index > lastIndex + 1 and mergedRow is not None:
                                 dataFrame.iloc[lastIndex] = mergedRow
-                                dataFrame.iloc[lastIndex + 1:index] = np.nan
+                                dataFrame.iloc[lastIndex + 1:index] = self.NaN
                             mergedRow = None
             else:
                 #针对field = 'None'或则其他非法情况,则继续合并
@@ -207,8 +206,17 @@ class DocParserSql(DocParserBase):
                 mergedRow = dataFrame.iloc[index].tolist()
                 lastIndex = index
             else:
-                mergedRow = self._get_merged_field(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
+                mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
             lastField = field
+        #最后一个合并行的处理
+        if mergedRow is not None:
+            mergedField = mergedRow[0]
+            if self._is_valid(mergedField):
+                if self._is_field_in_standardize_strict(mergedField, tableName):
+                    if countIndex > lastIndex + 1 and mergedRow is not None:
+                        dataFrame.iloc[lastIndex] = mergedRow
+                        dataFrame.iloc[lastIndex + 1:countIndex] = self.NaN
+                    mergedRow = None
         return dataFrame
 
     @loginfo()
@@ -278,7 +286,7 @@ class DocParserSql(DocParserBase):
         headerDiscard = self.dictTables[tableName]['headerDiscard']
         #同时对水平表进行转置,把字段名由index转为column,便于插入sqlite3数据库
         dataFrame = dataFrame.T.copy()
-        dataFrame.loc[dataFrame.index.isin(headerDiscard)] = np.nan
+        dataFrame.loc[dataFrame.index.isin(headerDiscard)] = self.NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
@@ -287,13 +295,13 @@ class DocParserSql(DocParserBase):
         #对于普通股现金分红情况表,则忽略这一过程
         fieldDiscard = self.dictTables[tableName]['fieldDiscard']
         indexDiscardField = dataFrame.iloc[:,0].isin(fieldDiscard)
-        dataFrame.loc[indexDiscardField] = np.nan
+        dataFrame.loc[indexDiscardField] = self.NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
     def _process_field_alias(self,dataFrame,tableName):
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称
-        aliasedFields = self._get_aliased_field(dataFrame.iloc[0].tolist(),tableName)
+        aliasedFields = self._get_aliased_fields(dataFrame.iloc[0].tolist(), tableName)
         dataFrame.iloc[0] = aliasedFields
         return dataFrame
 
@@ -304,36 +312,19 @@ class DocParserSql(DocParserBase):
         dataFrame = dataFrame.dropna(axis = 1).copy()
         return dataFrame
 
-    def _get_aliased_field(self,fieldList,tableName):
-        aliasedField = fieldList
+    def _get_aliased_fields(self, fieldList, tableName):
+        aliasedFields = fieldList
         fieldAlias = self.dictTables[tableName]['fieldAlias']
         fieldAliasKeys = list(self.dictTables[tableName]['fieldAlias'].keys())
 
-        def alias(field):
-            if field in fieldAliasKeys:
-                field = fieldAlias[field]
-            return field
-
         if len(fieldAliasKeys) > 0:
-            aliasedField = [alias(field) for field in fieldList]
-        return aliasedField
+            aliasedFields = [self._alias(field, fieldAlias) for field in fieldList]
+        return aliasedFields
 
-    def _get_merged_field(self,fieldList,fieldMerge,isFieldJoin=False):
+    def _get_merged_row(self, sourceRow, mergeRow, isFieldJoin=False):
         #当isHorizontalTable=True时,为转置表,如普通股现金分红情况表,这个时候是对字段合并,采用字段拼接方式,其他情况采用替换方式
-        def merge(field1, field2):
-            if self._is_field_valid(field2):
-                if self._is_field_valid(field1):
-                    if isFieldJoin == True:
-                        return field1 + field2
-                    else:
-                        return field2
-                else:
-                    return field2
-            else:
-                return field1
-
-        mergedField = [merge(field1,field2) for field1,field2 in zip(fieldMerge,fieldList)]
-        return mergedField
+        mergedRow = [self._merge(field1, field2, isFieldJoin) for field1, field2 in zip(mergeRow, sourceRow)]
+        return mergedRow
 
     def _get_duplicated_field(self,fieldList,tableName):
         dictFieldDuplicate = dict(zip(fieldList,[0]*len(fieldList)))
@@ -347,65 +338,38 @@ class DocParserSql(DocParserBase):
         return duplicatedField
 
     def _get_standardized_field_strict(self,fieldList,tableName):
-        assert fieldList is not None, 'fieldList(%s) must not be None' % fieldList
+        assert fieldList is not None, 'sourceRow(%s) must not be None' % fieldList
         fieldStandardizeStrict = self.dictTables[tableName]['fieldStandardizeStrict']
         if isinstance(fieldList, list):
             standardizedFields = [self._standardize(fieldStandardizeStrict, field) for field in fieldList]
-            #standardizedFields = [field for field in standardizedFields if self._is_field_valid(field)]
         else:
             standardizedFields = self._standardize(fieldStandardizeStrict, fieldList)
         return standardizedFields
 
     def _get_standardized_field(self,fieldList,tableName):
-        assert fieldList is not None,'fieldList(%s) must not be None'%fieldList
+        assert fieldList is not None,'sourceRow(%s) must not be None'%fieldList
         fieldStandardize = self.dictTables[tableName]['fieldStandardize']
         if isinstance(fieldList,list):
             standardizedFields = [self._standardize(fieldStandardize,field) for field in fieldList]
-            #standardizedFields = [field for field in standardizedFields if self._is_field_valid(field)]
         else:
             standardizedFields = self._standardize(fieldStandardize,fieldList)
         return standardizedFields
 
-    def _standardize(self,fieldStandardize,field):
-        standardizedField = field
-        if isinstance(field, str) and isinstance(fieldStandardize, str) and fieldStandardize !="":
-            matched = re.search(fieldStandardize, field)
-            if matched is not None:
-                standardizedField = matched[0]
-            else:
-                standardizedField = np.nan
-        else:
-            if not self._is_field_valid(field):
-                standardizedField = np.nan
-        return standardizedField
-
     def _is_field_first(self,tableName,firstField):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
-        #isFieldFirst = False
         fieldFirst = self.dictTables[tableName]["fieldFirst"]
-        #fieldStandardize = self.dictTables[tableName]["fieldStandardize"]
-        #if fieldStandardize != "":
-        #    matched = re.search(fieldStandardize, firstField)
-        #    if matched is not None:
-        #        firstField = matched[0]
-        #    else:
-        #        raise ValueError("Field(%s) an not match the standardize pattern(%d)"%(firstField,fieldStandardize))
-        #if isinstance(firstField, str) and isinstance(fieldFirst, str):
-        #    matched = re.search(fieldFirst,firstField)
-        #    if matched is not None:
-        #        isFieldFirst = True
         isFieldFirst = self._is_field_matched(fieldFirst,firstField)
         return isFieldFirst
 
-    def _is_field_in_standardize(self, field,tableName):
+    def _is_field_match_standardize(self, field, tableName):
         isFieldInList = False
         standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
         aliasFields = list(self.dictTables[tableName]['fieldAlias'].keys())
         discardFields = list(self.dictTables[tableName]['fieldDiscard'])
         standardizedFields.extend(aliasFields)
         standardizedFields.extend(discardFields)
-        standardizedFields = [field for field in standardizedFields if self._is_field_valid(field)]
+        standardizedFields = [field for field in standardizedFields if self._is_valid(field)]
         assert isinstance(standardizedFields,list),"patternList(%s) must be a list of string"%standardizedFields
         for pattern in standardizedFields:
             if self._is_field_matched(pattern,field):
@@ -421,7 +385,7 @@ class DocParserSql(DocParserBase):
         discardFields = list(self.dictTables[tableName]['fieldDiscard'])
         standardizedFieldsStrict.extend(aliasFields)
         standardizedFieldsStrict.extend(discardFields)
-        standardizedFieldsStrict = [field for field in standardizedFieldsStrict if self._is_field_valid(field)]
+        standardizedFieldsStrict = [field for field in standardizedFieldsStrict if self._is_valid(field)]
         assert isinstance(standardizedFieldsStrict,list),"patternList(%s) must be a list of string"%standardizedFieldsStrict
         fieldStrict = self._get_standardized_field_strict(field,tableName)
 
@@ -432,9 +396,10 @@ class DocParserSql(DocParserBase):
     def _is_field_matched(self,pattern,field):
         isFieldMatched = False
         if isinstance(pattern, str) and isinstance(field, str):
-            matched = re.search(pattern,field)
-            if matched is not None:
-                isFieldMatched = True
+            if pattern != '':
+                matched = re.search(pattern,field)
+                if matched is not None:
+                    isFieldMatched = True
         return isFieldMatched
 
     def _is_record_exist(self, conn, tableName, dataFrame):
@@ -488,7 +453,7 @@ class DocParserSql(DocParserBase):
                 standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
                 duplicatedFields = self._get_duplicated_field(standardizedFields,tableName)
                 for fieldName in duplicatedFields:
-                    if fieldName is not np.nan:
+                    if fieldName is not self.NaN:
                         sql = sql + "\n\t\t\t\t\t,[%s]  NUMERIC"%fieldName
                 sql = sql + '\n\t\t\t\t\t)'
                 try:
