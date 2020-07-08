@@ -98,14 +98,14 @@ class InterpretAccounting(InterpretBase):
             unit = p[3].split(':')[-1].split('：')[-1]
             self.names[tableName].update({'tableName':tableName,'unit':unit,'currency':self.names['currency']
                                 ,'tableBegin':True
-                                ,'page_numbers': self.names[p[1]]['page_numbers'] + list([self.currentPageNumber])})
+                                ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
             interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
                                          self.names[tableName]['currency']]) + '\n'
             if self.names[tableName]['tableEnd'] == False:
                 self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
                                         ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
                                         ,'报告类型':self.names['报告类型']})
-                self.docParser._merge_table(self.names[p[1]],interpretPrefix)
+                self.docParser._merge_table(self.names[tableName],interpretPrefix)
                 if self.names[tableName]['tableEnd'] == True:
                     self.excelParser.writeToStore(self.names[tableName])
                     self.sqlParser.writeToStore(self.names[tableName])
@@ -113,7 +113,7 @@ class InterpretAccounting(InterpretBase):
             self.logger.info('\n' + str(self.names[tableName]))
 
         def p_fetchtable_timetime(p):
-            '''fetchtable : TABLE optional TIME TIME TIME'''
+            '''fetchtable : TABLE optional TIME TIME'''
             #处理主要会计数据的的场景
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
@@ -121,7 +121,7 @@ class InterpretAccounting(InterpretBase):
             unit = ''
             self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
                                              , 'tableBegin': True
-                                             , 'page_numbers': self.names[p[1]]['page_numbers'] + list(
+                                             , 'page_numbers': self.names[tableName]['page_numbers'] + list(
                     [self.currentPageNumber])})
             interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
                                          self.names[tableName]['currency']]) + '\n'
@@ -129,7 +129,7 @@ class InterpretAccounting(InterpretBase):
                 self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
                                                  , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
                                                  , '报告类型': self.names['报告类型']})
-                self.docParser._merge_table(self.names[p[1]], interpretPrefix)
+                self.docParser._merge_table(self.names[tableName], interpretPrefix)
                 if self.names[tableName]['tableEnd'] == True:
                     self.excelParser.writeToStore(self.names[tableName])
                     self.sqlParser.writeToStore(self.names[tableName])
@@ -157,11 +157,11 @@ class InterpretAccounting(InterpretBase):
             self.logger.info('\n' + str(self.names[tableName]))
             pass
 
-        def p_fetchtable_skiptime(p):
-            '''fetchtable : TABLE optional TIME TIME '''
+        #def p_fetchtable_skiptime(p):
+        #    '''fetchtable : TABLE optional TIME TIME '''
             #去掉主要会计数据的表头
             #print(p[1])
-            pass
+        #    pass
 
         def p_fetchtable_skipheader(p):
             '''fetchtable : TABLE HEADER '''

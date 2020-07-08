@@ -95,7 +95,8 @@ class DocParserSql(DocParserBase):
             dataFrame = pd.DataFrame(table,index=None)
             countTotalFields = len(dataFrame.columns.values)
         else:
-            dataFrame = pd.DataFrame(table[1:],columns=table[0],index=None)
+            #dataFrame = pd.DataFrame(table[1:],columns=table[0],index=None)
+            dataFrame = pd.DataFrame(table, index=None)
             countTotalFields = len(dataFrame.index.values)
         dataFrame.fillna('None',inplace=True)
         return dataFrame,countTotalFields
@@ -116,7 +117,7 @@ class DocParserSql(DocParserBase):
         #针对普通股现金分红情况表进行表头合并,因为其为转置表,实际是对其字段进行了合并.在合并完后进行预转置,使得其后续处理和其他表保持一致
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
         mergedHeader = None
-        firstHader = self.dictTables[tableName]['header'][0]
+        firstHeader = self.dictTables[tableName]['header'][0]
 
         for index,field in enumerate(dataFrame.iloc[:,0]):
             if self._is_valid(field):
@@ -124,13 +125,14 @@ class DocParserSql(DocParserBase):
                     if self._is_field_first(tableName,field):
                         break
                 else:
-                    if not (dataFrame.iloc[index] == 'None').any() and field != firstHader:
+                    if not (dataFrame.iloc[index] == 'None').any() and field != firstHeader:
                         break
-            if mergedHeader is not None and not (dataFrame.iloc[index] == 'None').any():
+            if mergedHeader is not None and (dataFrame.iloc[index] == 'None').any() == False:
                 #在启动合并后,碰到第一行非全为None的即退出
-                mergedRow = reduce(self._merge,dataFrame.iloc[index].tolist())
-                headerStandardize = self.dictTables[tableName]['headerStandardize']
-                if self._is_field_matched(headerStandardize,mergedRow) == False:
+                #mergedRow = reduce(self._merge,dataFrame.iloc[index].tolist())
+                #headerStandardize = self.dictTables[tableName]['headerStandardize']
+                #if self._is_field_matched(headerStandardize,mergedRow) == False:
+                if self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName) == False:
                     break
 
             if mergedHeader is None:
@@ -175,6 +177,15 @@ class DocParserSql(DocParserBase):
                              dataFrame.iloc[lastIndex] = mergedRow
                              dataFrame.iloc[lastIndex + 1:index] = self.NaN
                         mergedRow = None
+                    else:
+                        #如果前面一个是空字段, 但是同一行内包含了header内容,主要会计数据会把header插入到表中间位置.
+                        if self._is_header_in_row(dataFrame.iloc[index-1].tolist(),tableName) == True:
+                            if index > lastIndex + 1 and mergedRow is not None:
+                                # 把前期合并的行赋值到dataframe的上一行
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                            mergedRow = None
+
                 else:
                     if mergedRow is not None:
                         mergedField = mergedRow[0]
@@ -193,11 +204,19 @@ class DocParserSql(DocParserBase):
                 if aheaderField != '':
                     mergedField = mergedRow[0]
                     if self._is_valid(mergedField):
+                        #当前字段为'',下一个字段有效,如果合并后的字段为标准字段,则认为合并成功
                         if self._is_field_in_standardize_strict(mergedField,tableName):
                             if index > lastIndex + 1 and mergedRow is not None:
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = self.NaN
                             mergedRow = None
+                        #else:
+                            #当前字段为'',下一个字段有效,合并后字段为非标准字段,
+                            #if self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName):
+                            #    if index > lastIndex + 1 and mergedRow is not None:
+                            #        dataFrame.iloc[lastIndex] = mergedRow
+                            #        dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                            #    mergedRow = None
             else:
                 #针对field = 'None'或则其他非法情况,则继续合并
                 pass
@@ -222,7 +241,6 @@ class DocParserSql(DocParserBase):
     @loginfo()
     def _process_field_common(self, dataFrame, dictTable, countFieldDiscard,tableName):
         #在dataFrame前面插入公共字段
-        #tableName = dictTable["tableName"]
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
         countColumns = len(dataFrame.columns) + countFieldDiscard
         index = 0
@@ -251,13 +269,6 @@ class DocParserSql(DocParserBase):
         #对非法值进行统一处理
         def valueStandardize(value):
             try:
-                #if isinstance(value,pd.Series):
-                #    value = value.tolist()
-                #    if len(value) > 0:
-                #        value = value[0]
-                #        if isinstance(value,str):
-                #            value = value.replace('\n','').replace(' ','')
-                #else:
                 if isinstance(value,str):
                     value = value.replace('\n', '').replace(' ', '').replace('None','')
             except Exception as e:
@@ -284,9 +295,11 @@ class DocParserSql(DocParserBase):
     def _process_header_discard(self, dataFrame, tableName):
         #去掉无用的表头;把字段名由index转为column
         headerDiscard = self.dictTables[tableName]['headerDiscard']
+        headerDiscardPattern = '|'.join(headerDiscard)
         #同时对水平表进行转置,把字段名由index转为column,便于插入sqlite3数据库
         dataFrame = dataFrame.T.copy()
-        dataFrame.loc[dataFrame.index.isin(headerDiscard)] = self.NaN
+        indexDiscardHeader = [self._is_field_matched(headerDiscardPattern,x) for x in dataFrame.index.values]
+        dataFrame.loc[indexDiscardHeader] = self.NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
@@ -294,7 +307,7 @@ class DocParserSql(DocParserBase):
         #去掉空字段,针对主要会计数据这张表,需要提出掉其空字段
         #对于普通股现金分红情况表,则忽略这一过程
         fieldDiscard = self.dictTables[tableName]['fieldDiscard']
-        indexDiscardField = dataFrame.iloc[:,0].isin(fieldDiscard)
+        indexDiscardField = dataFrame.iloc[:,0].isin(fieldDiscard+self.NONE)
         dataFrame.loc[indexDiscardField] = self.NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
@@ -354,6 +367,12 @@ class DocParserSql(DocParserBase):
         else:
             standardizedFields = self._standardize(fieldStandardize,fieldList)
         return standardizedFields
+
+    def _is_header_in_row(self,row,tableName):
+        mergedRow = reduce(self._merge, row)
+        headerStandardize = self.dictTables[tableName]['headerStandardize']
+        isHeaderInRow = self._is_field_matched(headerStandardize, mergedRow)
+        return isHeaderInRow
 
     def _is_field_first(self,tableName,firstField):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
