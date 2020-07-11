@@ -14,7 +14,7 @@
   "#PERCENTAGE": "\\d+[,\\d]*(\\.\\d{0,2})?%",
   "NUMERIC": "\\d+[,\\d]*(\\.\\d{4})|\\d+[,\\d]*(\\.\\d{1,2})?",
   "NAME": "[a-zA-Z_][a-zA-Z0-9_]*",
-  "PUNCTUATION": "＋|－|①|②|③|°|～",
+  "PUNCTUATION": "＋|－|①|②|③|④|⑤|⑥|⑦|⑧|⑨|⑩|α|°|～|≤|［|］|＜|＞|³|\"",
   "WEBSITE": "[a-zA-Z_][a-zA-Z0-9_]*[.\\w]*\\.(com|cn|org)",
   "EMAIL": "[a-zA-Z_][a-zA-Z0-9_]*@[.\\w]*\\.(com|cn|org)",
   "#DISCARD": "注意,这里采用的是按规则长度的倒排序,discard要保持低长度,长能排在最后面,其他的规则才能优先执行\\.{2,}情况为目录中的....;[^\\w]+\\.情况为(1).;\\.[^\\w]+情况为五.;|[^\\d]*\\. ;备份|[^\\w]+\\.|\\.[^\\w]+",
@@ -23,7 +23,7 @@
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
 
-  "ignores": "\t +[]<>;,:：./。？！，、；「」『』‘’“”〔〕【】—…–．《》〈〉√□／○〇#",
+  "ignores": "\t +[]<>;,:：/。？！，、；「」『』‘’“”〔〕【】—…–．.·《》〈〉√□／○〇Ｏ#±&",
   "tableAlias": {
     "主要会计数据和财务指标": "主要会计数据",
     "普通股股利分配方案": "普通股现金分红情况表"
@@ -53,7 +53,7 @@
     "headerStandardize": "[\\4E00-\\u9FA5]{3,}",
     "fieldDiscard": [],
     "fieldFirst": "营业收入",
-    "fieldLast": "总资产|归属于上市公司股东的净资产",
+    "fieldLast": "总资产|归属于上市公司股东的净资产|总资产（元）|归属于上市公司股东的净资产（元）",
     "fieldFromHeader": "",
     "fieldAlias": {
       "资产总额（元）": "总资产",
@@ -119,7 +119,7 @@
     "headerStandardize": "",
     "fieldDiscard": [],
     "fieldFirst": "一、营业总收入",
-    "fieldLast": "稀释每股收益",
+    "fieldLast": "稀释每股收益|稀释每股收益(元/股)",
     "fieldFromHeader": "",
     "fieldAlias": {
       "提取保险合同准备金净额": "提取保险责任准备金净额",
@@ -172,7 +172,7 @@
     "horizontalTable": false,
     "headerDiscard": [],
     "headerStandardize": "",
-    "fieldDiscard": ["3．对所有者（或股东）的","分配"],
+    "fieldDiscard": [],
     "fieldFirst": "一、上年期末余额",
     "fieldLast": "四、本期期末余额",
     "fieldFromHeader": "项目",
@@ -208,11 +208,11 @@
   },
 
   "分季度主要财务": {
-    "header": ["第一季度（1-3 月份）","第二季度（4-6 月份）","第三季度（7-9 月份）","第四季度（10-12 月份）"],
+    "header": ["","第一季度（1-3 月份）","第二季度（4-6 月份）","第三季度（7-9 月份）","第四季度（10-12 月份）"],
     "fieldName": ["营业收入","归属于上市公司股东的净利润","归属于上市公司股东的扣除非经常性损益后的净利润","经营活动产生的现金流量净额"],
     "horizontalTable": false,
     "headerDiscard": [],
-    "headerStandardize": "",
+    "headerStandardize": "[\\u4E00-\\u9FA5]{3,}",
     "fieldDiscard": [],
     "fieldFirst": "营业收入",
     "fieldLast": "经营活动产生的现金流量净额",

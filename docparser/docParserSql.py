@@ -69,6 +69,9 @@ class DocParserSql(DocParserBase):
         #去掉无用的表头;同时对水平表进行转置,把字段名由index转为column
         dataframe = self._process_header_discard(dataframe, tableName)
 
+        #把表头进行标准化
+        dataframe = self._process_header_standardize(dataframe,tableName)
+
         #把表字段名进行标准化,标准化之后再去重复
         dataframe = self._process_field_standardize(dataframe,tableName)
 
@@ -314,6 +317,12 @@ class DocParserSql(DocParserBase):
         dataFrame.iloc[0] = aliasedFields
         return dataFrame
 
+    def _process_header_standardize(self,dataFrame,tableName):
+        #把表头字段进行标准化
+        standardizedHeaders = self._get_standardized_header(dataFrame.index.tolist(),tableName)
+        dataFrame.index = standardizedHeaders
+        return dataFrame
+
     def _process_field_standardize(self,dataFrame,tableName):
         #把表字段进行标准化,把所有的字段名提取为两种模式,如:利息收入,一、营业总收入
         standardizedFields = self._get_standardized_field(dataFrame.iloc[0].tolist(),tableName)
@@ -345,6 +354,15 @@ class DocParserSql(DocParserBase):
 
         duplicatedField = [duplicate(fieldName) for fieldName in fieldList]
         return duplicatedField
+
+    def _get_standardized_header(self,headerList,tableName):
+        assert headerList is not None, 'sourceRow(%s) must not be None' % headerList
+        fieldStandardize = self.dictTables[tableName]['headerStandardize']
+        if isinstance(headerList, list):
+            standardizedFields = [self._standardize(fieldStandardize, field) for field in headerList]
+        else:
+            standardizedFields = self._standardize(fieldStandardize, headerList)
+        return standardizedFields
 
     def _get_standardized_field_strict(self,fieldList,tableName):
         assert fieldList is not None, 'sourceRow(%s) must not be None' % fieldList

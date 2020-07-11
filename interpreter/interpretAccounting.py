@@ -78,8 +78,9 @@ class InterpretAccounting(InterpretBase):
                                      ,'company':self.names['company']
                                      ,'tableBegin':True
                                      ,'page_numbers':self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
-            interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['company'],
-                                         self.names[tableName]['time'], self.names[tableName]['unit']]) + '\n'
+            #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['company'],
+            #                             self.names[tableName]['time'], self.names[tableName]['unit']]) + '\n'
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             if self.names[tableName]['tableEnd'] == False:
                 self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
                                         ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
@@ -100,8 +101,9 @@ class InterpretAccounting(InterpretBase):
             self.names[tableName].update({'tableName':tableName,'unit':unit,'currency':self.names['currency']
                                 ,'tableBegin':True
                                 ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
-            interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
-                                         self.names[tableName]['currency']]) + '\n'
+            #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
+            #                             self.names[tableName]['currency']]) + '\n'
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             if self.names[tableName]['tableEnd'] == False:
                 self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
                                         ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
@@ -127,8 +129,9 @@ class InterpretAccounting(InterpretBase):
                                              , 'tableBegin': True
                                              , 'page_numbers': self.names[tableName]['page_numbers'] + list(
                     [self.currentPageNumber])})
-            interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
-                                         self.names[tableName]['currency']]) + '\n'
+            #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
+            #                             self.names[tableName]['currency']]) + '\n'
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             if self.names[tableName]['tableEnd'] == False:
                 self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
                                                  , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
@@ -208,6 +211,7 @@ class InterpretAccounting(InterpretBase):
                          | COMPANY NUMERIC
                          | COMPANY UNIT
                          | COMPANY error
+                         | COMPANY empty
                          | CRITICAL CRITICAL'''
             p[0] = p[1]
 
@@ -289,7 +293,7 @@ class InterpretAccounting(InterpretBase):
 
         def p_empty(p):
             '''empty : '''
-            print('empty')
+            #print('empty')
 
         def p_error(p):
             if p:
@@ -305,9 +309,14 @@ class InterpretAccounting(InterpretBase):
             self.currentPageNumber = docParser.index
             text = docParser._get_text(data)
             self.parser.parse(text,lexer=lexer,debug=debug,tracking=tracking)
-        self._logger.info(','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
+        self.logger.info(','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                           ,str(self.names['股票代码']),self.names['股票简称']]))
-        self._logger.info(self.sqlParser.process_info)
+        self.logger.info(self.sqlParser.process_info)
+        failedTable = set(self.sqlParser.process_info.keys()).difference(set(self.tableNames))
+        if len(failedTable) == 0:
+            self.logger.info("all table is success fetched!")
+        else:
+            self.logger.info('table(%s) is failed to fetch'%failedTable)
         docParser._close()
 
     def initialize(self):

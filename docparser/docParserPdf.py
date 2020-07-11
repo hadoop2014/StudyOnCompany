@@ -110,43 +110,58 @@ class DocParserPdf(DocParserBase):
             mergedFields = reduce(self._merge, fieldList)
             # isTableEnd = self.self._is_table_end(tableName,table[-1][0])
             isTableEnd = self._is_table_end(tableName, mergedFields)
-            isTableStart = self._is_table_start(tableName,table)
+            #isTableStart = self._is_table_start(tableName,table)
+            isTableStart = self._is_table_start(tableName,mergedFields)
             if isTableStart == True:
                 processedTable = table
 
             if isTableEnd == True:
                 processedTable = table
                 break
-            else:
+            #else:
                 #对于合并所所有者权益变动表,对某些情况下因为表尾字段做了拆分,很难通过表尾字段做判断,可以通过下一张表的开头来判断,上一张表的结束.
-                if isTableStart == True:
-                    if len(page_numbers) > 1 and index > 0:
-                        processedTable = tables[index - 1]
-                        isTableEnd = True
-                        break
+            #    if isTableStart == True:
+            #        if len(page_numbers) > 1 and index > 0:
+            #            processedTable = tables[index - 1]
+            #            isTableEnd = True
+            #            break
 
         return processedTable,isTableEnd
 
-    def _is_table_start(self,tableName,table):
+    def _is_table_start(self,tableName,mergedHeader):
         #针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
         isTableStart = False
-        firstHeaderName = self.dictTables[tableName]['header'][0]
-        headerList = [row[0] for row in table]
-        for header in headerList:
-            if self._is_valid(header):
-                if firstHeaderName == header:
-                    isTableStart = True
-                break
+        #firstHeaderName = self.dictTables[tableName]['header'][0]
+        #headerList = [row[0] for row in table]
+        #for header in headerList:
+        #    if self._is_valid(header):
+        #        if firstHeaderName == header:
+        #            isTableStart = True
+        #        break
+        headerFirst = self.dictTables[tableName]["header"][0]
+        fieldFirst = self.dictTables[tableName]['fieldFirst']
+        if headerFirst == '':
+            headerFirst = fieldFirst
+        headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
+        headerFirst = '^' + headerFirst
+        if isinstance(mergedHeader, str) and isinstance(headerFirst, str) and headerFirst != '':
+            mergedHeader = mergedHeader.replace('(', '（').replace(')', '）')
+            matched = re.search(headerFirst, mergedHeader)
+            if matched is not None:
+                isTableStart = True
         return isTableStart
 
-    def _is_table_end(self,tableName,lastField):
+    def _is_table_end(self,tableName,mergedField):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
         #针对合并所有者权益表,表尾字段"四、本期期末余额",并不是出现在talbe[-1][0],而是出现在第一列的最后两个字段,且有可能是分裂的
         isTableEnd = False
         fieldLast = self.dictTables[tableName]["fieldLast"]
-        if isinstance(lastField,str) and isinstance(fieldLast,str) and fieldLast != '':
-            matched = re.search(fieldLast,lastField)
+        fieldLast = fieldLast.replace('(','（').replace(')','）')  #在正则表达式中,'()'是元符号,需要替换成中文符号
+        fieldLast = '|'.join([field + '$' for field in fieldLast.split('|')])
+        if isinstance(mergedField,str) and isinstance(fieldLast,str) and fieldLast != '':
+            mergedField = mergedField.replace('(','（').replace(')','）')
+            matched = re.search(fieldLast,mergedField)
             if matched is not None:
                 isTableEnd = True
         return isTableEnd
