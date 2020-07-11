@@ -93,6 +93,7 @@ class InterpretAccounting(InterpretBase):
 
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT optional '''
+            #第二个语法针对的是主要会计数据
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
             unit = p[3].split(':')[-1].split('：')[-1]
@@ -114,11 +115,14 @@ class InterpretAccounting(InterpretBase):
 
         def p_fetchtable_timetime(p):
             '''fetchtable : TABLE optional TIME TIME'''
-            #处理主要会计数据的的场景
+            #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
             tableName = self._get_tablename_alias(p[1])
-            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
-            #unit = p[3].split(':')[-1].split('：')[-1]
+            if len(self.names[tableName]['page_numbers']) != 0:
+                if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
+                    self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
+                    return
             unit = ''
+            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
                                              , 'tableBegin': True
                                              , 'page_numbers': self.names[tableName]['page_numbers'] + list(
@@ -299,7 +303,8 @@ class InterpretAccounting(InterpretBase):
     def doWork(self,docParser,lexer=None,debug=False,tracking=False):
         for data in docParser:
             self.currentPageNumber = docParser.index
-            self.parser.parse(docParser._get_text(data),lexer=lexer,debug=debug,tracking=tracking)
+            text = docParser._get_text(data)
+            self.parser.parse(text,lexer=lexer,debug=debug,tracking=tracking)
         self._logger.info(','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                           ,str(self.names['股票代码']),self.names['股票简称']]))
         self._logger.info(self.sqlParser.process_info)

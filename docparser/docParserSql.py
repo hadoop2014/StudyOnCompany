@@ -160,6 +160,8 @@ class DocParserSql(DocParserBase):
         lastIndex = 0
         lastField = None
         countIndex = len(dataFrame.index.values)
+        mergedFields = reduce(self._merge,dataFrame.iloc[:, 0].tolist())
+        isStandardizeStrictMode = self._is_standardize_strict_mode(mergedFields,tableName)
 
         for index, field in enumerate(dataFrame.iloc[:, 0]):
             #情况1: 当前field和standardizedFields匹配成功,表示新的字段开始,则处理之前的mergedRow
@@ -190,7 +192,7 @@ class DocParserSql(DocParserBase):
                     if mergedRow is not None:
                         mergedField = mergedRow[0]
                         if self._is_valid(mergedField):
-                            if self._is_field_in_standardize_strict(mergedField,tableName):
+                            if self._is_field_in_standardize_by_mode(mergedField,isStandardizeStrictMode,tableName):
                                 if index > lastIndex + 1 and mergedRow is not None:
                                     dataFrame.iloc[lastIndex] = mergedRow
                                     dataFrame.iloc[lastIndex + 1:index] = self.NaN
@@ -205,18 +207,11 @@ class DocParserSql(DocParserBase):
                     mergedField = mergedRow[0]
                     if self._is_valid(mergedField):
                         #当前字段为'',下一个字段有效,如果合并后的字段为标准字段,则认为合并成功
-                        if self._is_field_in_standardize_strict(mergedField,tableName):
+                        if self._is_field_in_standardize_by_mode(mergedField,isStandardizeStrictMode,tableName):
                             if index > lastIndex + 1 and mergedRow is not None:
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = self.NaN
                             mergedRow = None
-                        #else:
-                            #当前字段为'',下一个字段有效,合并后字段为非标准字段,
-                            #if self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName):
-                            #    if index > lastIndex + 1 and mergedRow is not None:
-                            #        dataFrame.iloc[lastIndex] = mergedRow
-                            #        dataFrame.iloc[lastIndex + 1:index] = self.NaN
-                            #    mergedRow = None
             else:
                 #针对field = 'None'或则其他非法情况,则继续合并
                 pass
@@ -288,7 +283,7 @@ class DocParserSql(DocParserBase):
 
     def _process_field_duplicate(self,dataFrame,tableName):
         # 重复字段处理,放在字段标准化之后
-        duplicatedFields = self._get_duplicated_field(dataFrame.iloc[0].tolist(),tableName)#dict(zip(fieldDuplicate, [0] * len(fieldDuplicate)))
+        duplicatedFields = self._get_duplicated_field(dataFrame.iloc[0].tolist())
         dataFrame.iloc[0] = duplicatedFields
         return dataFrame
 
@@ -298,6 +293,7 @@ class DocParserSql(DocParserBase):
         headerDiscardPattern = '|'.join(headerDiscard)
         #同时对水平表进行转置,把字段名由index转为column,便于插入sqlite3数据库
         dataFrame = dataFrame.T.copy()
+        #删除需要丢弃的表头,该表头由self.dictTables[tableName]['headerDiscard']定义
         indexDiscardHeader = [self._is_field_matched(headerDiscardPattern,x) for x in dataFrame.index.values]
         dataFrame.loc[indexDiscardHeader] = self.NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
@@ -339,7 +335,7 @@ class DocParserSql(DocParserBase):
         mergedRow = [self._merge(field1, field2, isFieldJoin) for field1, field2 in zip(mergeRow, sourceRow)]
         return mergedRow
 
-    def _get_duplicated_field(self,fieldList,tableName):
+    def _get_duplicated_field(self,fieldList):
         dictFieldDuplicate = dict(zip(fieldList,[0]*len(fieldList)))
         def duplicate(fieldName):
             dictFieldDuplicate.update({fieldName:dictFieldDuplicate[fieldName] + 1})
@@ -368,6 +364,18 @@ class DocParserSql(DocParserBase):
             standardizedFields = self._standardize(fieldStandardize,fieldList)
         return standardizedFields
 
+    def _is_standardize_strict_mode(self,mergedFields, tableName):
+        isStandardizeStrictMode = False
+        standardizedFieldsStrict = self._get_standardized_field_strict(self.dictTables[tableName]['fieldName'],
+                                                                       tableName)
+        standardizedFieldsStrictPattern = '|'.join(standardizedFieldsStrict)
+        if isinstance(standardizedFieldsStrictPattern, str) and isinstance(mergedFields, str):
+            if standardizedFieldsStrictPattern != '':
+                matched = re.search(standardizedFieldsStrictPattern,mergedFields)
+                if matched is not None:
+                    isStandardizeStrictMode = True
+        return isStandardizeStrictMode
+
     def _is_header_in_row(self,row,tableName):
         mergedRow = reduce(self._merge, row)
         headerStandardize = self.dictTables[tableName]['headerStandardize']
@@ -394,6 +402,31 @@ class DocParserSql(DocParserBase):
             if self._is_field_matched(pattern,field):
                 isFieldInList = True
                 break
+        return isFieldInList
+
+    def _is_field_in_standardize_by_mode(self,field,isStandardizeStrict,tableName):
+        if isStandardizeStrict == True:
+            isFieldInStandardize = self._is_field_in_standardize_strict(field,tableName)
+        else:
+            isFieldInStandardize = self._is_field_in_standardize(field,tableName)
+        return isFieldInStandardize
+
+    def _is_field_in_standardize(self,field,tableName):
+        # 把field按严格标准进行标准化,然后和判断该字段是否和同样方法标准化后的某个字段相同.
+        isFieldInList = False
+        standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],
+                                                                       tableName)
+        aliasFields = list(self.dictTables[tableName]['fieldAlias'].keys())
+        discardFields = list(self.dictTables[tableName]['fieldDiscard'])
+        standardizedFields.extend(aliasFields)
+        standardizedFields.extend(discardFields)
+        standardizedFields = [field for field in standardizedFields if self._is_valid(field)]
+        assert isinstance(standardizedFields,
+                          list), "patternList(%s) must be a list of string" % standardizedFields
+        fieldStrict = self._get_standardized_field(field, tableName)
+
+        if fieldStrict in standardizedFields:
+            isFieldInList = True
         return isFieldInList
 
     def _is_field_in_standardize_strict(self, field,tableName):
@@ -470,7 +503,7 @@ class DocParserSql(DocParserBase):
                 sql = sql[:-1]  # 去掉最后一个逗号
                 #创建新表
                 standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
-                duplicatedFields = self._get_duplicated_field(standardizedFields,tableName)
+                duplicatedFields = self._get_duplicated_field(standardizedFields)
                 for fieldName in duplicatedFields:
                     if fieldName is not self.NaN:
                         sql = sql + "\n\t\t\t\t\t,[%s]  NUMERIC"%fieldName
