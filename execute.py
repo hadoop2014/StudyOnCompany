@@ -19,7 +19,7 @@ def docParse(parser, interpreter, taskName, gConfig, lexer=None, debug=False, tr
         pass
     start_time = time.time()
 
-    print("\n\npase (%s) file is starting!\n\n" % taskName)
+    print("\n\n%s %s parse is starting!\n\n" % (os.path.split(parser.sourceFile)[-1],taskName))
     #parser.parse()
     taskResult = interpreter.doWork(parser,lexer=lexer,debug=debug,tracking=tracking)
     print('\n\nparse %s file end, time used %.4f' % (taskName, (time.time() - start_time)))

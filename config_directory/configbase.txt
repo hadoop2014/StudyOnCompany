@@ -1,6 +1,6 @@
 #!/usr/bin/env Python
 # coding=utf-8
-#遗留问题,需要把年度报告从UNIT中独立出来
+#遗留问题,需要把年度报告从UNIT中独立出来,再升科技2018年年报的合并所有者权益变动表中间插入了表头
 [strings]
 #该节配置大部分为configbase.txt所特有
 working_directory = working_directory/
@@ -33,10 +33,11 @@ source_directory = 年报
 #sourcefile = %(source_directory)s/振德医疗：2018年年度报告.PDF
 #sourcefile = %(source_directory)s/浙江鼎力：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/泰格医药：2019年年度报告.PDF
-sourcefile = %(source_directory)s/泰格医药：2018年年度报告.PDF
+#sourcefile = %(source_directory)s/泰格医药：2018年年度报告.PDF
 #sourcefile = %(source_directory)s/健帆生物：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/贵州茅台：2018年年度报告.PDF
 #sourcefile = %(source_directory)s/再升科技：2018年年度报告.PDF
+sourcefile = %(source_directory)s/上海机场：2018年年度报告.PDF
 
 #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
 EOF = None

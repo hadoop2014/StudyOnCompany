@@ -122,6 +122,7 @@ class DocParserSql(DocParserBase):
         mergedRow = None
         firstHeader = self.dictTables[tableName]['header'][0]
         lastIndex = 0
+        keepAheader = False
 
         #需要把插入在表中间的表头合并掉
         for index,field in enumerate(dataFrame.iloc[:,0]):
@@ -132,6 +133,7 @@ class DocParserSql(DocParserBase):
                             #if mergedRow[0] == firstHeader:
                             dataFrame.iloc[lastIndex] = mergedRow
                             dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                            keepAheader = True
                         #mergedRow = None
                         break
                 else:
@@ -140,6 +142,7 @@ class DocParserSql(DocParserBase):
                             if mergedRow[0] == firstHeader and firstHeader != '':
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                                keepAheader = True
                         mergedRow = None
                     #else:
                     #    if firstHeader == '':
@@ -158,10 +161,11 @@ class DocParserSql(DocParserBase):
                         if mergedRow[0] == firstHeader and firstHeader != '':
                             dataFrame.iloc[lastIndex] = mergedRow
                             dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                            keepAheader = True
                     mergedRow = None
 
-            #if field == firstHeader and firstHeader != '':
-            #    mergedRow = None
+            if keepAheader and firstHeader == field:#self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName) == True:
+                mergedRow = None
 
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
