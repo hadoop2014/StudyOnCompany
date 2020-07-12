@@ -81,8 +81,6 @@ class InterpretAccounting(InterpretBase):
                                      ,'company':self.names['company']
                                      ,'tableBegin':True
                                      ,'page_numbers':self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
-            #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['company'],
-            #                             self.names[tableName]['time'], self.names[tableName]['unit']]) + '\n'
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             if self.names[tableName]['tableEnd'] == False:
                 self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
@@ -107,8 +105,6 @@ class InterpretAccounting(InterpretBase):
             self.names[tableName].update({'tableName':tableName,'unit':unit,'currency':self.names['currency']
                                 ,'tableBegin':True
                                 ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
-            #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
-            #                             self.names[tableName]['currency']]) + '\n'
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             if self.names[tableName]['tableEnd'] == False:
                 self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
@@ -154,7 +150,8 @@ class InterpretAccounting(InterpretBase):
 
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
-                          | TABLE optional TIME optional UNIT optional NUMERIC'''
+                          | TABLE optional TIME optional UNIT optional NUMERIC
+                          | TABLE term TABLE optional NUMERIC'''
             #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
@@ -167,17 +164,18 @@ class InterpretAccounting(InterpretBase):
                                              , 'tableBegin': False
                                              , 'page_numbers': self.names[p[1]]['page_numbers'] + list(
                     [self.currentPageNumber])})
-            #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit']]) + '\n'
-            interpretPrefix = '\n'.join([slice for slice in p[:-1] if slice is not None]) + '\n'
+            if p[1] == p[3]:
+                #针对现金流量表达到尾部的时候的处理
+                interpretPrefix = '\n'.join([str(slice) for slice in p[2:-1] if slice is not None]) + '\n'
+            else:
+                interpretPrefix = '\n'.join([str(slice) for slice in p[:-1] if slice is not None]) + '\n'
             if self.names[tableName]['tableEnd'] == False:
                 self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
                                                  , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
                                                  , '报告类型': self.names['报告类型']})
                 self.docParser._merge_table(self.names[p[1]], interpretPrefix)
-
-
             self.logger.info('\n' + str(self.names[tableName]))
-            pass
+
 
         #def p_fetchtable_skiptime(p):
         #    '''fetchtable : TABLE optional TIME TIME '''

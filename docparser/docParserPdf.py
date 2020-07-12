@@ -26,7 +26,11 @@ class DocParserPdf(DocParserBase):
     def _get_text(self,page=None):
         #interpretPrefix用于处理比如合并资产负债表分布在多个page页面的情况
         #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
-        pageText = self._interpretPrefix + page.extract_text() + self.EOF
+        if self._index == 1 :
+            #解决贵州茅台年报中,贵州茅台酒股份有限公司2018 年年度报告,被解析成"贵州茅台酒股份有限公司 年年度报告 2018
+            pageText = self._interpretPrefix + page.extract_text(y_tolerance=4) + self.EOF
+        else:
+            pageText = self._interpretPrefix + page.extract_text() + self.EOF
         return pageText
 
     def _get_tables(self,page = None):
