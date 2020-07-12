@@ -8,7 +8,7 @@ from baseClass import *
 
 class BaseParser(BaseClass):
     def __init__(self,gConfig):
-        super(BaseParser, self).__init__(gConfig['gConfigJson'])
+        super(BaseParser, self).__init__(gConfig)
 
     def _load_data(self,input = None):
         if input is None:
@@ -20,7 +20,7 @@ class BaseParser(BaseClass):
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         self.gConfig = getConfig.get_config('config_directory/configbase.txt')
-        gConfigJson = getConfig.get_config_json('config_directory/InterpretAccounting.json')
+        gConfigJson = getConfig.get_config_json('config_directory/interpretAccounting.json')
         self.gConfig.update({"gConfigJson": gConfigJson})
         testParser = BaseParser(self.gConfig)
         self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig, docParser=testParser)
@@ -132,13 +132,37 @@ class MyTestCase(unittest.TestCase):
         input = input + ' (现金) (1) (12.33%) (%) 2)'
         input = input + ' 应纳税增值额(应纳税额按应纳 16%、13%、10%、9%、6% \n税销售额乘以适用税率扣除当\n期允许抵扣的进项税后的余额\n计算) '
         input = input + ' (应纳税额按应纳 (16%、13%、10%、9%、6% 有) \n税销售额乘以适用税率扣除当)'
+        input = input + ' 公司近三年（含报告期）的普通股股利分配方案或预案、资本公积金转增股本方案或预案\n单位：元 币种：人民币'
+        input = input + ' 2019年年度报告 ' \
+                        '\n七、 近三年主要会计数据和财务指标 ' \
+                        '\n(一) 主要会计数据 ' \
+                        '\n单位：元  币种：人民币 ' \
+                        '\n ' \
+                        '\n本期比上年同期增' \
+                        '\n主要会计数据  2019年  2018年  2017年 ' \
+                        '\n减(%) ' \
+                        '\n营业收入  1,894,218,317.34  1,546,043,486.35  22.52  1,179,727,843.01 ' \
+                        '\n归属于上市公司股东的净 463,073,018.65  332,092,898.42  39.44  216,574,727.65 ' \
+                        '\n利润 ' \
+                        '\n归属于上市公司股东的扣 453,153,425.68  326,953,777.64  38.60  212,920,593.45 ' \
+                        '\n除非经常性损益的净利润 ' \
+                        '\n经营活动产生的现金流量 647,843,745.11  469,415,593.60  38.01  346,553,967.15 ' \
+                        '\n净额 ' \
+                        '\n  本期末比上年同期' \
+                        '\n2019年末  2018年末  2017年末 ' \
+                        '\n末增减（%） ' \
+                        '\n归属于上市公司股东的净 1,785,441,698.82  1,315,208,572.85  35.75  992,569,273.83 ' \
+                        '\n资产 ' \
+                        '\n总资产  2,659,796,439.52  2,132,691,687.02  24.72  1,794,532,319.05 ' \
+                        '\n ' \
+                        '\n'
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)
         #test yaac
         testParser._load_data([input])
-        self.interpreter.doWork(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
-        #self.interpreter.parser.parse(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
+        #self.interpreter.doWork(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
+        self.interpreter.parser.parse(input,lexer=self.interpreter.lexer,debug=True,tracking=True)
 
 if __name__ == '__main__':
     unittest.main()

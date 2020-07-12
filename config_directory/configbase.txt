@@ -19,13 +19,17 @@ source_directory = 年报
 #sourcefile = %(source_directory)s/上峰水泥：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/良信电器：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/上峰水泥：2018年年度报告.PDF
-sourcefile = %(source_directory)s/亿纬锂能：2018年年度报告.PDF
+#sourcefile = %(source_directory)s/亿纬锂能：2018年年度报告.PDF
 #sourcefile = %(source_directory)s/亿纬锂能：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/中顺洁柔：2018年年度报告.PDF
 #sourcefile = %(source_directory)s/东材科技：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/东材科技：2018年年度报告.PDF
 #sourcefile = %(source_directory)s/坤彩科技：2018年年度报告.PDF
-
+#sourcefile = %(source_directory)s/通策医疗：2019年年度报告.PDF
+#sourcefile = %(source_directory)s/贝达药业：2019年年度报告.PDF
+#sourcefile = %(source_directory)s/振德医疗：2018年年度报告.PDF
+#sourcefile = %(source_directory)s/浙江鼎力：2019年年度报告.PDF
+sourcefile = %(source_directory)s/泰格医药：2019年年度报告.PDF
 targetfile = 千禾味业.xlsx
 database = financialdatabase.db
 

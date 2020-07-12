@@ -73,6 +73,9 @@ class InterpretAccounting(InterpretBase):
             '''fetchtable : TABLE optional TIME optional UNIT optional '''
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+                self.docParser.interpretPrefix = ''
+                return
             unit = p[5].split(':')[-1].split('：')[-1]
             self.names[tableName].update({'tableName':tableName,'time':p[3],'unit':unit,'currency':self.names['currency']
                                      ,'company':self.names['company']
@@ -97,6 +100,9 @@ class InterpretAccounting(InterpretBase):
             #第二个语法针对的是主要会计数据
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+                self.docParser.interpretPrefix = ''
+                return
             unit = p[3].split(':')[-1].split('：')[-1]
             self.names[tableName].update({'tableName':tableName,'unit':unit,'currency':self.names['currency']
                                 ,'tableBegin':True
@@ -123,6 +129,9 @@ class InterpretAccounting(InterpretBase):
                 if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
                     self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
                     return
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+                self.docParser.interpretPrefix = ''
+                return
             unit = ''
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
@@ -143,17 +152,23 @@ class InterpretAccounting(InterpretBase):
 
             self.logger.info('\n' + str(self.names[tableName]))
 
-        def p_fetchtable_reachtail(p):
-            '''fetchtable : TABLE optional UNIT NUMERIC'''
+        def p_fetchtable_reatchtail(p):
+            '''fetchtable : TABLE optional UNIT NUMERIC
+                          | TABLE optional TIME optional UNIT optional NUMERIC'''
             #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
-            unit = p[3].split(':')[-1].split('：')[-1]
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+                self.docParser.interpretPrefix = ''
+                return
+            #unit = p[3].split(':')[-1].split('：')[-1]
+            unit = ''
             self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
                                              , 'tableBegin': False
                                              , 'page_numbers': self.names[p[1]]['page_numbers'] + list(
                     [self.currentPageNumber])})
-            interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit']]) + '\n'
+            #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit']]) + '\n'
+            interpretPrefix = '\n'.join([slice for slice in p[:-1] if slice is not None]) + '\n'
             if self.names[tableName]['tableEnd'] == False:
                 self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
                                                  , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
@@ -170,14 +185,13 @@ class InterpretAccounting(InterpretBase):
             #print(p[1])
         #    pass
 
-        def p_fetchtable_skipheader(p):
-            '''fetchtable : TABLE HEADER '''
+        def p_fetchtable_skipword(p):
+            '''fetchtable : TABLE HEADER
+                          | TABLE term
+                          | TABLE PUNCTUATION
+                          | TABLE optional TABLE
+                          | TABLE optional PUNCTUATION'''
             #去掉合并资产负债表项目
-            #print(p[1])
-            pass
-
-        def p_fetchtable_skipterm(p):
-            '''fetchtable : TABLE term '''
             #print(p[1])
             pass
 
@@ -297,9 +311,9 @@ class InterpretAccounting(InterpretBase):
 
         def p_error(p):
             if p:
-                print("Syntax error at '%s:%s'" % (p.value,p.type))
+                print("Syntax error at '%s:%s' page %d" % (p.value,p.type,self.currentPageNumber))
             else:
-                print("Syntax error at EOF")
+                print("Syntax error at EOF page %d"%self.currentPageNumber)
 
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
@@ -312,12 +326,21 @@ class InterpretAccounting(InterpretBase):
         self.logger.info(','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                           ,str(self.names['股票代码']),self.names['股票简称']]))
         self.logger.info(self.sqlParser.process_info)
-        failedTable = set(self.sqlParser.process_info.keys()).difference(set(self.tableNames))
+        failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
             self.logger.info("all table is success fetched!")
         else:
             self.logger.info('table(%s) is failed to fetch'%failedTable)
         docParser._close()
+
+    def _is_reatch_max_pages(self, fetchTable,tableName):
+        isReatchMaxPages = False
+        maxPages = self.dictTables[tableName]['maxPages']
+        if len(fetchTable['page_numbers']) >= maxPages or fetchTable['tableEnd'] == True:
+            isReatchMaxPages = True
+            self.logger.info("table %s is reatch max page numbers:%d >= %d"
+                             %(tableName,len(fetchTable['page_numbers']),maxPages))
+        return isReatchMaxPages
 
     def initialize(self):
         for tableName in self.tableNames:

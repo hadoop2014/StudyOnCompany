@@ -166,7 +166,7 @@ class DocParserSql(DocParserBase):
         mergedFields = reduce(self._merge,dataFrame.iloc[:, 0].tolist())
         isStandardizeStrictMode = self._is_standardize_strict_mode(mergedFields,tableName)
 
-        for index, field in enumerate(dataFrame.iloc[:, 0]):
+        for index, field in enumerate(dataFrame.iloc[:, 0],start=0):
             #情况1: 当前field和standardizedFields匹配成功,表示新的字段开始,则处理之前的mergedRow
             #情况2: 当前field和standardizedFields匹配不成功,又有两种情况:
             #    a)上一个mergedRow已经拼出了完整的field,和standardizedFields匹配成功,此时当前row为[field,非None,非None,...]
@@ -253,7 +253,12 @@ class DocParserSql(DocParserBase):
                     value =  [commonFiled,*[str(int(dictTable[commonFiled].split('年')[0])) + '年'
                                        for i in range(len(dataFrame.iloc[:,0])-1)]]
                 else:
-                    value = [commonFiled,*[str(int(dictTable[commonFiled].split('年')[0]) - i) + '年'
+                    firstHeader = dataFrame.index.values[0]
+                    #针对普通股现金分红情况
+                    if isinstance(firstHeader,str) and firstHeader == '分红年度':
+                        value = [commonFiled,*dataFrame.index[1:].tolist()]
+                    else:
+                        value = [commonFiled,*[str(int(dictTable[commonFiled].split('年')[0]) - i) + '年'
                                        for i in range(len(dataFrame.iloc[:,0])-1)]]
             else:
                 value = [commonFiled,*[dictTable[commonFiled]]*(len(dataFrame.iloc[:,0])-1)]

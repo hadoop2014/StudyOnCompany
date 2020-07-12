@@ -13,7 +13,7 @@ from openpyxl import Workbook
 class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
-        self.interpretPrefix = ''
+        self._interpretPrefix = ''
         self.table_settings = gConfig["table_settings"]
         self._load_data()
 
@@ -26,7 +26,7 @@ class DocParserPdf(DocParserBase):
     def _get_text(self,page=None):
         #interpretPrefix用于处理比如合并资产负债表分布在多个page页面的情况
         #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
-        pageText = self.interpretPrefix + page.extract_text() + self.EOF
+        pageText = self._interpretPrefix + page.extract_text() + self.EOF
         return pageText
 
     def _get_tables(self,page = None):
@@ -82,7 +82,7 @@ class DocParserPdf(DocParserBase):
         tableName = dictTable['tableName']
         fetchTables = self._get_tables()
         page_numbers = dictTable['page_numbers']
-        processedTable,isTableEnd = self._process_table(fetchTables, tableName, page_numbers)
+        processedTable,isTableEnd = self._process_table(fetchTables, tableName)
         dictTable.update({'tableEnd':isTableEnd})
         if isinstance(savedTable, list):
             savedTable.extend(processedTable)
@@ -95,22 +95,23 @@ class DocParserPdf(DocParserBase):
         dictTable.update({'table':savedTable})
         return dictTable
 
-    def _process_table(self,tables,tableName,page_numbers):
-        processedTable = [list(map(lambda x:str(x).replace('\n',''),row)) for row in tables[-1]]
+    def _process_table(self,tables,tableName):
+        processedTable,isTableEnd = '', False
+        if len(tables) == 0:
+            return processedTable,isTableEnd
+        processedTable = [list(map(lambda x:str(x).replace('\n','').replace(' ',''),row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
         mergedFields = reduce(self._merge,fieldList)
-        #isTableEnd = self._is_table_end(tableName,processedTable[-1][0])
         isTableEnd = self._is_table_end(tableName,mergedFields)
         if isTableEnd == True or len(tables) == 1:
             return processedTable, isTableEnd
 
+        processedTable = ''
         for index,table in enumerate(tables):
-            table = [list(map(lambda x: str(x).replace('\n', ''), row)) for row in table]
+            table = [list(map(lambda x: str(x).replace('\n', '').replace(' ',''), row)) for row in table]
             fieldList = [row[0] for row in table]
             mergedFields = reduce(self._merge, fieldList)
-            # isTableEnd = self.self._is_table_end(tableName,table[-1][0])
             isTableEnd = self._is_table_end(tableName, mergedFields)
-            #isTableStart = self._is_table_start(tableName,table)
             isTableStart = self._is_table_start(tableName,mergedFields)
             if isTableStart == True:
                 processedTable = table
@@ -168,6 +169,15 @@ class DocParserPdf(DocParserBase):
 
     def _close(self):
         self._pdf.close()
+
+    @property
+    def interpretPrefix(self):
+        return self._interpretPrefix
+
+    @interpretPrefix.setter
+    def interpretPrefix(self,prefix):
+        assert isinstance(prefix,str),"para(%s) of set_interpretPrefix must be string"%value
+        self._interpretPrefix = prefix
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:
