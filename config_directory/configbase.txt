@@ -12,7 +12,10 @@ check_file = checkbook.json
 #gConfigJson默认为空,执行execute时会被更新为configjson.json文件的内容
 gConfigJson =
 
-docformat = pdf
+#taskName = batch,single
+taskname = single
+taskresult = taskresult.xlsx
+database = financialdatabase.db
 source_directory = 年报
 #sourcefile = %(source_directory)s/千禾味业：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/千禾味业：2018年年度报告.PDF
@@ -29,9 +32,9 @@ source_directory = 年报
 #sourcefile = %(source_directory)s/贝达药业：2019年年度报告.PDF
 #sourcefile = %(source_directory)s/振德医疗：2018年年度报告.PDF
 #sourcefile = %(source_directory)s/浙江鼎力：2019年年度报告.PDF
-sourcefile = %(source_directory)s/泰格医药：2019年年度报告.PDF
-targetfile = 千禾味业.xlsx
-database = financialdatabase.db
+#sourcefile = %(source_directory)s/泰格医药：2019年年度报告.PDF
+#sourcefile = %(source_directory)s/健帆生物：2019年年度报告.PDF
+sourcefile = %(source_directory)s/贵州茅台：2018年年度报告.PDF
 
 #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
 EOF = None
@@ -55,6 +58,7 @@ unittestIsOn = False
 
 [sets]
 #该节配置为configbase.txt所特有
+tasknamelist = batch,single
 interpreterlist = calc,sql,accounting
 docformatlist = pdf,word,excel,sql
 excelSuffix = xls,xlsx

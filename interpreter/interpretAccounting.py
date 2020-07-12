@@ -328,10 +328,12 @@ class InterpretAccounting(InterpretBase):
         self.logger.info(self.sqlParser.process_info)
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
-            self.logger.info("all table is success fetched!")
+            self.logger.info("%s:all table is success fetched!"%(os.path.split(self.docParser.sourceFile)[-1]))
         else:
-            self.logger.info('table(%s) is failed to fetch'%failedTable)
+            self.logger.info('%s:table(%s) is failed to fetch'
+                             %(os.path.split(self.docParser.sourceFile)[-1],failedTable))
         docParser._close()
+        return self.sqlParser.process_info
 
     def _is_reatch_max_pages(self, fetchTable,tableName):
         isReatchMaxPages = False
