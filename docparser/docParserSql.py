@@ -119,42 +119,73 @@ class DocParserSql(DocParserBase):
         #针对合并所有者权益表的前三空表头进行合并
         #针对普通股现金分红情况表进行表头合并,因为其为转置表,实际是对其字段进行了合并.在合并完后进行预转置,使得其后续处理和其他表保持一致
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
-        mergedHeader = None
+        mergedRow = None
         firstHeader = self.dictTables[tableName]['header'][0]
+        lastIndex = 0
 
+        #需要把插入在表中间的表头合并掉
         for index,field in enumerate(dataFrame.iloc[:,0]):
             if self._is_valid(field):
                 if isHorizontalTable == True:
                     if self._is_field_first(tableName,field):
+                        if index > lastIndex + 1 and mergedRow is not None:
+                            #if mergedRow[0] == firstHeader:
+                            dataFrame.iloc[lastIndex] = mergedRow
+                            dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                        #mergedRow = None
                         break
                 else:
-                    if not (dataFrame.iloc[index] == 'None').any() and field != firstHeader:
-                        break
-            if mergedHeader is not None and (dataFrame.iloc[index] == 'None').any() == False:
+                    if field != firstHeader and  (dataFrame.iloc[index] != 'None').all()  :
+                        if index > lastIndex + 1 and mergedRow is not None:
+                            if mergedRow[0] == firstHeader and firstHeader != '':
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                        mergedRow = None
+                    #else:
+                    #    if firstHeader == '':
+                    #        if index > lastIndex + 1 and mergedRow is not None:
+                    #            dataFrame.iloc[lastIndex] = mergedRow
+                    #            dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                    #    mergedRow = None
+
+            if mergedRow is not None and (dataFrame.iloc[index] != 'None').all():
                 #在启动合并后,碰到第一行非全为None的即退出
                 #mergedRow = reduce(self._merge,dataFrame.iloc[index].tolist())
                 #headerStandardize = self.dictTables[tableName]['headerStandardize']
                 #if self._is_field_matched(headerStandardize,mergedRow) == False:
                 if self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName) == False:
-                    break
+                    if index > lastIndex + 1 and mergedRow is not None:
+                        if mergedRow[0] == firstHeader and firstHeader != '':
+                            dataFrame.iloc[lastIndex] = mergedRow
+                            dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                    mergedRow = None
 
-            if mergedHeader is None:
-                mergedHeader = dataFrame.iloc[index].tolist()
+            #if field == firstHeader and firstHeader != '':
+            #    mergedRow = None
+
+            if mergedRow is None:
+                mergedRow = dataFrame.iloc[index].tolist()
+                lastIndex = index
             else:
-                mergedHeader = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedHeader, isFieldJoin=True)
-            dataFrame.iloc[index] = self.NaN
+                mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
+            #dataFrame.iloc[index] = self.NaN
         if isHorizontalTable == True:
             #如果是转置表,则在此处做一次转置,后续的处理就和非转置表保持一致了
-            if mergedHeader is not None:
-                dataFrame.iloc[0] = mergedHeader
-                dataFrame = dataFrame.dropna(axis=0)
+            #if mergedRow is not None:
+            #    dataFrame.iloc[0] = mergedRow
+            #dataFrame.iloc[0] = dataFrame
+            dataFrame = dataFrame.dropna(axis=0)
             #把第一列做成索引
             dataFrame.set_index(0,inplace=True)
             dataFrame = dataFrame.T.copy()
         else:
-            if mergedHeader is not None :
-                dataFrame.columns = mergedHeader
-                dataFrame = dataFrame.dropna(axis=0)
+            #if mergedRow is not None :
+            columns = dataFrame.iloc[0].copy()
+            #dataFrame = dataFrame.dropna(axis=0)
+            indexDiscardField = dataFrame.iloc[:, 0].isin([firstHeader])
+            dataFrame.loc[indexDiscardField] = self.NaN
+            dataFrame.columns = columns
+            dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
     @loginfo()

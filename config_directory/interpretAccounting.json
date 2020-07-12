@@ -83,7 +83,7 @@
     "horizontalTable": false,
     "headerDiscard": ["附注"],
     "headerStandardize": "[\\4E00-\\u9FA5]{3,}",
-    "fieldDiscard": ["合同资产","合同负债","项目"],
+    "fieldDiscard": ["合同资产","合同负债","项目","保险合同准备金"],
     "fieldFirst": "流动资产",
     "fieldLast": "负债和所有者权益（或股东权益）总计|负债和所有者权益总计",
     "fieldFromHeader": "",
@@ -152,7 +152,7 @@
     "horizontalTable": false,
     "headerDiscard": ["附注"],
     "headerStandardize": "",
-    "fieldDiscard": ["处置以公允价值计量且其变动计入当期损益的金融资产净增加额","项目"],
+    "fieldDiscard": ["处置以公允价值计量且其变动计入当期损益的金融资产净增加额","为交易目的而持有的金融资产净增加额","项目"],
     "fieldFirst": "一、经营活动产生的现金流量",
     "fieldLast": "六、期末现金及现金等价物余额",
     "fieldFromHeader": "",
@@ -178,7 +178,7 @@
     "headerStandardize": "",
     "fieldDiscard": [],
     "fieldFirst": "一、上年期末余额",
-    "fieldLast": "四、本期期末余额",
+    "fieldLast": "四、本期期末余额|期末余额",
     "fieldFromHeader": "项目",
     "fieldAlias": {
       "对所有者的分配": "对所有者（或股东）的分配"
