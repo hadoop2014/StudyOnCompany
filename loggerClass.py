@@ -24,11 +24,12 @@ class Logger():
         self.formatter = logging.Formatter(fmt=DEFAULT_LOG_FMT, datefmt=DEFUALT_LOG_DATEFMT)
         # 3. 设置日志输出
         # 两者也可选其一
+        if self._logger.hasHandlers() is False:
         # 3.1 设置文件日志模式
-        self._logger.addHandler(self._get_file_handler(dictLogger['DEFAULT_LOG_FILENAME'.lower()],
-                                                       int(dictLogger['LOGGING_BACKUP_COUNT'.lower()])))
+            self._logger.addHandler(self._get_file_handler(dictLogger['DEFAULT_LOG_FILENAME'.lower()],
+                                                      int(dictLogger['LOGGING_BACKUP_COUNT'.lower()])))
         # 3.2 设置终端日志模式
-        self._logger.addHandler(self._get_console_handler())
+            self._logger.addHandler(self._get_console_handler())
         # 4. 设置日志等级
         self._logger.setLevel(dictLogger['DEFAULT_LOG_LEVEL'.lower()])
 

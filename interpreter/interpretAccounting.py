@@ -77,21 +77,24 @@ class InterpretAccounting(InterpretBase):
                 self.docParser.interpretPrefix = ''
                 return
             unit = p[5].split(':')[-1].split('：')[-1]
-            self.names[tableName].update({'tableName':tableName,'time':p[3],'unit':unit,'currency':self.names['currency']
-                                     ,'company':self.names['company']
-                                     ,'tableBegin':True
-                                     ,'page_numbers':self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
+            currency = self.names['currency']
+            company = self.names['company']
+            #self.names[tableName].update({'tableName':tableName,'time':p[3],'unit':unit,'currency':self.names['currency']
+            #                         ,'company':self.names['company']
+            #                         ,'tableBegin':True
+            #                         ,'page_numbers':self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
-            if self.names[tableName]['tableEnd'] == False:
-                self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
-                                        ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
-                                        ,'报告类型':self.names['报告类型']})
-                self.docParser._merge_table(self.names[tableName],interpretPrefix)
-                if self.names[tableName]['tableEnd'] == True:
-                    self.excelParser.writeToStore(self.names[tableName])
-                    self.sqlParser.writeToStore(self.names[tableName])
-
-            self.logger.info('\n'+ str(self.names[tableName]))
+            tableBegin = True
+            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
+            #if self.names[tableName]['tableEnd'] == False:
+            #    self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
+            #                            ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
+            #                            ,'报告类型':self.names['报告类型']})
+            #    self.docParser._merge_table(self.names[tableName],interpretPrefix)
+            #    if self.names[tableName]['tableEnd'] == True:
+            #        self.excelParser.writeToStore(self.names[tableName])
+            #        self.sqlParser.writeToStore(self.names[tableName])
+            #self.logger.info('\n'+ str(self.names[tableName]))
 
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT optional '''
@@ -102,20 +105,23 @@ class InterpretAccounting(InterpretBase):
                 self.docParser.interpretPrefix = ''
                 return
             unit = p[3].split(':')[-1].split('：')[-1]
-            self.names[tableName].update({'tableName':tableName,'unit':unit,'currency':self.names['currency']
-                                ,'tableBegin':True
-                                ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
+            currency = self.names['currency']
+            #company = self.names['company']
+            #self.names[tableName].update({'tableName':tableName,'unit':unit,'currency':self.names['currency']
+            #                    ,'tableBegin':True
+            #                    ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
-            if self.names[tableName]['tableEnd'] == False:
-                self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
-                                        ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
-                                        ,'报告类型':self.names['报告类型']})
-                self.docParser._merge_table(self.names[tableName],interpretPrefix)
-                if self.names[tableName]['tableEnd'] == True:
-                    self.excelParser.writeToStore(self.names[tableName])
-                    self.sqlParser.writeToStore(self.names[tableName])
-
-            self.logger.info('\n' + str(self.names[tableName]))
+            tableBegin = True
+            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+            #if self.names[tableName]['tableEnd'] == False:
+            #    self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
+            #                            ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
+            #                            ,'报告类型':self.names['报告类型']})
+            #    self.docParser._merge_table(self.names[tableName],interpretPrefix)
+            #    if self.names[tableName]['tableEnd'] == True:
+            #        self.excelParser.writeToStore(self.names[tableName])
+            #        self.sqlParser.writeToStore(self.names[tableName])
+            #self.logger.info('\n' + str(self.names[tableName]))
 
         def p_fetchtable_timetime(p):
             '''fetchtable : TABLE optional TIME TIME'''
@@ -126,27 +132,29 @@ class InterpretAccounting(InterpretBase):
                     self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
                     return
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = ''
+                self.docParser.interpretPrefix = NULLSTR
                 return
-            unit = ''
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
-            self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
-                                             , 'tableBegin': True
-                                             , 'page_numbers': self.names[tableName]['page_numbers'] + list(
-                    [self.currentPageNumber])})
+            unit = NULLSTR
+            currency = self.names['currency']
+            #self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
+            #                                 , 'tableBegin': True
+            #                                 , 'page_numbers': self.names[tableName]['page_numbers'] + list(
+            #        [self.currentPageNumber])})
             #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
             #                             self.names[tableName]['currency']]) + '\n'
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
-            if self.names[tableName]['tableEnd'] == False:
-                self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
-                                                 , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
-                                                 , '报告类型': self.names['报告类型']})
-                self.docParser._merge_table(self.names[tableName], interpretPrefix)
-                if self.names[tableName]['tableEnd'] == True:
-                    self.excelParser.writeToStore(self.names[tableName])
-                    self.sqlParser.writeToStore(self.names[tableName])
-
-            self.logger.info('\n' + str(self.names[tableName]))
+            tableBegin = True
+            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+            #if self.names[tableName]['tableEnd'] == False:
+            #    self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
+            #                                     , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
+            #                                     , '报告类型': self.names['报告类型']})
+            #    self.docParser._merge_table(self.names[tableName], interpretPrefix)
+            #    if self.names[tableName]['tableEnd'] == True:
+            #        self.excelParser.writeToStore(self.names[tableName])
+            #        self.sqlParser.writeToStore(self.names[tableName])
+            #self.logger.info('\n' + str(self.names[tableName]))
 
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
@@ -159,22 +167,25 @@ class InterpretAccounting(InterpretBase):
                 self.docParser.interpretPrefix = ''
                 return
             #unit = p[3].split(':')[-1].split('：')[-1]
-            unit = ''
-            self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
-                                             , 'tableBegin': False
-                                             , 'page_numbers': self.names[p[1]]['page_numbers'] + list(
-                    [self.currentPageNumber])})
-            if p[1] == p[3]:
+            unit = NULLSTR
+            currency = self.names['currency']
+            #self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
+            #                                 , 'tableBegin': False
+            #                                 , 'page_numbers': self.names[p[1]]['page_numbers'] + list(
+            #        [self.currentPageNumber])})
+            #if p[1] == p[3]:
                 #针对现金流量表达到尾部的时候的处理
-                interpretPrefix = '\n'.join([str(slice) for slice in p[2:-1] if slice is not None]) + '\n'
-            else:
-                interpretPrefix = '\n'.join([str(slice) for slice in p[:-1] if slice is not None]) + '\n'
-            if self.names[tableName]['tableEnd'] == False:
-                self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
-                                                 , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
-                                                 , '报告类型': self.names['报告类型']})
-                self.docParser._merge_table(self.names[p[1]], interpretPrefix)
-            self.logger.info('\n' + str(self.names[tableName]))
+            #    interpretPrefix = '\n'.join([str(slice) for slice in p[2:-1] if slice is not None]) + '\n'
+            #else:
+            interpretPrefix = '\n'.join([str(slice) for slice in p[:-1] if slice is not None]) + '\n'
+            tableBegin = False
+            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+            #if self.names[tableName]['tableEnd'] == False:
+            #    self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
+            #                                     , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
+            #                                     , '报告类型': self.names['报告类型']})
+            #    self.docParser._merge_table(self.names[p[1]], interpretPrefix)
+            #self.logger.info('\n' + str(self.names[tableName]))
 
 
         #def p_fetchtable_skiptime(p):
@@ -321,38 +332,60 @@ class InterpretAccounting(InterpretBase):
             self.currentPageNumber = docParser.index
             text = docParser._get_text(data)
             self.parser.parse(text,lexer=lexer,debug=debug,tracking=tracking)
-        self.logger.info(','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
+        sourceFile = os.path.split(self.docParser.sourceFile)[-1]
+        self.logger.info('%s:critical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                           ,str(self.names['股票代码']),self.names['股票简称']]))
-        self.logger.info(self.sqlParser.process_info)
+        self.logger.info('%s:process_info:'%sourceFile + str(self.sqlParser.process_info))
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
-            self.logger.info("%s:all table is success fetched!"%(os.path.split(self.docParser.sourceFile)[-1]))
+            self.logger.info("%s:all table is success fetched!"%(sourceFile))
         else:
             self.logger.info('%s:table(%s) is failed to fetch'
-                             %(os.path.split(self.docParser.sourceFile)[-1],failedTable))
+                             %(sourceFile,failedTable))
         docParser._close()
         return self.sqlParser.process_info
 
+    def _process_fetch_table(self, tableName, tableBegin, interpretPrefix, unit=NULLSTR, currency=NULLSTR, company=NULLSTR):
+        assert tableName is not None and tableName != NULLSTR, 'tableName must not be None'
+        self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': currency
+                                     ,'company':company
+                                     ,'tableBegin': tableBegin
+                                     ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
+        if self.names[tableName]['tableEnd'] == False:
+            self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
+                                             , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
+                                             , '报告类型': self.names['报告类型']})
+            self.docParser._merge_table(self.names[tableName], interpretPrefix)
+            if self.names[tableName]['tableEnd'] == True:
+                self.excelParser.writeToStore(self.names[tableName])
+                self.sqlParser.writeToStore(self.names[tableName])
+        self.logger.info('\n' + str(self.names[tableName]))
+
     def _is_reatch_max_pages(self, fetchTable,tableName):
-        isReatchMaxPages = False
+
         maxPages = self.dictTables[tableName]['maxPages']
-        if len(fetchTable['page_numbers']) >= maxPages or fetchTable['tableEnd'] == True:
+        if len(fetchTable['page_numbers']) >= maxPages:
             isReatchMaxPages = True
-            self.logger.info("table %s is reatch max page numbers:%d >= %d"
+            self.logger.error("table %s is reatch max page numbers:%d >= %d"
                              %(tableName,len(fetchTable['page_numbers']),maxPages))
+        elif fetchTable['tableEnd'] == True:
+            isReatchMaxPages = True
+        else:
+            isReatchMaxPages = False
         return isReatchMaxPages
 
     def initialize(self):
         for tableName in self.tableNames:
-            self.names.update({tableName:{'tableName':'','time':'','unit':'','currency':'','company':''
-                                          ,'公司名称':'','股票代码':'','股票简称':'','报告时间':'','报告类型':''
-                                          ,'table':'','tableBegin':False,'tableEnd':False
+            self.names.update({tableName:{'tableName':NULLSTR,'time':NULLSTR,'unit':NULLSTR,'currency':NULLSTR
+                                          ,'company':NULLSTR,'公司名称':NULLSTR,'股票代码':NULLSTR,'股票简称':NULLSTR
+                                          ,'报告时间':NULLSTR,'报告类型':NULLSTR
+                                          ,'table':NULLSTR,'tableBegin':False,'tableEnd':False
                                           ,"page_numbers":list()}})
-        self.names.update({'unit':'','currency':'','company':'','time':''})
+        self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR})
         for commonField,_ in self.commonFileds.items():
-            self.names.update({commonField:''})
+            self.names.update({commonField:NULLSTR})
         for cirtical in self.criticals:
-            self.names.update({self._get_critical_alias(cirtical):''})
+            self.names.update({self._get_critical_alias(cirtical):NULLSTR})
 
 def create_object(gConfig,docParser=None,excelParser=None,sqlParser=None):
     interpreter=InterpretAccounting(gConfig, docParser, excelParser, sqlParser)

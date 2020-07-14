@@ -8,6 +8,10 @@ import functools
 import re
 import numpy as np
 #数据读写处理的基类
+
+NULLSTR = ''
+NaN = np.nan
+
 class BaseClass():
     def __init__(self,gConfig):
         self.gConfigJson = gConfig['gConfigJson']
@@ -18,7 +22,6 @@ class BaseClass():
         #不同的类继承BaseClass时,logger采用不同的名字
         self.NONE = gConfig['NONE'.lower()]
         self.EOF = gConfig['EOF'.lower()]
-        self.NaN = np.nan
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
 
     def __iter__(self):
@@ -88,10 +91,10 @@ class BaseClass():
             if matched is not None:
                 standardizedField = matched[0]
             else:
-                standardizedField = self.NaN
+                standardizedField = NaN
         else:
             if not self._is_valid(field):
-                standardizedField = self.NaN
+                standardizedField = NaN
         return standardizedField
 
     def _is_valid(self, field):

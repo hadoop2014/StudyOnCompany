@@ -28,9 +28,15 @@ class DocParserPdf(DocParserBase):
         #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
         if self._index == 1 :
             #解决贵州茅台年报中,贵州茅台酒股份有限公司2018 年年度报告,被解析成"贵州茅台酒股份有限公司 年年度报告 2018
-            pageText = self._interpretPrefix + page.extract_text(y_tolerance=4) + self.EOF
+            pageText = page.extract_text(y_tolerance=4)
         else:
-            pageText = self._interpretPrefix + page.extract_text() + self.EOF
+            pageText = page.extract_text()
+        if pageText is not None:
+            pageText = self._interpretPrefix + pageText + self.EOF
+        else:
+            #千禾味业：2019年度审计报告.PDF文件中全部是图片,没有文字,需要做特殊处理
+            pageText = self._interpretPrefix + self.EOF
+            self.logger.error('the %s page %d\'s text of is be None' % (self.sourceFile,self._index))
         return pageText
 
     def _get_tables(self,page = None):

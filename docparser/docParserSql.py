@@ -132,7 +132,7 @@ class DocParserSql(DocParserBase):
                         if index > lastIndex + 1 and mergedRow is not None:
                             #if mergedRow[0] == firstHeader:
                             dataFrame.iloc[lastIndex] = mergedRow
-                            dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                            dataFrame.iloc[lastIndex + 1:index] = NaN
                             keepAheader = True
                         #mergedRow = None
                         break
@@ -141,14 +141,14 @@ class DocParserSql(DocParserBase):
                         if index > lastIndex + 1 and mergedRow is not None:
                             if mergedRow[0] == firstHeader and firstHeader != '':
                                 dataFrame.iloc[lastIndex] = mergedRow
-                                dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                                dataFrame.iloc[lastIndex + 1:index] = NaN
                                 keepAheader = True
                         mergedRow = None
                     #else:
                     #    if firstHeader == '':
                     #        if index > lastIndex + 1 and mergedRow is not None:
                     #            dataFrame.iloc[lastIndex] = mergedRow
-                    #            dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                    #            dataFrame.iloc[lastIndex + 1:index] = NaN
                     #    mergedRow = None
 
             if mergedRow is not None and (dataFrame.iloc[index] != 'None').all():
@@ -160,7 +160,7 @@ class DocParserSql(DocParserBase):
                     if index > lastIndex + 1 and mergedRow is not None:
                         if mergedRow[0] == firstHeader and firstHeader != '':
                             dataFrame.iloc[lastIndex] = mergedRow
-                            dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                            dataFrame.iloc[lastIndex + 1:index] = NaN
                             keepAheader = True
                     mergedRow = None
 
@@ -172,7 +172,7 @@ class DocParserSql(DocParserBase):
                 lastIndex = index
             else:
                 mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
-            #dataFrame.iloc[index] = self.NaN
+            #dataFrame.iloc[index] = NaN
         if isHorizontalTable == True:
             #如果是转置表,则在此处做一次转置,后续的处理就和非转置表保持一致了
             #if mergedRow is not None:
@@ -187,7 +187,7 @@ class DocParserSql(DocParserBase):
             columns = dataFrame.iloc[0].copy()
             #dataFrame = dataFrame.dropna(axis=0)
             indexDiscardField = dataFrame.iloc[:, 0].isin([firstHeader])
-            dataFrame.loc[indexDiscardField] = self.NaN
+            dataFrame.loc[indexDiscardField] = NaN
             dataFrame.columns = columns
             dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
@@ -215,7 +215,7 @@ class DocParserSql(DocParserBase):
                         if index > lastIndex + 1 and mergedRow is not None:
                             # 把前期合并的行赋值到dataframe的上一行
                              dataFrame.iloc[lastIndex] = mergedRow
-                             dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                             dataFrame.iloc[lastIndex + 1:index] = NaN
                         mergedRow = None
                     else:
                         #如果前面一个是空字段, 但是同一行内包含了header内容,主要会计数据会把header插入到表中间位置.
@@ -223,7 +223,7 @@ class DocParserSql(DocParserBase):
                             if index > lastIndex + 1 and mergedRow is not None:
                                 # 把前期合并的行赋值到dataframe的上一行
                                 dataFrame.iloc[lastIndex] = mergedRow
-                                dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                                dataFrame.iloc[lastIndex + 1:index] = NaN
                             mergedRow = None
 
                 else:
@@ -233,7 +233,7 @@ class DocParserSql(DocParserBase):
                             if self._is_field_in_standardize_by_mode(mergedField,isStandardizeStrictMode,tableName):
                                 if index > lastIndex + 1 and mergedRow is not None:
                                     dataFrame.iloc[lastIndex] = mergedRow
-                                    dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                                    dataFrame.iloc[lastIndex + 1:index] = NaN
                                 mergedRow = None
 
             elif field == '' and mergedRow is not None:
@@ -248,7 +248,7 @@ class DocParserSql(DocParserBase):
                         if self._is_field_in_standardize_by_mode(mergedField,isStandardizeStrictMode,tableName):
                             if index > lastIndex + 1 and mergedRow is not None:
                                 dataFrame.iloc[lastIndex] = mergedRow
-                                dataFrame.iloc[lastIndex + 1:index] = self.NaN
+                                dataFrame.iloc[lastIndex + 1:index] = NaN
                             mergedRow = None
             else:
                 #针对field = 'None'或则其他非法情况,则继续合并
@@ -267,7 +267,7 @@ class DocParserSql(DocParserBase):
                 if self._is_field_in_standardize_strict(mergedField, tableName):
                     if countIndex > lastIndex + 1 and mergedRow is not None:
                         dataFrame.iloc[lastIndex] = mergedRow
-                        dataFrame.iloc[lastIndex + 1:countIndex] = self.NaN
+                        dataFrame.iloc[lastIndex + 1:countIndex] = NaN
                     mergedRow = None
         return dataFrame
 
@@ -282,6 +282,7 @@ class DocParserSql(DocParserBase):
                 #跳过ID字段,该字段为数据库自增字段
                 continue
             if commonFiled == "报告时间":
+                assert dictTable[commonFiled] != '','dictTable[%s] must not be null!'%commonFiled
                 #公共字段为报告时间时,需要特殊处理
                 if fieldFromHeader != "":
                     #针对分季度财务指标,指标都是同一年的,但是分了四个季度
@@ -338,7 +339,7 @@ class DocParserSql(DocParserBase):
         dataFrame = dataFrame.T.copy()
         #删除需要丢弃的表头,该表头由self.dictTables[tableName]['headerDiscard']定义
         indexDiscardHeader = [self._is_field_matched(headerDiscardPattern,x) for x in dataFrame.index.values]
-        dataFrame.loc[indexDiscardHeader] = self.NaN
+        dataFrame.loc[indexDiscardHeader] = NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
@@ -347,7 +348,7 @@ class DocParserSql(DocParserBase):
         #对于普通股现金分红情况表,则忽略这一过程
         fieldDiscard = self.dictTables[tableName]['fieldDiscard']
         indexDiscardField = dataFrame.iloc[:,0].isin(fieldDiscard+self.NONE)
-        dataFrame.loc[indexDiscardField] = self.NaN
+        dataFrame.loc[indexDiscardField] = NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
@@ -519,7 +520,7 @@ class DocParserSql(DocParserBase):
         #对于Sqlit3,字符串表示为'string' ,而不是"string".
         condition = ' and '.join([str(key) + '=\'' + str(dataFrame[key].values[0]) + '\'' for key in primaryKey])
         sql = 'select count(*) from {} where '.format(tableName) + condition
-        if fieldFromHeader != "":
+        if fieldFromHeader != NULLSTR:
             #对于分季度财务数据,报告时间都是同一年,所以必须通过季度来判断记录是否唯一
             sql = sql + ' and {} = \'{}\''.format(fieldFromHeader,dataFrame[fieldFromHeader].values[0])
         result = conn.execute(sql).fetchall()
@@ -563,7 +564,7 @@ class DocParserSql(DocParserBase):
                 standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
                 duplicatedFields = self._get_duplicated_field(standardizedFields)
                 for fieldName in duplicatedFields:
-                    if fieldName is not self.NaN:
+                    if fieldName is not NaN:
                         sql = sql + "\n\t\t\t\t\t,[%s]  NUMERIC"%fieldName
                 sql = sql + '\n\t\t\t\t\t)'
                 try:

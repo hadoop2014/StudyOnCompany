@@ -95,7 +95,6 @@ def run_task(taskName,gConfig,unittestIsOn):
         sourcefiles = os.listdir(source_directory)
         for sourcefile in sourcefiles:
             logger.info('start process %s'%sourcefile)
-            sourcefile = os.path.join(gConfig['source_directory'],sourcefile)
             gConfig.update({'sourcefile':sourcefile})
             taskResult = parseStart(gConfig,taskName,unittestIsOn)
             taskResults.append(taskResult)

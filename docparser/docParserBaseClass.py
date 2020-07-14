@@ -26,7 +26,7 @@ class DocParserBase(BaseClass):
                                            self._get_class_name(self.gConfig) + '.model')
         self.checkpoint_filename = self._get_class_name(self.gConfig) + '.ckpt'
         self.source_directory = os.path.join(self.data_directory,self.gConfig['source_directory'])
-        self.sourceFile = os.path.join(self.data_directory,self.gConfig['sourcefile'])
+        self.sourceFile = os.path.join(self.data_directory,self.gConfig['source_directory'],self.gConfig['sourcefile'])
         self.taskResult = os.path.join(self.gConfig['working_directory'],self.gConfig['taskResult'.lower()])
         #self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
