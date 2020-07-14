@@ -13,7 +13,7 @@ from openpyxl import Workbook
 class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
-        self._interpretPrefix = ''
+        self._interpretPrefix = NULLSTR
         self.table_settings = gConfig["table_settings"]
         self._load_data()
 
@@ -83,7 +83,7 @@ class DocParserPdf(DocParserBase):
         #return page.extract_tables(table_settings=table_settings)
         return page.extract_tables()
 
-    def _merge_table(self, dictTable=None,interpretPrefix=''):
+    def _merge_table(self, dictTable=None,interpretPrefix=NULLSTR):
         assert dictTable is not None,"dictTable must not be None"
         self.interpretPrefix = interpretPrefix
         if dictTable['tableBegin'] == False:
@@ -100,25 +100,25 @@ class DocParserPdf(DocParserBase):
             savedTable = processedTable
 
         if dictTable['tableBegin'] == True and dictTable['tableEnd'] == True:
-            self.interpretPrefix = ''
+            self.interpretPrefix = NULLSTR
 
         dictTable.update({'table':savedTable})
         return dictTable
 
     def _process_table(self,tables,tableName):
-        processedTable,isTableEnd = '', False
+        processedTable,isTableEnd = NULLSTR , False
         if len(tables) == 0:
             return processedTable,isTableEnd
-        processedTable = [list(map(lambda x:str(x).replace('\n','').replace(' ',''),row)) for row in tables[-1]]
+        processedTable = [list(map(lambda x:str(x).replace('\n',NULLSTR).replace(' ',NULLSTR),row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
         mergedFields = reduce(self._merge,fieldList)
         isTableEnd = self._is_table_end(tableName,mergedFields)
         if isTableEnd == True or len(tables) == 1:
             return processedTable, isTableEnd
 
-        processedTable = ''
+        processedTable = NULLSTR
         for index,table in enumerate(tables):
-            table = [list(map(lambda x: str(x).replace('\n', '').replace(' ',''), row)) for row in table]
+            table = [list(map(lambda x: str(x).replace('\n', NULLSTR).replace(' ',NULLSTR), row)) for row in table]
             fieldList = [row[0] for row in table]
             mergedFields = reduce(self._merge, fieldList)
             isTableEnd = self._is_table_end(tableName, mergedFields)
@@ -151,11 +151,11 @@ class DocParserPdf(DocParserBase):
         #        break
         headerFirst = self.dictTables[tableName]["header"][0]
         fieldFirst = self.dictTables[tableName]['fieldFirst']
-        if headerFirst == '':
+        if headerFirst == NULLSTR:
             headerFirst = fieldFirst
         headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
         headerFirst = '^' + headerFirst
-        if isinstance(mergedHeader, str) and isinstance(headerFirst, str) and headerFirst != '':
+        if isinstance(mergedHeader, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
             mergedHeader = mergedHeader.replace('(', '（').replace(')', '）')
             matched = re.search(headerFirst, mergedHeader)
             if matched is not None:
@@ -170,7 +170,7 @@ class DocParserPdf(DocParserBase):
         fieldLast = self.dictTables[tableName]["fieldLast"]
         fieldLast = fieldLast.replace('(','（').replace(')','）')  #在正则表达式中,'()'是元符号,需要替换成中文符号
         fieldLast = '|'.join([field + '$' for field in fieldLast.split('|')])
-        if isinstance(mergedField,str) and isinstance(fieldLast,str) and fieldLast != '':
+        if isinstance(mergedField,str) and isinstance(fieldLast,str) and fieldLast != NULLSTR:
             mergedField = mergedField.replace('(','（').replace(')','）')
             matched = re.search(fieldLast,mergedField)
             if matched is not None:

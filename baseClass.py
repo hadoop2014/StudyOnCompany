@@ -150,7 +150,7 @@ class BaseClass():
         return self._logger
 
     #@staticmethod
-    def loginfo(text = ''):
+    def loginfo(text = NULLSTR):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self,*args, **kwargs):

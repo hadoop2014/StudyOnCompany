@@ -74,7 +74,7 @@ class InterpretAccounting(InterpretBase):
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = ''
+                self.docParser.interpretPrefix = NULLSTR
                 return
             unit = p[5].split(':')[-1].split('：')[-1]
             currency = self.names['currency']
@@ -102,7 +102,7 @@ class InterpretAccounting(InterpretBase):
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = ''
+                self.docParser.interpretPrefix = NULLSTR
                 return
             unit = p[3].split(':')[-1].split('：')[-1]
             currency = self.names['currency']
@@ -164,7 +164,7 @@ class InterpretAccounting(InterpretBase):
             tableName = self._get_tablename_alias(p[1])
             self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = ''
+                self.docParser.interpretPrefix = NULLSTR
                 return
             #unit = p[3].split(':')[-1].split('：')[-1]
             unit = NULLSTR
@@ -301,7 +301,7 @@ class InterpretAccounting(InterpretBase):
 
         def p_optional_optional(p):
             '''optional : DISCARD optional '''
-            pass
+            p[0] = p[1] + p[2]
 
         def p_optional(p):
             '''optional :  empty
@@ -317,6 +317,7 @@ class InterpretAccounting(InterpretBase):
         def p_empty(p):
             '''empty : '''
             #print('empty')
+            p[0] = ''
 
         def p_error(p):
             if p:
@@ -333,14 +334,14 @@ class InterpretAccounting(InterpretBase):
             text = docParser._get_text(data)
             self.parser.parse(text,lexer=lexer,debug=debug,tracking=tracking)
         sourceFile = os.path.split(self.docParser.sourceFile)[-1]
-        self.logger.info('%s:critical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
+        self.logger.info('%s\tcritical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                           ,str(self.names['股票代码']),self.names['股票简称']]))
-        self.logger.info('%s:process_info:'%sourceFile + str(self.sqlParser.process_info))
+        self.logger.info('%s\tprocess_info:'%sourceFile + str(self.sqlParser.process_info))
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
-            self.logger.info("%s:all table is success fetched!"%(sourceFile))
+            self.logger.info("%s\tall table is success fetched!"%(sourceFile))
         else:
-            self.logger.info('%s:table(%s) is failed to fetch'
+            self.logger.info('%s\ttable(%s) is failed to fetch'
                              %(sourceFile,failedTable))
         docParser._close()
         return self.sqlParser.process_info
@@ -359,7 +360,7 @@ class InterpretAccounting(InterpretBase):
             if self.names[tableName]['tableEnd'] == True:
                 self.excelParser.writeToStore(self.names[tableName])
                 self.sqlParser.writeToStore(self.names[tableName])
-        self.logger.info('\n' + str(self.names[tableName]))
+        self.logger.info('\nprefix: %s:'%interpretPrefix.replace('\n','\t') + str(self.names[tableName]))
 
     def _is_reatch_max_pages(self, fetchTable,tableName):
 

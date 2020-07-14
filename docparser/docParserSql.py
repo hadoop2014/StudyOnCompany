@@ -139,13 +139,13 @@ class DocParserSql(DocParserBase):
                 else:
                     if field != firstHeader and  (dataFrame.iloc[index] != 'None').all()  :
                         if index > lastIndex + 1 and mergedRow is not None:
-                            if mergedRow[0] == firstHeader and firstHeader != '':
+                            if mergedRow[0] == firstHeader and firstHeader != NULLSTR:
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = NaN
                                 keepAheader = True
                         mergedRow = None
                     #else:
-                    #    if firstHeader == '':
+                    #    if firstHeader == NULLSTR:
                     #        if index > lastIndex + 1 and mergedRow is not None:
                     #            dataFrame.iloc[lastIndex] = mergedRow
                     #            dataFrame.iloc[lastIndex + 1:index] = NaN
@@ -158,7 +158,7 @@ class DocParserSql(DocParserBase):
                 #if self._is_field_matched(headerStandardize,mergedRow) == False:
                 if self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName) == False:
                     if index > lastIndex + 1 and mergedRow is not None:
-                        if mergedRow[0] == firstHeader and firstHeader != '':
+                        if mergedRow[0] == firstHeader and firstHeader != NULLSTR:
                             dataFrame.iloc[lastIndex] = mergedRow
                             dataFrame.iloc[lastIndex + 1:index] = NaN
                             keepAheader = True
@@ -207,10 +207,10 @@ class DocParserSql(DocParserBase):
             #    a)上一个mergedRow已经拼出了完整的field,和standardizedFields匹配成功,此时当前row为[field,非None,非None,...]
             #    b)上一个mergedRow还没有拼出完整的field,但是仍和standardizedFields匹配成功,此时要么当前field='None'
             #      或则当前row为[field,None,None,None,...]
-            #    c)2019良信电器合并所有者权益变动表,"同一控制下企业合并"分成了多行,且全是空字符'',而非None
+            #    c)2019良信电器合并所有者权益变动表,"同一控制下企业合并"分成了多行,且全是空字符,而非None
             if self._is_valid(field):
                 if self._is_field_match_standardize(field, tableName) and not (dataFrame.iloc[index][1:] == 'None').all():
-                    if lastField != '':
+                    if lastField != NULLSTR:
                         #前面一个空字段所在行必定合入到下一个非空字段中
                         if index > lastIndex + 1 and mergedRow is not None:
                             # 把前期合并的行赋值到dataframe的上一行
@@ -236,12 +236,12 @@ class DocParserSql(DocParserBase):
                                     dataFrame.iloc[lastIndex + 1:index] = NaN
                                 mergedRow = None
 
-            elif field == '' and mergedRow is not None:
+            elif field == NULLSTR and mergedRow is not None:
                 #如果field为空的情况下,下一行的field仍旧是空行,则当前行空字段行需要并入mergedRow
                 aheaderField = None
                 if index + 1 < countIndex:
                     aheaderField = dataFrame.iloc[index + 1,0]
-                if aheaderField != '':
+                if aheaderField != NULLSTR:
                     mergedField = mergedRow[0]
                     if self._is_valid(mergedField):
                         #当前字段为'',下一个字段有效,如果合并后的字段为标准字段,则认为合并成功
@@ -282,7 +282,7 @@ class DocParserSql(DocParserBase):
                 #跳过ID字段,该字段为数据库自增字段
                 continue
             if commonFiled == "报告时间":
-                assert dictTable[commonFiled] != '','dictTable[%s] must not be null!'%commonFiled
+                assert dictTable[commonFiled] != NULLSTR,'dictTable[%s] must not be null!'%commonFiled
                 #公共字段为报告时间时,需要特殊处理
                 if fieldFromHeader != "":
                     #针对分季度财务指标,指标都是同一年的,但是分了四个季度
@@ -309,7 +309,7 @@ class DocParserSql(DocParserBase):
         def valueStandardize(value):
             try:
                 if isinstance(value,str):
-                    value = value.replace('\n', '').replace(' ', '').replace('None','')
+                    value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace('None',NULLSTR)
             except Exception as e:
                 print(e)
             return value
@@ -429,7 +429,7 @@ class DocParserSql(DocParserBase):
                                                                        tableName)
         standardizedFieldsStrictPattern = '|'.join(standardizedFieldsStrict)
         if isinstance(standardizedFieldsStrictPattern, str) and isinstance(mergedFields, str):
-            if standardizedFieldsStrictPattern != '':
+            if standardizedFieldsStrictPattern != NULLSTR:
                 matched = re.search(standardizedFieldsStrictPattern,mergedFields)
                 if matched is not None:
                     isStandardizeStrictMode = True
@@ -507,7 +507,7 @@ class DocParserSql(DocParserBase):
     def _is_field_matched(self,pattern,field):
         isFieldMatched = False
         if isinstance(pattern, str) and isinstance(field, str):
-            if pattern != '':
+            if pattern != NULLSTR:
                 matched = re.search(pattern,field)
                 if matched is not None:
                     isFieldMatched = True

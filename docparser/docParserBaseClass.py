@@ -56,7 +56,7 @@ class DocParserBase(BaseClass):
         pass
 
     def getSaveFile(self):
-        if self.model_savefile == '':
+        if self.model_savefile == NULLSTR:
             self.model_savefile = None
             return None
         if self.model_savefile is not None:
@@ -77,7 +77,7 @@ class DocParserBase(BaseClass):
         pass
         return
 
-    def debug(self, layer, name=''):
+    def debug(self, layer, name=NULLSTR):
         pass
 
     def clear_logging_directory(self,logging_directory):
