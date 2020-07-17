@@ -47,7 +47,8 @@ class BaseClass():
         self.criticalAlias = self.gConfigJson['criticalAlias']
         self.dictTokens = {token:value for token,value in self.gConfigJson.items() if token in self.tokens}
         self.tableAlias = self.gConfigJson['tableAlias']
-        self.tableNames = self.gConfigJson['TABLE'].split('|')
+        #tableNames标准化,去掉正则表达式中的$^
+        self.tableNames = [self._standardize("[\\u4E00-\\u9FA5]{3,}",tableName) for tableName in self.gConfigJson['TABLE'].split('|')]
         self.tableNames = list(set([self._get_tablename_alias(tableName) for tableName in self.tableNames]))
         self.dictTables = {keyword: value for keyword,value in self.gConfigJson.items() if keyword in self.tableNames}
         self.commonFileds = self.gConfigJson['公共表字段定义']

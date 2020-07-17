@@ -42,7 +42,7 @@ class InterpretAccounting(InterpretBase):
             t.lexer.skip(1)
 
         # Build the lexer
-        self.lexer = lex.lex(outputdir=self.working_directory)
+        self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
 
         # Parsing rules
 
@@ -70,8 +70,8 @@ class InterpretAccounting(InterpretBase):
             p[0] = p[1]
 
         def p_fetchtable_search(p):
-            '''fetchtable : TABLE optional TIME optional UNIT optional '''
-            tableName = self._get_tablename_alias(p[1])
+            '''fetchtable : TABLE optional TIME optional UNIT finis '''
+            tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
@@ -97,9 +97,9 @@ class InterpretAccounting(InterpretBase):
             #self.logger.info('\n'+ str(self.names[tableName]))
 
         def p_fetchtable_searchnotime(p):
-            '''fetchtable : TABLE optional UNIT optional '''
+            '''fetchtable : TABLE optional UNIT finis '''
             #第二个语法针对的是主要会计数据
-            tableName = self._get_tablename_alias(p[1])
+            tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
@@ -126,7 +126,7 @@ class InterpretAccounting(InterpretBase):
         def p_fetchtable_timetime(p):
             '''fetchtable : TABLE optional TIME TIME'''
             #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
-            tableName = self._get_tablename_alias(p[1])
+            tableName = self._get_tablename_alias(str.strip(p[1]))
             if len(self.names[tableName]['page_numbers']) != 0:
                 if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
                     self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
@@ -158,10 +158,10 @@ class InterpretAccounting(InterpretBase):
 
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
-                          | TABLE optional TIME optional UNIT optional NUMERIC
+                          | TABLE optional TIME optional UNIT finis NUMERIC
                           | TABLE optional NUMERIC'''
             #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
-            tableName = self._get_tablename_alias(p[1])
+            tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
@@ -202,6 +202,8 @@ class InterpretAccounting(InterpretBase):
                           | TABLE optional PUNCTUATION'''
             #去掉合并资产负债表项目
             #print(p[1])
+            interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
+            self.logger.error("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             pass
 
         def p_fetchdata_title(p):
@@ -304,20 +306,27 @@ class InterpretAccounting(InterpretBase):
             p[0] = p[1] + p[2]
 
         def p_optional(p):
-            '''optional :  empty
-                        | CURRENCY
+            '''optional : empty
                         | COMPANY '''
-            if p.slice[1].type == 'CURRENCY':
-                self.names['currency'] = p[1].split(':')[-1].split('：')[-1]
             if p.slice[1].type == 'COMPANY':
                 self.names['company'] = p[1]
             p[0] = p[1]
             print('optional',p[0])
 
+        def p_finis(p):
+            '''finis : empty
+                     | CURRENCY
+                     | HEADER'''
+            if p.slice[1].type == 'CURRENCY':
+                p[1] = p[1].split(':')[-1].split('：')[-1]
+                self.names['currency'] = p[1]
+            p[0] = p[1]
+            print('finis',p[0])
+
         def p_empty(p):
             '''empty : '''
             #print('empty')
-            p[0] = ''
+            p[0] = NULLSTR
 
         def p_error(p):
             if p:
@@ -332,7 +341,7 @@ class InterpretAccounting(InterpretBase):
         for data in docParser:
             self.currentPageNumber = docParser.index
             text = docParser._get_text(data)
-            self.parser.parse(text,lexer=lexer,debug=debug,tracking=tracking)
+            self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
         sourceFile = os.path.split(self.docParser.sourceFile)[-1]
         self.logger.info('%s\tcritical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                           ,str(self.names['股票代码']),self.names['股票简称']]))

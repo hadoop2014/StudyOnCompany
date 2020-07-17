@@ -24,7 +24,7 @@ class MyTestCase(unittest.TestCase):
         self.gConfig.update({"gConfigJson": gConfigJson})
         testParser = BaseParser(self.gConfig)
         self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig, docParser=testParser)
-        self.run_interpreter_lexer()
+        #self.run_interpreter_lexer()
         self.run_interpreter_yacc(testParser)
 
     def run_interpreter_lexer(self):
@@ -112,7 +112,15 @@ class MyTestCase(unittest.TestCase):
 
     def run_interpreter_yacc(self,testParser):
         input = ''
-        input = input + ' 合并资产负债表\n2019 年 12 月 31 日'
+        input = input + ''' 七、 近三年主要会计数据和财务指标
+                            (一) 主要会计数据
+                            单位：元  币种：人民币
+                            本期比
+                            上年同
+                            主要会计数据  2019年  2018年  2017年
+                            期增减
+                            (%) '''
+        input = input + ' 合并资产负债表\n 2019 年 12 月 31 日'
         input = input + ' 编制单位: 千禾味业食品股份有限公司'
         input = input + ' 元  人民币 '
         input = input + ' \n在职员工的数量合计（人） 2731'

@@ -112,6 +112,10 @@ class DocParserPdf(DocParserBase):
         processedTable = [list(map(lambda x:str(x).replace('\n',NULLSTR).replace(' ',NULLSTR),row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
         mergedFields = reduce(self._merge,fieldList)
+        if mergedFields == NULLSTR:
+            processedTable = [row[1:] for row in processedTable]
+            fieldList = [row[0] for row in processedTable]
+            mergedFields = reduce(self._merge,fieldList)
         isTableEnd = self._is_table_end(tableName,mergedFields)
         if isTableEnd == True or len(tables) == 1:
             return processedTable, isTableEnd
@@ -121,6 +125,10 @@ class DocParserPdf(DocParserBase):
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR).replace(' ',NULLSTR), row)) for row in table]
             fieldList = [row[0] for row in table]
             mergedFields = reduce(self._merge, fieldList)
+            if mergedFields == NULLSTR:
+                table = [row[1:] for row in table]
+                fieldList = [row[0] for row in table]
+                mergedFields = reduce(self._merge,fieldList)
             isTableEnd = self._is_table_end(tableName, mergedFields)
             isTableStart = self._is_table_start(tableName,mergedFields)
             if isTableStart == True:
