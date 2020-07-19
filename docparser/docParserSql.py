@@ -11,6 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
+from pandas import DataFrame
 import numpy as np
 import datetime
 import sys
@@ -61,7 +62,8 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_header_merge(dataframe, tableName)
 
         #把跨多个单元格的表字段名合并成一个
-        dataframe = self._process_field_merge(dataframe,tableName)
+        #dataframe = self._process_field_merge(dataframe,tableName)
+        dataframe = self._process_field_merge_simple(dataframe,tableName)
 
         #去掉空字段及无用字段
         dataframe = self._process_field_discard(dataframe, tableName)
@@ -101,7 +103,7 @@ class DocParserSql(DocParserBase):
             #dataFrame = pd.DataFrame(table[1:],columns=table[0],index=None)
             dataFrame = pd.DataFrame(table, index=None)
             countTotalFields = len(dataFrame.index.values)
-        dataFrame.fillna('None',inplace=True)
+        dataFrame.fillna(NONESTR,inplace=True)
         return dataFrame,countTotalFields
 
     def _write_to_sqlite3(self, dataFrame,tableName):
@@ -137,7 +139,7 @@ class DocParserSql(DocParserBase):
                         #mergedRow = None
                         break
                 else:
-                    if field != firstHeader and  (dataFrame.iloc[index] != 'None').all()  :
+                    if field != firstHeader and  (dataFrame.iloc[index] != NONESTR).all()  :
                         if index > lastIndex + 1 and mergedRow is not None:
                             if mergedRow[0] == firstHeader and firstHeader != NULLSTR:
                                 dataFrame.iloc[lastIndex] = mergedRow
@@ -151,7 +153,7 @@ class DocParserSql(DocParserBase):
                     #            dataFrame.iloc[lastIndex + 1:index] = NaN
                     #    mergedRow = None
 
-            if mergedRow is not None and (dataFrame.iloc[index] != 'None').all():
+            if mergedRow is not None and (dataFrame.iloc[index] != NONESTR).all():
                 #在启动合并后,碰到第一行非全为None的即退出
                 #mergedRow = reduce(self._merge,dataFrame.iloc[index].tolist())
                 #headerStandardize = self.dictTables[tableName]['headerStandardize']
@@ -193,6 +195,44 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
     @loginfo()
+    def _process_field_merge_simple(self,dataFrame,tableName):
+        mergedRow = None
+        lastIndex = 0
+        countIndex = len(dataFrame.index.values)
+        mergedFields = reduce(self._merge,dataFrame.iloc[:,0].tolist())
+        isStandardizeStrictMode = self._is_standardize_strict_mode(mergedFields,tableName)
+        #增加blankFrame来驱动最后一个field的合并
+        blankFrame = pd.DataFrame(['']*len(dataFrame.columns.values),index=dataFrame.columns).T
+        dataFrame = dataFrame.append(blankFrame)
+
+        for index,field in enumerate(dataFrame.iloc[:,0].tolist()):
+            #识别新字段的起始行
+            if self._is_row_not_any_none(dataFrame.iloc[index]) \
+                or self._is_header_in_row(dataFrame.iloc[index-1,1:].tolist(),tableName):
+                if self._is_field_match_standardize(field,tableName):
+                    if index > lastIndex + 1 and mergedRow is not None:
+                        # 把前期合并的行赋值到dataframe的上一行
+                        dataFrame.iloc[lastIndex] = mergedRow
+                        dataFrame.iloc[lastIndex + 1:index] = NaN
+                    mergedRow = None
+                else:
+                    if isinstance(mergedRow,list):
+                        mergedField = mergedRow[0]
+                        if self._is_field_in_standardize_by_mode(mergedField, isStandardizeStrictMode, tableName):
+                            if index > lastIndex + 1:
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = NaN
+                            mergedRow = None
+
+            if mergedRow is None:
+                mergedRow = dataFrame.iloc[index].tolist()
+                lastIndex = index
+            else:
+                mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
+
+        return dataFrame
+
+    @loginfo()
     def _process_field_merge(self,dataFrame,tableName):
         mergedRow = None
         lastIndex = 0
@@ -205,11 +245,11 @@ class DocParserSql(DocParserBase):
             #情况1: 当前field和standardizedFields匹配成功,表示新的字段开始,则处理之前的mergedRow
             #情况2: 当前field和standardizedFields匹配不成功,又有两种情况:
             #    a)上一个mergedRow已经拼出了完整的field,和standardizedFields匹配成功,此时当前row为[field,非None,非None,...]
-            #    b)上一个mergedRow还没有拼出完整的field,但是仍和standardizedFields匹配成功,此时要么当前field='None'
+            #    b)上一个mergedRow还没有拼出完整的field,但是仍和standardizedFields匹配成功,此时要么当前field=NONESTR
             #      或则当前row为[field,None,None,None,...]
             #    c)2019良信电器合并所有者权益变动表,"同一控制下企业合并"分成了多行,且全是空字符,而非None
             if self._is_valid(field):
-                if self._is_field_match_standardize(field, tableName) and not (dataFrame.iloc[index][1:] == 'None').all():
+                if self._is_field_match_standardize(field, tableName) and not (dataFrame.iloc[index][1:] == NONESTR).all():
                     if lastField != NULLSTR:
                         #前面一个空字段所在行必定合入到下一个非空字段中
                         if index > lastIndex + 1 and mergedRow is not None:
@@ -251,7 +291,7 @@ class DocParserSql(DocParserBase):
                                 dataFrame.iloc[lastIndex + 1:index] = NaN
                             mergedRow = None
             else:
-                #针对field = 'None'或则其他非法情况,则继续合并
+                #针对field = NONESTR或则其他非法情况,则继续合并
                 pass
 
             if mergedRow is None:
@@ -309,7 +349,7 @@ class DocParserSql(DocParserBase):
         def valueStandardize(value):
             try:
                 if isinstance(value,str):
-                    value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace('None',NULLSTR)
+                    value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR)
             except Exception as e:
                 print(e)
             return value
@@ -347,7 +387,7 @@ class DocParserSql(DocParserBase):
         #去掉空字段,针对主要会计数据这张表,需要提出掉其空字段
         #对于普通股现金分红情况表,则忽略这一过程
         fieldDiscard = self.dictTables[tableName]['fieldDiscard']
-        indexDiscardField = dataFrame.iloc[:,0].isin(fieldDiscard+self.NONE)
+        indexDiscardField = dataFrame.iloc[:,0].isin(fieldDiscard+self._get_invalid_field())
         dataFrame.loc[indexDiscardField] = NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
@@ -512,6 +552,9 @@ class DocParserSql(DocParserBase):
                 if matched is not None:
                     isFieldMatched = True
         return isFieldMatched
+
+    def _is_row_not_any_none(self,row:DataFrame):
+        return (row != NONESTR).all()
 
     def _is_record_exist(self, conn, tableName, dataFrame):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.

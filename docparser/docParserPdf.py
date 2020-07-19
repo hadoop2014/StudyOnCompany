@@ -80,8 +80,8 @@ class DocParserPdf(DocParserBase):
                 value = str(value)
             return value
         table_settings = dict([(key,valueTransfer(key,value)) for key,value in self.table_settings.items()])
-        #return page.extract_tables(table_settings=table_settings)
-        return page.extract_tables()
+        return page.extract_tables(table_settings=table_settings)
+        #return page.extract_tables()
 
     def _merge_table(self, dictTable=None,interpretPrefix=NULLSTR):
         assert dictTable is not None,"dictTable must not be None"

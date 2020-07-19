@@ -10,6 +10,7 @@ import numpy as np
 #数据读写处理的基类
 
 NULLSTR = ''
+NONESTR = 'None'
 NaN = np.nan
 
 class BaseClass():
@@ -20,7 +21,7 @@ class BaseClass():
         self._index = 0
         self._length = len(self._data)
         #不同的类继承BaseClass时,logger采用不同的名字
-        self.NONE = gConfig['NONE'.lower()]
+        #self.NONE = gConfig['NONE'.lower()]
         self.EOF = gConfig['EOF'.lower()]
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
 
@@ -101,7 +102,7 @@ class BaseClass():
     def _is_valid(self, field):
         isFieldValid = False
         if isinstance(field,str):
-            if field not in self.NONE:
+            if field not in self._get_invalid_field():
                 isFieldValid = True
         return isFieldValid
 
@@ -110,6 +111,8 @@ class BaseClass():
         dictKeyword = {keyword:value for keyword,value in self.gConfigJson.items() if keyword in tableKeyword}
         return dictKeyword
 
+    def _get_invalid_field(self):
+        return [NONESTR,NULLSTR]
 
     def _set_dataset(self,index=None):
         if isinstance(index,list):

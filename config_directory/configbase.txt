@@ -45,6 +45,7 @@ sourcefile = 麦克韦尔：2018年年度报告.PDF
 
 #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
 EOF = None
+#NONE = None
 
 [ints]
 #该节配置大部分可以被模型参数配置文件（如configpdf.txt）所覆盖
@@ -72,7 +73,7 @@ excelSuffix = xls,xlsx
 wordSuffix = doc,docx
 txetSuffix = txt,csv
 pdfSuffix = pdf
-NONE = None,
+#NONE = None,
 #tableKeyword = 合并资产负债表,合并利润表,合并现金流量表,主要会计数据
 
 [attrs]

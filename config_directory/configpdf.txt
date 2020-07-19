@@ -28,7 +28,7 @@ snap_tolerance: 6
 #text_x_tolerance: 3
 #text_y_tolerance: 3
 #intersection_tolerance: 3
-intersection_x_tolerance: None
-intersection_y_tolerance: None
+#intersection_x_tolerance: None
+#intersection_y_tolerance: None
 
 
