@@ -159,10 +159,12 @@ class DocParserPdf(DocParserBase):
         #        break
         headerFirst = self.dictTables[tableName]["header"][0]
         fieldFirst = self.dictTables[tableName]['fieldFirst']
-        if headerFirst == NULLSTR:
-            headerFirst = fieldFirst
+        #if headerFirst == NULLSTR:
+        #    headerFirst = fieldFirst
+        fieldFirst = '^' + fieldFirst
         headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
         headerFirst = '^' + headerFirst
+        headerFirst = '|'.join([headerFirst,fieldFirst])
         if isinstance(mergedHeader, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
             mergedHeader = mergedHeader.replace('(', '（').replace(')', '）')
             matched = re.search(headerFirst, mergedHeader)
