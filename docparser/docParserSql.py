@@ -59,7 +59,8 @@ class DocParserSql(DocParserBase):
         dataframe,countTotalFields = self._table_to_dataframe(table,tableName)#pd.DataFrame(table[1:],columns=table[0],index=None)
 
         #针对合并所有者权益表的前三列空表头进行合并,对转置表进行预转置,使得其处理和其他表一致
-        dataframe = self._process_header_merge(dataframe, tableName)
+        #dataframe = self._process_header_merge(dataframe, tableName)
+        dataframe = self._process_header_merge_simple(dataframe,tableName)
 
         #把跨多个单元格的表字段名合并成一个
         #dataframe = self._process_field_merge(dataframe,tableName)
@@ -117,6 +118,81 @@ class DocParserSql(DocParserBase):
                 conn.commit()
         conn.close()
 
+    def _process_header_merge_simple(self,dataFrame,tableName):
+        isHorizontalTable = self.dictTables[tableName]['horizontalTable']
+        mergedRow = None
+        firstHeader = self.dictTables[tableName]['header'][0]
+        lastIndex = 0
+        #keepAheader = False
+        # 增加blankFrame来驱动最后一个field的合并
+        blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
+        dataFrame = dataFrame.append(blankFrame)
+
+        # 需要把插入在表中间的表头合并掉
+        for index, field in enumerate(dataFrame.iloc[:, 0]):
+            if self._is_row_not_any_none(dataFrame.iloc[index]) \
+                or self._is_header_in_row(dataFrame.iloc[index-1,1:].tolist(),tableName):
+                if self._is_field_first(field,tableName):
+                    if index > lastIndex + 1 and mergedRow is not None:
+                        # if mergedRow[0] == firstHeader:
+                        dataFrame.iloc[lastIndex] = mergedRow
+                        dataFrame.iloc[lastIndex + 1:index] = NaN
+                        #keepAheader = True
+                    mergedRow = None
+                if self._is_field_match_standardize(field,tableName):
+                    if isinstance(mergedRow,list):
+                        mergedField = mergedRow[0]
+                        if mergedField == firstHeader:
+                            if index > lastIndex + 1:
+                        #if mergedRow[0] == firstHeader and firstHeader != NULLSTR:
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = NaN
+                            #keepAheader = True
+                            mergedRow = None
+                if isHorizontalTable == True and self._is_row_not_any_none(dataFrame.iloc[index]):
+                    if isinstance(mergedRow,list):
+                        mergedField = mergedRow[0]
+                        if self._is_field_first(mergedField,tableName):
+                            if index > lastIndex + 1:
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = NaN
+                            #keepAheader = True
+                            mergedRow = None
+                #else:
+                #    if isinstance(mergedRow,list):
+                #        mergedField = mergedRow[0]
+                #        if self._is_field_in_standardize_by_mode(mergedField, isStandardizeStrictMode, tableName):
+                #            if index > lastIndex + 1:
+                #                dataFrame.iloc[lastIndex] = mergedRow
+                #                dataFrame.iloc[lastIndex + 1:index] = NaN
+                #            mergedRow = None
+
+            if mergedRow is None:
+                mergedRow = dataFrame.iloc[index].tolist()
+                lastIndex = index
+            else:
+                mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
+
+        if isHorizontalTable == True:
+            #如果是转置表,则在此处做一次转置,后续的处理就和非转置表保持一致了
+            #if mergedRow is not None:
+            #    dataFrame.iloc[0] = mergedRow
+            #dataFrame.iloc[0] = dataFrame
+            dataFrame = dataFrame.dropna(axis=0)
+            #把第一列做成索引
+            dataFrame.set_index(0,inplace=True)
+            dataFrame = dataFrame.T.copy()
+        else:
+            #if mergedRow is not None :
+            columns = dataFrame.iloc[0].copy()
+            #dataFrame = dataFrame.dropna(axis=0)
+            indexDiscardField = dataFrame.iloc[:, 0].isin([firstHeader])
+            dataFrame.loc[indexDiscardField] = NaN
+            dataFrame.columns = columns
+            dataFrame = dataFrame.dropna(axis=0).copy()
+
+        return dataFrame
+
     def _process_header_merge(self, dataFrame, tableName):
         #针对合并所有者权益表的前三空表头进行合并
         #针对普通股现金分红情况表进行表头合并,因为其为转置表,实际是对其字段进行了合并.在合并完后进行预转置,使得其后续处理和其他表保持一致
@@ -126,11 +202,12 @@ class DocParserSql(DocParserBase):
         lastIndex = 0
         keepAheader = False
 
+
         #需要把插入在表中间的表头合并掉
         for index,field in enumerate(dataFrame.iloc[:,0]):
             if self._is_valid(field):
                 if isHorizontalTable == True:
-                    if self._is_field_first(tableName,field):
+                    if self._is_field_first(field,tableName):
                         if index > lastIndex + 1 and mergedRow is not None:
                             #if mergedRow[0] == firstHeader:
                             dataFrame.iloc[lastIndex] = mergedRow
@@ -481,7 +558,7 @@ class DocParserSql(DocParserBase):
         isHeaderInRow = self._is_field_matched(headerStandardize, mergedRow)
         return isHeaderInRow
 
-    def _is_field_first(self,tableName,firstField):
+    def _is_field_first(self,firstField,tableName):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
         fieldFirst = self.dictTables[tableName]["fieldFirst"]
