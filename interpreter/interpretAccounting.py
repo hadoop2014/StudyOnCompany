@@ -159,7 +159,8 @@ class InterpretAccounting(InterpretBase):
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
                           | TABLE optional TIME optional UNIT finis NUMERIC
-                          | TABLE optional NUMERIC'''
+                          | TABLE optional NUMERIC
+                          | TABLE optional TIME NUMERIC'''
             #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))

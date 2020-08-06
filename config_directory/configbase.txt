@@ -1,6 +1,9 @@
 #!/usr/bin/env Python
 # coding=utf-8
 #遗留问题,需要把年度报告从UNIT中独立出来,再升科技2018年年报的合并所有者权益变动表中间插入了表头
+#九安医疗2018年年度报告,所有者权益变动表,在snap_tolenrance=6时,相邻表头被合并掉了,暂无法解决.
+#东材科技:2018年年度报告,导入表失败
+#汇顶科技:2018年年度报告,大立科技:2018年年度报告,奥美医疗:2018年年度报告,中微公司:2019年半年度报告,搜于特:2018年年度报告,主要会计数据导入存在问题
 [strings]
 #该节配置大部分为configbase.txt所特有
 working_directory = working_directory/
@@ -19,7 +22,7 @@ database = financialdatabase.db
 source_directory = 年报
 #sourcefile = 千禾味业：2019年年度报告.PDF
 #sourcefile = 千禾味业：2018年年度报告.PDF
-#sourcefile = 上峰水泥：2019年年度报告.PDF
+sourcefile = 上峰水泥：2019年年度报告.PDF
 #sourcefile = 良信电器：2019年年度报告.PDF
 #sourcefile = 上峰水泥：2018年年度报告.PDF
 #sourcefile = 亿纬锂能：2018年年度报告.PDF
@@ -41,7 +44,7 @@ source_directory = 年报
 #sourcefile = 上海机场：2018年年度报告.PDF
 #sourcefile = 千禾味业：2019年度审计报告.PDF
 #sourcefile = 高德红外：2018年年度报告.PDF
-sourcefile = 麦克韦尔：2018年年度报告.PDF
+#sourcefile = 麦克韦尔：2018年年度报告.PDF
 
 #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
 EOF = None

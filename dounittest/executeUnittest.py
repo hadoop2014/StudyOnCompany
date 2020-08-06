@@ -24,7 +24,7 @@ class MyTestCase(unittest.TestCase):
             parser, interpreter = parserManager(docformat, self.gConfig)
             # 2019年千和味业年报合并资产负债表所在的页数为71,72,73,合并利润表为76,77,78
             #parser._set_dataset(list([0,1,94,95,96,97]))
-            parser._set_dataset(list([0,51,52,53,54]))
+            parser._set_dataset(list([0,94,95,96]))
             docParse(parser, interpreter, docformat, self.gConfig,lexer=None,debug=True,tracking=False)
         else:
             raise ValueError("(%s %s %s %s) is not supported now!" % (self.gConfig))

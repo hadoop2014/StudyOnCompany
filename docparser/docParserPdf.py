@@ -109,7 +109,8 @@ class DocParserPdf(DocParserBase):
         processedTable,isTableEnd = NULLSTR , False
         if len(tables) == 0:
             return processedTable,isTableEnd
-        processedTable = [list(map(lambda x:str(x).replace('\n',NULLSTR).replace(' ',NULLSTR),row)) for row in tables[-1]]
+        #processedTable = [list(map(lambda x:str(x).replace('\n',NULLSTR).replace(' ',NULLSTR),row)) for row in tables[-1]]
+        processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
         mergedFields = reduce(self._merge,fieldList)
         if mergedFields == NULLSTR:
@@ -122,15 +123,18 @@ class DocParserPdf(DocParserBase):
 
         processedTable = NULLSTR
         for index,table in enumerate(tables):
-            table = [list(map(lambda x: str(x).replace('\n', NULLSTR).replace(' ',NULLSTR), row)) for row in table]
+            #table = [list(map(lambda x: str(x).replace('\n', NULLSTR).replace(' ',NULLSTR), row)) for row in table]
+            table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
             fieldList = [row[0] for row in table]
+            headerList = table[0]
             mergedFields = reduce(self._merge, fieldList)
-            if mergedFields == NULLSTR:
-                table = [row[1:] for row in table]
-                fieldList = [row[0] for row in table]
-                mergedFields = reduce(self._merge,fieldList)
+            mergedHeaders = reduce(self._merge,headerList)
+            #if mergedFields == NULLSTR:
+            #    table = [row[1:] for row in table]
+            #    fieldList = [row[0] for row in table]
+            #    mergedFields = reduce(self._merge,fieldList)
             isTableEnd = self._is_table_end(tableName, mergedFields)
-            isTableStart = self._is_table_start(tableName,mergedFields)
+            isTableStart = self._is_table_start(tableName,mergedFields,mergedHeaders)
             if isTableStart == True:
                 processedTable = table
 
@@ -147,7 +151,7 @@ class DocParserPdf(DocParserBase):
 
         return processedTable,isTableEnd
 
-    def _is_table_start(self,tableName,mergedHeader):
+    def _is_table_start(self,tableName,mergedFields,mergedHeaders):
         #针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
         isTableStart = False
         #firstHeaderName = self.dictTables[tableName]['header'][0]
@@ -159,15 +163,27 @@ class DocParserPdf(DocParserBase):
         #        break
         headerFirst = self.dictTables[tableName]["header"][0]
         fieldFirst = self.dictTables[tableName]['fieldFirst']
-        #if headerFirst == NULLSTR:
-        #    headerFirst = fieldFirst
-        fieldFirst = '^' + fieldFirst
+        assert fieldFirst != NULLSTR,'the first field of %s must not be NULL'%tableName
+        if headerFirst == NULLSTR:
+            #fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
+            #headerFirst = '^' + fieldFirst
+            headerFirst = self.dictTables[tableName]['header'][1]
+            headerFirst = headerFirst.replace('(', '（').replace(')', '）')
+            assert headerFirst != NULLSTR,'the second header of %s must not be NULL'%tableName
+            if isinstance(mergedHeaders, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
+                mergedHeaders = mergedHeaders.replace('(', '（').replace(')', '）')
+                matched = re.search(headerFirst, mergedHeaders)
+                if matched is not None:
+                    isTableStart = True
+        #else:
         headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
+        fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
+        fieldFirst = '^' + fieldFirst
         headerFirst = '^' + headerFirst
         headerFirst = '|'.join([headerFirst,fieldFirst])
-        if isinstance(mergedHeader, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
-            mergedHeader = mergedHeader.replace('(', '（').replace(')', '）')
-            matched = re.search(headerFirst, mergedHeader)
+        if isinstance(mergedFields, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
+            mergedFields = mergedFields.replace('(', '（').replace(')', '）')
+            matched = re.search(headerFirst, mergedFields)
             if matched is not None:
                 isTableStart = True
         return isTableStart
