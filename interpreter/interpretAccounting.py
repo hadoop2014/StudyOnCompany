@@ -197,10 +197,10 @@ class InterpretAccounting(InterpretBase):
 
         def p_fetchtable_skipword(p):
             '''fetchtable : TABLE HEADER
-                          | TABLE term
                           | TABLE PUNCTUATION
                           | TABLE optional TABLE
                           | TABLE optional PUNCTUATION'''
+            #去掉了语法TABLE term,该语法和TABLE optional NUMERIC冲突
             #去掉合并资产负债表项目
             #print(p[1])
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
