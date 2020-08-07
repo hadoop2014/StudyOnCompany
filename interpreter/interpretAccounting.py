@@ -306,7 +306,7 @@ class InterpretAccounting(InterpretBase):
 
     def _is_reatch_max_pages(self, fetchTable,tableName):
         maxPages = self.dictTables[tableName]['maxPages']
-        if len(fetchTable['page_numbers']) >= maxPages:
+        if len(fetchTable['page_numbers']) > maxPages:
             isReatchMaxPages = True
             self.logger.error("table %s is reatch max page numbers:%d >= %d"
                              %(tableName,len(fetchTable['page_numbers']),maxPages))

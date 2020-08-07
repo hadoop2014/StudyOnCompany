@@ -4,11 +4,13 @@
     "默认值": {
       "报告时间": null,
       "报告类型": null,
+      "tableName": null,
       "snap_tolerance": 3
     },
-    "上峰水泥": {
+    "#大立科技": {
       "报告时间": "2018年",
       "报告类型": "年度报告",
+      "tableName": "现金流量表补充资料",
       "snap_tolerance": 3
     }
   }

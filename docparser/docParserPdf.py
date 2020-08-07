@@ -87,16 +87,14 @@ class DocParserPdf(DocParserBase):
 
     def _get_special_settings(self,dictTable,table_settings):
         keyName = '默认值'
+        snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
         if dictTable['股票简称'] != NULLSTR:
             keyName = dictTable['股票简称']
             if keyName in self.gJsonBase['table_settings'].keys():
                 if dictTable['报告时间'] == self.gJsonBase['table_settings'][keyName]['报告时间'] \
-                    and dictTable['报告类型'] == self.gJsonBase['table_setttings'][keyName]['报告类型']:
-                    table_settings.update({"snap_tolerance":
-                                           self.gJsonBase['table_settings'][keyName]["snap_tolerance"]})
-        else:
-            table_settings.update({"snap_tolerance":
-                                       self.gJsonBase['table_settings'][keyName]["snap_tolerance"]})
+                    and dictTable['报告类型'] == self.gJsonBase['table_settings'][keyName]['报告类型']:
+                    snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
+        table_settings.update({"snap_tolerance":snap_tolerance})
         return table_settings
 
     def _merge_table(self, dictTable=None,interpretPrefix=NULLSTR):
@@ -129,10 +127,10 @@ class DocParserPdf(DocParserBase):
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
         mergedFields = reduce(self._merge,fieldList)
-        if mergedFields == NULLSTR:
-            processedTable = [row[1:] for row in processedTable]
-            fieldList = [row[0] for row in processedTable]
-            mergedFields = reduce(self._merge,fieldList)
+        #if mergedFields == NULLSTR:
+        #    processedTable = [row[1:] for row in processedTable]
+        #    fieldList = [row[0] for row in processedTable]
+        #    mergedFields = reduce(self._merge,fieldList)
         isTableEnd = self._is_table_end(tableName,mergedFields)
         if isTableEnd == True or len(tables) == 1:
             return processedTable, isTableEnd
@@ -180,7 +178,7 @@ class DocParserPdf(DocParserBase):
             headerFirst = headerFirst.replace('(', '（').replace(')', '）')
             assert headerFirst != NULLSTR,'the second header of %s must not be NULL'%tableName
             if isinstance(mergedHeaders, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
-                mergedHeaders = mergedHeaders.replace('(', '（').replace(')', '）')
+                mergedHeaders = mergedHeaders.replace('(', '（').replace(')', '）').replace(' ',NULLSTR)
                 matched = re.search('^' + headerFirst, mergedHeaders)
                 if matched is not None:
                     isTableStart = True
@@ -191,7 +189,7 @@ class DocParserPdf(DocParserBase):
         headerFirst = '^' + headerFirst
         headerFirst = '|'.join([headerFirst,fieldFirst])
         if isinstance(mergedFields, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
-            mergedFields = mergedFields.replace('(', '（').replace(')', '）')
+            mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ',NULLSTR)
             matched = re.search(headerFirst, mergedFields)
             if matched is not None:
                 isTableStart = True
@@ -206,7 +204,7 @@ class DocParserPdf(DocParserBase):
         fieldLast = fieldLast.replace('(','（').replace(')','）')  #在正则表达式中,'()'是元符号,需要替换成中文符号
         fieldLast = '|'.join([field + '$' for field in fieldLast.split('|')])
         if isinstance(mergedField,str) and isinstance(fieldLast,str) and fieldLast != NULLSTR:
-            mergedField = mergedField.replace('(','（').replace(')','）')
+            mergedField = mergedField.replace('(','（').replace(')','）').replace(' ',NULLSTR)
             matched = re.search(fieldLast,mergedField)
             if matched is not None:
                 isTableEnd = True
