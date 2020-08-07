@@ -34,15 +34,14 @@ class DocParserBase(BaseClass):
         self.unittestIsOn = self.gConfig['unittestIsOn'.lower()]
         #DocParserBase.sourceFile = self.gConfig['sourcefile']
 
-    def _get_check_book(self):
-        check_file = os.path.join(self.gConfig['config_directory'], self.gConfig['check_file'])
-        check_book = None
-        if os.path.exists(check_file):
-            with open(check_file, encoding='utf-8') as check_f:
-                check_book = json.load(check_f)
+    def _get_standardized_header(self,headerList,tableName):
+        assert headerList is not None, 'sourceRow(%s) must not be None' % headerList
+        fieldStandardize = self.dictTables[tableName]['headerStandardize']
+        if isinstance(headerList, list):
+            standardizedFields = [self._standardize(fieldStandardize, field) for field in headerList]
         else:
-            raise ValueError("%s is not exist,you must create first!" % check_file)
-        return check_book
+            standardizedFields = self._standardize(fieldStandardize, headerList)
+        return standardizedFields
 
     def _get_class_name(self, gConfig):
         parser_name = re.findall('DocParser(.*)', self.__class__.__name__).pop().lower()

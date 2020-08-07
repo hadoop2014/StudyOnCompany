@@ -15,7 +15,8 @@ NaN = np.nan
 
 class BaseClass():
     def __init__(self,gConfig):
-        self.gConfigJson = gConfig['gConfigJson']
+        self.gJsonAccounting = gConfig['gJsonAccounting']
+        self.gJsonBase = gConfig['gJsonBase']
         self._get_interpreter_keyword()
         self._data = list()
         self._index = 0
@@ -41,19 +42,19 @@ class BaseClass():
 
     def _get_interpreter_keyword(self):
         #编译器,文件解析器共同使用的关键字
-        self.tokens = self.gConfigJson['tokens']
-        self.literals = self.gConfigJson['literals']
-        self.ignores = self.gConfigJson['ignores']
-        self.criticals = self.gConfigJson['CRITICAL'].split('|')
-        self.criticalAlias = self.gConfigJson['criticalAlias']
-        self.dictTokens = {token:value for token,value in self.gConfigJson.items() if token in self.tokens}
-        self.tableAlias = self.gConfigJson['tableAlias']
+        self.tokens = self.gJsonAccounting['tokens']
+        self.literals = self.gJsonAccounting['literals']
+        self.ignores = self.gJsonAccounting['ignores']
+        self.criticals = self.gJsonAccounting['CRITICAL'].split('|')
+        self.criticalAlias = self.gJsonAccounting['criticalAlias']
+        self.dictTokens = {token:value for token,value in self.gJsonAccounting.items() if token in self.tokens}
+        self.tableAlias = self.gJsonAccounting['tableAlias']
         #tableNames标准化,去掉正则表达式中的$^
-        self.tableNames = [self._standardize("[\\u4E00-\\u9FA5]{3,}",tableName) for tableName in self.gConfigJson['TABLE'].split('|')]
+        self.tableNames = [self._standardize("[\\u4E00-\\u9FA5]{3,}",tableName) for tableName in self.gJsonAccounting['TABLE'].split('|')]
         self.tableNames = list(set([self._get_tablename_alias(tableName) for tableName in self.tableNames]))
-        self.dictTables = {keyword: value for keyword,value in self.gConfigJson.items() if keyword in self.tableNames}
-        self.commonFileds = self.gConfigJson['公共表字段定义']
-        self.tableKeyword = self.gConfigJson['TABLE']
+        self.dictTables = {keyword: value for keyword,value in self.gJsonAccounting.items() if keyword in self.tableNames}
+        self.commonFileds = self.gJsonAccounting['公共表字段定义']
+        self.tableKeyword = self.gJsonAccounting['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
 
 
@@ -108,7 +109,7 @@ class BaseClass():
 
     def _get_keyword(self,tableKeyword):
         #获取解析文件所需的关键字
-        dictKeyword = {keyword:value for keyword,value in self.gConfigJson.items() if keyword in tableKeyword}
+        dictKeyword = {keyword:value for keyword,value in self.gJsonAccounting.items() if keyword in tableKeyword}
         return dictKeyword
 
     def _get_invalid_field(self):
@@ -123,10 +124,10 @@ class BaseClass():
     def _get_text(self,page):
         return page
 
-    def _get_tables(self,data=None):
-        if data is None:
-            data = list()
-        return data
+    #def _get_tables(self,data=None):
+    #    if data is None:
+    #        data = list()
+    #    return data
 
     def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:

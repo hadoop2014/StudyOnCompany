@@ -79,22 +79,9 @@ class InterpretAccounting(InterpretBase):
             unit = p[5].split(':')[-1].split('：')[-1]
             currency = self.names['currency']
             company = self.names['company']
-            #self.names[tableName].update({'tableName':tableName,'time':p[3],'unit':unit,'currency':self.names['currency']
-            #                         ,'company':self.names['company']
-            #                         ,'tableBegin':True
-            #                         ,'page_numbers':self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
-            #if self.names[tableName]['tableEnd'] == False:
-            #    self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
-            #                            ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
-            #                            ,'报告类型':self.names['报告类型']})
-            #    self.docParser._merge_table(self.names[tableName],interpretPrefix)
-            #    if self.names[tableName]['tableEnd'] == True:
-            #        self.excelParser.writeToStore(self.names[tableName])
-            #        self.sqlParser.writeToStore(self.names[tableName])
-            #self.logger.info('\n'+ str(self.names[tableName]))
 
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT finis '''
@@ -106,22 +93,9 @@ class InterpretAccounting(InterpretBase):
                 return
             unit = p[3].split(':')[-1].split('：')[-1]
             currency = self.names['currency']
-            #company = self.names['company']
-            #self.names[tableName].update({'tableName':tableName,'unit':unit,'currency':self.names['currency']
-            #                    ,'tableBegin':True
-            #                    ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-            #if self.names[tableName]['tableEnd'] == False:
-            #    self.names[tableName].update({'股票代码':self.names['股票代码'],'股票简称':self.names['股票简称']
-            #                            ,'公司名称':self.names['公司名称'],'报告时间':self.names['报告时间']
-            #                            ,'报告类型':self.names['报告类型']})
-            #    self.docParser._merge_table(self.names[tableName],interpretPrefix)
-            #    if self.names[tableName]['tableEnd'] == True:
-            #        self.excelParser.writeToStore(self.names[tableName])
-            #        self.sqlParser.writeToStore(self.names[tableName])
-            #self.logger.info('\n' + str(self.names[tableName]))
 
         def p_fetchtable_timetime(p):
             '''fetchtable : TABLE optional TIME TIME'''
@@ -137,24 +111,9 @@ class InterpretAccounting(InterpretBase):
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             unit = NULLSTR
             currency = self.names['currency']
-            #self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
-            #                                 , 'tableBegin': True
-            #                                 , 'page_numbers': self.names[tableName]['page_numbers'] + list(
-            #        [self.currentPageNumber])})
-            #interpretPrefix = '\n'.join([self.names[tableName]['tableName'], self.names[tableName]['unit'],
-            #                             self.names[tableName]['currency']]) + '\n'
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-            #if self.names[tableName]['tableEnd'] == False:
-            #    self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
-            #                                     , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
-            #                                     , '报告类型': self.names['报告类型']})
-            #    self.docParser._merge_table(self.names[tableName], interpretPrefix)
-            #    if self.names[tableName]['tableEnd'] == True:
-            #        self.excelParser.writeToStore(self.names[tableName])
-            #        self.sqlParser.writeToStore(self.names[tableName])
-            #self.logger.info('\n' + str(self.names[tableName]))
 
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
@@ -167,33 +126,11 @@ class InterpretAccounting(InterpretBase):
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
-            #unit = p[3].split(':')[-1].split('：')[-1]
             unit = NULLSTR
             currency = self.names['currency']
-            #self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': self.names['currency']
-            #                                 , 'tableBegin': False
-            #                                 , 'page_numbers': self.names[p[1]]['page_numbers'] + list(
-            #        [self.currentPageNumber])})
-            #if p[1] == p[3]:
-                #针对现金流量表达到尾部的时候的处理
-            #    interpretPrefix = '\n'.join([str(slice) for slice in p[2:-1] if slice is not None]) + '\n'
-            #else:
             interpretPrefix = '\n'.join([str(slice) for slice in p[:-1] if slice is not None]) + '\n'
             tableBegin = False
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-            #if self.names[tableName]['tableEnd'] == False:
-            #    self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
-            #                                     , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
-            #                                     , '报告类型': self.names['报告类型']})
-            #    self.docParser._merge_table(self.names[p[1]], interpretPrefix)
-            #self.logger.info('\n' + str(self.names[tableName]))
-
-
-        #def p_fetchtable_skiptime(p):
-        #    '''fetchtable : TABLE optional TIME TIME '''
-            #去掉主要会计数据的表头
-            #print(p[1])
-        #    pass
 
         def p_fetchtable_skipword(p):
             '''fetchtable : TABLE HEADER
@@ -202,7 +139,6 @@ class InterpretAccounting(InterpretBase):
                           | TABLE optional PUNCTUATION'''
             #去掉了语法TABLE term,该语法和TABLE optional NUMERIC冲突
             #去掉合并资产负债表项目
-            #print(p[1])
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
             self.logger.error("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             pass
@@ -214,18 +150,18 @@ class InterpretAccounting(InterpretBase):
             self.names.update({'报告类型':p[3]})
             self.logger.info('fetchdata title %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            p[0] = p[1] + p[2] + p[3]
 
-        #def p_fetchdata_criticaldouble(p):
-        #    '''fetchdata : CRITICAL DISCARD CRITICAL term
-        #                 | CRITICAL term CRITICAL DISCARD '''
-        #    self.names.update({self.criticalAlias[p[1]]:p[2]})
-        #    self.names.update({self.criticalAlias[p[3]]:p[4]})
-        #    print('fetchdata critical',p[1],'->',self.criticalAlias[p[1]],p[2],p[3],'->',self.criticalAlias[p[3]],p[4])
+        def p_fetchdata_criticaldouble(p):
+            '''fetchdata : CRITICAL DISCARD CRITICAL term
+                         | CRITICAL term CRITICAL DISCARD '''
+            self.names.update({self._get_critical_alias(p[1]):p[2]})
+            self.names.update({self._get_critical_alias(p[3]):p[4]})
+            print('fetchdata critical',p[1],'->',self._get_critical_alias(p[1]),p[2],p[3],'->',self._get_critical_alias(p[3]),p[4])
 
         def p_fetchdata_critical(p):
             '''fetchdata : CRITICAL term fetchdata
-                         | CRITICAL term
-                         | CRITICAL DISCARD '''
+                         | CRITICAL term '''
             critical = self._get_critical_alias(p[1])
             self.names.update({critical:p[2]})
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
@@ -255,7 +191,6 @@ class InterpretAccounting(InterpretBase):
                         | term
                         | '(' skipword error '''
             p[0] = p[1]
-            #print('skipword',p[0])
 
         def p_useless_reduce(p):
             '''useless : '(' useless ')'
@@ -278,32 +213,30 @@ class InterpretAccounting(InterpretBase):
                        | '-'
                        | '%'
                        | '％' '''
-            #print('useless ',p[1])
+            p[0] = p[1]
 
         def p_term_group(p):
             '''term : '(' term ')'
                     |  '（' term '）'
                     | '-' term %prec UMINUS '''
             p[0] = -p[2]  #财务报表中()表示负值
-            #print('uminus',p[0])
 
         def p_term_percentage(p):
             '''term : NUMERIC '%'
                     | NUMERIC '％' '''
             p[0] = round(float(p[1].replace(',','')) * 0.01,4)
-            #print('percentage',p[0])
 
         def p_term_numeric(p):
             '''term : NUMERIC '''
             if p[1].find('.') < 0 :
                 p[0] = int(p[1].replace(',',''))
-                #print('number',p[0],p[1])
             else:
                 p[0] = float(p[1].replace(',',''))
-            #print('value',p[0],p[1])
 
         def p_optional_optional(p):
-            '''optional : DISCARD optional '''
+            '''optional : DISCARD optional
+                        | optional fetchdata DISCARD'''
+            #第2条规则解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             p[0] = p[1] + p[2]
 
         def p_optional(p):
@@ -326,7 +259,6 @@ class InterpretAccounting(InterpretBase):
 
         def p_empty(p):
             '''empty : '''
-            #print('empty')
             p[0] = NULLSTR
 
         def p_error(p):
@@ -373,7 +305,6 @@ class InterpretAccounting(InterpretBase):
         self.logger.info('\nprefix: %s:'%interpretPrefix.replace('\n','\t') + str(self.names[tableName]))
 
     def _is_reatch_max_pages(self, fetchTable,tableName):
-
         maxPages = self.dictTables[tableName]['maxPages']
         if len(fetchTable['page_numbers']) >= maxPages:
             isReatchMaxPages = True

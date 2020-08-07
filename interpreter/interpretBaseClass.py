@@ -11,7 +11,7 @@ class InterpretBase(BaseClass):
     def __init__(self,gConfig):
         super(InterpretBase, self).__init__(gConfig)
         self.gConfig = gConfig
-        self.gConfigJson = gConfig['gConfigJson']
+        self.gConfigJson = gConfig['gJsonAccounting']
         self.interpreter_name = self._get_class_name(self.gConfig)
         self.working_directory = os.path.join(self.gConfig['working_directory'],'interpreter',self.interpreter_name)
         self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)

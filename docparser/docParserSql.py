@@ -115,7 +115,7 @@ class DocParserSql(DocParserBase):
             sql_df.columns = dataFrame.iloc[0].values
             isRecordExist = self._is_record_exist(conn, tableName, sql_df)
             if not isRecordExist:
-                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=None)
+                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
                 conn.commit()
         conn.close()
 
@@ -322,8 +322,9 @@ class DocParserSql(DocParserBase):
 
         for index,field in enumerate(dataFrame.iloc[:,0].tolist()):
             #识别新字段的起始行
-            if self._is_row_not_any_none(dataFrame.iloc[index]) \
-                or self._is_header_in_row(dataFrame.iloc[index,1:].tolist(),tableName):
+            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
+            isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index,1:].tolist(),tableName)
+            if isRowNotAnyNone or isHeaderInRow:
                 if self._is_field_match_standardize(field,tableName):
                     if index > lastIndex + 1 and mergedRow is not None:
                         # 把前期合并的行赋值到dataframe的上一行
@@ -338,6 +339,12 @@ class DocParserSql(DocParserBase):
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = NaN
                             mergedRow = None
+                        elif isRowNotAnyNone == True and isHeaderInRow == False:
+                            if mergedField == NULLSTR and self._is_header_in_row(mergedRow,tableName):
+                                if index > lastIndex + 1:
+                                    dataFrame.iloc[lastIndex] = mergedRow
+                                    dataFrame.iloc[lastIndex + 1:index] = NaN
+                                mergedRow = None
 
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
@@ -550,15 +557,6 @@ class DocParserSql(DocParserBase):
 
         duplicatedField = [duplicate(fieldName) for fieldName in fieldList]
         return duplicatedField
-
-    def _get_standardized_header(self,headerList,tableName):
-        assert headerList is not None, 'sourceRow(%s) must not be None' % headerList
-        fieldStandardize = self.dictTables[tableName]['headerStandardize']
-        if isinstance(headerList, list):
-            standardizedFields = [self._standardize(fieldStandardize, field) for field in headerList]
-        else:
-            standardizedFields = self._standardize(fieldStandardize, headerList)
-        return standardizedFields
 
     def _get_standardized_field_strict(self,fieldList,tableName):
         assert fieldList is not None, 'sourceRow(%s) must not be None' % fieldList

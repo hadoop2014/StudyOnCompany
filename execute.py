@@ -57,8 +57,9 @@ def get_gConfig(taskName, gConfig, unittestIsOn):
     else:
         raise ValueError('check_book is None ,it may be some error occured when open the checkbook.json!')
     gConfig = getConfig.get_config(config_file)
-    gConfigJson = getConfig.get_config_json(config_file_json)
-    gConfig.update({"gConfigJson":gConfigJson})
+    gJsonAccounting,gJsonBase = getConfig.get_config_json(config_file_json)
+    gConfig.update({"gJsonAccounting":gJsonAccounting})
+    gConfig.update({"gJsonBase":gJsonBase})
     #在unitest模式,这三个数据是从unittest.main中设置，而非从文件中读取．
     gConfig['taskName'] = taskName
     gConfig['unittestIsOn'.lower()] = unittestIsOn
@@ -119,7 +120,7 @@ def main():
         #该模式为从pycharm调用
         unittestIsOn = gConfig['unittestIsOn'.lower()]
         assert unittestIsOn == False, \
-            'Now in training mode,unitestIsOn must be False whitch in configbase.txt'
+            'Now in training mode,unitestIsOn must be False whitch in configbase.ini'
         taskName = gConfig['taskName'.lower()]
 
     if validate_parameter(taskName,gConfig) == True:

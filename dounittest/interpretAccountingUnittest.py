@@ -19,12 +19,12 @@ class BaseParser(BaseClass):
 
 class MyTestCase(unittest.TestCase):
     def test_something(self):
-        self.gConfig = getConfig.get_config('config_directory/configbase.txt')
-        gConfigJson = getConfig.get_config_json('config_directory/interpretAccounting.json')
-        self.gConfig.update({"gConfigJson": gConfigJson})
+        self.gConfig = getConfig.get_config('config_directory/configbase.ini')
+        gJsonAccounting,gJsonBase = getConfig.get_config_json('config_directory/interpretAccounting.json')
+        self.gConfig.update({"gJsonAccounting": gJsonAccounting})
+        self.gConfig.update({"gJsonBase": gJsonBase})
         testParser = BaseParser(self.gConfig)
         self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig, docParser=testParser)
-        #self.run_interpreter_lexer()
         self.run_interpreter_yacc(testParser)
 
     def run_interpreter_lexer(self):
@@ -49,8 +49,6 @@ class MyTestCase(unittest.TestCase):
         input = input + ' 1．不能重分类进损益的其他综合收益'
         input = input + ' 减：所得税费用'
         input = input + ' （一）归属母公司所有者的其他综合收益的税后净额'
-        #input = input + ' ). 1) 2） 六.31 之 ' +' 五.41（. 3） （前额和 安第几个 dijg）'
-        #input = input + ' 司（以下简称“公司”或“本公司”，在包括子公司时统称“本\n集团”） -\n的其他应收'
         self.interpreter.lexer.input(input)
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(-,'-',1,1)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'1,370,249,543.00',1,2)")
@@ -146,7 +144,6 @@ class MyTestCase(unittest.TestCase):
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)
-        #test yaac
         testParser._load_data([input])
         #self.interpreter.doWork(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
         self.interpreter.parser.parse(input,lexer=self.interpreter.lexer,debug=True,tracking=True)

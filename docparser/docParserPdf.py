@@ -39,7 +39,7 @@ class DocParserPdf(DocParserBase):
             self.logger.error('the %s page %d\'s text of is be None' % (self.sourceFile,self._index))
         return pageText
 
-    def _get_tables(self,page = None):
+    def _get_tables(self,dictTable):
         page = self.__getitem__(self._index-1)
         '''
         table_settings = {
@@ -62,7 +62,11 @@ class DocParserPdf(DocParserBase):
 
         }
         '''
+        table_settings = self._get_table_settings(dictTable)
+        return page.extract_tables(table_settings=table_settings)
+        #return page.extract_tables()
 
+    def _get_table_settings(self,dictTable):
         def valueTransfer(key,value):
             if key not in ["vertical_strategy","horizontal_strategy","explicit_vertical_lines","explicit_horizontal_lines",
                            "keep_blank_chars","intersection_x_tolerance","intersection_y_tolerance"]:
@@ -74,14 +78,26 @@ class DocParserPdf(DocParserBase):
                     value = None
                 else:
                     value = int(value)
-            #elif key in ["explicit_vertical_lines","explicit_horizontal_lines"]:
-            #    value = list([value.split('[')[-1].split(']')[0].split(',')])
             else:
                 value = str(value)
             return value
         table_settings = dict([(key,valueTransfer(key,value)) for key,value in self.table_settings.items()])
-        return page.extract_tables(table_settings=table_settings)
-        #return page.extract_tables()
+        table_settings = self._get_special_settings(dictTable,table_settings)
+        return table_settings
+
+    def _get_special_settings(self,dictTable,table_settings):
+        keyName = '默认值'
+        if dictTable['股票简称'] != NULLSTR:
+            keyName = dictTable['股票简称']
+            if keyName in self.gJsonBase['table_settings'].keys():
+                if dictTable['报告时间'] == self.gJsonBase['table_settings'][keyName]['报告时间'] \
+                    and dictTable['报告类型'] == self.gJsonBase['table_setttings'][keyName]['报告类型']:
+                    table_settings.update({"snap_tolerance":
+                                           self.gJsonBase['table_settings'][keyName]["snap_tolerance"]})
+        else:
+            table_settings.update({"snap_tolerance":
+                                       self.gJsonBase['table_settings'][keyName]["snap_tolerance"]})
+        return table_settings
 
     def _merge_table(self, dictTable=None,interpretPrefix=NULLSTR):
         assert dictTable is not None,"dictTable must not be None"
@@ -90,7 +106,7 @@ class DocParserPdf(DocParserBase):
             return dictTable
         savedTable = dictTable['table']
         tableName = dictTable['tableName']
-        fetchTables = self._get_tables()
+        fetchTables = self._get_tables(dictTable)
         page_numbers = dictTable['page_numbers']
         processedTable,isTableEnd = self._process_table(fetchTables, tableName)
         dictTable.update({'tableEnd':isTableEnd})
@@ -130,6 +146,7 @@ class DocParserPdf(DocParserBase):
             mergedFields = reduce(self._merge, fieldList)
             mergedHeaders = reduce(self._merge,headerList)
             #if mergedFields == NULLSTR:
+            #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做这个空字符串的判断.
             #    table = [row[1:] for row in table]
             #    fieldList = [row[0] for row in table]
             #    mergedFields = reduce(self._merge,fieldList)
@@ -141,14 +158,6 @@ class DocParserPdf(DocParserBase):
             if isTableEnd == True:
                 processedTable = table
                 break
-            #else:
-                #对于合并所所有者权益变动表,对某些情况下因为表尾字段做了拆分,很难通过表尾字段做判断,可以通过下一张表的开头来判断,上一张表的结束.
-            #    if isTableStart == True:
-            #        if len(page_numbers) > 1 and index > 0:
-            #            processedTable = tables[index - 1]
-            #            isTableEnd = True
-            #            break
-
         return processedTable,isTableEnd
 
     def _is_table_start(self,tableName,mergedFields,mergedHeaders):
@@ -167,12 +176,12 @@ class DocParserPdf(DocParserBase):
         if headerFirst == NULLSTR:
             #fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
             #headerFirst = '^' + fieldFirst
-            headerFirst = self.dictTables[tableName]['header'][1]
+            headerFirst = self._get_standardized_header(self.dictTables[tableName]['header'][1],tableName)
             headerFirst = headerFirst.replace('(', '（').replace(')', '）')
             assert headerFirst != NULLSTR,'the second header of %s must not be NULL'%tableName
             if isinstance(mergedHeaders, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
                 mergedHeaders = mergedHeaders.replace('(', '（').replace(')', '）')
-                matched = re.search(headerFirst, mergedHeaders)
+                matched = re.search('^' + headerFirst, mergedHeaders)
                 if matched is not None:
                     isTableStart = True
         #else:

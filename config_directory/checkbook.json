@@ -1,7 +1,7 @@
 
 {
   "batch": {
-    "config_file": "configpdf.txt",
+    "config_file": "configpdf.ini",
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserPdf",
     "excelparser": "docparser.docParserExcel",
@@ -9,7 +9,7 @@
     "interpreter": "interpreter.interpretAccounting"
   },
   "single": {
-    "config_file": "configpdf.txt",
+    "config_file": "configpdf.ini",
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserPdf",
     "excelparser": "docparser.docParserExcel",
