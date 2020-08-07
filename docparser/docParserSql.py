@@ -145,7 +145,7 @@ class DocParserSql(DocParserBase):
         #东材科技2018年年报,普通股现金分红流量表,表头有很多空格,影响_process_header_discard,需要去掉
 
         dataFrame = dataFrame.apply(self._rowPretreat,axis=1)
-        dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR)))
+        dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR).replace('(','（').replace(')','）')))
         return dataFrame
 
     def _process_header_merge_simple(self,dataFrame,tableName):

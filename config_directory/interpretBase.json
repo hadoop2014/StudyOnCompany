@@ -7,11 +7,11 @@
       "tableName": null,
       "snap_tolerance": 3
     },
-    "#大立科技": {
+    "麦克韦尔": {
       "报告时间": "2018年",
       "报告类型": "年度报告",
       "tableName": "现金流量表补充资料",
-      "snap_tolerance": 3
+      "snap_tolerance": 6
     }
   }
 
