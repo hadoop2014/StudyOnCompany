@@ -15,14 +15,16 @@ NaN = np.nan
 
 class BaseClass():
     def __init__(self,gConfig):
-        self.gJsonAccounting = gConfig['gJsonAccounting']
-        self.gJsonBase = gConfig['gJsonBase']
+        self.gConfig = gConfig
+        self.gJsonAccounting = gConfig['gJsonAccounting'.lower()]
+        self.gJsonBase = gConfig['gJsonBase'.lower()]
+        self.debugIsOn = gConfig['debugIsOn'.lower()]
+        self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._get_interpreter_keyword()
         self._data = list()
         self._index = 0
         self._length = len(self._data)
         #不同的类继承BaseClass时,logger采用不同的名字
-        #self.NONE = gConfig['NONE'.lower()]
         self.EOF = gConfig['EOF'.lower()]
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
 
@@ -124,11 +126,6 @@ class BaseClass():
     def _get_text(self,page):
         return page
 
-    #def _get_tables(self,data=None):
-    #    if data is None:
-    #        data = list()
-    #    return data
-
     def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:
             dictTable = list()
@@ -154,7 +151,6 @@ class BaseClass():
     def logger(self):
         return self._logger
 
-    #@staticmethod
     def loginfo(text = NULLSTR):
         def decorator(func):
             @functools.wraps(func)

@@ -48,12 +48,10 @@ def get_config_json(config_file_json = '',config_base_json = 'config_directory/i
     return config_json,config_json_base
 
 def get_check_book(check_book_file = 'config_directory/checkbook.json'):
-    #gConfig = get_config()
-    #check_file = os.path.join(gConfig['config_directory'], gConfig['check_file'])
-    #check_book = None
     if os.path.exists(check_book_file):
         with open(check_book_file, encoding='utf-8') as check_f:
             check_book = json.load(check_f)
     else:
         raise ValueError("%s is not exist,you must create first!" % check_book_file)
+    assert check_book is not None,'check_book must not be None'
     return check_book

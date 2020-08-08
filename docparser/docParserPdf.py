@@ -7,8 +7,6 @@
 
 from docparser.docParserBaseClass import *
 import pdfplumber
-import pandas as pd
-from openpyxl import Workbook
 
 class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
@@ -63,8 +61,8 @@ class DocParserPdf(DocParserBase):
         }
         '''
         table_settings = self._get_table_settings(dictTable)
+        self._debug_extract_tables(page,table_settings)
         return page.extract_tables(table_settings=table_settings)
-        #return page.extract_tables()
 
     def _get_table_settings(self,dictTable):
         def valueTransfer(key,value):
@@ -161,19 +159,10 @@ class DocParserPdf(DocParserBase):
     def _is_table_start(self,tableName,mergedFields,mergedHeaders):
         #针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
         isTableStart = False
-        #firstHeaderName = self.dictTables[tableName]['header'][0]
-        #headerList = [row[0] for row in table]
-        #for header in headerList:
-        #    if self._is_valid(header):
-        #        if firstHeaderName == header:
-        #            isTableStart = True
-        #        break
         headerFirst = self.dictTables[tableName]["header"][0]
         fieldFirst = self.dictTables[tableName]['fieldFirst']
         assert fieldFirst != NULLSTR,'the first field of %s must not be NULL'%tableName
         if headerFirst == NULLSTR:
-            #fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
-            #headerFirst = '^' + fieldFirst
             headerFirst = self._get_standardized_header(self.dictTables[tableName]['header'][1],tableName)
             headerFirst = headerFirst.replace('(', '（').replace(')', '）')
             assert headerFirst != NULLSTR,'the second header of %s must not be NULL'%tableName
@@ -182,7 +171,6 @@ class DocParserPdf(DocParserBase):
                 matched = re.search('^' + headerFirst, mergedHeaders)
                 if matched is not None:
                     isTableStart = True
-        #else:
         headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
         fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
         fieldFirst = '^' + fieldFirst
@@ -212,6 +200,17 @@ class DocParserPdf(DocParserBase):
 
     def _close(self):
         self._pdf.close()
+
+    def _debug_extract_tables(self,page,table_settings):
+        if self.debugIsOn == False:
+            return
+        image = page.to_image()
+        image.reset().debug_tablefinder(table_settings)
+        tables = page.extract_tables(table_settings)
+        #image.draw_rects(tables)
+        for table in tables:
+            for row in table:
+                self.logger.info('debug:' + str(row))
 
     @property
     def interpretPrefix(self):

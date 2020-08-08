@@ -20,7 +20,6 @@ def docParse(parser, interpreter, taskName, gConfig, lexer=None, debug=False, tr
     start_time = time.time()
 
     print("\n\n%s %s parse is starting!\n\n" % (os.path.split(parser.sourceFile)[-1],taskName))
-    #parser.parse()
     taskResult = interpreter.doWork(parser,lexer=lexer,debug=debug,tracking=tracking)
     print('\n\nparse %s file end, time used %.4f' % (taskName, (time.time() - start_time)))
     return taskResult
@@ -31,6 +30,7 @@ def parseStart(gConfig, taskName, unittestIsOn):
     return taskResult
 
 def parserManager(taskName, gConfig):
+    check_book = getConfig.get_check_book()
     module = __import__(check_book[taskName]['excelparser'],
                         fromlist=(check_book[taskName]['excelparser'].split('.')[-1]))
     excelParser = getattr(module,'create_object')(gConfig=gConfig)
@@ -50,7 +50,8 @@ def parserManager(taskName, gConfig):
     return docParser,interpreter#,sourceFile,targetFile
 
 def get_gConfig(taskName, gConfig, unittestIsOn):
-    global check_book
+    #global check_book
+    check_book = getConfig.get_check_book()
     if check_book is not None:
         config_file = os.path.join(gConfig['config_directory'], check_book[taskName]['config_file'])
         config_file_json = os.path.join(gConfig['config_directory'], check_book[taskName]['config_file_json'])
@@ -58,8 +59,8 @@ def get_gConfig(taskName, gConfig, unittestIsOn):
         raise ValueError('check_book is None ,it may be some error occured when open the checkbook.json!')
     gConfig = getConfig.get_config(config_file)
     gJsonAccounting,gJsonBase = getConfig.get_config_json(config_file_json)
-    gConfig.update({"gJsonAccounting":gJsonAccounting})
-    gConfig.update({"gJsonBase":gJsonBase})
+    gConfig.update({"gJsonAccounting".lower():gJsonAccounting})
+    gConfig.update({"gJsonBase".lower():gJsonBase})
     #在unitest模式,这三个数据是从unittest.main中设置，而非从文件中读取．
     gConfig['taskName'] = taskName
     gConfig['unittestIsOn'.lower()] = unittestIsOn
@@ -67,20 +68,22 @@ def get_gConfig(taskName, gConfig, unittestIsOn):
         pass
     return gConfig
 
-def set_check_book(gConfig):
-    check_file = os.path.join(gConfig['config_directory'], gConfig['check_file'])
-    global check_book
-    if os.path.exists(check_file):
-        with open(check_file, encoding='utf-8') as check_f:
-            check_book = json.load(check_f)
-    else:
-        raise ValueError("%s is not exist,you must create first!" % check_file)
+#def set_check_book(gConfig):
+    #check_file = os.path.join(gConfig['config_directory'], gConfig['check_file'])
+#    global check_book
+    #if os.path.exists(check_file):
+    #    with open(check_file, encoding='utf-8') as check_f:
+    #        check_book = json.load(check_f)
+    #else:
+    #    raise ValueError("%s is not exist,you must create first!" % check_file)
+#    check_book = getConfig.get_check_book()
 
 def validate_parameter(taskName, gConfig):
     assert taskName in gConfig['tasknamelist'], 'taskName(%s) is invalid,it must one of %s' % \
                                                  (taskName, gConfig['tasknamelist'])
-    global check_book
-    set_check_book(gConfig)
+    #global check_book
+    #set_check_book(gConfig)
+    check_book = getConfig.get_check_book()
     return check_book[taskName]["config_file"] != '' \
            and check_book[taskName]['docparser'] != '' \
            and check_book[taskName]['sqlparser'] != '' \

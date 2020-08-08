@@ -14,8 +14,9 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(True, True)
         self.gConfig = getConfig.get_config('config_directory/configbase.ini','config_directory/configpdf.ini')
         gJsonAccounting,gJsonBase = getConfig.get_config_json('config_directory/interpretAccounting.json')
-        self.gConfig.update({"gJsonAccounting": gJsonAccounting})
-        self.gConfig.update({"gJsonBase": gJsonBase})
+        self.gConfig.update({"gJsonAccounting".lower(): gJsonAccounting})
+        self.gConfig.update({"gJsonBase".lower(): gJsonBase})
+        self.gConfig.update({"debugIsOn".lower():True})
         self.run_interpreter_yacc()
 
     def run_interpreter_yacc(self):
