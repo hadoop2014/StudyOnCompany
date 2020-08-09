@@ -167,6 +167,7 @@ class DocParserSql(DocParserBase):
                         mergedRow = None
                 else:
                     if isHeaderInMergedRow == False:
+                        #解决再升科技2018年年报,合并所有者权益变动表在每个分页中插入了表头
                         mergedRow = None
                 if isRowNotAnyNone == True: #and isHeaderInRow == True:
                     #表头或表字段所在的起始行
@@ -174,7 +175,9 @@ class DocParserSql(DocParserBase):
                         if index > lastIndex + 1:
                             dataFrame.iloc[lastIndex] = mergedRow
                             dataFrame.iloc[lastIndex + 1:index] = NaN
-                    mergedRow = None
+                    if not (isHeaderInRow == True and isHeaderInMergedRow == True):
+                        #解决大立科技：2018年年度报告,有一行", , , ,调整前,调整后, , , , ",满足isRowNotAnyNone==True条件,但是需要继续合并
+                        mergedRow = None
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
                 lastIndex = index
@@ -737,7 +740,8 @@ class DocParserSql(DocParserBase):
     def _is_row_all_invalid(self,row:DataFrame):
         #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True
         mergedField = reduce(self._merge,row.tolist())
-        isRowAllInvalid = (mergedField == NONESTR)
+        #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
+        isRowAllInvalid = not self._is_valid(mergedField)
         return isRowAllInvalid
 
     def _is_row_not_any_none(self,row:DataFrame):
