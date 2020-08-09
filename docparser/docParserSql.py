@@ -57,6 +57,7 @@ class DocParserSql(DocParserBase):
         #对数据进行预处理,两行并在一行的分开,去掉空格等
         dataframe = self._process_value_pretreat(dataframe,tableName)
         #针对合并所有者权益表的前三列空表头进行合并,对转置表进行预转置,使得其处理和其他表一致
+        #dataframe = self._process_header_merge_simple_outdate(dataframe,tableName)
         dataframe = self._process_header_merge_simple(dataframe, tableName)
 
         #把跨多个单元格的表字段名合并成一个
@@ -154,22 +155,25 @@ class DocParserSql(DocParserBase):
         for index, field in enumerate(dataFrame.iloc[:, 0]):
             isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
-            isHeaderInMergedRow = False
-            if isinstance(mergedRow,list):
-                isHeaderInMergedRow = self._is_header_in_row(mergedRow,tableName)
-            if isHeaderInRow == False:
-                #表字段所在的行,清空合并行
-                if isHeaderInMergedRow:
-                    if index > lastIndex + 1 and mergedRow is not None:
-                        dataFrame.iloc[lastIndex] = mergedRow
-                        dataFrame.iloc[lastIndex + 1:index] = NaN
-                mergedRow = None
-            elif isRowNotAnyNone == True and isHeaderInRow == True:
-                #表头所在的起始行
-                mergedRow = None
-            elif isRowNotAnyNone == False and isHeaderInRow == True:
-                #表头所在的中间行
-                if isHeaderInMergedRow == False:
+            isHeaderInMergedRow = self._is_header_in_row(mergedRow,tableName)
+            isRowAllInvalid = self._is_row_all_invalid(dataFrame.iloc[index])
+            if isRowAllInvalid == False:
+                if isHeaderInRow == False:
+                    #表字段所在的行,清空合并行
+                    if isHeaderInMergedRow:
+                        if index > lastIndex + 1:
+                            dataFrame.iloc[lastIndex] = mergedRow
+                            dataFrame.iloc[lastIndex + 1:index] = NaN
+                        mergedRow = None
+                else:
+                    if isHeaderInMergedRow == False:
+                        mergedRow = None
+                if isRowNotAnyNone == True: #and isHeaderInRow == True:
+                    #表头或表字段所在的起始行
+                    if self._is_first_field_in_row(mergedRow, tableName):
+                        if index > lastIndex + 1:
+                            dataFrame.iloc[lastIndex] = mergedRow
+                            dataFrame.iloc[lastIndex + 1:index] = NaN
                     mergedRow = None
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
@@ -193,7 +197,6 @@ class DocParserSql(DocParserBase):
             dataFrame.columns = columns
             dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
-
     '''
     def _process_header_merge_simple_outdate(self, dataFrame, tableName):
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
@@ -211,7 +214,7 @@ class DocParserSql(DocParserBase):
             isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
             if isRowNotAnyNone or isHeaderInRow:
-                if self._is_field_first(field,tableName):
+                if self._is_first_field_in_row(field, tableName):
                     if index > lastIndex + 1 and mergedRow is not None:
                         dataFrame.iloc[lastIndex] = mergedRow
                         dataFrame.iloc[lastIndex + 1:index] = NaN
@@ -227,7 +230,7 @@ class DocParserSql(DocParserBase):
                 elif isRowNotAnyNone == True and isHeaderInRow == False:
                     if isinstance(mergedRow,list):
                         mergedField = mergedRow[0]
-                        if self._is_field_first(mergedField,tableName):
+                        if self._is_first_field_in_row(mergedField, tableName):
                             if index > lastIndex + 1:
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = NaN
@@ -391,8 +394,8 @@ class DocParserSql(DocParserBase):
                                     dataFrame.iloc[lastIndex] = mergedRow
                                     dataFrame.iloc[lastIndex + 1:index] = NaN
                                 mergedRow = None
-                            elif isRowNotAnyNone == True and isHeaderInRow == True:
-                                mergedRow = None
+                        elif isRowNotAnyNone == True and isHeaderInRow == True:
+                            mergedRow = None
 
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
@@ -519,6 +522,8 @@ class DocParserSql(DocParserBase):
             try:
                 if isinstance(value,str):
                     value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR).replace('不适用',NULLSTR)
+                    #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充
+                    value = re.sub('.*-$',NULLSTR,value)
             except Exception as e:
                 print(e)
             return value
@@ -634,7 +639,10 @@ class DocParserSql(DocParserBase):
         return isStandardizeStrictMode
 
     def _is_header_in_row(self,row,tableName):
-        assert isinstance(row,list) and len(row) > 1,"row must be list and row's length > 1"
+        #assert isinstance(row,list) and len(row) > 1,"row must be list and row's length > 1"
+        isHeaderInRow = False
+        if isinstance(row,list) == False:
+            return isHeaderInRow
         firstHeader = self.dictTables[tableName]['header'][0]
         firstHeaderInRow = row[0]
         if firstHeader != NULLSTR and firstHeader == firstHeaderInRow:
@@ -651,12 +659,18 @@ class DocParserSql(DocParserBase):
         isHeaderInRow = self._is_field_matched(headerStandardize, mergedRow)
         return isHeaderInRow
 
-    def _is_field_first(self,firstField,tableName):
+    def _is_first_field_in_row(self, row_or_field, tableName):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
+        if row_or_field == None:
+            return False
+        if isinstance(row_or_field, list):
+            firstField = row_or_field[0]
+        else:
+            firstField = row_or_field
         fieldFirst = self.dictTables[tableName]["fieldFirst"]
-        isFieldFirst = self._is_field_matched(fieldFirst,firstField)
-        return isFieldFirst
+        isFirstFieldInRow = self._is_field_matched(fieldFirst, firstField)
+        return isFirstFieldInRow
 
     def _is_field_match_standardize(self, field, tableName):
         isFieldInList = False
@@ -719,6 +733,12 @@ class DocParserSql(DocParserBase):
                 if matched is not None:
                     isFieldMatched = True
         return isFieldMatched
+
+    def _is_row_all_invalid(self,row:DataFrame):
+        #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True
+        mergedField = reduce(self._merge,row.tolist())
+        isRowAllInvalid = (mergedField == NONESTR)
+        return isRowAllInvalid
 
     def _is_row_not_any_none(self,row:DataFrame):
         return (row != NONESTR).all()

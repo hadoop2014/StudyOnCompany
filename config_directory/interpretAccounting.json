@@ -88,7 +88,7 @@
       ,"负债和所有者权益（或股东权益）总计"],
     "horizontalTable": false,
     "headerDiscard": ["附注"],
-    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}",
+    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
     "fieldDiscard": ["合同资产","合同负债","项目","保险合同准备金","现金及存放中央银行款项","贵金属","同业及其他金融机构存放款项"
                     ,"工程物资","存放同业款项"],
     "fieldFirst": "流动资产",
@@ -194,7 +194,7 @@
     "headerStandardize": "[\\u4E00-\\u9FA5|：]{1,}",
     "fieldDiscard": ["5.对可解锁限制性股票数量估计变动而产生的影响"],
     "fieldFirst": "一、上年期末余额",
-    "fieldLast": "四、本期期末余额|期末余额",
+    "fieldLast": "四、本期期末余额|项目期末余额",
     "fieldFromHeader": "项目",
     "fieldAlias": {
       "对所有者的分配": "对所有者（或股东）的分配",
