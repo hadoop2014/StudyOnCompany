@@ -125,6 +125,7 @@ class DocParserSql(DocParserBase):
         try:
             if isinstance(value,str):
                 if value != NONESTR and value != NULLSTR:
+                    value = re.sub('不适用$',NULLSTR,value)
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
@@ -524,7 +525,7 @@ class DocParserSql(DocParserBase):
         def valueStandardize(value):
             try:
                 if isinstance(value,str):
-                    value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR).replace('不适用',NULLSTR)
+                    value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR)
                     #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充
                     value = re.sub('.*-$',NULLSTR,value)
             except Exception as e:
