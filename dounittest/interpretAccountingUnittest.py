@@ -21,8 +21,8 @@ class MyTestCase(unittest.TestCase):
     def test_something(self):
         self.gConfig = getConfig.get_config('config_directory/configbase.ini')
         gJsonAccounting,gJsonBase = getConfig.get_config_json('config_directory/interpretAccounting.json')
-        self.gConfig.update({"gJsonAccounting": gJsonAccounting})
-        self.gConfig.update({"gJsonBase": gJsonBase})
+        self.gConfig.update({"gJsonAccounting".lower(): gJsonAccounting})
+        self.gConfig.update({"gJsonBase".lower(): gJsonBase})
         testParser = BaseParser(self.gConfig)
         self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig, docParser=testParser)
         self.run_interpreter_yacc(testParser)

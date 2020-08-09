@@ -110,10 +110,8 @@ class DocParserPdf(DocParserBase):
             savedTable.extend(processedTable)
         else:
             savedTable = processedTable
-
         if dictTable['tableBegin'] == True and dictTable['tableEnd'] == True:
             self.interpretPrefix = NULLSTR
-
         dictTable.update({'table':savedTable})
         return dictTable
 
@@ -121,36 +119,25 @@ class DocParserPdf(DocParserBase):
         processedTable,isTableEnd = NULLSTR , False
         if len(tables) == 0:
             return processedTable,isTableEnd
-        #processedTable = [list(map(lambda x:str(x).replace('\n',NULLSTR).replace(' ',NULLSTR),row)) for row in tables[-1]]
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
         mergedFields = reduce(self._merge,fieldList)
-        #if mergedFields == NULLSTR:
-        #    processedTable = [row[1:] for row in processedTable]
-        #    fieldList = [row[0] for row in processedTable]
-        #    mergedFields = reduce(self._merge,fieldList)
         isTableEnd = self._is_table_end(tableName,mergedFields)
-        if isTableEnd == True or len(tables) == 1:
+        if len(tables) == 1:
             return processedTable, isTableEnd
 
         processedTable = NULLSTR
         for index,table in enumerate(tables):
-            #table = [list(map(lambda x: str(x).replace('\n', NULLSTR).replace(' ',NULLSTR), row)) for row in table]
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
             fieldList = [row[0] for row in table]
             headerList = table[0]
             mergedFields = reduce(self._merge, fieldList)
             mergedHeaders = reduce(self._merge,headerList)
-            #if mergedFields == NULLSTR:
-            #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做这个空字符串的判断.
-            #    table = [row[1:] for row in table]
-            #    fieldList = [row[0] for row in table]
-            #    mergedFields = reduce(self._merge,fieldList)
+            #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.
             isTableEnd = self._is_table_end(tableName, mergedFields)
             isTableStart = self._is_table_start(tableName,mergedFields,mergedHeaders)
             if isTableStart == True:
                 processedTable = table
-
             if isTableEnd == True:
                 processedTable = table
                 break

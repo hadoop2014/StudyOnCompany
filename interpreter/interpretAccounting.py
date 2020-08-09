@@ -145,9 +145,12 @@ class InterpretAccounting(InterpretBase):
 
         def p_fetchdata_title(p):
             '''fetchdata : COMPANY TIME UNIT '''
-            self.names.update({'公司名称':p[1]})
-            self.names.update({'报告时间':p[2]})
-            self.names.update({'报告类型':p[3]})
+            if self.names['公司名称'] == NULLSTR \
+                and self.names['报告时间'] == NULLSTR \
+                and self.names['报告类型'] == NULLSTR:
+                self.names.update({'公司名称':p[1]})
+                self.names.update({'报告时间':p[2]})
+                self.names.update({'报告类型':p[3]})
             self.logger.info('fetchdata title %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2] + p[3]
@@ -308,7 +311,7 @@ class InterpretAccounting(InterpretBase):
         maxPages = self.dictTables[tableName]['maxPages']
         if len(fetchTable['page_numbers']) > maxPages:
             isReatchMaxPages = True
-            self.logger.error("table %s is reatch max page numbers:%d >= %d"
+            self.logger.error("table %s is reatch max page numbers:%d > %d"
                              %(tableName,len(fetchTable['page_numbers']),maxPages))
         elif fetchTable['tableEnd'] == True:
             isReatchMaxPages = True

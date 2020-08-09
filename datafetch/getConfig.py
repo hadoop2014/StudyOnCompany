@@ -38,7 +38,7 @@ def get_config(config_file='',config_file_base='config_directory/configbase.ini'
     return dict(_conf_ints + _conf_floats + _conf_strings + _conf_bools +
                 _conf_lists + _conf_sets + _conf_attrs,**_conf_dicts)
 
-def get_config_json(config_file_json = '',config_base_json = 'config_directory/interpretBase.json'):
+def get_config_json(config_file_json,config_base_json = 'config_directory/interpretBase.json'):
     assert os.path.exists(config_file_json),"%s is not exist,you must create first!" % config_file_json
     assert os.path.exists(config_base_json),"%s is not exist,you must create first!" % config_base_json
     with open(config_file_json, encoding='utf-8') as json_file:
