@@ -148,8 +148,9 @@ class InterpretAccounting(InterpretBase):
             if self.names['公司名称'] == NULLSTR \
                 and self.names['报告时间'] == NULLSTR \
                 and self.names['报告类型'] == NULLSTR:
+                years = self._time_transfer(p[2])
                 self.names.update({'公司名称':p[1]})
-                self.names.update({'报告时间':p[2]})
+                self.names.update({'报告时间':years})
                 self.names.update({'报告类型':p[3]})
             self.logger.info('fetchdata title %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
@@ -357,6 +358,26 @@ class InterpretAccounting(InterpretBase):
         else:
             isReatchMaxPages = False
         return isReatchMaxPages
+
+    def _time_transfer(self,time):
+        transfer = dict({
+            '○':'0',
+            '一':'1',
+            '二':'2',
+            '三':'3',
+            '四':'4',
+            '五':'5',
+            '六':'6',
+            '七':'7',
+            '八':'8',
+            '九':'9',
+            '〇':'0',
+            '年':'年'
+        })
+        timelist = [transfer[number] for number in list(time) if number in transfer.keys()]
+        if len(timelist) > 1 :
+            time = ''.join(timelist)
+        return time
 
     def initialize(self):
         for tableName in self.tableNames:
