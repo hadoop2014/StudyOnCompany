@@ -3,6 +3,8 @@
 
 import sys
 import time
+import re
+from baseClass import NULLSTR
 from time import sleep
 from threading import Thread
 from datafetch import getConfig
@@ -100,12 +102,26 @@ def run_task(taskName,gConfig,unittestIsOn):
         for sourcefile in sourcefiles:
             logger.info('start process %s'%sourcefile)
             gConfig.update({'sourcefile':sourcefile})
+            if not is_file_name_valid(sourcefile):
+                logger.warn("%s is not a valid file"%sourcefile)
+                continue
             taskResult = parseStart(gConfig,taskName,unittestIsOn)
             taskResults.append(taskResult)
     else:
         taskResult = parseStart(gConfig, taskName, unittestIsOn)
         taskResults.append(taskResult)
     logger.info(taskResults)
+
+def is_file_name_valid(fileName):
+    assert fileName != None and fileName != NULLSTR,"filename (%s) must not be None or NULL"%fileName
+    isFileNameValid = False
+    pattern = '年度报告|季度报告'
+    if isinstance(pattern, str) and isinstance(fileName, str):
+        if pattern != NULLSTR:
+            matched = re.search(pattern, fileName)
+            if matched is not None:
+                isFileNameValid = True
+    return isFileNameValid
 
 def main():
     gConfig = getConfig.get_config()

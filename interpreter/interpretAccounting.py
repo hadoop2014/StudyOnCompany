@@ -178,7 +178,8 @@ class InterpretAccounting(InterpretBase):
         def p_fetchdata_critical(p):
             '''fetchdata : CRITICAL NUMERIC fetchdata
                          | CRITICAL NUMERIC
-                         | CRITICAL '-' '''
+                         | CRITICAL '-'
+                         | CRITICAL empty'''
             critical = self._get_critical_alias(p[1])
             self.names.update({critical:p[2]})
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
