@@ -47,6 +47,9 @@ class BaseClass():
         self.tokens = self.gJsonAccounting['tokens']
         self.literals = self.gJsonAccounting['literals']
         self.ignores = self.gJsonAccounting['ignores']
+        self.referenceAlias = self.gJsonAccounting['referenceAlias']
+        self.references = self.gJsonAccounting['REFERENCE'].split('|')
+        self.references = list(set([self._get_reference_alias(reference) for reference in self.references]))
         self.criticalAlias = self.gJsonAccounting['criticalAlias']
         self.criticals = self.gJsonAccounting['CRITICAL'].split('|')
         self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
@@ -60,6 +63,9 @@ class BaseClass():
         self.tableKeyword = self.gJsonAccounting['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
 
+    def _get_reference_alias(self,refernece):
+        aliasedRefernece = self._alias(refernece, self.referenceAlias)
+        return aliasedRefernece
 
     def _get_critical_alias(self,critical):
         aliasedCritical = self._alias(critical, self.criticalAlias)
@@ -72,7 +78,6 @@ class BaseClass():
     def _alias(self, name, dictAlias):
         alias = name
         aliasKeys = dictAlias.keys()
-
         if len(aliasKeys) > 0:
             if name in aliasKeys:
                 alias = dictAlias[name]

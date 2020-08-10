@@ -155,23 +155,25 @@ class InterpretAccounting(InterpretBase):
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2] + p[3]
 
-        def p_fetchdata_criticaldouble(p):
-            '''fetchdata : CRITICAL DISCARD CRITICAL NUMERIC
-                         | CRITICAL NUMERIC CRITICAL DISCARD '''
-            if self.names[self._get_critical_alias(p[1])] == NULLSTR \
-                and self.names[self._get_critical_alias(p[3])] == NULLSTR:
-                self.names.update({self._get_critical_alias(p[1]):p[2]})
-                self.names.update({self._get_critical_alias(p[3]):p[4]})
-            self.logger.info('fetchdata critical',p[1],'->',self._get_critical_alias(p[1]),p[2],p[3],'->',self._get_critical_alias(p[3]),p[4])
+        def p_fetchdata_referencedouble(p):
+            '''fetchdata : REFERENCE DISCARD REFERENCE NUMERIC
+                         | REFERENCE NUMERIC REFERENCE DISCARD '''
+            if self.names[self._get_reference_alias(p[1])] == NULLSTR \
+                and self.names[self._get_reference_alias(p[3])] == NULLSTR:
+                self.names.update({self._get_reference_alias(p[1]):p[2]})
+                self.names.update({self._get_reference_alias(p[3]):p[4]})
+            self.logger.info('fetchdata reference %s -> %s %s,%s -> %s %s'%(p[1],self._get_reference_alias(p[1]),p[2]
+                             ,p[3],self._get_reference_alias(p[3]),p[4]))
 
-        def p_fetchdata_criticaltriple(p):
-            '''fetchdata : CRITICAL NUMERIC term CRITICAL DISCARD DISCARD'''
+        def p_fetchdata_referencetriple(p):
+            '''fetchdata : REFERENCE NUMERIC term REFERENCE DISCARD DISCARD'''
             #解决华新水泥2018年报中,股票简称不能识别的问题
-            if self.names[self._get_critical_alias(p[1])] == NULLSTR \
-                and self.names[self._get_critical_alias(p[4])] == NULLSTR:
-                self.names.update({self._get_critical_alias(p[1]):p[2]})
-                self.names.update({self._get_critical_alias(p[4]):p[5]})
-            self.logger.info('fetchdata critical',p[1],'->',self._get_critical_alias(p[1]),p[2],p[3],'->',self._get_critical_alias(p[3]),p[4])
+            if self.names[self._get_reference_alias(p[1])] == NULLSTR \
+                and self.names[self._get_reference_alias(p[4])] == NULLSTR:
+                self.names.update({self._get_reference_alias(p[1]):p[2]})
+                self.names.update({self._get_reference_alias(p[4]):p[5]})
+            self.logger.info('fetchdata reference %s -> %s %s,%s -> %s %s'%(p[1],self._get_reference_alias(p[1]),p[2]
+                             ,p[3],self._get_reference_alias(p[3]),p[4]))
 
         def p_fetchdata_critical(p):
             '''fetchdata : CRITICAL NUMERIC fetchdata
