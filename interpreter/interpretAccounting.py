@@ -156,8 +156,8 @@ class InterpretAccounting(InterpretBase):
             p[0] = p[1] + p[2] + p[3]
 
         def p_fetchdata_criticaldouble(p):
-            '''fetchdata : CRITICAL DISCARD CRITICAL term
-                         | CRITICAL term CRITICAL DISCARD '''
+            '''fetchdata : CRITICAL DISCARD CRITICAL NUMERIC
+                         | CRITICAL NUMERIC CRITICAL DISCARD '''
             if self.names[self._get_critical_alias(p[1])] == NULLSTR \
                 and self.names[self._get_critical_alias(p[3])] == NULLSTR:
                 self.names.update({self._get_critical_alias(p[1]):p[2]})
@@ -165,7 +165,7 @@ class InterpretAccounting(InterpretBase):
             self.logger.info('fetchdata critical',p[1],'->',self._get_critical_alias(p[1]),p[2],p[3],'->',self._get_critical_alias(p[3]),p[4])
 
         def p_fetchdata_criticaltriple(p):
-            '''fetchdata : CRITICAL term term CRITICAL DISCARD DISCARD'''
+            '''fetchdata : CRITICAL NUMERIC term CRITICAL DISCARD DISCARD'''
             #解决华新水泥2018年报中,股票简称不能识别的问题
             if self.names[self._get_critical_alias(p[1])] == NULLSTR \
                 and self.names[self._get_critical_alias(p[4])] == NULLSTR:
@@ -174,8 +174,9 @@ class InterpretAccounting(InterpretBase):
             self.logger.info('fetchdata critical',p[1],'->',self._get_critical_alias(p[1]),p[2],p[3],'->',self._get_critical_alias(p[3]),p[4])
 
         def p_fetchdata_critical(p):
-            '''fetchdata : CRITICAL term fetchdata
-                         | CRITICAL term '''
+            '''fetchdata : CRITICAL NUMERIC fetchdata
+                         | CRITICAL NUMERIC
+                         | CRITICAL '-' '''
             critical = self._get_critical_alias(p[1])
             self.names.update({critical:p[2]})
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
@@ -289,6 +290,7 @@ class InterpretAccounting(InterpretBase):
             self.currentPageNumber = docParser.index
             text = docParser._get_text(data)
             self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
+        self._process_critical_table()
         sourceFile = os.path.split(self.docParser.sourceFile)[-1]
         self.logger.info('%s\tcritical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                           ,str(self.names['股票代码']),self.names['股票简称']]))
@@ -317,6 +319,29 @@ class InterpretAccounting(InterpretBase):
                 self.excelParser.writeToStore(self.names[tableName])
                 self.sqlParser.writeToStore(self.names[tableName])
         self.logger.info('\nprefix: %s:'%interpretPrefix.replace('\n','\t') + str(self.names[tableName]))
+
+    def _process_critical_table(self,tableName = '关键数据表'):
+        assert tableName is not None and tableName != NULLSTR,"tableName must not be None"
+        table = self._construct_table(tableName)
+        self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
+                                     ,'公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
+                                     ,'报告类型': self.names['报告类型']})
+        self.names[tableName].update({"table":table})
+        self.names[tableName].update({"tableName":tableName})
+        self.excelParser.writeToStore(self.names[tableName])
+        self.sqlParser.writeToStore(self.names[tableName])
+
+    def _construct_table(self,tableNmae):
+        headers = self.dictTables[tableNmae]['header']
+        fields = self.dictTables[tableNmae]['fieldName']
+        assert isinstance(headers,list) and isinstance(fields,list)\
+            ,"headers (%s) and fields(%s) must be list"%(str(headers),str(fields))
+        rows = [list([key,value]) for key,value in self.names.items() if key in fields]
+        table = [headers] + rows
+        for row in rows:
+            if row[-1] == NULLSTR:
+                self.logger.warn('critical %s failed to fetch'%row[0])
+        return table
 
     def _is_reatch_max_pages(self, fetchTable,tableName):
         maxPages = self.dictTables[tableName]['maxPages']

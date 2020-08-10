@@ -47,8 +47,9 @@ class BaseClass():
         self.tokens = self.gJsonAccounting['tokens']
         self.literals = self.gJsonAccounting['literals']
         self.ignores = self.gJsonAccounting['ignores']
-        self.criticals = self.gJsonAccounting['CRITICAL'].split('|')
         self.criticalAlias = self.gJsonAccounting['criticalAlias']
+        self.criticals = self.gJsonAccounting['CRITICAL'].split('|')
+        self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
         self.dictTokens = {token:value for token,value in self.gJsonAccounting.items() if token in self.tokens}
         self.tableAlias = self.gJsonAccounting['tableAlias']
         #tableNames标准化,去掉正则表达式中的$^

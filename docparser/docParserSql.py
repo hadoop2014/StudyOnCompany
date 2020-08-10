@@ -525,7 +525,8 @@ class DocParserSql(DocParserBase):
         def valueStandardize(value):
             try:
                 if isinstance(value,str):
-                    value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR)
+                    value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR)\
+                        .replace('/',NULLSTR)
                     #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充
                     value = re.sub('.*-$',NULLSTR,value)
             except Exception as e:
@@ -740,6 +741,10 @@ class DocParserSql(DocParserBase):
 
     def _is_row_all_invalid(self,row:DataFrame):
         #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True
+        isRowAllInvalid = False
+        if (row == NULLSTR).all():
+            #如果是空行,返回False,空行有特殊用途,一般加到最后一行来驱动前一个字段的合并
+            return isRowAllInvalid
         mergedField = reduce(self._merge,row.tolist())
         #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
         isRowAllInvalid = not self._is_valid(mergedField)
