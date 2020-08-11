@@ -400,6 +400,13 @@ class DocParserSql(DocParserBase):
                                 mergedRow = None
                         elif isRowNotAnyNone == True and isHeaderInRow == True:
                             mergedRow = None
+            else:
+                if self._is_field_match_standardize(field,tableName):
+                    if index > lastIndex + 1 and mergedRow is not None:
+                        # 把前期合并的行赋值到dataframe的上一行
+                        dataFrame.iloc[lastIndex] = mergedRow
+                        dataFrame.iloc[lastIndex + 1:index] = NaN
+                    mergedRow = None
 
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
@@ -674,6 +681,7 @@ class DocParserSql(DocParserBase):
         else:
             firstField = row_or_field
         fieldFirst = self.dictTables[tableName]["fieldFirst"]
+        fieldFirst = '^' + fieldFirst
         isFirstFieldInRow = self._is_field_matched(fieldFirst, firstField)
         return isFirstFieldInRow
 
