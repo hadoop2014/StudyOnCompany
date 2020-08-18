@@ -401,7 +401,8 @@ class DocParserSql(DocParserBase):
                         elif isRowNotAnyNone == True and isHeaderInRow == True:
                             mergedRow = None
             else:
-                if self._is_field_match_standardize(field,tableName):
+                #if self._is_field_match_standardize(field,tableName):
+                if self._is_field_in_standardize_by_mode(field, isStandardizeStrictMode, tableName):
                     if index > lastIndex + 1 and mergedRow is not None:
                         # 把前期合并的行赋值到dataframe的上一行
                         dataFrame.iloc[lastIndex] = mergedRow
@@ -553,7 +554,24 @@ class DocParserSql(DocParserBase):
     def _process_field_duplicate(self,dataFrame,tableName):
         # 重复字段处理,放在字段标准化之后
         duplicatedFields = self._get_duplicated_field(dataFrame.iloc[0].tolist())
+
+        standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'], tableName)
+        duplicatedFieldsStandard = self._get_duplicated_field(standardizedFields)
+
+        #duplicatedFields = [field for field in duplicatedFields if field in duplicatedFieldsStandard]
         dataFrame.iloc[0] = duplicatedFields
+        duplicatedFieldsResult = []
+        for field in duplicatedFields:
+            if field in duplicatedFieldsStandard:
+                duplicatedFieldsResult += [field]
+            else:
+                self.logger.warn('field %s is not exist in %s'%(field,tableName))
+                #删除该字段
+                indexDiscardField = dataFrame.iloc[0].isin([field])
+                #dataFrame.loc[indexDiscardField] = NaN
+                dataFrame.T.loc[indexDiscardField] = NaN
+                dataFrame = dataFrame.dropna(axis=1).copy()
+        #dataFrame.iloc[0] = duplicatedFieldsResult
         return dataFrame
 
     def _process_header_discard(self, dataFrame, tableName):
@@ -695,6 +713,7 @@ class DocParserSql(DocParserBase):
         standardizedFields = [field for field in standardizedFields if self._is_valid(field)]
         assert isinstance(standardizedFields,list),"patternList(%s) must be a list of string"%standardizedFields
         for pattern in standardizedFields:
+            #pattern = '^' + pattern
             if self._is_field_matched(pattern,field):
                 isFieldInList = True
                 break
