@@ -113,6 +113,37 @@ class InterpretAccounting(InterpretBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
+        def p_fetchtable_searchnotimebracket(p):
+            '''fetchtable : TABLE optional '（' UNIT '）' finis '''
+            #第二个语法针对的是主要会计数据
+            #解决海螺水泥2018年财报分季度主要财务表的识别问题
+            tableName = self._get_tablename_alias(str.strip(p[1]))
+            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[4],self.currentPageNumber))
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+                self.docParser.interpretPrefix = NULLSTR
+                return
+            unit = p[4].split(':')[-1].split('：')[-1]
+            currency = self.names['currency']
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
+            tableBegin = True
+            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+
+        def p_fetchtable_searchnotimecurrencyunit(p):
+            '''fetchtable : TABLE optional CURRENCY UNIT finis '''
+            #第二个语法针对的是主要会计数据
+            #解决海螺水泥2018年财报现金流量表补充资料 的识别问题
+            tableName = self._get_tablename_alias(str.strip(p[1]))
+            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[4],self.currentPageNumber))
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+                self.docParser.interpretPrefix = NULLSTR
+                return
+            unit = p[4].split(':')[-1].split('：')[-1]
+            currency = self.names['currency']
+            #interpretPrefix = '\n'.join([slice for slice in p if slice is not None and slice != 'optional']) + '\n'
+            interpretPrefix = '\n'.join([slice.value for slice in p.slice if slice.value is not None and slice.type != 'optional']) + '\n'
+            tableBegin = True
+            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+
         def p_fetchtable_timetime(p):
             '''fetchtable : TABLE optional TIME TIME'''
             #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
@@ -289,8 +320,10 @@ class InterpretAccounting(InterpretBase):
 
         def p_optional_optional(p):
             '''optional : DISCARD optional
-                        | optional fetchdata DISCARD'''
+                        | optional fetchdata DISCARD
+                        | '(' NAME ')' optional '''
             #第2条规则解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
+            #第3条规则解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             p[0] = p[1] + p[2]
 
         def p_optional(p):

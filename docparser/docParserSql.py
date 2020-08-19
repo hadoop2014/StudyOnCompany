@@ -126,6 +126,7 @@ class DocParserSql(DocParserBase):
             if isinstance(value,str):
                 if value != NONESTR and value != NULLSTR:
                     value = re.sub('不适用$',NULLSTR,value)
+                    value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
@@ -141,8 +142,9 @@ class DocParserSql(DocParserBase):
         #采用正则表达式替换空字符,对一个字段中包含两个数字字符串的进行拆分
         #解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景.
         #东材科技2018年年报,普通股现金分红流量表,表头有很多空格,影响_process_header_discard,需要去掉
-        dataFrame = dataFrame.apply(self._rowPretreat,axis=1)
-        dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR).replace('(','（').replace(')','）')))
+        dataFrame[1:]  = dataFrame[1:].apply(self._rowPretreat,axis=1)
+        dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR)
+                                                         .replace('(','（').replace(')','）')))
         return dataFrame
 
     def _process_header_merge_simple(self, dataFrame, tableName):
