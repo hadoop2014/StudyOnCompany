@@ -53,6 +53,9 @@ class BaseClass():
         self.criticalAlias = self.gJsonAccounting['criticalAlias']
         self.criticals = self.gJsonAccounting['CRITICAL'].split('|')
         self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
+        self.unitAlias = self.gJsonAccounting['unitAlias']
+        #self.units = self.gJsonAccounting['UNIT'].split('|')
+        #self.units = list(set([self._get_unit_alias(unit) for unit in self.units]))
         self.dictTokens = {token:value for token,value in self.gJsonAccounting.items() if token in self.tokens}
         self.tableAlias = self.gJsonAccounting['tableAlias']
         #tableNames标准化,去掉正则表达式中的$^
@@ -62,6 +65,10 @@ class BaseClass():
         self.commonFileds = self.gJsonAccounting['公共表字段定义']
         self.tableKeyword = self.gJsonAccounting['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
+
+    def _get_unit_alias(self,unit):
+        aliasedUnit = self._alias(unit, self.unitAlias)
+        return aliasedUnit
 
     def _get_reference_alias(self,refernece):
         aliasedRefernece = self._alias(refernece, self.referenceAlias)

@@ -83,6 +83,22 @@ class InterpretAccounting(InterpretBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
 
+        def p_fetchtable_searchlong(p):
+            '''fetchtable : TABLE optional TIME optional CURRENCY UNIT finis '''
+            #解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
+            tableName = self._get_tablename_alias(str.strip(p[1]))
+            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+                self.docParser.interpretPrefix = NULLSTR
+                return
+            unit = p[6].split(':')[-1].split('：')[-1]
+            currency = p[7]
+            #currency = self.names['currency']
+            company = self.names['company']
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
+            tableBegin = True
+            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
+
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT finis '''
             #第二个语法针对的是主要会计数据
@@ -156,6 +172,20 @@ class InterpretAccounting(InterpretBase):
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2] + p[3]
 
+        def p_fetchdata_titlelong(p):
+            '''fetchdata : COMPANY NAME skipword TIME UNIT '''
+            #解决海螺水泥2018年报第1页title的识别问题
+            if self.names['公司名称'] == NULLSTR \
+                and self.names['报告时间'] == NULLSTR \
+                and self.names['报告类型'] == NULLSTR:
+                years = self._time_transfer(p[4])
+                self.names.update({'公司名称':p[1]})
+                self.names.update({'报告时间':years})
+                self.names.update({'报告类型':self._get_unit_alias(p[5])})
+            self.logger.info('fetchdata title long %s %s%s page %d'
+                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            p[0] = p[1] + p[4] + p[5]
+
         def p_fetchdata_referencedouble(p):
             '''fetchdata : REFERENCE DISCARD REFERENCE NUMERIC
                          | REFERENCE NUMERIC REFERENCE DISCARD '''
@@ -193,7 +223,8 @@ class InterpretAccounting(InterpretBase):
                          | COMPANY UNIT
                          | COMPANY error
                          | COMPANY empty
-                         | CRITICAL CRITICAL'''
+                         | CRITICAL CRITICAL
+                         | REFERENCE NUMERIC NAME'''
             p[0] = p[1]
 
         def p_skipword_group(p):
@@ -208,7 +239,11 @@ class InterpretAccounting(InterpretBase):
                         | term skipword
                         | useless
                         | term
-                        | '(' skipword error '''
+                        | '(' skipword error
+                        | '(' skipword REFERENCE NUMERIC ')'
+                        | '（' skipword REFERENCE NUMERIC '）'
+                        | '(' skipword REFERENCE NAME ')'
+                        | '（' skipword REFERENCE NAME '）' '''
             p[0] = p[1]
 
         def p_useless_reduce(p):
