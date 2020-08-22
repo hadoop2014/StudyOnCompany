@@ -445,6 +445,7 @@ class InterpretAccounting(InterpretBase):
         timelist = [transfer[number] for number in list(time) if number in transfer.keys()]
         if len(timelist) > 1 :
             time = ''.join(timelist)
+        time = time.replace(' ',NULLSTR)
         return time
 
     def initialize(self):
