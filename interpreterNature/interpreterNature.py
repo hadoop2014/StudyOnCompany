@@ -108,7 +108,7 @@ class InterpreterNature(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_parse!')
             return
-        self.interpreterAccounting.initialize()
+        self.interpreterAccounting.initialize(self.gConfig)
         taskResult = self.interpreterAccounting.doWork(debug=False, tracking=False)
         return taskResult
 

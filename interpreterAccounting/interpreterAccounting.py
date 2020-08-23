@@ -455,7 +455,7 @@ class InterpreterAccounting(InterpreterBase):
         time = time.replace(' ',NULLSTR)
         return time
 
-    def initialize(self):
+    def initialize(self,gConfig=None):
         for tableName in self.tableNames:
             self.names.update({tableName:{'tableName':NULLSTR,'time':NULLSTR,'unit':NULLSTR,'currency':NULLSTR
                                           ,'company':NULLSTR,'公司名称':NULLSTR,'公司代码':NULLSTR,'公司简称':NULLSTR
@@ -467,7 +467,10 @@ class InterpreterAccounting(InterpreterBase):
             self.names.update({commonField:NULLSTR})
         for cirtical in self.criticals:
             self.names.update({self._get_critical_alias(cirtical):NULLSTR})
-        self.docParser._load_data()
+        if gConfig is not None:
+            self.docParser._load_data(gConfig['sourcefile'])
+        else:
+            self.docParser._load_data()
 
 def create_object(gConfig,memberModuleDict):
     interpreter=InterpreterAccounting(gConfig, memberModuleDict)

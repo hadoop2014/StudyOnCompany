@@ -16,7 +16,9 @@ class DocParserPdf(DocParserBase):
         self.table_settings = gConfig["table_settings"]
         #self._load_data()
 
-    def _load_data(self,input=None):
+    def _load_data(self,sourceFile=None):
+        if sourceFile is not None and sourceFile != NULLSTR:
+            self.sourceFile = os.path.join(self.data_directory,self.gConfig['source_directory'],sourceFile)
         self._pdf = pdfplumber.open(self.sourceFile,password='')
         self._data = self._pdf.pages
         self._index = 0
