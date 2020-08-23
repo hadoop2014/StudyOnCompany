@@ -1,0 +1,14 @@
+{
+  "#tokens": ["批量运行","单个运行","数据解析","数据分析"],
+  "tokens":  ["BATCH","SINGLE","PARSE","ANALYSIZE"],
+
+  "BATCH": "批量运行",
+  "SINGLE": "单次运行",
+  "PARSE": "财务报表解析",
+  "ANALYSIZE": "财报报表分析",
+
+  "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
+  "literals": ["(",")","（","）","#"],
+
+  "ignores": "\t "
+}

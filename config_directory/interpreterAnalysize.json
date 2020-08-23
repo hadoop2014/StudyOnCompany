@@ -1,6 +1,6 @@
 {
-  "#tokens": ["创建",  "表",  "生成"],
-  "tokens":  ["CREATE","TABLE", "GENERATE"],
+  "#tokens": ["创建",   "生成",     "表"],
+  "tokens":  ["CREATE","GENERATE","TABLE"],
 
   "CREATE": "创建",
   "GENERATE": "生成",

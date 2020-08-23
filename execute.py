@@ -10,6 +10,7 @@ from threading import Thread
 from datafetch import getConfig
 import json
 import os
+from interpreterAssemble import InterpreterAssemble
 from loggerClass import Logger
 
 check_book = None
@@ -60,7 +61,7 @@ def get_gConfig(taskName, gConfig, unittestIsOn):
         raise ValueError('check_book is None ,it may be some error occured when open the checkbook.json!')
     gConfig = getConfig.get_config(config_file)
     gJsonAccounting,gJsonBase = getConfig.get_config_json(config_file_json)
-    gConfig.update({"gJsonAccounting".lower():gJsonAccounting})
+    gConfig.update({"gJsonInterpreter".lower():gJsonAccounting})
     gConfig.update({"gJsonBase".lower():gJsonBase})
     #在unitest模式,这三个数据是从unittest.main中设置，而非从文件中读取．
     gConfig['taskName'] = taskName
@@ -110,6 +111,10 @@ def is_file_name_valid(fileName):
                 isFileNameValid = True
     return isFileNameValid
 
+def run_task_in_nature():
+    interpreterNature = InterpreterAssemble().get_interpreter_nature()
+    interpreterNature.doWork(debug=True)
+
 def main():
     gConfig = getConfig.get_config()
     if len(sys.argv) > 1 :
@@ -129,10 +134,12 @@ def main():
             'Now in training mode,unitestIsOn must be False whitch in configbase.ini'
         taskName = gConfig['taskName'.lower()]
 
-    if validate_parameter(taskName,gConfig) == True:
-        run_task(taskName,gConfig,unittestIsOn)
-    else:
-        raise ValueError("(%s %s %s %s) is not supported now!"%(gConfig))
+    #if validate_parameter(taskName,gConfig) == True:
+        #run_task(taskName,gConfig,unittestIsOn)
+    #    run_task_new()
+    #else:
+    #    raise ValueError("(%s %s %s %s) is not supported now!"%(gConfig))
+    run_task_in_nature()
 
 if __name__=='__main__':
     main()

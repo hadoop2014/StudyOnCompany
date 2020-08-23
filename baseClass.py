@@ -5,7 +5,6 @@
 # @File    : docParserBaseClass.py
 from loggerClass import *
 import functools
-import re
 import numpy as np
 #数据读写处理的基类
 
@@ -16,11 +15,11 @@ NaN = np.nan
 class BaseClass():
     def __init__(self,gConfig):
         self.gConfig = gConfig
-        self.gJsonAccounting = gConfig['gJsonAccounting'.lower()]
+        self.gJsonInterpreter = gConfig['gJsonInterpreter'.lower()]
         self.gJsonBase = gConfig['gJsonBase'.lower()]
         self.debugIsOn = gConfig['debugIsOn'.lower()]
+        self.program_directory = gConfig['program_directory']
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
-        self._get_interpreter_keyword()
         self._data = list()
         self._index = 0
         self._length = len(self._data)
@@ -41,92 +40,6 @@ class BaseClass():
 
     def __getitem__(self, item):
         return self._data[item]
-
-    def _get_interpreter_keyword(self):
-        #编译器,文件解析器共同使用的关键字
-        self.tokens = self.gJsonAccounting['tokens']
-        self.literals = self.gJsonAccounting['literals']
-        self.ignores = self.gJsonAccounting['ignores']
-        self.referenceAlias = self.gJsonAccounting['referenceAlias']
-        self.references = self.gJsonAccounting['REFERENCE'].split('|')
-        self.references = list(set([self._get_reference_alias(reference) for reference in self.references]))
-        self.criticalAlias = self.gJsonAccounting['criticalAlias']
-        self.criticals = self.gJsonAccounting['CRITICAL'].split('|')
-        self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
-        self.unitAlias = self.gJsonAccounting['unitAlias']
-        self.dictTokens = {token:value for token,value in self.gJsonAccounting.items() if token in self.tokens}
-        self.tableAlias = self.gJsonAccounting['tableAlias']
-        #tableNames标准化,去掉正则表达式中的$^
-        self.tableNames = [self._standardize("[\\u4E00-\\u9FA5]{3,}",tableName) for tableName in self.gJsonAccounting['TABLE'].split('|')]
-        self.tableNames = list(set([self._get_tablename_alias(tableName) for tableName in self.tableNames]))
-        self.dictTables = {keyword: value for keyword,value in self.gJsonAccounting.items() if keyword in self.tableNames}
-        self.commonFileds = self.gJsonAccounting['公共表字段定义']
-        self.tableKeyword = self.gJsonAccounting['TABLE']
-        self.dictKeyword = self._get_keyword(self.tableKeyword)
-
-    def _get_unit_alias(self,unit):
-        aliasedUnit = self._alias(unit, self.unitAlias)
-        return aliasedUnit
-
-    def _get_reference_alias(self,refernece):
-        aliasedRefernece = self._alias(refernece, self.referenceAlias)
-        return aliasedRefernece
-
-    def _get_critical_alias(self,critical):
-        aliasedCritical = self._alias(critical, self.criticalAlias)
-        return aliasedCritical
-
-    def _get_tablename_alias(self,tablename):
-        aliasedTablename = self._alias(tablename, self.tableAlias)
-        return aliasedTablename
-
-    def _alias(self, name, dictAlias):
-        alias = name
-        aliasKeys = dictAlias.keys()
-        if len(aliasKeys) > 0:
-            if name in aliasKeys:
-                alias = dictAlias[name]
-        return alias
-
-    def _merge(self,field1, field2,isFieldJoin=True):
-        if self._is_valid(field2):
-            if self._is_valid(field1):
-                if isFieldJoin == True:
-                    return field1 + field2
-                else:
-                    return field2
-            else:
-                return field2
-        else:
-            return field1
-
-    def _standardize(self,fieldStandardize,field):
-        standardizedField = field
-        if isinstance(field, str) and isinstance(fieldStandardize, str) and fieldStandardize !="":
-            matched = re.search(fieldStandardize, field)
-            if matched is not None:
-                standardizedField = matched[0]
-            else:
-                standardizedField = NaN
-        else:
-            if not self._is_valid(field):
-                standardizedField = NaN
-        return standardizedField
-
-    def _is_valid(self, field):
-        isFieldValid = False
-        if isinstance(field,str):
-            if field not in self._get_invalid_field():
-                isFieldValid = True
-        return isFieldValid
-
-    def _get_keyword(self,tableKeyword):
-        #获取解析文件所需的关键字
-        dictKeyword = {keyword:value for keyword,value in self.gJsonAccounting.items() if keyword in tableKeyword}
-        return dictKeyword
-
-    def _get_invalid_field(self):
-        return [NONESTR,NULLSTR]
 
     def _set_dataset(self,index=None):
         if isinstance(index,list):

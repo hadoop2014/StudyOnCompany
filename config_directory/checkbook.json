@@ -1,6 +1,6 @@
 
 {
-  "batch": {
+  "#batch": {
     "config_file": "configpdf.ini",
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserPdf",
@@ -8,12 +8,40 @@
     "sqlparser": "docparser.docParserSql",
     "interpreter": "interpreter.interpretAccounting"
   },
-  "single": {
+  "#single": {
     "config_file": "configpdf.ini",
     "config_file_json": "interpretAccounting.json",
     "docparser": "docparser.docParserPdf",
     "excelparser": "docparser.docParserExcel",
     "sqlparser": "docparser.docParserSql",
     "interpreter": "interpreter.interpretAccounting"
+  },
+  "accounting": {
+    "module": "interpreterAccounting.interpreterAccounting",
+    "config_file": "config_directory/configpdf.ini",
+    "config_json": "config_directory/interpreterAccounting.json",
+    "program_directory": "",
+    "member_modules": {
+      "docparser":"interpreterAccounting.docparser.docParserPdf",
+      "excelparser":"interpreterAccounting.docparser.docParserExcel",
+      "sqlparser":"interpreterAccounting.docparser.docParserSql"
+    }
+  },
+  "analysize": {
+    "module": "interpreterAnalysize.interpreterAnalysize",
+    "config_file": "",
+    "config_json": "config_directory/interpreterAnalysize.json",
+    "program_directory": "program/interpreterAnalysize/",
+    "member_modules": {}
+  },
+  "nature": {
+    "module": "interpreterNature.interpreterNature",
+    "config_file": "",
+    "config_json": "config_directory/interpreterNature.json",
+    "program_directory": "program/interpreterNature/",
+    "member_modules": {
+      "accounting": "",
+      "analysize": ""
+    }
   }
 }
