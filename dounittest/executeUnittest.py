@@ -30,8 +30,6 @@ class MyTestCase(unittest.TestCase):
             docParse(parser, interpreter, docformat, self.gConfig,lexer=None,debug=True,tracking=False)
         else:
             raise ValueError("(%s %s %s %s) is not supported now!" % (self.gConfig))
-        #self.interpreter = InterpretAccounting.create_object(gConfig=self.gConfig,docParser=testParser)
-        #self.run_interpreter_yacc(testParser)
 
 if __name__ == '__main__':
     unittest.main()

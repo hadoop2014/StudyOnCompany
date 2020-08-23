@@ -121,7 +121,6 @@ class DocParserPdf(DocParserBase):
             return processedTable,isTableEnd
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
-        #mergedFields = reduce(self._merge,fieldList)
         isTableEnd = self._is_table_end(tableName,fieldList)
         if len(tables) == 1:
             return processedTable, isTableEnd
@@ -131,8 +130,6 @@ class DocParserPdf(DocParserBase):
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
             fieldList = [row[0] for row in table]
             headerList = table[0]
-            #mergedFields = reduce(self._merge, fieldList)
-            #mergedHeaders = reduce(self._merge,headerList)
             #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.
             isTableEnd = self._is_table_end(tableName, fieldList)
             isTableStart = self._is_table_start(tableName,fieldList,headerList)

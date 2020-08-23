@@ -146,7 +146,6 @@ class MyTestCase(unittest.TestCase):
         for tok in self.interpreter.lexer:
             print(tok)
         testParser._load_data([input])
-        #self.interpreter.doWork(testParser,lexer=self.interpreter.lexer,debug=True,tracking=True)
         self.interpreter.parser.parse(input,lexer=self.interpreter.lexer,debug=True,tracking=True)
 
 if __name__ == '__main__':

@@ -18,7 +18,6 @@ class DocParserExcel(DocParserBase):
 
     def writeToStore(self, dictTable):
         # 专门用于写文件
-        # assert self.targetFile != "", "target file %s must not be empty" % self.targetFile
         table = dictTable['table']
         tableName = dictTable['tableName']
         workbook = load_workbook(self.targetFile)
@@ -26,10 +25,8 @@ class DocParserExcel(DocParserBase):
             workbook.remove(workbook['Sheet'])  # 删除空工作薄
         writer = pd.ExcelWriter(self.targetFile, engine='openpyxl')
         writer.book = workbook
-        #dataFrame = pd.DataFrame(table[1:], columns=table[0], index=None)  # 以第一行为列变量
         dataFrame = pd.DataFrame(table, columns=None, index=None)  # 以第一行为列变量
         dataFrame.to_excel(excel_writer=writer, sheet_name=tableName, index=None)
-        # workbook._sheets.insert(0, workbook._sheets.pop())
         writer.save()
 
     '''

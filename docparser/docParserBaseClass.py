@@ -15,7 +15,6 @@ from functools import reduce
 class DocParserBase(BaseClass):
     def __init__(self,gConfig):
         super(DocParserBase, self).__init__(gConfig)
-        #self.gConfig = gConfig
         self.start_time = time.time()
         self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser', self._get_class_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
@@ -28,11 +27,7 @@ class DocParserBase(BaseClass):
         self.source_directory = os.path.join(self.data_directory,self.gConfig['source_directory'])
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['source_directory'],self.gConfig['sourcefile'])
         self.taskResult = os.path.join(self.gConfig['working_directory'],self.gConfig['taskResult'.lower()])
-        #self.targetFile = os.path.join(self.working_directory,self.gConfig['targetfile'])
-        #self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        #self.unittestIsOn = self.gConfig['unittestIsOn'.lower()]
-        #DocParserBase.sourceFile = self.gConfig['sourcefile']
 
     def _get_standardized_header(self,headerList,tableName):
         assert headerList is not None, 'sourceRow(%s) must not be None' % headerList
@@ -49,7 +44,6 @@ class DocParserBase(BaseClass):
             'docformatlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
             (gConfig['docformatlist'], parser_name, self.__class__.__name__)
         return parser_name
-
 
     def saveCheckpoint(self):
         pass
@@ -111,7 +105,6 @@ class DocParserBase(BaseClass):
     @getdataForUnittest.__get__(object)
     def getTrainData(self,batch_size):
         return
-
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:

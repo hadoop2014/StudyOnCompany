@@ -36,7 +36,6 @@ class Logger():
     def _get_file_handler(self, filename,backupCount):
         '''返回一个文件日志handler'''
         # 1. 获取一个文件日志handler
-        #filehandler = logging.FileHandler(filename=filename, encoding="utf-8")
         filehandler = handlers.TimedRotatingFileHandler(filename=filename, when="midnight", interval=1,
                                                         backupCount=backupCount,
                                                         atTime=None,encoding="utf-8")

@@ -14,15 +14,12 @@ class InterpretAccounting(InterpretBase):
         self.docParser = docParser
         self.excelParser = excelParser
         self.sqlParser = sqlParser
-        #self.initialize()
         self.currentPageNumber = 0
         self.interpretDefine()
 
     def interpretDefine(self):
         tokens = self.tokens
-
         literals = self.literals
-
         # Tokens
         #采用动态变量名
         local_name = locals()
@@ -45,7 +42,6 @@ class InterpretAccounting(InterpretBase):
         self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
 
         # Parsing rules
-
         precedence = (
             ('right', 'UMINUS'),
         )
@@ -113,7 +109,7 @@ class InterpretAccounting(InterpretBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
-        def p_fetchtable_searchnotimebracket(p):
+        def p_fetchtable_searchbracket(p):
             '''fetchtable : TABLE optional '（' UNIT '）' finis '''
             #第二个语法针对的是主要会计数据
             #解决海螺水泥2018年财报分季度主要财务表的识别问题
@@ -128,7 +124,7 @@ class InterpretAccounting(InterpretBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
-        def p_fetchtable_searchnotimecurrencyunit(p):
+        def p_fetchtable_searchcurrencyunit(p):
             '''fetchtable : TABLE optional CURRENCY UNIT finis '''
             #第二个语法针对的是主要会计数据
             #解决海螺水泥2018年财报现金流量表补充资料 的识别问题
@@ -144,7 +140,7 @@ class InterpretAccounting(InterpretBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
-        def p_fetchtable_timetime(p):
+        def p_fetchtable_timedouble(p):
             '''fetchtable : TABLE optional TIME TIME'''
             #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
             tableName = self._get_tablename_alias(str.strip(p[1]))

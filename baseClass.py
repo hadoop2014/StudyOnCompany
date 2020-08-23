@@ -54,8 +54,6 @@ class BaseClass():
         self.criticals = self.gJsonAccounting['CRITICAL'].split('|')
         self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
         self.unitAlias = self.gJsonAccounting['unitAlias']
-        #self.units = self.gJsonAccounting['UNIT'].split('|')
-        #self.units = list(set([self._get_unit_alias(unit) for unit in self.units]))
         self.dictTokens = {token:value for token,value in self.gJsonAccounting.items() if token in self.tokens}
         self.tableAlias = self.gJsonAccounting['tableAlias']
         #tableNames标准化,去掉正则表达式中的$^

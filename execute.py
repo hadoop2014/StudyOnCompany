@@ -52,7 +52,6 @@ def parserManager(taskName, gConfig):
     return docParser,interpreter#,sourceFile,targetFile
 
 def get_gConfig(taskName, gConfig, unittestIsOn):
-    #global check_book
     check_book = getConfig.get_check_book()
     if check_book is not None:
         config_file = os.path.join(gConfig['config_directory'], check_book[taskName]['config_file'])
@@ -70,21 +69,9 @@ def get_gConfig(taskName, gConfig, unittestIsOn):
         pass
     return gConfig
 
-#def set_check_book(gConfig):
-    #check_file = os.path.join(gConfig['config_directory'], gConfig['check_file'])
-#    global check_book
-    #if os.path.exists(check_file):
-    #    with open(check_file, encoding='utf-8') as check_f:
-    #        check_book = json.load(check_f)
-    #else:
-    #    raise ValueError("%s is not exist,you must create first!" % check_file)
-#    check_book = getConfig.get_check_book()
-
 def validate_parameter(taskName, gConfig):
     assert taskName in gConfig['tasknamelist'], 'taskName(%s) is invalid,it must one of %s' % \
                                                  (taskName, gConfig['tasknamelist'])
-    #global check_book
-    #set_check_book(gConfig)
     check_book = getConfig.get_check_book()
     return check_book[taskName]["config_file"] != '' \
            and check_book[taskName]['docparser'] != '' \
