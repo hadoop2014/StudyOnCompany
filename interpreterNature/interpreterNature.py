@@ -56,6 +56,18 @@ class InterpreterNature(InterpreterBase):
             '''expression : SINGLE PARSE'''
             self._process_single_parse()
 
+        def p_expression_batch_analysize(p):
+            '''expression : BATCH ANALYSIZE'''
+            self._process_batch_analysize()
+
+        def p_expression_single_analysize(p):
+            '''expression : SINGLE ANALYSIZE'''
+            self._process_single_analysize()
+
+        def p_expression_execute_analysize(p):
+            '''expression : EXECUTE ANALYSIZE'''
+            self._process_single_analysize()
+
         def p_error(p):
             if p:
                 print("Syntax error at '%s:%s'" % (p.value,p.type))
@@ -77,7 +89,7 @@ class InterpreterNature(InterpreterBase):
 
     def _process_batch_parse(self):
         if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing!')
+            self.logger.info('Now in unittest mode,do nothing in _process_batch_parse!')
             return
         taskResults = list()
         source_directory = os.path.join(self.gConfig['data_directory'], self.gConfig['source_directory'])
@@ -94,11 +106,23 @@ class InterpreterNature(InterpreterBase):
 
     def _process_single_parse(self):
         if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing!')
+            self.logger.info('Now in unittest mode,do nothing in _process_single_parse!')
             return
         self.interpreterAccounting.initialize()
         taskResult = self.interpreterAccounting.doWork(debug=False, tracking=False)
         return taskResult
+
+    def _process_batch_analysize(self):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_batch_analysize!')
+            return
+        pass
+
+    def _process_single_analysize(self):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
+            return
+        pass
 
     def _is_file_name_valid(self,fileName):
         assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName

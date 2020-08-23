@@ -126,6 +126,7 @@ class DocParserSql(DocParserBase):
                 if value != NONESTR and value != NULLSTR:
                     value = re.sub('不适用$',NULLSTR,value)
                     value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
+                    value = re.sub('^）\\s*',NULLSTR,value)
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
@@ -141,7 +142,7 @@ class DocParserSql(DocParserBase):
         #采用正则表达式替换空字符,对一个字段中包含两个数字字符串的进行拆分
         #解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景.
         #东材科技2018年年报,普通股现金分红流量表,表头有很多空格,影响_process_header_discard,需要去掉
-        dataFrame[1:]  = dataFrame[1:].apply(self._rowPretreat,axis=1)
+        dataFrame.iloc[1:,1:]  = dataFrame.iloc[1:,1:].apply(self._rowPretreat,axis=1)
         dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR)
                                                          .replace('(','（').replace(')','）')))
         return dataFrame
@@ -295,13 +296,14 @@ class DocParserSql(DocParserBase):
             try:
                 if isinstance(value,str):
                     value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR)\
-                        .replace('/',NULLSTR)
+                        .replace('/',NULLSTR).replace('）',NULLSTR)
+                    #解决迪安诊断2018年财报主要会计数据中,把最后一行拆为"归属于上市公司股东的净资产（元"和"）"
                     #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充
                     value = re.sub('.*-$',NULLSTR,value)
             except Exception as e:
                 print(e)
             return value
-        dataFrame = dataFrame.apply(lambda x: x.apply(valueStandardize))
+        dataFrame.iloc[1:] = dataFrame.iloc[1:].apply(lambda x: x.apply(valueStandardize))
         return dataFrame
 
     def _process_field_from_header(self,dataFrame,fieldFromHeader,index,countColumns):

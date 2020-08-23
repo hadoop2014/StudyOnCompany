@@ -237,9 +237,11 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchdata : CRITICAL NUMERIC fetchdata
                          | CRITICAL NUMERIC
                          | CRITICAL '-'
-                         | CRITICAL empty'''
+                         | CRITICAL empty
+                         | CRITICAL LOCATION'''
             critical = self._get_critical_alias(p[1])
-            self.names.update({critical:p[2]})
+            if self.names[critical] == NULLSTR :
+                self.names.update({critical:p[2]})
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
 
         def p_fetchdata_skipword(p):
@@ -291,6 +293,7 @@ class InterpreterAccounting(InterpreterBase):
                        | TIME
                        | UNIT
                        | CURRENCY
+                       | LOCATION
                        | '-'
                        | '%'
                        | '％' '''
@@ -364,7 +367,7 @@ class InterpreterAccounting(InterpreterBase):
         self._process_critical_table()
         sourceFile = os.path.split(self.docParser.sourceFile)[-1]
         self.logger.info('%s\tcritical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
-                          ,str(self.names['股票代码']),self.names['股票简称']]))
+                          ,str(self.names['公司代码']),self.names['公司简称'],self.names['办公地址']]))
         self.logger.info('%s\tprocess_info:'%sourceFile + str(self.sqlParser.process_info))
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
@@ -383,9 +386,11 @@ class InterpreterAccounting(InterpreterBase):
                                      ,'tableBegin': tableBegin
                                      ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
         if self.names[tableName]['tableEnd'] == False:
-            self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
-                                             , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
-                                             , '报告类型': self.names['报告类型']})
+            self.names[tableName].update({'公司代码': self.names['公司代码'], '公司简称': self.names['公司简称']
+                                         ,'公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
+                                         ,'报告类型': self.names['报告类型']
+                                         ,'办公地址': self.names['办公地址']
+                                         ,'行业分类': self.names['行业分类']})
             self.docParser._merge_table(self.names[tableName], interpretPrefix)
             if self.names[tableName]['tableEnd'] == True:
                 self.excelParser.writeToStore(self.names[tableName])
@@ -395,9 +400,11 @@ class InterpreterAccounting(InterpreterBase):
     def _process_critical_table(self,tableName = '关键数据表'):
         assert tableName is not None and tableName != NULLSTR,"tableName must not be None"
         table = self._construct_table(tableName)
-        self.names[tableName].update({'股票代码': self.names['股票代码'], '股票简称': self.names['股票简称']
+        self.names[tableName].update({'公司代码': self.names['公司代码'], '公司简称': self.names['公司简称']
                                      ,'公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
-                                     ,'报告类型': self.names['报告类型']})
+                                     ,'报告类型': self.names['报告类型']
+                                     ,'办公地址': self.names['办公地址']
+                                     ,'行业分类': self.names['行业分类']})
         self.names[tableName].update({"table":table})
         self.names[tableName].update({"tableName":tableName})
         self.excelParser.writeToStore(self.names[tableName])
@@ -451,8 +458,8 @@ class InterpreterAccounting(InterpreterBase):
     def initialize(self):
         for tableName in self.tableNames:
             self.names.update({tableName:{'tableName':NULLSTR,'time':NULLSTR,'unit':NULLSTR,'currency':NULLSTR
-                                          ,'company':NULLSTR,'公司名称':NULLSTR,'股票代码':NULLSTR,'股票简称':NULLSTR
-                                          ,'报告时间':NULLSTR,'报告类型':NULLSTR
+                                          ,'company':NULLSTR,'公司名称':NULLSTR,'公司代码':NULLSTR,'公司简称':NULLSTR
+                                          ,'报告时间':NULLSTR,'报告类型':NULLSTR,"办公地址":NULLSTR,'行业分类':NULLSTR
                                           ,'table':NULLSTR,'tableBegin':False,'tableEnd':False
                                           ,"page_numbers":list()}})
         self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR})

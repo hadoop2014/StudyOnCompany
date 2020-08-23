@@ -87,8 +87,8 @@ class DocParserPdf(DocParserBase):
     def _get_special_settings(self,dictTable,table_settings):
         keyName = '默认值'
         snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
-        if dictTable['股票简称'] != NULLSTR:
-            keyName = dictTable['股票简称']
+        if dictTable['公司简称'] != NULLSTR:
+            keyName = dictTable['公司简称']
             if keyName in self.gJsonBase['table_settings'].keys():
                 if dictTable['报告时间'] == self.gJsonBase['table_settings'][keyName]['报告时间'] \
                     and dictTable['报告类型'] == self.gJsonBase['table_settings'][keyName]['报告类型']:

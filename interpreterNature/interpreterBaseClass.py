@@ -50,22 +50,8 @@ class InterpreterBase(BaseClass):
         self.tokens = self.gJsonInterpreter['tokens']
         self.literals = self.gJsonInterpreter['literals']
         self.ignores = self.gJsonInterpreter['ignores']
-        #self.referenceAlias = self.gJsonInterpreter['referenceAlias']
-        #self.references = self.gJsonInterpreter['REFERENCE'].split('|')
-        #self.references = list(set([self._get_reference_alias(reference) for reference in self.references]))
-        #self.criticalAlias = self.gJsonInterpreter['criticalAlias']
-        #self.criticals = self.gJsonInterpreter['CRITICAL'].split('|')
-        #self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
-        #self.unitAlias = self.gJsonInterpreter['unitAlias']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
-        #self.tableAlias = self.gJsonInterpreter['tableAlias']
-        #tableNames标准化,去掉正则表达式中的$^
-        #self.tableNames = [self._standardize("[\\u4E00-\\u9FA5]{3,}",tableName) for tableName in self.gJsonInterpreter['TABLE'].split('|')]
-        #self.tableNames = list(set([self._get_tablename_alias(tableName) for tableName in self.tableNames]))
-        #self.dictTables = {keyword: value for keyword,value in self.gJsonInterpreter.items() if keyword in self.tableNames}
-        #self.commonFileds = self.gJsonInterpreter['公共表字段定义']
-        #self.tableKeyword = self.gJsonInterpreter['TABLE']
-        #self.dictKeyword = self._get_keyword(self.tableKeyword)
+
     def _get_keyword(self,tableKeyword):
         #获取解析文件所需的关键字
         dictKeyword = {keyword:value for keyword,value in self.gJsonInterpreter.items() if keyword in tableKeyword}

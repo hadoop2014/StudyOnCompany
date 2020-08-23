@@ -1,11 +1,13 @@
 {
-  "#tokens": ["批量运行","单个运行","数据解析","数据分析"],
-  "tokens":  ["BATCH","SINGLE","PARSE","ANALYSIZE"],
+  "#tokens": ["批量运行","单个运行","执行","数据解析","数据分析","数据呈现"],
+  "tokens":  ["BATCH","SINGLE","EXECUTE","PARSE","ANALYSIZE","PRESENT"],
 
-  "BATCH": "批量运行",
-  "SINGLE": "单次运行",
+  "BATCH": "批量运行|批量执行",
+  "SINGLE": "单次运行|单次执行",
+  "EXECUTE": "执行|运行",
   "PARSE": "财务报表解析",
-  "ANALYSIZE": "财报报表分析",
+  "ANALYSIZE": "财务报表分析",
+  "PRESENT": "数据呈现|数据展示",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","#"],
