@@ -251,9 +251,9 @@ class InterpreterAccounting(InterpreterBase):
                          | COMPANY NUMERIC
                          | COMPANY UNIT
                          | COMPANY error
-                         | COMPANY empty
                          | CRITICAL CRITICAL
-                         | REFERENCE NUMERIC NAME'''
+                         | REFERENCE NUMERIC NAME
+                         | REFERENCE REFERENCE'''
             p[0] = p[1]
 
         def p_skipword_group(p):
@@ -320,7 +320,8 @@ class InterpreterAccounting(InterpreterBase):
         def p_optional_optional(p):
             '''optional : DISCARD optional
                         | optional fetchdata DISCARD
-                        | '(' NAME ')' optional '''
+                        | '(' NAME ')' optional
+                        | fetchdata empty'''
             #第2条规则解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             p[0] = p[1] + p[2]
