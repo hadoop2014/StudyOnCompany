@@ -14,7 +14,7 @@ class DocParserBase(InterpreterBase):
         self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser', self._get_class_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
         self.data_directory = self.gConfig['data_directory']
-        #self.mainprogram = self.gConfig['program']
+        #self.mainprogram = self.gConfig['program_directory']
         self.logging_directory = os.path.join(self.logging_directory,'docparser', self._get_class_name(gConfig))
         self.model_savefile = os.path.join(self.working_directory,'docparser',
                                            self._get_class_name(self.gConfig) + '.model')

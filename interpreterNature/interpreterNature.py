@@ -64,6 +64,11 @@ class InterpreterNature(InterpreterBase):
             '''expression : SINGLE ANALYSIZE'''
             self._process_single_analysize()
 
+        def p_expression_create_table(p):
+            '''expression : CREATE TABLE'''
+            command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
+            self._process_create_table(command)
+
         def p_expression_execute_analysize(p):
             '''expression : EXECUTE ANALYSIZE'''
             self._process_single_analysize()
@@ -123,6 +128,14 @@ class InterpreterNature(InterpreterBase):
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
         pass
+
+    def _process_create_table(self,command):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
+            return
+        pass
+        self.interpreterAnalysize.doWork(command)
+
 
     def _is_file_name_valid(self,fileName):
         assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName

@@ -24,11 +24,12 @@ class InterpreterBase(BaseClass):
         self._load_data()
 
     def _load_data(self,input=None):
-        file_object = open(self.mainprogram)
-        try:
-            file_context = file_object.read()  # file_context是一个string，读取完后，就失去了对test.txt的文件引用
-        finally:
-            file_object.close()
+        #file_object = open(self.mainprogram)
+        #try:
+        #    file_context = file_object.read()  # file_context是一个string，读取完后，就失去了对test.txt的文件引用
+        #finally:
+        #    file_object.close()
+        file_context = self._get_file_context(self.mainprogram)
         self._data = file_context
         self._index = 0
         self._length = len(self._data)
@@ -51,6 +52,9 @@ class InterpreterBase(BaseClass):
         self.literals = self.gJsonInterpreter['literals']
         self.ignores = self.gJsonInterpreter['ignores']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
+        self.tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|')]
+        self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
+                           keyword in self.tableNames}
 
     def _get_keyword(self,tableKeyword):
         #获取解析文件所需的关键字

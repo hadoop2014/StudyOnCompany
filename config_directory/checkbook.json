@@ -31,14 +31,14 @@
     "module": "interpreterAnalysize.interpreterAnalysize",
     "config_file": "",
     "config_json": "config_directory/interpreterAnalysize.json",
-    "program_directory": "program/interpreterAnalysize/",
+    "program_directory": "program_directory/interpreterAnalysize/",
     "member_modules": {}
   },
   "nature": {
     "module": "interpreterNature.interpreterNature",
     "config_file": "",
     "config_json": "config_directory/interpreterNature.json",
-    "program_directory": "program/interpreterNature/",
+    "program_directory": "program_directory/interpreterNature/",
     "member_modules": {
       "accounting": "",
       "analysize": ""

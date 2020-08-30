@@ -22,7 +22,7 @@ from functools import reduce
 class DocParserSql(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserSql, self).__init__(gConfig)
-        self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
+        #self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
         self._create_tables()
         self.process_info = {}
         self.dataTable = {}

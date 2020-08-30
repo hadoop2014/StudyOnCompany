@@ -6,6 +6,8 @@
 from loggerClass import *
 import functools
 import numpy as np
+import os
+import sqlite3 as sqlite
 #数据读写处理的基类
 
 NULLSTR = ''
@@ -26,6 +28,7 @@ class BaseClass():
         #不同的类继承BaseClass时,logger采用不同的名字
         self.EOF = gConfig['EOF'.lower()]
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
+        self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
 
     def __iter__(self):
         return self
@@ -66,6 +69,49 @@ class BaseClass():
 
     def _get_class_name(self,*args):
         return 'Base'
+
+    def _get_connect(self):
+        #用于获取数据库连接
+        return sqlite.connect(self.database)
+
+    def _sql_executer(self,sql):
+        conn = self._get_connect()
+        #cursor = conn.cursor()
+        try:
+            conn.execute(sql)
+            conn.commit()
+            self.logger.info('脚本执行成功:\n%s' % sql)
+        except Exception as e:
+            # 回滚
+            conn.rollback()
+            self.logger.error('脚本执行失败:%s\n%s' % (str(e),sql))
+        #cursor.close()
+        conn.close()
+
+    def _sql_executer_script(self,sql):
+        conn = self._get_connect()
+        #cursor = conn.cursor()
+        try:
+            conn.executescript(sql)
+            conn.commit()
+            self.logger.info('脚本执行成功:\n%s' % sql)
+        except Exception as e:
+            # 回滚
+            conn.rollback()
+            self.logger.error('脚本执行失败:%s\n%s' % (str(e),sql))
+        #cursor.close()
+        conn.close()
+
+    def _get_file_context(self,fileName):
+        file_object = open(fileName,encoding='utf-8')
+        file_context = NULLSTR
+        try:
+            file_context = file_object.read()  # file_context是一个string，读取完后，就失去了对test.txt的文件引用
+        except Exception as e:
+            self.logger.error('读取文件(%s)失败:%s' % (fileName,str(e)))
+        finally:
+            file_object.close()
+        return file_context
 
     @property
     def index(self):

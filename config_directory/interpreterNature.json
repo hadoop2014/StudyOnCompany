@@ -1,6 +1,6 @@
 {
-  "#tokens": ["批量运行","单个运行","执行","数据解析","数据分析","数据呈现"],
-  "tokens":  ["BATCH","SINGLE","EXECUTE","PARSE","ANALYSIZE","PRESENT"],
+  "#tokens": ["批量运行","单个运行","执行","数据解析","数据分析",   "数据呈现", "表",   "创建"],
+  "tokens":  ["BATCH","SINGLE","EXECUTE","PARSE","ANALYSIZE","PRESENT","TABLE","CREATE"],
 
   "BATCH": "批量运行|批量执行",
   "SINGLE": "单次运行|单次执行",
@@ -8,6 +8,8 @@
   "PARSE": "财务报表解析",
   "ANALYSIZE": "财务报表分析",
   "PRESENT": "数据呈现|数据展示",
+  "CREATE": "创建",
+  "TABLE": "财务分析基础表|财务分析综合表|股票价值估算表|股票价格分析表",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","#"],

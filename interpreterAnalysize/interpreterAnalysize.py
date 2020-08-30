@@ -50,7 +50,8 @@ class InterpreterAnalysize(InterpreterBase):
 
         def p_expression_ccreate_table(p):
             '''expression : CREATE TABLE'''
-            self._process_create_table()
+            tableName = p[2]
+            self._process_create_table(tableName)
 
         def p_expression_generate_table(p):
             '''expression : GENERATE TABLE'''
@@ -69,25 +70,26 @@ class InterpreterAnalysize(InterpreterBase):
         #for data in docParser:
         #    self.currentPageNumber = docParser.index
         #    text = docParser._get_text(data)
-        text = self._get_main_program()
+        #text = self._get_main_program()
         text = commond
         self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
 
-    def _get_main_program(self):
-        return self._get_text()
+    #def _get_main_program(self):
+    #    return self._get_text()
 
-    def _process_create_table(self):
+    def _process_create_table(self,tableName):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_create_table!')
             return
+        sql_file = self.dictTables[tableName]['create']
+        sql_file = os.path.join(self.program_directory,sql_file)
+        create_sql = self._get_file_context(sql_file)
+        self._sql_executer_script(create_sql)
 
     def _process_generate_table(self):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_generate_table!')
             return
-
-    def _sql_execute(self):
-        pass
 
     def initialize(self):
         pass
