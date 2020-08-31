@@ -94,9 +94,9 @@ class InterpreterAccounting(InterpreterBase):
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
-
+        '''
         def p_fetchtable_searchlongcompany(p):
-            '''fetchtable : TABLE optional TIME DISCARD COMPANY UNIT CURRENCY finis '''
+            #fetchtable : TABLE optional TIME DISCARD COMPANY UNIT CURRENCY finis
             #解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
@@ -110,7 +110,7 @@ class InterpreterAccounting(InterpreterBase):
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
-
+        '''
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT finis '''
             #第二个语法针对的是主要会计数据
@@ -265,11 +265,11 @@ class InterpreterAccounting(InterpreterBase):
                          | COMPANY DISCARD
                          | COMPANY PUNCTUATION
                          | COMPANY NUMERIC
-                         | COMPANY UNIT
                          | COMPANY error
                          | CRITICAL CRITICAL
                          | REFERENCE NUMERIC NAME
                          | REFERENCE REFERENCE'''
+            #去掉COMPNY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
             p[0] = p[1]
 
         def p_skipword_group(p):
