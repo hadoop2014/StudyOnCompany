@@ -8,6 +8,8 @@ indent_style = space
 insert_final_newline = false
 max_line_length = 120
 tab_width = 4
+# 是否将行尾空格自动删除
+trim_trailing_whitespace = true
 
 [*.csv]
 max_line_length = 2147483647
