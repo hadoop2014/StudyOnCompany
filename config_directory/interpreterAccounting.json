@@ -293,7 +293,7 @@
       "现金和现金等价物的年初余额": "现金的期初余额"
     },
     "#fieldStandardize": "[(1|2|3|4|5|6|7|8|9|0)．]*[\\u4E00-\\u9FA5]{2,}",
-    "fieldStandardize": "[(1|2|3|4|5|6|7|8|9|0)．]*[\\u4E00-\\u9FA5]{2,}",
+    "fieldStandardize": "[(1|2|3|4|5|6|7|8|9|0)．]*[\\u4E00-\\u9FA5|、]{2,}",
     "fieldStandardizeStrict": "",
     "maxPages": 2
   },

@@ -84,7 +84,8 @@ class InterpreterAnalysize(InterpreterBase):
         sql_file = self.dictTables[tableName]['create']
         sql_file = os.path.join(self.program_directory,sql_file)
         create_sql = self._get_file_context(sql_file)
-        self._sql_executer_script(create_sql)
+        isSuccess = self._sql_executer_script(create_sql)
+        assert isSuccess,"failed to execute sql"
 
     def _process_generate_table(self):
         if self.unitestIsOn:

@@ -80,27 +80,30 @@ class BaseClass():
         try:
             conn.execute(sql)
             conn.commit()
-            self.logger.info('脚本执行成功:\n%s' % sql)
+            self.logger.info('success to execute sql(脚本执行成功):\n%s' % sql)
         except Exception as e:
             # 回滚
             conn.rollback()
-            self.logger.error('脚本执行失败:%s\n%s' % (str(e),sql))
+            self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
         #cursor.close()
         conn.close()
 
     def _sql_executer_script(self,sql):
+        isSuccess = False
         conn = self._get_connect()
         #cursor = conn.cursor()
         try:
             conn.executescript(sql)
             conn.commit()
-            self.logger.info('脚本执行成功:\n%s' % sql)
+            self.logger.info('success to execute sql(脚本执行成功):\n%s' % sql)
+            isSuccess = True
         except Exception as e:
             # 回滚
             conn.rollback()
-            self.logger.error('脚本执行失败:%s\n%s' % (str(e),sql))
+            self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
         #cursor.close()
         conn.close()
+        return isSuccess
 
     def _get_file_context(self,fileName):
         file_object = open(fileName,encoding='utf-8')
