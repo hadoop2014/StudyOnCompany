@@ -5,6 +5,7 @@
 # @File    : docParserBaseClass.py
 import time
 from interpreterAccounting.interpreterBaseClass import *
+from functools import reduce
 
 #深度学习模型的基类
 class DocParserBase(InterpreterBase):
@@ -31,6 +32,35 @@ class DocParserBase(InterpreterBase):
         else:
             standardizedFields = self._standardize(fieldStandardize, headerList)
         return standardizedFields
+
+    def _is_header_in_row(self,row,tableName):
+        isHeaderInRow = False
+        if isinstance(row,list) == False:
+            return isHeaderInRow
+        firstHeader = self.dictTables[tableName]['header'][0]
+        firstHeaderInRow = row[0]
+        if firstHeader != NULLSTR and firstHeader == firstHeaderInRow:
+            #解决中顺洁柔2019年报中,标题行出现"项目, None, None, None, None, None, None, None, None"的场景
+            isHeaderInRow = True
+            return isHeaderInRow
+        mergedRow = reduce(self._merge, row[1:])
+        isHorizontalTable = self.dictTables[tableName]['horizontalTable']
+        if isHorizontalTable:
+            #对于普通股现金分红情况表,表头标准化等于字段标准化
+            headerStandardize = self.dictTables[tableName]['fieldStandardize']
+        else:
+            headerStandardize = self.dictTables[tableName]['headerStandardize']
+        isHeaderInRow = self._is_field_matched(headerStandardize, mergedRow)
+        return isHeaderInRow
+
+    def _is_field_matched(self,pattern,field):
+        isFieldMatched = False
+        if isinstance(pattern, str) and isinstance(field, str):
+            if pattern != NULLSTR:
+                matched = re.search(pattern,field)
+                if matched is not None:
+                    isFieldMatched = True
+        return isFieldMatched
 
     def _get_class_name(self, gConfig):
         parser_name = re.findall('DocParser(.*)', self.__class__.__name__).pop().lower()

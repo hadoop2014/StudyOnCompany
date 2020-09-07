@@ -23,10 +23,10 @@ create table if not exists 财务分析综合表 (
     总资产利润率 NUMERIC,
     现金分红金额（含税） NUMERIC,
     现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率 NUMERIC,
-    营业收入（上期） NUMERIC,
-    归属于上市公司股东的净利润（上期） NUMERIC,
-    归属于上市公司股东的扣除非经常性损益的净利润（上期） NUMERIC,
-    经营活动产生的现金流量净额（上期） NUMERIC,
+    --营业收入（上期） NUMERIC,
+    --归属于上市公司股东的净利润（上期） NUMERIC,
+    --归属于上市公司股东的扣除非经常性损益的净利润（上期） NUMERIC,
+    --经营活动产生的现金流量净额（上期） NUMERIC,
     归属于上市公司股东的净资产（上期） NUMERIC,
     总资产（上期） NUMERIC,
     人均营业额（万） NUMERIC,
@@ -229,7 +229,7 @@ select
     round(replace(a.三、营业利润,',','')/(replace(a.流动资产合计,',','') - replace(a.流动负债合计,',','')),2) as 营业利润占营业资金的比率,
     round(replace(a.营业收入,',','')/(replace(a.流动资产合计,',','') - replace(a.流动负债合计,',','')),2) as 营业收入占营业资金的比率,
     round(replace(a.归属于上市公司股东的净利润,',','')/replace(a.归属于上市公司股东的净资产（上期）,',',''),2) 还原后的净资产收益率（ROCE）
-from 财务分析基础表 a
+from 财务分析基础表 a;
 
 CREATE INDEX IF NOT EXISTS [财务分析综合表索引] on [财务分析综合表] (
     报告时间,

@@ -108,7 +108,7 @@ class InterpreterNature(InterpreterBase):
             self.logger.info('start process %s' % sourcefile)
             self.gConfig.update({'sourcefile': sourcefile})
             if not self._is_file_name_valid(sourcefile):
-                self.logger.warn("%s is not a valid file" % sourcefile)
+                self.logger.warning("%s is not a valid file" % sourcefile)
                 continue
             taskResult = self._process_single_parse()
             taskResults.append(taskResult)

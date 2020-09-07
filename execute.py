@@ -91,7 +91,7 @@ def run_task(taskName,gConfig,unittestIsOn):
             logger.info('start process %s'%sourcefile)
             gConfig.update({'sourcefile':sourcefile})
             if not is_file_name_valid(sourcefile):
-                logger.warn("%s is not a valid file"%sourcefile)
+                logger.warninging("%s is not a valid file"%sourcefile)
                 continue
             taskResult = parseStart(gConfig,taskName,unittestIsOn)
             taskResults.append(taskResult)

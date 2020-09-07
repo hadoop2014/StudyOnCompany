@@ -91,7 +91,7 @@ class InterpreterAnalysize(InterpreterBase):
             return
         visualize_file = self.dictTables[tableName]['visualize']
         if visualize_file == NULLSTR:
-            self.logger.warn('the visualize of table %s is NULL,it can not be visualized!'%tableName)
+            self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
             return
         #visualize_file = os.path.join(self.working_directory,visualize_file)
         self.dataVisualization.read_and_visualize(visualize_file,tableName)

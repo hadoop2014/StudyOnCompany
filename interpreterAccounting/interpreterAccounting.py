@@ -192,7 +192,7 @@ class InterpreterAccounting(InterpreterBase):
             pass
 
         def p_fetchdata_title(p):
-            '''fetchdata : COMPANY TIME UNIT '''
+            '''fetchdata : COMPANY TIME REPORT '''
             if self.names['公司名称'] == NULLSTR \
                 and self.names['报告时间'] == NULLSTR \
                 and self.names['报告类型'] == NULLSTR:
@@ -205,7 +205,7 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1] + p[2] + p[3]
 
         def p_fetchdata_titlelong(p):
-            '''fetchdata : COMPANY NAME skipword TIME UNIT '''
+            '''fetchdata : COMPANY NAME skipword TIME REPORT '''
             #解决海螺水泥2018年报第1页title的识别问题
             if self.names['公司名称'] == NULLSTR \
                 and self.names['报告时间'] == NULLSTR \
@@ -253,12 +253,12 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchdata : COMPANY TIME DISCARD
                          | COMPANY DISCARD
                          | COMPANY PUNCTUATION
-                         | COMPANY NUMERIC
                          | COMPANY error
                          | CRITICAL CRITICAL
                          | REFERENCE NUMERIC NAME
                          | REFERENCE REFERENCE'''
-            #去掉COMPNY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
+            #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
+            #去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
             p[0] = p[1]
 
         def p_skipword_group(p):
@@ -325,10 +325,12 @@ class InterpreterAccounting(InterpreterBase):
         def p_optional_optional(p):
             '''optional : DISCARD optional
                         | optional fetchdata DISCARD
+                        | fetchdata DISCARD DISCARD DISCARD DISCARD
                         | '(' NAME ')' optional
                         | fetchdata empty'''
-            #第2条规则解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
-            #第3条规则解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
+            #第2条规则optional fetchdata DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
+            #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
+            #fetchdata DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
             p[0] = p[1] + p[2]
 
         def p_optional(p):
@@ -373,7 +375,8 @@ class InterpreterAccounting(InterpreterBase):
         self._process_critical_table()
         sourceFile = os.path.split(self.docParser.sourceFile)[-1]
         self.logger.info('%s\tcritical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
-                          ,str(self.names['公司代码']),self.names['公司简称'],self.names['公司地址'],str(self.names['货币单位'])]))
+                         ,str(self.names['公司代码']),self.names['公司简称'],self.names['公司地址']
+                         ,str(self.names['货币单位']),self.names["注册地址"]]))
         self.logger.info('%s\tprocess_info:'%sourceFile + str(self.sqlParser.process_info))
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
@@ -392,6 +395,8 @@ class InterpreterAccounting(InterpreterBase):
                                      ,'tableBegin': tableBegin
                                      ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
         if self.names[tableName]['tableEnd'] == False:
+            if self.names["公司地址"] == NULLSTR:
+                self.names["公司地址"] = self.names["注册地址"]
             self.names[tableName].update({'公司代码': self.names['公司代码'], '公司简称': self.names['公司简称']
                                          ,'公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
                                          ,'报告类型': self.names['报告类型']
@@ -407,6 +412,8 @@ class InterpreterAccounting(InterpreterBase):
     def _process_critical_table(self,tableName = '关键数据表'):
         assert tableName is not None and tableName != NULLSTR,"tableName must not be None"
         table = self._construct_table(tableName)
+        if self.names["公司地址"] == NULLSTR:
+            self.names["公司地址"] = self.names["注册地址"]
         self.names[tableName].update({'公司代码': self.names['公司代码'], '公司简称': self.names['公司简称']
                                      ,'公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
                                      ,'报告类型': self.names['报告类型']
@@ -427,7 +434,7 @@ class InterpreterAccounting(InterpreterBase):
         table = [headers] + rows
         for row in rows:
             if row[-1] == NULLSTR:
-                self.logger.warn('critical %s failed to fetch'%row[0])
+                self.logger.warning('critical %s failed to fetch'%row[0])
         return table
 
     def _is_reatch_max_pages(self, fetchTable,tableName):
@@ -475,8 +482,8 @@ class InterpreterAccounting(InterpreterBase):
         if unitStandardize in transfer.keys():
             unitStandardize = transfer[unitStandardize]
         else:
-            unitStandardize = NULLSTR
-            self.logger.warn('%s is not the unit of currency'%unit)
+            unitStandardize = 1
+            self.logger.warning('%s is not the unit of currency'%unit)
         return unitStandardize
 
     def initialize(self,gConfig=None):
@@ -484,7 +491,8 @@ class InterpreterAccounting(InterpreterBase):
             self.names.update({tableName:{'tableName':NULLSTR,'time':NULLSTR,'unit':NULLSTR,'currency':NULLSTR
                                           ,'company':NULLSTR,'公司名称':NULLSTR,'公司代码':NULLSTR,'公司简称':NULLSTR
                                           ,'报告时间':NULLSTR,'报告类型':NULLSTR,"公司地址":NULLSTR,'行业分类':NULLSTR
-                                          ,'货币单位':NULLSTR
+                                          ,'货币单位': 1 #货币单位默认为1
+                                          ,"注册地址": NULLSTR
                                           ,'table':NULLSTR,'tableBegin':False,'tableEnd':False
                                           ,"page_numbers":list()}})
         self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR})

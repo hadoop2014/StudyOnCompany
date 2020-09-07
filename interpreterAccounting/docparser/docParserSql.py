@@ -14,7 +14,6 @@ from pandas import DataFrame
 import sys
 from importlib import reload
 import time
-from functools import reduce
 
 #reload(sys)
 
@@ -71,11 +70,11 @@ class DocParserSql(DocParserBase):
         #把表头进行标准化
         dataframe = self._process_header_standardize(dataframe,tableName)
 
-        #把表字段名进行标准化,标准化之后再去重复
-        dataframe = self._process_field_standardize(dataframe,tableName)
-
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称,统一后再去重
         dataframe = self._process_field_alias(dataframe,tableName)
+
+        #把表字段名进行标准化,标准化之后再去重复
+        dataframe = self._process_field_standardize(dataframe,tableName)
 
         #处理重复字段
         dataframe = self._process_field_duplicate(dataframe,tableName)
@@ -248,7 +247,9 @@ class DocParserSql(DocParserBase):
                         # 把前期合并的行赋值到dataframe的上一行
                         dataFrame.iloc[lastIndex] = mergedRow
                         dataFrame.iloc[lastIndex + 1:index] = NaN
-                    mergedRow = None
+                    if mergedRow is not None and mergedRow[0] != NULLSTR:
+                        #解决大立科技2018年财报中主要会计数据解析不准确的问题,原因是总资产(元)前面接了一个空字段,空字段的行需要合并到下一行中
+                        mergedRow = None
 
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
@@ -277,7 +278,8 @@ class DocParserSql(DocParserBase):
                 else:
                     firstHeader = dataFrame.index.values[0]
                     #针对普通股现金分红情况
-                    if isinstance(firstHeader,str) and firstHeader == '分红年度':
+                    if isinstance(firstHeader,str) and (firstHeader == '分红年度' or firstHeader == '年度'):
+                        #firstHeader == '年度'是为了解决海螺水泥2018年年报普通股现金分红情况表中,表头是年度
                         value = [commonFiled,*dataFrame.index[1:].tolist()]
                     else:
                         value = [commonFiled,*[str(int(dictTable[commonFiled].split('年')[0]) - i) + '年'
@@ -327,7 +329,7 @@ class DocParserSql(DocParserBase):
             if field in duplicatedFieldsStandard:
                 duplicatedFieldsResult += [field]
             else:
-                self.logger.warn('field %s is not exist in %s'%(field,tableName))
+                self.logger.warning('field %s is not exist in %s'%(field,tableName))
                 #删除该字段
                 indexDiscardField = dataFrame.iloc[0].isin([field])
                 #dataFrame.loc[indexDiscardField] = NaN
@@ -430,26 +432,6 @@ class DocParserSql(DocParserBase):
                     isStandardizeStrictMode = True
         return isStandardizeStrictMode
 
-    def _is_header_in_row(self,row,tableName):
-        isHeaderInRow = False
-        if isinstance(row,list) == False:
-            return isHeaderInRow
-        firstHeader = self.dictTables[tableName]['header'][0]
-        firstHeaderInRow = row[0]
-        if firstHeader != NULLSTR and firstHeader == firstHeaderInRow:
-            #解决中顺洁柔2019年报中,标题行出现"项目, None, None, None, None, None, None, None, None"的场景
-            isHeaderInRow = True
-            return isHeaderInRow
-        mergedRow = reduce(self._merge, row[1:])
-        isHorizontalTable = self.dictTables[tableName]['horizontalTable']
-        if isHorizontalTable:
-            #对于普通股现金分红情况表,表头标准化等于字段标准化
-            headerStandardize = self.dictTables[tableName]['fieldStandardize']
-        else:
-            headerStandardize = self.dictTables[tableName]['headerStandardize']
-        isHeaderInRow = self._is_field_matched(headerStandardize, mergedRow)
-        return isHeaderInRow
-
     def _is_first_field_in_row(self, row_or_field, tableName):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
@@ -517,15 +499,6 @@ class DocParserSql(DocParserBase):
         if fieldStrict in standardizedFieldsStrict:
             isFieldInList = True
         return isFieldInList
-
-    def _is_field_matched(self,pattern,field):
-        isFieldMatched = False
-        if isinstance(pattern, str) and isinstance(field, str):
-            if pattern != NULLSTR:
-                matched = re.search(pattern,field)
-                if matched is not None:
-                    isFieldMatched = True
-        return isFieldMatched
 
     def _is_row_all_invalid(self,row:DataFrame):
         #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True

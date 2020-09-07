@@ -102,12 +102,12 @@ class BaseClass():
         try:
             conn.executescript(sql)
             conn.commit()
-            self.logger.info('success to execute sql(脚本执行成功):\n%s' % sql)
+            self.logger.info('success to execute sql(脚本执行成功)!')
             isSuccess = True
         except Exception as e:
             # 回滚
             conn.rollback()
-            self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
+            self.logger.error('failed to execute sql(脚本执行失败):%s' % (str(e)))
         #cursor.close()
         conn.close()
         return isSuccess
