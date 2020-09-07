@@ -37,6 +37,8 @@ class DocParserBase(InterpreterBase):
         isHeaderInRow = False
         if isinstance(row,list) == False:
             return isHeaderInRow
+        elif len(row) <= 1:
+            return isHeaderInRow
         firstHeader = self.dictTables[tableName]['header'][0]
         firstHeaderInRow = row[0]
         if firstHeader != NULLSTR and firstHeader == firstHeaderInRow:
