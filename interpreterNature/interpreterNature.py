@@ -73,6 +73,11 @@ class InterpreterNature(InterpreterBase):
             '''expression : EXECUTE ANALYSIZE'''
             self._process_single_analysize()
 
+        def p_expression_visualize(p):
+            '''expression : VISUALIZE TABLE'''
+            command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
+            self._process_visualize_table(command)
+
         def p_error(p):
             if p:
                 print("Syntax error at '%s:%s'" % (p.value,p.type))
@@ -136,6 +141,12 @@ class InterpreterNature(InterpreterBase):
         pass
         self.interpreterAnalysize.doWork(command)
 
+    def _process_visualize_table(self,command):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
+            return
+        pass
+        self.interpreterAnalysize.doWork(command)
 
     def _is_file_name_valid(self,fileName):
         assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName

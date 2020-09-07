@@ -32,7 +32,9 @@
     "config_file": "",
     "config_json": "config_directory/interpreterAnalysize.json",
     "program_directory": "program_directory/interpreterAnalysize/",
-    "member_modules": {}
+    "member_modules": {
+      "datavisualization":"interpreterAnalysize.excelVisualization"
+    }
   },
   "nature": {
     "module": "interpreterNature.interpreterNature",

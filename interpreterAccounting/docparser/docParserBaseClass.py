@@ -11,13 +11,12 @@ class DocParserBase(InterpreterBase):
     def __init__(self,gConfig):
         super(DocParserBase, self).__init__(gConfig)
         self.start_time = time.time()
-        self.working_directory = os.path.join(self.gConfig['working_directory'],'docparser', self._get_class_name(gConfig))
+        #self.working_directory = os.path.join(self.working_directory,'docparser', self._get_class_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
         self.data_directory = self.gConfig['data_directory']
         #self.mainprogram = self.gConfig['program_directory']
         self.logging_directory = os.path.join(self.logging_directory,'docparser', self._get_class_name(gConfig))
-        self.model_savefile = os.path.join(self.working_directory,'docparser',
-                                           self._get_class_name(self.gConfig) + '.model')
+        self.model_savefile = os.path.join(self.working_directory,self._get_class_name(self.gConfig) + '.model')
         self.checkpoint_filename = self._get_class_name(self.gConfig) + '.ckpt'
         self.source_directory = os.path.join(self.data_directory,self.gConfig['source_directory'])
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['source_directory'],self.gConfig['sourcefile'])

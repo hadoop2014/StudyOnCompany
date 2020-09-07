@@ -4,6 +4,7 @@
 import re
 import os
 import matplotlib.pyplot as plt
+from baseClass import *
 
 numeric_types = (int,float)
 
@@ -13,14 +14,14 @@ class GetdataBase():
         self.gConfig = gConfig
         self.dataset_name = self._get_class_name(self.gConfig)
         self.data_path = os.path.join(self.gConfig['data_directory'],self.dataset_name)
-        self.working_directory = os.path.join(self.gConfig['working_directory'], 'docparser',
-                                              self._get_class_name(gConfig))
+        #self.working_directory = os.path.join(self.gConfig['working_directory'], 'docparser',
+        #                                      self._get_class_name(gConfig))
         self.logging_directory = self.gConfig['logging_directory']
         self.data_directory = self.gConfig['data_directory']
         self.logging_directory = os.path.join(self.logging_directory, 'docparser', self._get_class_name(gConfig))
         self.unitestIsOn = self.gConfig['unittestIsOn'.lower()]
-        if os.path.exists(self.data_path) == False:
-            os.makedirs(self.data_path)
+        #if os.path.exists(self.data_path) == False:
+        #    os.makedirs(self.data_path)
 
     def load_data(self,*args):
         pass

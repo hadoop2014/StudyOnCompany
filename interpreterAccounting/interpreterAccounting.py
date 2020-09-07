@@ -73,6 +73,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.docParser.interpretPrefix = NULLSTR
                 return
             unit = p[5].split(':')[-1].split('：')[-1]
+            self.names['货币单位'] = self._unit_transfer(unit)
             currency = self.names['currency']
             company = self.names['company']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
@@ -88,29 +89,14 @@ class InterpreterAccounting(InterpreterBase):
                 self.docParser.interpretPrefix = NULLSTR
                 return
             unit = p[6].split(':')[-1].split('：')[-1]
+            self.names['货币单位'] = self._unit_transfer(unit)
             currency = p[5]
             #currency = self.names['currency']
             company = self.names['company']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
-        '''
-        def p_fetchtable_searchlongcompany(p):
-            #fetchtable : TABLE optional TIME DISCARD COMPANY UNIT CURRENCY finis
-            #解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
-            tableName = self._get_tablename_alias(str.strip(p[1]))
-            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
-            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = NULLSTR
-                return
-            unit = p[6].split(':')[-1].split('：')[-1]
-            currency = p[7]
-            #currency = self.names['currency']
-            company = self.names['company']
-            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
-            tableBegin = True
-            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
-        '''
+
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT finis '''
             #第二个语法针对的是主要会计数据
@@ -120,6 +106,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.docParser.interpretPrefix = NULLSTR
                 return
             unit = p[3].split(':')[-1].split('：')[-1]
+            self.names['货币单位'] = self._unit_transfer(unit)
             currency = self.names['currency']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
@@ -135,6 +122,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.docParser.interpretPrefix = NULLSTR
                 return
             unit = p[4].split(':')[-1].split('：')[-1]
+            self.names['货币单位'] = self._unit_transfer(unit)
             currency = self.names['currency']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
@@ -150,6 +138,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.docParser.interpretPrefix = NULLSTR
                 return
             unit = p[4].split(':')[-1].split('：')[-1]
+            self.names['货币单位'] = self._unit_transfer(unit)
             currency = self.names['currency']
             #interpretPrefix = '\n'.join([slice for slice in p if slice is not None and slice != 'optional']) + '\n'
             interpretPrefix = '\n'.join([slice.value for slice in p.slice if slice.value is not None and slice.type != 'optional']) + '\n'
@@ -384,7 +373,7 @@ class InterpreterAccounting(InterpreterBase):
         self._process_critical_table()
         sourceFile = os.path.split(self.docParser.sourceFile)[-1]
         self.logger.info('%s\tcritical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
-                          ,str(self.names['公司代码']),self.names['公司简称'],self.names['办公地址']]))
+                          ,str(self.names['公司代码']),self.names['公司简称'],self.names['公司地址'],str(self.names['货币单位'])]))
         self.logger.info('%s\tprocess_info:'%sourceFile + str(self.sqlParser.process_info))
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
@@ -406,8 +395,9 @@ class InterpreterAccounting(InterpreterBase):
             self.names[tableName].update({'公司代码': self.names['公司代码'], '公司简称': self.names['公司简称']
                                          ,'公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
                                          ,'报告类型': self.names['报告类型']
-                                         ,'办公地址': self.names['办公地址']
-                                         ,'行业分类': self.names['行业分类']})
+                                         ,'公司地址': self.names['公司地址']
+                                         ,'行业分类': self.names['行业分类']
+                                         ,'货币单位': self._unit_transfer(unit)})
             self.docParser._merge_table(self.names[tableName], interpretPrefix)
             if self.names[tableName]['tableEnd'] == True:
                 self.excelParser.writeToStore(self.names[tableName])
@@ -420,8 +410,9 @@ class InterpreterAccounting(InterpreterBase):
         self.names[tableName].update({'公司代码': self.names['公司代码'], '公司简称': self.names['公司简称']
                                      ,'公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
                                      ,'报告类型': self.names['报告类型']
-                                     ,'办公地址': self.names['办公地址']
-                                     ,'行业分类': self.names['行业分类']})
+                                     ,'公司地址': self.names['公司地址']
+                                     ,'行业分类': self.names['行业分类']
+                                     ,'货币单位': self.names['货币单位']})
         self.names[tableName].update({"table":table})
         self.names[tableName].update({"tableName":tableName})
         self.excelParser.writeToStore(self.names[tableName])
@@ -472,11 +463,28 @@ class InterpreterAccounting(InterpreterBase):
         time = time.replace(' ',NULLSTR)
         return time
 
+    def _unit_transfer(self,unit):
+        transfer = dict({
+            '元': 1,
+            '千元': 1000,
+            '万元': 10000,
+            '百万元': 1000000,
+            '千万元': 10000000
+        })
+        unitStandardize = self._standardize("(元|千元|万元|百万元|千万元)",unit)
+        if unitStandardize in transfer.keys():
+            unitStandardize = transfer[unitStandardize]
+        else:
+            unitStandardize = NULLSTR
+            self.logger.warn('%s is not the unit of currency'%unit)
+        return unitStandardize
+
     def initialize(self,gConfig=None):
         for tableName in self.tableNames:
             self.names.update({tableName:{'tableName':NULLSTR,'time':NULLSTR,'unit':NULLSTR,'currency':NULLSTR
                                           ,'company':NULLSTR,'公司名称':NULLSTR,'公司代码':NULLSTR,'公司简称':NULLSTR
-                                          ,'报告时间':NULLSTR,'报告类型':NULLSTR,"办公地址":NULLSTR,'行业分类':NULLSTR
+                                          ,'报告时间':NULLSTR,'报告类型':NULLSTR,"公司地址":NULLSTR,'行业分类':NULLSTR
+                                          ,'货币单位':NULLSTR
                                           ,'table':NULLSTR,'tableBegin':False,'tableEnd':False
                                           ,"page_numbers":list()}})
         self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR})

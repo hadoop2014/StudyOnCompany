@@ -21,6 +21,8 @@ class BaseClass():
         self.gJsonBase = gConfig['gJsonBase'.lower()]
         self.debugIsOn = gConfig['debugIsOn'.lower()]
         self.program_directory = gConfig['program_directory']
+        self.working_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
+        #self.logging_directory = os.path.join(self.gConfig['logging_directory'], self._get_module_path())
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._data = list()
         self._index = 0
@@ -69,6 +71,11 @@ class BaseClass():
 
     def _get_class_name(self,*args):
         return 'Base'
+
+    def _get_module_path(self):
+        module = self.__class__.__module__
+        path = os.path.join(*module.split('.'))
+        return path
 
     def _get_connect(self):
         #用于获取数据库连接

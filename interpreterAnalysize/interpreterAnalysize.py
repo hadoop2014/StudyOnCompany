@@ -6,13 +6,13 @@
 # @Note    : 用于财务数据分析
 
 from interpreterAnalysize.interpreterBaseClass import *
+import pandas as pd
 from ply import lex,yacc
 
 class InterpreterAnalysize(InterpreterBase):
-    def __init__(self,gConfig,docParser):
+    def __init__(self,gConfig,memberModuleDict):
         super(InterpreterAnalysize, self).__init__(gConfig)
-        self.docParser = docParser
-        #self.initialize()
+        self.dataVisualization = memberModuleDict['datavisualization']
         self.interpretDefine()
 
     def interpretDefine(self):
@@ -48,14 +48,19 @@ class InterpreterAnalysize(InterpreterBase):
                          | expression'''
             pass
 
-        def p_expression_ccreate_table(p):
+        def p_expression_create_table(p):
             '''expression : CREATE TABLE'''
             tableName = p[2]
             self._process_create_table(tableName)
 
-        def p_expression_generate_table(p):
-            '''expression : GENERATE TABLE'''
-            self._process_generate_table()
+        def p_expression_visualize_table(p):
+            '''expression : VISUALIZE TABLE'''
+            tableName = p[2]
+            self._process_visualize_table(tableName)
+
+        #def p_expression_generate_table(p):
+        #    '''expression : GENERATE TABLE'''
+        #    self._process_generate_table()
 
         def p_error(p):
             if p:
@@ -67,15 +72,8 @@ class InterpreterAnalysize(InterpreterBase):
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
     def doWork(self,commond,lexer=None,debug=False,tracking=False):
-        #for data in docParser:
-        #    self.currentPageNumber = docParser.index
-        #    text = docParser._get_text(data)
-        #text = self._get_main_program()
         text = commond
         self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
-
-    #def _get_main_program(self):
-    #    return self._get_text()
 
     def _process_create_table(self,tableName):
         if self.unitestIsOn:
@@ -86,6 +84,17 @@ class InterpreterAnalysize(InterpreterBase):
         create_sql = self._get_file_context(sql_file)
         isSuccess = self._sql_executer_script(create_sql)
         assert isSuccess,"failed to execute sql"
+
+    def _process_visualize_table(self,tableName):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
+            return
+        visualize_file = self.dictTables[tableName]['visualize']
+        if visualize_file == NULLSTR:
+            self.logger.warn('the visualize of table %s is NULL,it can not be visualized!'%tableName)
+            return
+        #visualize_file = os.path.join(self.working_directory,visualize_file)
+        self.dataVisualization.read_and_visualize(visualize_file,tableName)
 
     def _process_generate_table(self):
         if self.unitestIsOn:
