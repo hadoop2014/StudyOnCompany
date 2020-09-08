@@ -259,6 +259,7 @@ class InterpreterAccounting(InterpreterBase):
                          | REFERENCE REFERENCE'''
             #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
             #去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
+            #TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在useless中增加REPORT
             p[0] = p[1]
 
         def p_skipword_group(p):
@@ -299,6 +300,7 @@ class InterpreterAccounting(InterpreterBase):
                        | UNIT
                        | CURRENCY
                        | LOCATION
+                       | REPORT
                        | '-'
                        | '%'
                        | '％' '''

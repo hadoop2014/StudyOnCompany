@@ -104,8 +104,9 @@ select
     e.销售费用,
     e.管理费用,
     e.财务费用,
-    e.研发费用,
-    case when a.本期资本化研发投入 is NULL  or a.本期资本化研发投入 = '' then 0 else a.本期资本化研发投入 end as 资本化研发投入,
+    case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else e.研发费用 end as 研发费用,
+    --case when a.本期资本化研发投入 is NULL  or a.本期资本化研发投入 = '' then 0 else a.本期资本化研发投入 end as 资本化研发投入,
+    a.本期资本化研发投入修正 as 资本化研发投入,
     g.资产减值准备 NUMERIC,
     g.固定资产折旧、油气资产折耗、生产性生物资产折旧 NUMERIC,
     g.无形资产摊销 NUMERIC,
@@ -114,7 +115,7 @@ select
     b.期末总股本,
     c.固定资产,
     c.在建工程,
-    h.项目 as 土地使用权,
+    h.期末账面价值 as 土地使用权,
     c.投资性房地产,
     c.商誉,
     c.预收款项,
@@ -135,13 +136,22 @@ select
     f.销售商品、提供劳务收到的现金,
     f.[六、期末现金及现金等价物余额],
     f.五、现金及现金等价物净增加额
-from 关键数据表 a
+from
+(
+    select x.*,
+        case when 本期费用化研发投入 = '' and 研发投入金额 != '' and 本期资本化研发投入 != ''
+            then round(replace(研发投入金额,',','') - replace(本期资本化研发投入,',',''),2) else 本期费用化研发投入 end as 本期费用化研发投入修正,
+        case when 本期资本化研发投入 = '' and 研发投入金额 != '' and 本期费用化研发投入 != ''
+            then round(replace(研发投入金额,',','') - replace(本期费用化研发投入,',',''),2) else 本期资本化研发投入 end as 本期资本化研发投入修正
+    from 关键数据表 x
+    where x.在职员工的数量合计 != '' and x.报告类型 = '年度报告'
+)a
 left join
 (
     select x.报告时间,
         x.公司代码,
         x.公司简称,
-        x.报告类型,        
+        x.报告类型,
         x.营业收入,
         x.归属于上市公司股东的净利润,
         x.归属于上市公司股东的扣除非经常性损益的净利润,

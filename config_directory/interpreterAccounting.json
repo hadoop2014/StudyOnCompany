@@ -93,7 +93,7 @@
       ,"基本每股收益（元/股）","稀释每股收益（元/股）","加权平均净资产收益率","归属于上市公司股东的净资产（元）","总资产（元）","期末总股本"],
     "horizontalTable": false,
     "headerDiscard": ["本期比上年同期增减","本年比上年增减","调整前","本报告期比上年同期增减","本年比上年增减（％）"],
-    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}",
+    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
     "fieldDiscard": ["加权平均净资产收益"],
     "fieldFirst": "营业收入",
     "fieldLast": "总资产|归属于上市公司股东的净资产|总资产（元）|归属于上市公司股东的净资产（元）|期末总股本|归属于上市公司股东的净资产（元|每股经营活动产生的现金流量净额（元/股）",
@@ -360,7 +360,7 @@
       "四、账面价值","1.期末账面价值","2.期初账面价值"],
     "horizontalTable": false,
     "headerDiscard": [],
-    "headerStandardize": "",
+    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}",
     "fieldDiscard": ["项目"],
     "fieldFirst": "一、账面原值",
     "fieldLast": "期初账面价值|年初账面价值",
@@ -373,7 +373,7 @@
     },
     "fieldStandardize": "[(一|二|三|四|五|六|七|八|九|十)、]*[\\u4E00-\\u9FA5]{2,}",
     "fieldStandardizeStrict": "",
-    "maxPages": 4
+    "maxPages": 5
   },
 
   "#母公司和主要子公司的员工情况": {

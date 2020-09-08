@@ -173,11 +173,16 @@ class DocParserPdf(DocParserBase):
         elif headerFirst != firstHeaderInRow and self._is_header_in_row(headerList,tableName):
             #解决海螺水泥2018年年报中,主要会计数据的表头为'项 目'和规范的表头'主要会计数据'不一致,采用方法使得该表头失效
             fieldFirst = firstHeaderInRow.replace(' ',NULLSTR) + fieldFirst
+            #解决通策医疗2019年年报中无形资产情况表所在的页中,存在另外一个表头 "项目名称",会导致用"^项目"去匹配时出现误判
+            headerFirst = NULLSTR
         headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
         fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
         fieldFirst = '^' + fieldFirst
-        headerFirst = '^' + headerFirst
-        headerFirst = '|'.join([headerFirst,fieldFirst])
+        if headerFirst != NULLSTR:
+            headerFirst = '^' + headerFirst
+            headerFirst = '|'.join([headerFirst,fieldFirst])
+        else:
+            headerFirst = fieldFirst
         if isinstance(mergedFields, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
             mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ',NULLSTR)
             matched = re.search(headerFirst, mergedFields)

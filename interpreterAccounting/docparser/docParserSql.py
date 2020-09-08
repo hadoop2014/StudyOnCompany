@@ -70,10 +70,13 @@ class DocParserSql(DocParserBase):
         #把表头进行标准化
         dataframe = self._process_header_standardize(dataframe,tableName)
 
+        #把表字段名进行标准化
+        dataframe = self._process_field_standardize(dataframe,tableName)
+
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称,统一后再去重
         dataframe = self._process_field_alias(dataframe,tableName)
 
-        #把表字段名进行标准化,标准化之后再去重复
+        #把表字段名统一命名后,再进行标准化之后去重复
         dataframe = self._process_field_standardize(dataframe,tableName)
 
         #处理重复字段
@@ -332,10 +335,10 @@ class DocParserSql(DocParserBase):
                 self.logger.warning('field %s is not exist in %s'%(field,tableName))
                 #删除该字段
                 indexDiscardField = dataFrame.iloc[0].isin([field])
-                #dataFrame.loc[indexDiscardField] = NaN
-                dataFrame.T.loc[indexDiscardField] = NaN
+                discardColumns = indexDiscardField[indexDiscardField == True].index.tolist()
+                #dataFrame.T.loc[indexDiscardField] = NaN
+                dataFrame[discardColumns] = NaN
                 dataFrame = dataFrame.dropna(axis=1).copy()
-        #dataFrame.iloc[0] = duplicatedFieldsResult
         return dataFrame
 
     def _process_header_discard(self, dataFrame, tableName):
