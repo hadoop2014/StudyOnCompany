@@ -328,6 +328,7 @@ class InterpreterAccounting(InterpreterBase):
             '''optional : DISCARD optional
                         | optional fetchdata DISCARD
                         | fetchdata DISCARD DISCARD DISCARD DISCARD
+                        | fetchdata DISCARD
                         | '(' NAME ')' optional
                         | fetchdata empty'''
             #第2条规则optional fetchdata DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景

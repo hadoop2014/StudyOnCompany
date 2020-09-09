@@ -301,7 +301,7 @@ class DocParserSql(DocParserBase):
             try:
                 if isinstance(value,str):
                     value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR)\
-                        .replace('/',NULLSTR).replace('）',NULLSTR)
+                        .replace('/',NULLSTR).replace('）',NULLSTR).replace('（',NULLSTR)
                     #解决迪安诊断2018年财报主要会计数据中,把最后一行拆为"归属于上市公司股东的净资产（元"和"）"
                     #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充
                     value = re.sub('.*-$',NULLSTR,value)
@@ -344,11 +344,14 @@ class DocParserSql(DocParserBase):
     def _process_header_discard(self, dataFrame, tableName):
         #去掉无用的表头;把字段名由index转为column
         headerDiscard = self.dictTables[tableName]['headerDiscard']
-        headerDiscardPattern = '|'.join(headerDiscard)
+        #headerDiscardPattern = '|'.join(headerDiscard)
         #同时对水平表进行转置,把字段名由index转为column,便于插入sqlite3数据库
         dataFrame = dataFrame.T.copy()
         #删除需要丢弃的表头,该表头由self.dictTables[tableName]['headerDiscard']定义
-        indexDiscardHeader = [self._is_field_matched(headerDiscardPattern,x) for x in dataFrame.index.values]
+        #indexDiscardHeader = [self._is_field_matched(headerDiscardPattern,x) for x in dataFrame.index.values]
+        indexDiscardHeader = dataFrame.index.isin(headerDiscard + self._get_invalid_field())
+        #主要会计数据的第一个index为空字段,该代码会判断为Ture,所以要重新设置为False
+        indexDiscardHeader[0] = False
         dataFrame.loc[indexDiscardHeader] = NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame

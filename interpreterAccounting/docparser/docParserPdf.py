@@ -166,6 +166,7 @@ class DocParserPdf(DocParserBase):
             #headerFirst == NULLSTR针对分季度主要财务数据的场景
             #firstHaderInRow == NULLSTR针对主要会计数据中部分财报第一个字段为空(本应该为'主要会计数据')
             if firstHeaderInRow == NULLSTR:
+                #headerFirstTemp = self._get_standardized_header(self.dictTables[tableName]['header'][1], tableName)
                 headerFirstTemp = self.dictTables[tableName]['header'][1]
             else:
                 headerFirstTemp = headerFirst
@@ -183,11 +184,14 @@ class DocParserPdf(DocParserBase):
             headerFirst = NULLSTR
         headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
         fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
-        fieldFirst = '^' + fieldFirst
         if headerFirst != NULLSTR:
+            #fieldFirst = '^' + fieldFirst
             headerFirst = '^' + headerFirst
-            headerFirst = '|'.join([headerFirst,fieldFirst])
+            #headerFirst = '|'.join([headerFirst,fieldFirst])
+            #解决隆基股份2018年年度报告的无形资产情况,同一页中出现多张表也有相同的表头的第一字段'项目',
+            headerFirst = ''.join([headerFirst, fieldFirst])
         else:
+            fieldFirst = '^' + fieldFirst
             headerFirst = fieldFirst
         if isinstance(mergedFields, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
             mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ',NULLSTR)
