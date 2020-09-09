@@ -107,7 +107,7 @@ class DocParserPdf(DocParserBase):
         tableName = dictTable['tableName']
         fetchTables = self._get_tables(dictTable)
         page_numbers = dictTable['page_numbers']
-        processedTable,isTableEnd = self._process_table(fetchTables, tableName)
+        processedTable,isTableEnd = self._process_table(page_numbers,fetchTables, tableName)
         dictTable.update({'tableEnd':isTableEnd})
         if isinstance(savedTable, list):
             savedTable.extend(processedTable)
@@ -118,8 +118,9 @@ class DocParserPdf(DocParserBase):
         dictTable.update({'table':savedTable})
         return dictTable
 
-    def _process_table(self,tables,tableName):
+    def _process_table(self,page_numbers,tables,tableName):
         processedTable,isTableEnd = NULLSTR , False
+        assert isinstance(page_numbers,list) and len(page_numbers) > 0,"page_number(%s) must not be NULL"%page_numbers
         if len(tables) == 0:
             return processedTable,isTableEnd
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
@@ -138,7 +139,12 @@ class DocParserPdf(DocParserBase):
             isTableStart = self._is_table_start(tableName,fieldList,headerList)
             if isTableStart == True:
                 processedTable = table
-            if isTableEnd == True:
+            if len(page_numbers) == 1:
+                #len(page_numers) == 1表示本表所在的第一页,需要明确判断出isTabletart = True 才能使得isTableEnd生效
+                if isTableStart and isTableEnd:
+                    processedTable = table
+                    break
+            elif isTableEnd == True :
                 processedTable = table
                 break
         return processedTable,isTableEnd
