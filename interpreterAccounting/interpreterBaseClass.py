@@ -87,7 +87,13 @@ class InterpreterBase(BaseClass):
             else:
                 return field2
         else:
-            return field1
+            if self._is_valid(field1):
+                return field1
+            else:
+                #配合无形资产情况表中"headerStandardize": "^[\\u4E00-\\u9FA5|a-z|A-Z][\\u4E00-\\u9FA5|a-z|A-Z|0-9|\\-|,]*"情形
+                #如果返回None,_is_header_in_row函数会返回True,导致误判
+                return NULLSTR
+
 
     def _standardize(self,fieldStandardize,field):
         standardizedField = field

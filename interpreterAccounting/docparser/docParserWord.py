@@ -5,7 +5,7 @@
 # @File    : docParserWord.py
 # @Note    : 用于word文件的读写
 
-from docparser.docParserBaseClass import  *
+from interpreterAccounting.docparser.docParserBaseClass import  *
 
 #深度学习模型的基类
 class DocBaseWord(DocParserBase):

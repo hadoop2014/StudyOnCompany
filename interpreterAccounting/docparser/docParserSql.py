@@ -372,6 +372,9 @@ class DocParserSql(DocParserBase):
         #把表头字段进行标准化
         standardizedHeaders = self._get_standardized_header(dataFrame.index.tolist(),tableName)
         dataFrame.index = standardizedHeaders
+        #在标准化后,某些无用字段可能被标准化为NaN,需要去掉
+        #dataFrame.loc[NaN] = NaN
+        #dataFrame = dataFrame.dropna(axis=1).copy()
         return dataFrame
 
     def _process_field_standardize(self,dataFrame,tableName):
