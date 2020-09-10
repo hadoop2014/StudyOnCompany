@@ -30,7 +30,7 @@ class InterpreterAccounting(InterpreterBase):
         #t_ignore = " \t\n"
         t_ignore = self.ignores
         #解决亿纬锂能2018年财报中,'无形资产情况'和'单位: 元'之间,插入了《.... 5 .....》中间带有数字,导致误判为搜索到页尾
-        t_ignore_COMMENT = "《.*》"
+        t_ignore_COMMENT = "《.*》|《.*|.*》"
 
         def t_newline(t):
             r'\n+'
@@ -165,6 +165,24 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
+        def p_fetchtable_timedouble_discard(p):
+            '''fetchtable : TABLE DISCARD DISCARD TIME TIME'''
+            #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
+            tableName = self._get_tablename_alias(str.strip(p[1]))
+            if len(self.names[tableName]['page_numbers']) != 0:
+                if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
+                    self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
+                    return
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+                self.docParser.interpretPrefix = NULLSTR
+                return
+            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
+            unit = NULLSTR
+            currency = self.names['currency']
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
+            tableBegin = True
+            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
                           | TABLE optional TIME optional UNIT finis NUMERIC
@@ -207,6 +225,18 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('fetchdata title %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2] + p[3]
+
+        def p_fetchdata_title_reverse(p):
+            '''fetchdata : TIME REPORT'''
+            if self.names['报告时间'] == NULLSTR \
+                and self.names['报告类型'] == NULLSTR:
+                years = self._time_transfer(p[1])
+                #self.names.update({'公司名称':p[3]})
+                self.names.update({'报告时间':years})
+                self.names.update({'报告类型':p[2]})
+            self.logger.info('fetchdata title %s %s%s page %d'
+                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            p[0] = p[1] + p[2] #+ p[3]
 
         def p_fetchdata_titlelong(p):
             '''fetchdata : COMPANY NAME skipword TIME REPORT '''
@@ -304,7 +334,6 @@ class InterpreterAccounting(InterpreterBase):
                        | UNIT
                        | CURRENCY
                        | LOCATION
-                       | REPORT
                        | '-'
                        | '%'
                        | '％' '''
@@ -340,6 +369,7 @@ class InterpreterAccounting(InterpreterBase):
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             #fetchdata DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
             #DISCARD PUNCTUATION DISCARD DISCARD和t_ignore_COMMENT = "《.*》"一起解决亿纬锂能2018年财报中搜索无形资产情况时误判为到达页尾
+            #DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
             p[0] = p[1] + p[2]
 
         def p_optional(p):
