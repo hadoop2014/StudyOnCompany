@@ -73,7 +73,7 @@ class ExcelVisualization(InterpreterBase):
         if dataframe is None:
             return
         startrow = self.dictTables[tableName]['startrow']
-        dataframe.to_excel(excel_writer=writer, sheet_name=sheetName, index=None,header=False,startrow=startrow)
+        dataframe.to_excel(excel_writer=writer, sheet_name=sheetName, index=None,header=True,startrow=startrow)
         #dataframe.to_excel(writer.path,sheet_name=sheetName, index=None,header=False,startrow=startrow)
         writer.save()
 

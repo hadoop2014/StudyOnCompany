@@ -70,7 +70,7 @@
     "create": "createComprehensive.sql",
     "visualize": "FinanceAnalysis v1.0.xlsx",
     "order": ["公司简称","报告时间 desc"],
-    "startrow": 2
+    "startrow": 1
   },
   "股票价值估算表": {
 

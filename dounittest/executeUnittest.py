@@ -32,7 +32,7 @@ class MyTestCase(unittest.TestCase):
         #    raise ValueError("(%s %s %s %s) is not supported now!" % (self.gConfig))
         interpreterAccounting = InterpreterAssemble().interpreter_assemble('accounting')
         interpreterAccounting.initialize()
-        interpreterAccounting.docParser._set_dataset(list([0,37]))
+        interpreterAccounting.docParser._set_dataset(list([0,145,146,147]))
         interpreterAccounting.doWork(debug=True,tracking=False)
 
 if __name__ == '__main__':
