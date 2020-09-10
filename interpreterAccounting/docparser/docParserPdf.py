@@ -132,11 +132,15 @@ class DocParserPdf(DocParserBase):
         processedTable = NULLSTR
         for index,table in enumerate(tables):
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
+            if len(table[0]) <= 1:
+                continue
             fieldList = [row[0] for row in table]
+            secondFieldList = [row[1] for row in table]
             headerList = table[0]
             #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.
             isTableEnd = self._is_table_end(tableName, fieldList)
-            isTableStart = self._is_table_start(tableName,fieldList,headerList)
+            #isTableStart = self._is_table_start(tableName,fieldList,headerList)
+            isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
             if isTableStart == True:
                 processedTable = table
             if len(page_numbers) == 1:
@@ -148,6 +152,35 @@ class DocParserPdf(DocParserBase):
                 processedTable = table
                 break
         return processedTable,isTableEnd
+
+    def _is_table_start_simple(self,tableName,fieldList,secondFieldList):
+        assert isinstance(fieldList, list) and isinstance(secondFieldList, list), \
+            "fieldList and headerList must be list,but now get %s %s" % (type(fieldList), type(secondFieldList))
+        isTableStart = False
+        mergedFields = reduce(self._merge, fieldList)
+        mergedFieldsSecond = reduce(self._merge, secondFieldList)
+        headerFirst = self.dictTables[tableName]["header"][0]
+        headerSecond = self.dictTables[tableName]["header"][1]
+        fieldFirst = self.dictTables[tableName]['fieldFirst']
+        assert fieldFirst != NULLSTR and headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
+        headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
+        headerSecond = headerSecond.replace('(', '（').replace(')', '）')
+        fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
+        #考虑两种情况,表头的第一个字段为空,则直接以fieldFirst来匹配,如果不为空,则以表头第一个字段 + fieldFirst 来匹配
+        patternHeaderFirst = '|'.join(['^' + field for field in fieldFirst.split('|')]
+                                    +['^' + headerFirst + field for field in fieldFirst.split('|')])
+        patternHeaderSecond = '^' + headerSecond
+        if isinstance(mergedFields, str) and isinstance(patternHeaderFirst, str) :
+            mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
+            matched = re.search(patternHeaderFirst, mergedFields)
+            if matched is not None:
+                isTableStart = True
+        if isinstance(mergedFieldsSecond, str) and isinstance(patternHeaderSecond, str) :
+            mergedFieldsSecond = mergedFieldsSecond.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
+            matched = re.search(patternHeaderSecond, mergedFieldsSecond)
+            if matched is not None:
+                isTableStart = True
+        return isTableStart
 
     def _is_table_start(self,tableName,fieldList,headerList):
         #针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中

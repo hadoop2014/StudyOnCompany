@@ -106,7 +106,7 @@ select
     e.财务费用,
     case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else e.研发费用 end as 研发费用,
     --case when a.本期资本化研发投入 is NULL  or a.本期资本化研发投入 = '' then 0 else a.本期资本化研发投入 end as 资本化研发投入,
-    a.本期资本化研发投入修正 as 资本化研发投入,
+    case when a.本期资本化研发投入修正 != '' then a.本期资本化研发投入修正 else 0 end as 资本化研发投入,
     g.资产减值准备 NUMERIC,
     g.固定资产折旧、油气资产折耗、生产性生物资产折旧 NUMERIC,
     g.无形资产摊销 NUMERIC,

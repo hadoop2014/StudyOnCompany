@@ -29,6 +29,8 @@ class InterpreterAccounting(InterpreterBase):
 
         #t_ignore = " \t\n"
         t_ignore = self.ignores
+        #解决亿纬锂能2018年财报中,'无形资产情况'和'单位: 元'之间,插入了《.... 5 .....》中间带有数字,导致误判为搜索到页尾
+        t_ignore_COMMENT = "《.*》"
 
         def t_newline(t):
             r'\n+'
@@ -329,11 +331,13 @@ class InterpreterAccounting(InterpreterBase):
                         | optional fetchdata DISCARD
                         | fetchdata DISCARD DISCARD DISCARD DISCARD
                         | fetchdata DISCARD
+                        | DISCARD PUNCTUATION DISCARD DISCARD
                         | '(' NAME ')' optional
                         | fetchdata empty'''
             #第2条规则optional fetchdata DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             #fetchdata DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
+            #DISCARD PUNCTUATION DISCARD DISCARD和t_ignore_COMMENT = "《.*》"一起解决亿纬锂能2018年财报中搜索无形资产情况时误判为到达页尾
             p[0] = p[1] + p[2]
 
         def p_optional(p):
