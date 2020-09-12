@@ -142,6 +142,7 @@ class MyTestCase(unittest.TestCase):
         input = input + ' 公司近三年（含报告期）的普通股股利分配方案或预案、资本公积金转增股本方案或预案\n单位：元 币种：人民币'
         input = input + ' 贵州茅台酒股份有限公司\n2018 年年度报告'
         input = input + ' \n-1\n现金流量表补充资料\n2018年年度报告\n单位：元  币种：人民币 '
+        input = input + ' 公司办公地址： 中国安徽省芜湖市文化路39号'
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)

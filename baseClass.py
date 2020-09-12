@@ -7,6 +7,7 @@ from loggerClass import *
 import functools
 import numpy as np
 import os
+import re
 import sqlite3 as sqlite
 #数据读写处理的基类
 
@@ -94,6 +95,14 @@ class BaseClass():
             self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
         #cursor.close()
         conn.close()
+
+    def _is_matched(self,pattern,field):
+        isMatched = False
+        if isinstance(field, str) and isinstance(pattern, str) and pattern != NULLSTR:
+            matched = re.search(pattern, field)
+            if matched is not None:
+                isMatched = True
+        return isMatched
 
     def _sql_executer_script(self,sql):
         isSuccess = False

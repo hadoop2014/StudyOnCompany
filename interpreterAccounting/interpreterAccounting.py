@@ -271,13 +271,13 @@ class InterpreterAccounting(InterpreterBase):
                         | '（' skipword REFERENCE NAME '）' '''
             p[0] = p[1]
 
-        def p_fetchtitle_copany(p):
+        def p_fetchtitle_company(p):
             '''fetchtitle : COMPANY TIME REPORT'''
-            if self.names['公司名称'] == NULLSTR \
-                and self.names['报告时间'] == NULLSTR \
+            if self.names['公司名称'] == NULLSTR :
+                self.names.update({'公司名称':p[1]})
+            if self.names['报告时间'] == NULLSTR \
                 and self.names['报告类型'] == NULLSTR:
                 years = self._time_transfer(p[2])
-                self.names.update({'公司名称':p[1]})
                 self.names.update({'报告时间':years})
                 self.names.update({'报告类型':p[3]})
             self.logger.info('fetchtitle %s %s%s page %d'
@@ -287,11 +287,11 @@ class InterpreterAccounting(InterpreterBase):
         def p_fetchtitle_long(p):
             '''fetchtitle : COMPANY NAME skipword TIME REPORT '''
             #解决海螺水泥2018年报第1页title的识别问题
-            if self.names['公司名称'] == NULLSTR \
-                and self.names['报告时间'] == NULLSTR \
+            if self.names['公司名称'] == NULLSTR :
+                self.names.update({'公司名称': p[1]})
+            if self.names['报告时间'] == NULLSTR \
                 and self.names['报告类型'] == NULLSTR:
                 years = self._time_transfer(p[4])
-                self.names.update({'公司名称':p[1]})
                 self.names.update({'报告时间':years})
                 self.names.update({'报告类型':self._get_unit_alias(p[5])})
             self.logger.info('fetchtitle long %s %s%s page %d'

@@ -6,7 +6,8 @@
 # @Note    : 用于财务数据的可视化
 
 from interpreterAnalysize.interpreterBaseClass import *
-from openpyxl import load_workbook,Workbook
+from openpyxl import load_workbook
+from openpyxl.styles import Font, colors, Alignment,Border,numbers
 import pandas as pd
 
 class ExcelVisualization(InterpreterBase):
@@ -36,22 +37,60 @@ class ExcelVisualization(InterpreterBase):
         assert os.path.exists(visualize_file),"the file %s is not exists,you must create it first!"%visualize_file
         workbook = load_workbook(visualize_file)
         writer = pd.ExcelWriter(visualize_file,engine='openpyxl')
-        writer.book = workbook
-        sheetNames = workbook.sheetnames
-        if tableName not in sheetNames:
-            sheetNames = sheetNames + [tableName]
-        for sheetName in sheetNames:
-            dataframe = self._sql_to_dataframe(sheetName,tableName)
+        #writer.book = workbook
+        #sheetNames = workbook.sheetnames
 
-            dataframe = self._process_field_discard(dataframe, tableName)
+        sheetName = tableName# + str(time.thread_time_ns())
+        tableNameTarget = tableName
+        #if tableName not in sheetNames:
+        #    sheetNames = sheetNames + [tableName]
+        #for sheetName in sheetNames:
+        #    dataframe = self._sql_to_dataframe(sheetName,tableName)
 
-            self._visualize_to_excel(writer,sheetName,dataframe,tableName)
+        #    dataframe = self._process_field_discard(dataframe, tableName)
+
+        #    self._visualize_to_excel(writer,sheetName,dataframe,tableName)
+        dataframe = self._sql_to_dataframe(sheetName, tableName)
+
+        dataframe = self._process_field_discard(dataframe, tableName)
+
+        self._visualize_to_excel(writer,sheetName,dataframe,tableName)
+
+        self._adjust_style_excel(workbook,sheetName,tableName)
+        workbook.save(visualize_file)
         workbook.close()
         #writer.close()
 
+    def _adjust_style_excel(self,workbook,sheetName,tableName):
+        font_settings = self.dictTables[tableName]['font_settings']
+        startrow = self.dictTables[tableName]['startrow']
+        font_common = Font(name=font_settings['name'], size=font_settings['size'], italic=font_settings['italic']
+                    ,color=colors.COLOR_INDEX[font_settings['color_index_common']], bold=font_settings['bold'], underline=None)
+        font_emphasize = Font(name=font_settings['name'], size=font_settings['size'], italic=font_settings['italic']
+                           , color=colors.COLOR_INDEX[font_settings['color_index_emphasize']], bold=font_settings['bold'],
+                           underline=None)
+        alignment = Alignment(horizontal='right', vertical='center', wrap_text=True)
+        border = Border()
+        sheet = workbook[sheetName]
+        maxrow = self._get_maxrow(sheet.max_row,tableName)
+
+        for i,cell in enumerate(sheet[startrow + 1]):
+            cell.font = font_common
+            if self._is_cell_emphasize(cell,tableName):
+                cell.font = font_emphasize
+            if self._is_cell_pecentage(cell,tableName):
+                for index in range(maxrow):
+                    sheet.cell(row = index + 1,column = i + 1).number_format = numbers.FORMAT_PERCENTAGE
+            cell.alignment = alignment
+            cell.border = border #去掉边框
+
+        #blue_fill = PatternFill(start_color='FF0000FF', end_color='FF0000FF', fill_type='solid')
+
+        #dxf = DifferentialStyle(fill=blue_fill, numFmt=NumFmt(10, '0.00%'))
+        #rule = Rule('expression', formula=['E3 > 3'], dxf=dxf)
+        #ws.conditional_formatting.add('E3', rule)
+
     def _sql_to_dataframe(self,sheetName,tableName):
-        if sheetName != tableName:
-            return
         order = self.dictTables[tableName]["order"]
         sql = ''
         sql = sql + '\nselect * '
@@ -76,6 +115,23 @@ class ExcelVisualization(InterpreterBase):
         dataframe.to_excel(excel_writer=writer, sheet_name=sheetName, index=None,header=True,startrow=startrow)
         #dataframe.to_excel(writer.path,sheet_name=sheetName, index=None,header=False,startrow=startrow)
         writer.save()
+
+    def _get_maxrow(self,current_maxrow,tableName):
+        maxrow = self.dictTables[tableName]['maxrow']
+        return max(maxrow,current_maxrow)
+
+    def _is_cell_pecentage(self,cell,tableName):
+        isCellPecentage = False
+        percentage_exclude = self.dictTables[tableName]['percentage_exclude']
+        if self._is_cell_emphasize(cell,tableName):
+            pattern_percentage_exclude = '|'.join(percentage_exclude)
+            isCellPecentage = not self._is_matched(pattern_percentage_exclude,cell.value)
+        return isCellPecentage
+
+    def _is_cell_emphasize(self,cell,tableName):
+        pattern_emphasize = self.dictTables[tableName]['pattern_emphasize']
+        isCellEmphasize = self._is_matched(pattern_emphasize,cell.value)
+        return isCellEmphasize
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:

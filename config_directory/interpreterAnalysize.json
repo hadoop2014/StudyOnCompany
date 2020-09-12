@@ -43,7 +43,15 @@
     "create": "createFoundation.sql",
     "visualize": "",
     "order": [],
-    "startrow": 0
+    "startrow": 0,
+    "font_settings": {
+      "name":"宋体",
+      "size":"11",
+      "italic":false,
+      "color":"BLUE",
+      "bold":false,
+      "underline":"doubleAccounting"
+    }
   },
 
   "财务分析综合表": {
@@ -70,7 +78,22 @@
     "create": "createComprehensive.sql",
     "visualize": "FinanceAnalysis v1.0.xlsx",
     "order": ["公司简称","报告时间 desc"],
-    "startrow": 1
+    "startrow": 1,
+    "maxrow": 1000,
+    "pattern_emphasize": "人均|率",
+    "percentage_exclude": ["人均营业额（万）","人均净利润（万）","经营活动产生的现金流量净额占净利润的比率"
+                          ,"预收总额和应收总额的比率","预收款项和应收账款的比率","流动比率","速动比率","现金及现金等价物余额占短期借债的比率"
+                          ,"流动资产占总负债的比率","现金收入和营业收入的比率","现金收入和营业收入的比率","应收账款周转率","存货周转率"
+                          ,"营业利润占营业资金的比率","营业收入占营业资金的比率"],
+    "font_settings": {
+      "name":"宋体",
+      "size":"11",
+      "italic":false,
+      "color_index_common":23,
+      "color_index_emphasize": 53,
+      "bold":false,
+      "underline":"doubleAccounting"
+    }
   },
   "股票价值估算表": {
 
