@@ -64,6 +64,8 @@ class InterpreterAccounting(InterpreterBase):
         def p_expression_reduce(p):
             '''expression : fetchtable expression
                           | fetchdata expression
+                          | fetchtitle expression
+                          | title expression
                           | skipword '''
             p[0] = p[1]
 
@@ -204,53 +206,14 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_fetchtable_skipword(p):
             '''fetchtable : TABLE HEADER
-                          | TABLE PUNCTUATION
                           | TABLE optional TABLE
                           | TABLE optional PUNCTUATION'''
             #去掉了语法TABLE term,该语法和TABLE optional NUMERIC冲突
             #去掉合并资产负债表项目
+            #去掉TABLE PUNCTUATION减少语法冲突
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
             self.logger.error("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             pass
-
-        def p_fetchdata_title(p):
-            '''fetchdata : COMPANY TIME REPORT '''
-            if self.names['公司名称'] == NULLSTR \
-                and self.names['报告时间'] == NULLSTR \
-                and self.names['报告类型'] == NULLSTR:
-                years = self._time_transfer(p[2])
-                self.names.update({'公司名称':p[1]})
-                self.names.update({'报告时间':years})
-                self.names.update({'报告类型':p[3]})
-            self.logger.info('fetchdata title %s %s%s page %d'
-                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
-            p[0] = p[1] + p[2] + p[3]
-
-        def p_fetchdata_title_reverse(p):
-            '''fetchdata : TIME REPORT'''
-            if self.names['报告时间'] == NULLSTR \
-                and self.names['报告类型'] == NULLSTR:
-                years = self._time_transfer(p[1])
-                #self.names.update({'公司名称':p[3]})
-                self.names.update({'报告时间':years})
-                self.names.update({'报告类型':p[2]})
-            self.logger.info('fetchdata title %s %s%s page %d'
-                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
-            p[0] = p[1] + p[2] #+ p[3]
-
-        def p_fetchdata_titlelong(p):
-            '''fetchdata : COMPANY NAME skipword TIME REPORT '''
-            #解决海螺水泥2018年报第1页title的识别问题
-            if self.names['公司名称'] == NULLSTR \
-                and self.names['报告时间'] == NULLSTR \
-                and self.names['报告类型'] == NULLSTR:
-                years = self._time_transfer(p[4])
-                self.names.update({'公司名称':p[1]})
-                self.names.update({'报告时间':years})
-                self.names.update({'报告类型':self._get_unit_alias(p[5])})
-            self.logger.info('fetchdata title long %s %s%s page %d'
-                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
-            p[0] = p[1] + p[4] + p[5]
 
         def p_fetchdata_referencedouble(p):
             '''fetchdata : REFERENCE DISCARD REFERENCE NUMERIC
@@ -284,16 +247,9 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
 
         def p_fetchdata_skipword(p):
-            '''fetchdata : COMPANY TIME DISCARD
-                         | COMPANY DISCARD
-                         | COMPANY PUNCTUATION
-                         | COMPANY error
-                         | CRITICAL CRITICAL
+            '''fetchdata : CRITICAL CRITICAL
                          | REFERENCE NUMERIC NAME
                          | REFERENCE REFERENCE'''
-            #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
-            #去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
-            #TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在useless中增加REPORT
             p[0] = p[1]
 
         def p_skipword_group(p):
@@ -314,6 +270,54 @@ class InterpreterAccounting(InterpreterBase):
                         | '(' skipword REFERENCE NAME ')'
                         | '（' skipword REFERENCE NAME '）' '''
             p[0] = p[1]
+
+        def p_fetchtitle_copany(p):
+            '''fetchtitle : COMPANY TIME REPORT'''
+            if self.names['公司名称'] == NULLSTR \
+                and self.names['报告时间'] == NULLSTR \
+                and self.names['报告类型'] == NULLSTR:
+                years = self._time_transfer(p[2])
+                self.names.update({'公司名称':p[1]})
+                self.names.update({'报告时间':years})
+                self.names.update({'报告类型':p[3]})
+            self.logger.info('fetchtitle %s %s%s page %d'
+                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            p[0] = p[1] + p[2] + p[3]
+
+        def p_fetchtitle_long(p):
+            '''fetchtitle : COMPANY NAME skipword TIME REPORT '''
+            #解决海螺水泥2018年报第1页title的识别问题
+            if self.names['公司名称'] == NULLSTR \
+                and self.names['报告时间'] == NULLSTR \
+                and self.names['报告类型'] == NULLSTR:
+                years = self._time_transfer(p[4])
+                self.names.update({'公司名称':p[1]})
+                self.names.update({'报告时间':years})
+                self.names.update({'报告类型':self._get_unit_alias(p[5])})
+            self.logger.info('fetchtitle long %s %s%s page %d'
+                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            p[0] = p[1] + p[4] + p[5]
+
+        def p_fetchtitle_skipword(p):
+            '''fetchtitle : COMPANY error
+                         | COMPANY TIME DISCARD
+                         | COMPANY DISCARD
+                         | COMPANY PUNCTUATION'''
+            #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
+            #去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
+            #TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在useless中增加REPORT
+            #去掉fetchdata : COMPANY error,和fetchtitle : COMPANY error冲突
+            p[0] = p[1]
+
+        def p_title(p):
+            '''title : TIME REPORT'''
+            if self.names['报告时间'] == NULLSTR \
+                and self.names['报告类型'] == NULLSTR:
+                years = self._time_transfer(p[1])
+                self.names.update({'报告时间':years})
+                self.names.update({'报告类型':p[2]})
+            self.logger.info('title %s%s page %d'% (self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            p[0] = p[1] + p[2]
 
         def p_useless_reduce(p):
             '''useless : '(' useless ')'
@@ -359,15 +363,14 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_optional_optional(p):
             '''optional : DISCARD optional
-                        | optional fetchdata DISCARD
-                        | fetchdata DISCARD DISCARD DISCARD DISCARD
-                        | fetchdata DISCARD
-                        | DISCARD PUNCTUATION DISCARD DISCARD
+                        | optional fetchtitle DISCARD
+                        | fetchtitle DISCARD DISCARD DISCARD DISCARD
+                        | fetchtitle DISCARD
                         | '(' NAME ')' optional
-                        | fetchdata empty'''
-            #第2条规则optional fetchdata DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
+                        | fetchtitle empty'''
+            #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
-            #fetchdata DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
+            #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
             #DISCARD PUNCTUATION DISCARD DISCARD和t_ignore_COMMENT = "《.*》"一起解决亿纬锂能2018年财报中搜索无形资产情况时误判为到达页尾
             #DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
             p[0] = p[1] + p[2]
