@@ -98,6 +98,7 @@
       "bold":false,
       "#underline":"doubleAccounting"
     },
+    "builtin_formats": 3,
     "conditional_formatting": {
       "员工工资占营业收入比率": {
         "threshold": 0.15,
@@ -217,7 +218,7 @@
         "threshold": 0.2,
         "color_index": 2,
         "operator": "",
-        "value_format": ""
+        "value_format": "percentage"
       },
       "净资产增长率":{
         "threshold": 0.2,

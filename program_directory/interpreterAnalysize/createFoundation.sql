@@ -138,7 +138,7 @@ select
     case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != '' then c.一年内到期的非流动负债 else 0 end
         as 一年内到期的非流动负债,
     case when c.长期借款 is not NULL and c.长期借款 != '' then c.长期借款 else 0 end as 长期借款,
-    c.应付债券,
+    case when c.应付债券 is not NULL and c.应付债券 != '' then c.应付债券 else 0 end as 应付债券,
     f.销售商品、提供劳务收到的现金,
     f.[六、期末现金及现金等价物余额],
     f.五、现金及现金等价物净增加额

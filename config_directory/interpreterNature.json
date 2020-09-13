@@ -1,7 +1,8 @@
 {
-  "#tokens": ["批量运行","单个运行","执行","数据解析","数据分析",   "表",   "创建",   "展示"],
-  "tokens":  ["BATCH","SINGLE","EXECUTE","PARSE","ANALYSIZE","TABLE","CREATE","VISUALIZE"],
+  "#tokens": ["批量运行","单个运行","执行","数据解析","数据分析",   "表",   "创建",   "展示",      "参数配置","参数名称",  "参数值","数值",    "报告时间"],
+  "tokens":  ["BATCH","SINGLE","EXECUTE","PARSE","ANALYSIZE","TABLE","CREATE","VISUALIZE","CONFIG","PARAMETER","NUMERIC","TIME"],
 
+  "#VALUE": "[\\u4E00-\\u9FA5]+",
   "BATCH": "批量运行|批量执行",
   "SINGLE": "单次运行|单次执行",
   "EXECUTE": "执行|运行",
@@ -9,10 +10,14 @@
   "ANALYSIZE": "财务报表分析",
   "CREATE": "创建",
   "VISUALIZE": "展示",
+  "CONFIG": "参数配置|配置",
   "TABLE": "财务分析基础表|财务分析综合表|股票价值估算表|股票价格分析表",
+  "PARAMETER": "报告时间|报告类型|公司简称|公司代码",
+  "TIME": "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+—\\d+\\s*月|\\d+\\s*(年|月|日)*-\\d+\\s*(年|月|日)|\\d+\\s*年",
+  "NUMERIC": "\\d+(\\.\\d{4})|\\d+(\\.\\d{1,2})?",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
-  "literals": ["(",")","（","）","#"],
+  "literals": ["(",")","（","）","{","}",":",","],
 
   "ignores": "\t "
 }

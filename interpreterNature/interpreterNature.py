@@ -15,6 +15,7 @@ class InterpreterNature(InterpreterBase):
         self.interpreterAnalysize = interpreterDict['analysize']
         self.interpretDefine()
 
+
     def interpretDefine(self):
         tokens = self.tokens
         literals = self.literals
@@ -29,12 +30,13 @@ class InterpreterNature(InterpreterBase):
         t_ignore = self.ignores
         t_ignore_COMMENT = r'#.*'
 
+
         def t_newline(t):
             r'\n+'
             t.lexer.lineno += t.value.count("\n")
 
         def t_error(t):
-            print("Illegal character '%s'" % t.value[0])
+            self.logger.info("Illegal character '%s'" % t.value[0])
             t.lexer.skip(1)
 
         # Build the lexer
@@ -73,10 +75,27 @@ class InterpreterNature(InterpreterBase):
             '''expression : EXECUTE ANALYSIZE'''
             self._process_single_analysize()
 
+
         def p_expression_visualize(p):
             '''expression : VISUALIZE TABLE'''
             command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
             self._process_visualize_table(command)
+
+
+        def p_expression_config(p):
+            '''expression : CONFIG '{' configuration '}' '''
+            p[0] = p[1] +'{ ' + p[3] +' }'
+
+        def p_configuration(p):
+            '''configuration : configuration ',' configuration '''
+            p[0] = p[1] + ',' + p[3]
+
+        def p_configuration_value(p):
+            '''configuration : PARAMETER ':' NUMERIC
+                             | PARAMETER ':' TIME'''
+            self.names.update({p[1]:p[3]})
+            self.logger.info("fetch config %s : %s"%(p[1],p[3]))
+            p[0] = p[1] + ':' + p[3]
 
         def p_error(p):
             if p:
@@ -87,15 +106,15 @@ class InterpreterNature(InterpreterBase):
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
+
     def doWork(self,lexer=None,debug=False,tracking=False):
-        #for data in docParser:
-        #    self.currentPageNumber = docParser.index
-        #    text = docParser._get_text(data)
         text = self._get_main_program()
         self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
 
+
     def _get_main_program(self):
         return self._get_text()
+
 
     def _process_batch_parse(self):
         if self.unitestIsOn:
@@ -114,6 +133,7 @@ class InterpreterNature(InterpreterBase):
             taskResults.append(taskResult)
         self.logger.info(taskResults)
 
+
     def _process_single_parse(self):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_parse!')
@@ -122,17 +142,20 @@ class InterpreterNature(InterpreterBase):
         taskResult = self.interpreterAccounting.doWork(debug=False, tracking=False)
         return taskResult
 
+
     def _process_batch_analysize(self):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_batch_analysize!')
             return
         pass
 
+
     def _process_single_analysize(self):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
         pass
+
 
     def _process_create_table(self,command):
         if self.unitestIsOn:
@@ -141,12 +164,14 @@ class InterpreterNature(InterpreterBase):
         pass
         self.interpreterAnalysize.doWork(command)
 
+
     def _process_visualize_table(self,command):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
         pass
         self.interpreterAnalysize.doWork(command)
+
 
     def _is_file_name_valid(self,fileName):
         assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
@@ -159,8 +184,10 @@ class InterpreterNature(InterpreterBase):
                     isFileNameValid = True
         return isFileNameValid
 
+
     def initialize(self):
         pass
+
 
 def create_object(gConfig, interpreterDict):
     interpreter = InterpreterNature(gConfig, interpreterDict)

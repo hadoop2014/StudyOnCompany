@@ -209,6 +209,8 @@ class ExcelVisualization(InterpreterBase):
                                     ,justifyLastLine=True)
         border = Border()
         maxrow = self._get_maxrow(sheet.max_row,tableName)
+        freezecol = self.dictTables[tableName]['freezecol']
+        builtin_formats = self.dictTables[tableName]['builtin_formats']
 
         for i, cell in enumerate(sheet[startrow + 1]):
             cell.font = font_common
@@ -218,9 +220,11 @@ class ExcelVisualization(InterpreterBase):
                 cell.font = font_emphasize
             for index in range(maxrow):
                 if self._is_cell_pecentage(cell, tableName):
-                    sheet.cell(row=index + 1, column=i + 1).number_format = numbers.FORMAT_PERCENTAGE_00
+                    sheet.cell(row=index + 1, column = i + 1).number_format = numbers.FORMAT_PERCENTAGE_00
+                elif i + 1 >= freezecol:
+                    sheet.cell(row=index + 1, column = i + 1).number_format = numbers.BUILTIN_FORMATS[builtin_formats]
                 if index > startrow:
-                    sheet.cell(row=index + 1, column=i + 1).alignment = alignment_field
+                    sheet.cell(row=index + 1, column = i + 1).alignment = alignment_field
 
 
     def _set_freeze_pans(self,sheet,tableName):
@@ -288,10 +292,14 @@ class ExcelVisualization(InterpreterBase):
 
     def _is_cell_pecentage(self,cell,tableName):
         isCellPecentage = False
-        percentage_exclude = self.dictTables[tableName]['percentage_exclude']
-        if self._is_cell_emphasize(cell,tableName):
-            pattern_percentage_exclude = '|'.join(percentage_exclude)
-            isCellPecentage = not self._is_matched(pattern_percentage_exclude,cell.value)
+        #percentage_exclude = self.dictTables[tableName]['percentage_exclude']
+        #if self._is_cell_emphasize(cell,tableName):
+        #    pattern_percentage_exclude = '|'.join(percentage_exclude)
+        #    isCellPecentage = not self._is_matched(pattern_percentage_exclude,cell.value)
+        percentage_field = [key for key,value in self.dictTables[tableName]['conditional_formatting'].items()
+                            if value['value_format'] == 'percentage']
+        pattern_percentage_field = '|'.join(percentage_field)
+        isCellPecentage = self._is_matched(pattern_percentage_field, cell.value)
         return isCellPecentage
 
 
