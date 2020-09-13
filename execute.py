@@ -5,10 +5,7 @@ import sys
 import time
 import re
 from baseClass import NULLSTR
-from time import sleep
-from threading import Thread
 from datafetch import getConfig
-import json
 import os
 from interpreterAssemble import InterpreterAssemble
 from loggerClass import Logger

@@ -8,6 +8,7 @@ from ply import lex,yacc
 import time
 from interpreterAccounting.interpreterBaseClass import *
 
+
 class InterpreterAccounting(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterAccounting, self).__init__(gConfig)
@@ -16,6 +17,7 @@ class InterpreterAccounting(InterpreterBase):
         self.sqlParser = memberModuleDict['sqlParser'.lower()]
         self.currentPageNumber = 0
         self.interpretDefine()
+
 
     def interpretDefine(self):
         tokens = self.tokens
@@ -32,34 +34,42 @@ class InterpreterAccounting(InterpreterBase):
         #解决亿纬锂能2018年财报中,'无形资产情况'和'单位: 元'之间,插入了《.... 5 .....》中间带有数字,导致误判为搜索到页尾
         t_ignore_COMMENT = "《.*》|《.*|.*》"
 
+
         def t_newline(t):
             r'\n+'
             t.lexer.lineno += t.value.count("\n")
+
 
         def t_error(t):
             print("Illegal character '%s'" % t.value[0])
             t.lexer.skip(1)
 
+
         # Build the lexer
         self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
+
 
         # Parsing rules
         precedence = (
             ('right', 'UMINUS'),
         )
 
+
         # dictionary of names
         self.names = {}
+
 
         def p_statement_grouphalf(p):
             '''statement : statement ')'
                          | statement '）' '''
             p[0] = p[1]
 
+
         def p_statement_statement(p):
             '''statement : statement expression
                          | expression '''
             p[0] = p[1]
+
 
         def p_expression_reduce(p):
             '''expression : fetchtable expression
@@ -68,6 +78,7 @@ class InterpreterAccounting(InterpreterBase):
                           | title expression
                           | skipword '''
             p[0] = p[1]
+
 
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional TIME optional UNIT finis '''
@@ -83,6 +94,7 @@ class InterpreterAccounting(InterpreterBase):
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
+
 
         def p_fetchtable_searchlong(p):
             '''fetchtable : TABLE optional TIME optional CURRENCY UNIT finis '''
@@ -101,6 +113,7 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
 
+
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional UNIT finis '''
             #第二个语法针对的是主要会计数据
@@ -115,6 +128,7 @@ class InterpreterAccounting(InterpreterBase):
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+
 
         def p_fetchtable_searchbracket(p):
             '''fetchtable : TABLE optional '（' UNIT '）' finis '''
@@ -132,6 +146,7 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
+
         def p_fetchtable_searchcurrencyunit(p):
             '''fetchtable : TABLE optional CURRENCY UNIT finis '''
             #第二个语法针对的是主要会计数据
@@ -148,6 +163,7 @@ class InterpreterAccounting(InterpreterBase):
             interpretPrefix = '\n'.join([slice.value for slice in p.slice if slice.value is not None and slice.type != 'optional']) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+
 
         def p_fetchtable_timedouble(p):
             '''fetchtable : TABLE optional TIME TIME'''
@@ -167,6 +183,7 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
+
         def p_fetchtable_timedouble_discard(p):
             '''fetchtable : TABLE DISCARD DISCARD TIME TIME'''
             #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
@@ -184,6 +201,7 @@ class InterpreterAccounting(InterpreterBase):
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+
 
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
@@ -204,6 +222,7 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = False
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
+
         def p_fetchtable_skipword(p):
             '''fetchtable : TABLE HEADER
                           | TABLE optional TABLE
@@ -215,6 +234,7 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.error("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             pass
 
+
         def p_fetchdata_referencedouble(p):
             '''fetchdata : REFERENCE DISCARD REFERENCE NUMERIC
                          | REFERENCE NUMERIC REFERENCE DISCARD '''
@@ -225,6 +245,7 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('fetchdata reference %s -> %s %s,%s -> %s %s'%(p[1],self._get_reference_alias(p[1]),p[2]
                              ,p[3],self._get_reference_alias(p[3]),p[4]))
 
+
         def p_fetchdata_referencetriple(p):
             '''fetchdata : REFERENCE NUMERIC term REFERENCE DISCARD DISCARD'''
             #解决华新水泥2018年报中,股票简称不能识别的问题
@@ -234,6 +255,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.names.update({self._get_reference_alias(p[4]):p[5]})
             self.logger.info('fetchdata reference %s -> %s %s,%s -> %s %s'%(p[1],self._get_reference_alias(p[1]),p[2]
                              ,p[3],self._get_reference_alias(p[3]),p[4]))
+
 
         def p_fetchdata_critical(p):
             '''fetchdata : CRITICAL NUMERIC fetchdata
@@ -246,11 +268,13 @@ class InterpreterAccounting(InterpreterBase):
                 self.names.update({critical:p[2]})
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
 
+
         def p_fetchdata_skipword(p):
             '''fetchdata : CRITICAL CRITICAL
                          | REFERENCE NUMERIC NAME
                          | REFERENCE REFERENCE'''
             p[0] = p[1]
+
 
         def p_skipword_group(p):
             '''skipword : '(' skipword ')'
@@ -258,6 +282,7 @@ class InterpreterAccounting(InterpreterBase):
                         | '（' skipword '）'
                         | '（' skipword ')' '''
             p[0] = p[2]
+
 
         def p_skipword(p):
             '''skipword : useless skipword
@@ -271,6 +296,7 @@ class InterpreterAccounting(InterpreterBase):
                         | '（' skipword REFERENCE NAME '）' '''
             p[0] = p[1]
 
+
         def p_fetchtitle_company(p):
             '''fetchtitle : COMPANY TIME REPORT'''
             if self.names['公司名称'] == NULLSTR :
@@ -283,6 +309,7 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('fetchtitle %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2] + p[3]
+
 
         def p_fetchtitle_long(p):
             '''fetchtitle : COMPANY NAME skipword TIME REPORT '''
@@ -298,6 +325,7 @@ class InterpreterAccounting(InterpreterBase):
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[4] + p[5]
 
+
         def p_fetchtitle_skipword(p):
             '''fetchtitle : COMPANY error
                          | COMPANY TIME DISCARD
@@ -309,6 +337,7 @@ class InterpreterAccounting(InterpreterBase):
             #去掉fetchdata : COMPANY error,和fetchtitle : COMPANY error冲突
             p[0] = p[1]
 
+
         def p_title(p):
             '''title : TIME REPORT'''
             if self.names['报告时间'] == NULLSTR \
@@ -319,6 +348,7 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('title %s%s page %d'% (self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2]
 
+
         def p_useless_reduce(p):
             '''useless : '(' useless ')'
                        | '(' useless '）'
@@ -326,6 +356,7 @@ class InterpreterAccounting(InterpreterBase):
                        | '（' useless ')'
                        | '-' useless '''
             p[0] = p[1]
+
 
         def p_useless(p):
             '''useless : PUNCTUATION
@@ -343,16 +374,19 @@ class InterpreterAccounting(InterpreterBase):
                        | '％' '''
             p[0] = p[1]
 
+
         def p_term_group(p):
             '''term : '(' term ')'
                     |  '（' term '）'
                     | '-' term %prec UMINUS '''
             p[0] = -p[2]  #财务报表中()表示负值
 
+
         def p_term_percentage(p):
             '''term : NUMERIC '%'
                     | NUMERIC '％' '''
             p[0] = round(float(p[1].replace(',','')) * 0.01,4)
+
 
         def p_term_numeric(p):
             '''term : NUMERIC '''
@@ -360,6 +394,7 @@ class InterpreterAccounting(InterpreterBase):
                 p[0] = int(p[1].replace(',',''))
             else:
                 p[0] = float(p[1].replace(',',''))
+
 
         def p_optional_optional(p):
             '''optional : DISCARD optional
@@ -375,6 +410,7 @@ class InterpreterAccounting(InterpreterBase):
             #DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
             p[0] = p[1] + p[2]
 
+
         def p_optional(p):
             '''optional : empty
                         | COMPANY '''
@@ -382,6 +418,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.names['company'] = p[1]
             p[0] = p[1]
             print('optional',p[0])
+
 
         def p_finis(p):
             '''finis : empty
@@ -393,9 +430,11 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1]
             print('finis',p[0])
 
+
         def p_empty(p):
             '''empty : '''
             p[0] = NULLSTR
+
 
         def p_error(p):
             if p:
@@ -403,8 +442,10 @@ class InterpreterAccounting(InterpreterBase):
             else:
                 print("Syntax error at EOF page %d"%self.currentPageNumber)
 
+
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
+
 
     def doWork(self,lexer=None,debug=False,tracking=False):
         start_time = time.time()
@@ -430,6 +471,7 @@ class InterpreterAccounting(InterpreterBase):
         self.logger.info('\n\n parse %s file end, time used %.4f' % (fileName,(time.time() - start_time)))
         return self.sqlParser.process_info
 
+
     def _process_fetch_table(self, tableName, tableBegin, interpretPrefix, unit=NULLSTR, currency=NULLSTR, company=NULLSTR):
         assert tableName is not None and tableName != NULLSTR, 'tableName must not be None'
         self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': currency
@@ -451,6 +493,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.sqlParser.writeToStore(self.names[tableName])
         self.logger.info('\nprefix: %s:'%interpretPrefix.replace('\n','\t') + str(self.names[tableName]))
 
+
     def _process_critical_table(self,tableName = '关键数据表'):
         assert tableName is not None and tableName != NULLSTR,"tableName must not be None"
         table = self._construct_table(tableName)
@@ -467,6 +510,7 @@ class InterpreterAccounting(InterpreterBase):
         self.excelParser.writeToStore(self.names[tableName])
         self.sqlParser.writeToStore(self.names[tableName])
 
+
     def _construct_table(self,tableNmae):
         headers = self.dictTables[tableNmae]['header']
         fields = self.dictTables[tableNmae]['fieldName']
@@ -479,6 +523,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.logger.warning('critical %s failed to fetch'%row[0])
         return table
 
+
     def _is_reatch_max_pages(self, fetchTable,tableName):
         maxPages = self.dictTables[tableName]['maxPages']
         if len(fetchTable['page_numbers']) > maxPages:
@@ -490,6 +535,7 @@ class InterpreterAccounting(InterpreterBase):
         else:
             isReatchMaxPages = False
         return isReatchMaxPages
+
 
     def _time_transfer(self,time):
         transfer = dict({
@@ -512,6 +558,7 @@ class InterpreterAccounting(InterpreterBase):
         time = time.replace(' ',NULLSTR)
         return time
 
+
     def _unit_transfer(self,unit):
         transfer = dict({
             '元': 1,
@@ -527,6 +574,7 @@ class InterpreterAccounting(InterpreterBase):
             unitStandardize = 1
             self.logger.warning('%s is not the unit of currency'%unit)
         return unitStandardize
+
 
     def initialize(self,gConfig=None):
         for tableName in self.tableNames:
@@ -546,6 +594,7 @@ class InterpreterAccounting(InterpreterBase):
             self.docParser._load_data(gConfig['sourcefile'])
         else:
             self.docParser._load_data()
+
 
 def create_object(gConfig,memberModuleDict):
     interpreter=InterpreterAccounting(gConfig, memberModuleDict)

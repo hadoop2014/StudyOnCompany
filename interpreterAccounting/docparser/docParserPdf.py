@@ -9,12 +9,14 @@ from interpreterAccounting.docparser.docParserBaseClass import *
 import pdfplumber
 from functools import reduce
 
+
 class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
         self._interpretPrefix = NULLSTR
         self.table_settings = gConfig["table_settings"]
         #self._load_data()
+
 
     def _load_data(self,sourceFile=None):
         if sourceFile is not None and sourceFile != NULLSTR:
@@ -23,6 +25,7 @@ class DocParserPdf(DocParserBase):
         self._data = self._pdf.pages
         self._index = 0
         self._length = len(self._data)
+
 
     def _get_text(self,page=None):
         #interpretPrefix用于处理比如合并资产负债表分布在多个page页面的情况
@@ -39,6 +42,7 @@ class DocParserPdf(DocParserBase):
             pageText = self._interpretPrefix + self.EOF
             self.logger.error('the %s page %d\'s text of is be None' % (self.sourceFile,self._index))
         return pageText
+
 
     def _get_tables(self,dictTable):
         page = self.__getitem__(self._index-1)
@@ -67,6 +71,7 @@ class DocParserPdf(DocParserBase):
         self._debug_extract_tables(page,table_settings)
         return page.extract_tables(table_settings=table_settings)
 
+
     def _get_table_settings(self,dictTable):
         def valueTransfer(key,value):
             if key not in ["vertical_strategy","horizontal_strategy","explicit_vertical_lines","explicit_horizontal_lines",
@@ -86,6 +91,7 @@ class DocParserPdf(DocParserBase):
         table_settings = self._get_special_settings(dictTable,table_settings)
         return table_settings
 
+
     def _get_special_settings(self,dictTable,table_settings):
         keyName = '默认值'
         snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
@@ -97,6 +103,7 @@ class DocParserPdf(DocParserBase):
                     snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
         table_settings.update({"snap_tolerance":snap_tolerance})
         return table_settings
+
 
     def _merge_table(self, dictTable=None,interpretPrefix=NULLSTR):
         assert dictTable is not None,"dictTable must not be None"
@@ -117,6 +124,7 @@ class DocParserPdf(DocParserBase):
             self.interpretPrefix = NULLSTR
         dictTable.update({'table':savedTable})
         return dictTable
+
 
     def _process_table(self,page_numbers,tables,tableName):
         processedTable,isTableEnd = NULLSTR , False
@@ -153,6 +161,7 @@ class DocParserPdf(DocParserBase):
                 break
         return processedTable,isTableEnd
 
+
     def _is_table_start_simple(self,tableName,fieldList,secondFieldList):
         assert isinstance(fieldList, list) and isinstance(secondFieldList, list), \
             "fieldList and headerList must be list,but now get %s %s" % (type(fieldList), type(secondFieldList))
@@ -182,6 +191,7 @@ class DocParserPdf(DocParserBase):
                 isTableStart = True
         return isTableStart
 
+    '''
     def _is_table_start(self,tableName,fieldList,headerList):
         #针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
         assert isinstance(fieldList,list) and isinstance(headerList,list),\
@@ -232,6 +242,8 @@ class DocParserPdf(DocParserBase):
             if matched is not None:
                 isTableStart = True
         return isTableStart
+    '''
+
 
     def _is_table_end(self,tableName,fieldList):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
@@ -250,8 +262,10 @@ class DocParserPdf(DocParserBase):
                 isTableEnd = True
         return isTableEnd
 
+
     def _close(self):
         self._pdf.close()
+
 
     def _debug_extract_tables(self,page,table_settings):
         if self.debugIsOn == False:
@@ -264,14 +278,17 @@ class DocParserPdf(DocParserBase):
             for row in table:
                 self.logger.info('debug:' + str(row))
 
+
     @property
     def interpretPrefix(self):
         return self._interpretPrefix
+
 
     @interpretPrefix.setter
     def interpretPrefix(self,prefix):
         assert isinstance(prefix,str),"para(%s) of set_interpretPrefix must be string"%value
         self._interpretPrefix = prefix
+
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:
@@ -282,6 +299,7 @@ class DocParserPdf(DocParserBase):
         suffix = self.sourceFile.split('.')[-1]
         assert suffix.lower() in self.gConfig['pdfSuffix'.lower()], \
             'suffix of {} is invalid,it must one of {}'.format(self.sourceFile, self.gConfig['pdfSuffix'.lower()])
+
 
 def create_object(gConfig):
     parser=DocParserPdf(gConfig)

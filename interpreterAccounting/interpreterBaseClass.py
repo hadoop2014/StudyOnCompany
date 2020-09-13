@@ -5,9 +5,8 @@
 # @File    : interpreterAccounting.py
 # @Note    : 用于从财务报表中提取财务数据
 
-import re
-import os
 from baseClass import *
+
 
 #数据读写处理的基类
 class InterpreterBase(BaseClass):
@@ -23,6 +22,7 @@ class InterpreterBase(BaseClass):
         self._get_interpreter_keyword()
         #self.interpretDefine()
 
+
     def _get_class_name(self, gConfig):
         #获取解释器的名称
         dataset_name = re.findall('Interpreter(.*)', self.__class__.__name__).pop().lower()
@@ -30,6 +30,7 @@ class InterpreterBase(BaseClass):
             'interpreterlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
             (gConfig['interpreterlist'], dataset_name, self.__class__.__name__)
         return dataset_name
+
 
     def _get_interpreter_keyword(self):
         #编译器,文件解析器共同使用的关键字
@@ -53,21 +54,26 @@ class InterpreterBase(BaseClass):
         self.tableKeyword = self.gJsonInterpreter['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
 
+
     def _get_unit_alias(self,unit):
         aliasedUnit = self._alias(unit, self.unitAlias)
         return aliasedUnit
+
 
     def _get_reference_alias(self,refernece):
         aliasedRefernece = self._alias(refernece, self.referenceAlias)
         return aliasedRefernece
 
+
     def _get_critical_alias(self,critical):
         aliasedCritical = self._alias(critical, self.criticalAlias)
         return aliasedCritical
 
+
     def _get_tablename_alias(self,tablename):
         aliasedTablename = self._alias(tablename, self.tableAlias)
         return aliasedTablename
+
 
     def _alias(self, name, dictAlias):
         alias = name
@@ -76,6 +82,7 @@ class InterpreterBase(BaseClass):
             if name in aliasKeys:
                 alias = dictAlias[name]
         return alias
+
 
     def _merge(self,field1, field2,isFieldJoin=True):
         if self._is_valid(field2):
@@ -108,6 +115,7 @@ class InterpreterBase(BaseClass):
                 standardizedField = NaN
         return standardizedField
 
+
     def _is_valid(self, field):
         isFieldValid = False
         if isinstance(field,str):
@@ -115,17 +123,21 @@ class InterpreterBase(BaseClass):
                 isFieldValid = True
         return isFieldValid
 
+
     def _get_keyword(self,tableKeyword):
         #获取解析文件所需的关键字
         dictKeyword = {keyword:value for keyword,value in self.gJsonInterpreter.items() if keyword in tableKeyword}
         return dictKeyword
 
+
     def _get_invalid_field(self):
         return [NONESTR,NULLSTR]
+
 
     def interpretDefine(self):
         #定义一个解释器语言词法
         pass
+
 
     def initialize(self):
         #初始化一个解释器语言

@@ -15,6 +15,7 @@ class InterpreterAssemble(BaseClass):
         super(InterpreterAssemble, self).__init__(gConfig)
         self.check_book = getConfig.get_check_book()
 
+
     def get_gConfig(self,interpreterName,debugIsOn = False,unittestIsOn = False):
         assert self.check_book is not None,'check_book is None ,it may be some error occured when open the checkbook.json!'
         gConfig = getConfig.get_config(self.check_book[interpreterName]["config_file"])
@@ -32,6 +33,7 @@ class InterpreterAssemble(BaseClass):
         #    pass
         return gConfig
 
+
     def interpreter_assemble(self,interpreterName,deubgIsOn = False,unittestIsOn = False):
         gConfig = getConfig.get_config()
         assert interpreterName in gConfig['interpreterlist'], 'interpreterName(%s) is invalid,it must one of %s' % \
@@ -43,6 +45,7 @@ class InterpreterAssemble(BaseClass):
         interpreter = getattr(module, 'create_object')(gConfig, memberModuleDict)
         return interpreter
 
+
     def member_module_assemble(self,gConfig,memberModules):
         moduleDict = {}
         if not memberModules:
@@ -53,6 +56,7 @@ class InterpreterAssemble(BaseClass):
             moduleCase = getattr(moduleCase, 'create_object')(gConfig)
             moduleDict.update({moduleName:moduleCase})
         return moduleDict
+
 
     def get_interpreter_nature(self,debugIsOn = False,unittestIsOn = False):
         gConfig = getConfig.get_config()
@@ -71,6 +75,7 @@ class InterpreterAssemble(BaseClass):
                             fromlist=(self.check_book[interpreterName]['module'].split('.')[-1]))
         interpreterNature = getattr(module, 'create_object')(gConfig, interpreterDict)
         return interpreterNature
+
 
     def validate_parameter(self, interpreterName):
         assert self.check_book[interpreterName]["module"] != '' \

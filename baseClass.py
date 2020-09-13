@@ -15,6 +15,7 @@ NULLSTR = ''
 NONESTR = 'None'
 NaN = np.nan
 
+
 class BaseClass():
     def __init__(self,gConfig):
         self.gConfig = gConfig
@@ -33,8 +34,10 @@ class BaseClass():
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
 
+
     def __iter__(self):
         return self
+
 
     def __next__(self):
         try:
@@ -44,8 +47,10 @@ class BaseClass():
         self._index += 1
         return data
 
+
     def __getitem__(self, item):
         return self._data[item]
+
 
     def _set_dataset(self,index=None):
         if isinstance(index,list):
@@ -53,34 +58,43 @@ class BaseClass():
             self._index = 0
             self._length = len(self._data)
 
+
     def _get_text(self,page):
         return page
+
 
     def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:
             dictTable = list()
         return dictTable
 
+
     def _write_table(self,tableName,table):
         pass
+
 
     def _close(self):
         pass
 
+
     def _debug_info(self):
         pass
 
+
     def _get_class_name(self,*args):
         return 'Base'
+
 
     def _get_module_path(self):
         module = self.__class__.__module__
         path = os.path.join(*module.split('.'))
         return path
 
+
     def _get_connect(self):
         #用于获取数据库连接
         return sqlite.connect(self.database)
+
 
     def _sql_executer(self,sql):
         conn = self._get_connect()
@@ -96,6 +110,7 @@ class BaseClass():
         #cursor.close()
         conn.close()
 
+
     def _is_matched(self,pattern,field):
         isMatched = False
         if isinstance(field, str) and isinstance(pattern, str) and pattern != NULLSTR:
@@ -103,6 +118,7 @@ class BaseClass():
             if matched is not None:
                 isMatched = True
         return isMatched
+
 
     def _sql_executer_script(self,sql):
         isSuccess = False
@@ -121,6 +137,7 @@ class BaseClass():
         conn.close()
         return isSuccess
 
+
     def _get_file_context(self,fileName):
         file_object = open(fileName,encoding='utf-8')
         file_context = NULLSTR
@@ -132,13 +149,16 @@ class BaseClass():
             file_object.close()
         return file_context
 
+
     @property
     def index(self):
         return self._index - 1
 
+
     @property
     def logger(self):
         return self._logger
+
 
     def loginfo(text = NULLSTR):
         def decorator(func):

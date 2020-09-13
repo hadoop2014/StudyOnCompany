@@ -8,16 +8,11 @@
 from interpreterAccounting.docparser.docParserBaseClass import  *
 import sqlite3 as sqlite
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 from pandas import DataFrame
-import sys
-from importlib import reload
 import time
 
-#reload(sys)
 
-#深度学习模型的基类
 class DocParserSql(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserSql, self).__init__(gConfig)
@@ -25,6 +20,7 @@ class DocParserSql(DocParserBase):
         self._create_tables()
         self.process_info = {}
         self.dataTable = {}
+
 
     def loginfo(text = 'running '):
         def decorator(func):
@@ -44,6 +40,7 @@ class DocParserSql(DocParserBase):
                 return result
             return wrapper
         return decorator
+
 
     def writeToStore(self, dictTable):
         self.dataTable = dictTable
@@ -91,6 +88,7 @@ class DocParserSql(DocParserBase):
         self._write_to_sqlite3(dataframe,tableName)
         self.process_info.update({tableName:time.time() - self.process_info[tableName]})
 
+
     @loginfo()
     def _table_to_dataframe(self,table,tableName):
         horizontalTable = self.dictTables[tableName]['horizontalTable']
@@ -103,6 +101,7 @@ class DocParserSql(DocParserBase):
             countTotalFields = len(dataFrame.index.values)
         dataFrame.fillna(NONESTR,inplace=True)
         return dataFrame,countTotalFields
+
 
     def _write_to_sqlite3(self, dataFrame,tableName):
         conn = self._get_connect()
@@ -117,10 +116,12 @@ class DocParserSql(DocParserBase):
                 self.logger.info("table %s is already exist in database!"%tableName)
         conn.close()
 
+
     def _rowPretreat(self,row):
         self.lastValue = None
         row = row.apply(self._valuePretreat)
         return row
+
 
     def _valuePretreat(self,value):
         try:
@@ -140,6 +141,7 @@ class DocParserSql(DocParserBase):
             print(e)
         return value
 
+
     def _process_value_pretreat(self,dataFrame,tableName):
         #采用正则表达式替换空字符,对一个字段中包含两个数字字符串的进行拆分
         #解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景.
@@ -148,6 +150,7 @@ class DocParserSql(DocParserBase):
         dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR)
                                                          .replace('(','（').replace(')','）')))
         return dataFrame
+
 
     def _process_header_merge_simple(self, dataFrame, tableName):
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
@@ -206,6 +209,7 @@ class DocParserSql(DocParserBase):
             dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
+
     @loginfo()
     def _process_field_merge_simple(self,dataFrame,tableName):
         mergedRow = None
@@ -261,6 +265,7 @@ class DocParserSql(DocParserBase):
                 mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
         return dataFrame
 
+
     @loginfo()
     def _process_field_common(self, dataFrame, dictTable, countFieldDiscard,tableName):
         #在dataFrame前面插入公共字段
@@ -295,6 +300,7 @@ class DocParserSql(DocParserBase):
         dataFrame = self._process_field_from_header(dataFrame,fieldFromHeader,index,countColumns)
         return dataFrame
 
+
     def _process_value_standardize(self,dataFrame,tableName):
         #对非法值进行统一处理
         def valueStandardize(value):
@@ -311,6 +317,7 @@ class DocParserSql(DocParserBase):
         dataFrame.iloc[1:] = dataFrame.iloc[1:].apply(lambda x: x.apply(valueStandardize))
         return dataFrame
 
+
     def _process_field_from_header(self,dataFrame,fieldFromHeader,index,countColumns):
         #在公共字段后插入由表头转换来的字段
         if fieldFromHeader != "":
@@ -318,6 +325,7 @@ class DocParserSql(DocParserBase):
             value[0] = fieldFromHeader
             dataFrame.insert(index,column=countColumns,value=value)
         return dataFrame
+
 
     def _process_field_duplicate(self,dataFrame,tableName):
         # 重复字段处理,放在字段标准化之后
@@ -341,6 +349,7 @@ class DocParserSql(DocParserBase):
                 dataFrame = dataFrame.dropna(axis=1).copy()
         return dataFrame
 
+
     def _process_header_discard(self, dataFrame, tableName):
         #去掉无用的表头;把字段名由index转为column
         headerDiscard = self.dictTables[tableName]['headerDiscard']
@@ -356,6 +365,7 @@ class DocParserSql(DocParserBase):
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
+
     def _process_field_discard(self, dataFrame, tableName):
         #去掉空字段,针对主要会计数据这张表,需要提出掉其空字段
         #对于普通股现金分红情况表,则忽略这一过程
@@ -365,11 +375,13 @@ class DocParserSql(DocParserBase):
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
+
     def _process_field_alias(self,dataFrame,tableName):
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称
         aliasedFields = self._get_aliased_fields(dataFrame.iloc[0].tolist(), tableName)
         dataFrame.iloc[0] = aliasedFields
         return dataFrame
+
 
     def _process_header_standardize(self,dataFrame,tableName):
         #把表头字段进行标准化
@@ -380,12 +392,14 @@ class DocParserSql(DocParserBase):
         #dataFrame = dataFrame.dropna(axis=1).copy()
         return dataFrame
 
+
     def _process_field_standardize(self,dataFrame,tableName):
         #把表字段进行标准化,把所有的字段名提取为两种模式,如:利息收入,一、营业总收入
         standardizedFields = self._get_standardized_field(dataFrame.iloc[0].tolist(),tableName)
         dataFrame.iloc[0] = standardizedFields
         dataFrame = dataFrame.dropna(axis = 1).copy()
         return dataFrame
+
 
     def _get_aliased_fields(self, fieldList, tableName):
         aliasedFields = fieldList
@@ -396,10 +410,12 @@ class DocParserSql(DocParserBase):
             aliasedFields = [self._alias(field, fieldAlias) for field in fieldList]
         return aliasedFields
 
+
     def _get_merged_row(self, sourceRow, mergeRow, isFieldJoin=False):
         #当isHorizontalTable=True时,为转置表,如普通股现金分红情况表,这个时候是对字段合并,采用字段拼接方式,其他情况采用替换方式
         mergedRow = [self._merge(field1, field2, isFieldJoin) for field1, field2 in zip(mergeRow, sourceRow)]
         return mergedRow
+
 
     def _get_duplicated_field(self,fieldList):
         dictFieldDuplicate = dict(zip(fieldList,[0]*len(fieldList)))
@@ -411,6 +427,7 @@ class DocParserSql(DocParserBase):
         duplicatedField = [duplicate(fieldName) for fieldName in fieldList]
         return duplicatedField
 
+
     def _get_standardized_field_strict(self,fieldList,tableName):
         assert fieldList is not None, 'sourceRow(%s) must not be None' % fieldList
         fieldStandardizeStrict = self.dictTables[tableName]['fieldStandardizeStrict']
@@ -420,6 +437,7 @@ class DocParserSql(DocParserBase):
             standardizedFields = self._standardize(fieldStandardizeStrict, fieldList)
         return standardizedFields
 
+
     def _get_standardized_field(self,fieldList,tableName):
         assert fieldList is not None,'sourceRow(%s) must not be None'%fieldList
         fieldStandardize = self.dictTables[tableName]['fieldStandardize']
@@ -428,6 +446,7 @@ class DocParserSql(DocParserBase):
         else:
             standardizedFields = self._standardize(fieldStandardize,fieldList)
         return standardizedFields
+
 
     def _is_standardize_strict_mode(self,mergedFields, tableName):
         isStandardizeStrictMode = False
@@ -440,6 +459,7 @@ class DocParserSql(DocParserBase):
                 if matched is not None:
                     isStandardizeStrictMode = True
         return isStandardizeStrictMode
+
 
     def _is_first_field_in_row(self, row_or_field, tableName):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
@@ -454,6 +474,7 @@ class DocParserSql(DocParserBase):
         fieldFirst = '^' + fieldFirst
         isFirstFieldInRow = self._is_field_matched(fieldFirst, firstField)
         return isFirstFieldInRow
+
 
     def _is_field_match_standardize(self, field, tableName):
         isFieldInList = False
@@ -471,12 +492,14 @@ class DocParserSql(DocParserBase):
                 break
         return isFieldInList
 
+
     def _is_field_in_standardize_by_mode(self,field,isStandardizeStrict,tableName):
         if isStandardizeStrict == True:
             isFieldInStandardize = self._is_field_in_standardize_strict(field,tableName)
         else:
             isFieldInStandardize = self._is_field_in_standardize(field,tableName)
         return isFieldInStandardize
+
 
     def _is_field_in_standardize(self,field,tableName):
         # 把field按严格标准进行标准化,然后和判断该字段是否和同样方法标准化后的某个字段相同.
@@ -494,6 +517,7 @@ class DocParserSql(DocParserBase):
             isFieldInList = True
         return isFieldInList
 
+
     def _is_field_in_standardize_strict(self, field,tableName):
         #把field按严格标准进行标准化,然后和判断该字段是否和同样方法标准化后的某个字段相同.
         isFieldInList = False
@@ -509,6 +533,7 @@ class DocParserSql(DocParserBase):
             isFieldInList = True
         return isFieldInList
 
+
     def _is_row_all_invalid(self,row:DataFrame):
         #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True
         isRowAllInvalid = False
@@ -520,8 +545,10 @@ class DocParserSql(DocParserBase):
         isRowAllInvalid = not self._is_valid(mergedField)
         return isRowAllInvalid
 
+
     def _is_row_not_any_none(self,row:DataFrame):
         return (row != NONESTR).all()
+
 
     def _is_record_exist(self, conn, tableName, dataFrame):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
@@ -539,12 +566,15 @@ class DocParserSql(DocParserBase):
             isRecordExist = (result[0][0] > 0)
         return isRecordExist
 
+
     def _get_connect(self):
         #用于获取数据库连接
         return sqlite.connect(self.database)
 
+
     def _get_engine(self):
         return create_engine(os.path.join('sqlite:///',self.database))
+
 
     def _fetch_all_tables(self, cursor):
         #获取数据库中所有的表,用于判断待新建的表是否已经存在
@@ -553,6 +583,7 @@ class DocParserSql(DocParserBase):
         except Exception as e:
             print(e)
         return cursor.fetchall()
+
 
     def _create_tables(self):
         #用于向Sqlite3数据库中创建新表
@@ -602,12 +633,14 @@ class DocParserSql(DocParserBase):
         cursor.close()
         conn.close()
 
+
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
         self.clear_logging_directory(self.logging_directory)
+
 
 def create_object(gConfig):
     parser = DocParserSql(gConfig)

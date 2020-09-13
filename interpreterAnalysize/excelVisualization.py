@@ -6,9 +6,11 @@
 # @Note    : 用于财务数据的可视化
 
 from interpreterAnalysize.interpreterBaseClass import *
-from openpyxl import load_workbook
+from openpyxl import load_workbook,Workbook
 from openpyxl.styles import Font, colors, Alignment,Border,numbers
+from openpyxl.utils import get_column_letter,get_column_interval
 import pandas as pd
+
 
 class ExcelVisualization(InterpreterBase):
     def __init__(self,gConfig):
@@ -17,12 +19,14 @@ class ExcelVisualization(InterpreterBase):
         #self.workbook = Workbook()
         self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
 
+
     def _get_class_name(self, gConfig):
         visualization_name = re.findall('(.*)Visualization', self.__class__.__name__).pop().lower()
         #assert dataset_name in gConfig['interpreterlist'], \
         #    'interpreterlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
         #    (gConfig['interpreterlist'], dataset_name, self.__class__.__name__)
         return visualization_name
+
 
     def read_and_visualize(self,visualize_file,tableName):
         # 专门用于写文件
@@ -34,14 +38,25 @@ class ExcelVisualization(InterpreterBase):
         #writer = pd.ExcelWriter(self.targetFile, engine='openpyxl')
         #writer.book = workbook
         visualize_file = os.path.join(self.working_directory,visualize_file)
-        assert os.path.exists(visualize_file),"the file %s is not exists,you must create it first!"%visualize_file
+        #assert os.path.exists(visualize_file),"the file %s is not exists,you must create it first!"%visualize_file
+        if self.checkpointIsOn == False:
+            # 没有启用备份文件时,初始化workbook
+            if os.path.exists(visualize_file):
+                os.remove(visualize_file)
+            workbook = Workbook()
+            writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
+            writer.book = workbook
+            writer.save()  # 生成一个新文件
         workbook = load_workbook(visualize_file)
+        #workbook.get_active_sheet().title = tableName
         writer = pd.ExcelWriter(visualize_file,engine='openpyxl')
-        #writer.book = workbook
+        writer.book = workbook
+        if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
+            workbook.remove(workbook['Sheet'])  # 删除空工作薄
         #sheetNames = workbook.sheetnames
 
         sheetName = tableName# + str(time.thread_time_ns())
-        tableNameTarget = tableName
+        #tableNameTarget = tableName
         #if tableName not in sheetNames:
         #    sheetNames = sheetNames + [tableName]
         #for sheetName in sheetNames:
@@ -59,7 +74,7 @@ class ExcelVisualization(InterpreterBase):
         self._adjust_style_excel(workbook,sheetName,tableName)
         workbook.save(visualize_file)
         workbook.close()
-        #writer.close()
+
 
     def _adjust_style_excel(self,workbook,sheetName,tableName):
         font_settings = self.dictTables[tableName]['font_settings']
@@ -69,26 +84,78 @@ class ExcelVisualization(InterpreterBase):
         font_emphasize = Font(name=font_settings['name'], size=font_settings['size'], italic=font_settings['italic']
                            , color=colors.COLOR_INDEX[font_settings['color_index_emphasize']], bold=font_settings['bold'],
                            underline=None)
-        alignment = Alignment(horizontal='right', vertical='center', wrap_text=True)
+        alignment_header = Alignment(horizontal='left', vertical='center', wrap_text=True)
+        alignment_field = Alignment(horizontal='right', vertical='center', wrap_text=False
+                                    ,justifyLastLine=True)
         border = Border()
         sheet = workbook[sheetName]
         maxrow = self._get_maxrow(sheet.max_row,tableName)
 
+        self._set_column_width(sheet,tableName)
+
         for i,cell in enumerate(sheet[startrow + 1]):
             cell.font = font_common
+            cell.alignment = alignment_header
+            cell.border = border #去掉边框
             if self._is_cell_emphasize(cell,tableName):
                 cell.font = font_emphasize
-            if self._is_cell_pecentage(cell,tableName):
-                for index in range(maxrow):
+            for index in range(maxrow):
+                if self._is_cell_pecentage(cell, tableName):
                     sheet.cell(row = index + 1,column = i + 1).number_format = numbers.FORMAT_PERCENTAGE
-            cell.alignment = alignment
-            cell.border = border #去掉边框
+                if index > startrow:
+                    sheet.cell(row = index + 1,column = i + 1).alignment = alignment_field
+
+
 
         #blue_fill = PatternFill(start_color='FF0000FF', end_color='FF0000FF', fill_type='solid')
 
         #dxf = DifferentialStyle(fill=blue_fill, numFmt=NumFmt(10, '0.00%'))
         #rule = Rule('expression', formula=['E3 > 3'], dxf=dxf)
         #ws.conditional_formatting.add('E3', rule)
+
+    '''
+        def adjustExcelStyle(self):
+            # 调整excel的样式
+            # 设置对齐、线性、边框、字体
+            from openpyxl.styles import Alignment
+            from openpyxl.styles import Side, Border
+            from openpyxl.styles import Font
+
+            sheet = self.workbook[self.workbook.sheetnames[0]]
+            sheet.insert_rows(idx=0)  # 插入第一行
+            font = Font(name='宋体', size=18, bold=True)
+            sheet['A1'] = '皮卡丘体育2020年06月新学员信息登记表'
+            sheet['A1'].font = font  # 设置字体大小和加粗
+
+            req = ':(\w)'
+            weight = re.findall(req, sheet.dimensions)[0]
+            sheet.merge_cells(f'A1:{weight}1')
+
+            # 样式先准备好
+            alignment = Alignment(horizontal='center', vertical='center')
+            side = Side(style='thin', color='000000')
+            border = Border(left=side, right=side, top=side, bottom=side)
+
+            # 遍历cell设置样式
+            rows = sheet[f'{sheet.dimensions}']
+            for row in rows:
+                for cell in row:
+                    cell.alignment = alignment
+                    cell.border = border
+
+            # 设置前两行的行高
+            sheet.row_dimensions[1].height = 38
+            sheet.row_dimensions[2].height = 38
+
+            # 设置列宽
+            letter_lst = [chr(i + 64).upper() for i in range(2, ord(weight) - ord('A') + 1 + 1)]
+            sheet.column_dimensions['A'].width = 8
+            for i in letter_lst:
+                sheet.column_dimensions[f'{i}'].width = 14
+
+            self.workbook.save(filename=self.targetFile)
+        '''
+
 
     def _sql_to_dataframe(self,sheetName,tableName):
         order = self.dictTables[tableName]["order"]
@@ -100,6 +167,7 @@ class ExcelVisualization(InterpreterBase):
         dataframe = pd.read_sql(sql, self._get_connect())
         return dataframe
 
+
     def _process_field_discard(self, dataFrame, tableName):
         if dataFrame is None:
             return
@@ -107,6 +175,7 @@ class ExcelVisualization(InterpreterBase):
         if isinstance(fieldDiscard,list) and len(fieldDiscard) > 0:
             dataFrame = dataFrame.drop(labels=fieldDiscard,axis=1)
         return dataFrame
+
 
     def _visualize_to_excel(self,writer,sheetName,dataframe:pd.DataFrame,tableName):
         if dataframe is None:
@@ -116,9 +185,59 @@ class ExcelVisualization(InterpreterBase):
         #dataframe.to_excel(writer.path,sheet_name=sheetName, index=None,header=False,startrow=startrow)
         writer.save()
 
+
+    def _set_column_width(self,sheet,tableName):
+        req = ':([a-zA-Z]+)'
+        match = re.findall(req, sheet.dimensions)
+        assert isinstance(match,list) and len(match) > 0,'sheet.dimensions(%s) is invalid!'%sheet.dimensions
+        #sheet.merge_cells(f'A1:{weight}1')
+        #设置列宽
+        weight = match[0]
+        letter_list = get_column_interval('A',weight)
+        for col_letter in letter_list:
+            widthAdjust = self._get_col_max_width(sheet,col_letter,tableName)
+            sheet.column_dimensions[col_letter].width = widthAdjust
+
+    def _get_col_max_width(self,sheet,col_letter,tableName):
+        #maxrow = self._get_maxrow(sheet.max_row,tableName)
+        #_get_col_max_width放在_adjust_style_excel的前面跑,这样设置才有效
+        maxrow = sheet.max_row
+        maxwidth = self.dictTables[tableName]['maxwidth']
+        minwidth = self.dictTables[tableName]['minwidth']
+        startrow = self.dictTables[tableName]['startrow']
+        widthAdjust = 0
+        col = sheet[col_letter]
+        #跳过标题行
+        for i in range(startrow + 1,maxrow):
+            if len(str(col[i].value)) > widthAdjust:
+                widthAdjust = len(str(col[i].value))
+        widthAdjust = min(widthAdjust,maxwidth)
+        widthAdjust = max(widthAdjust,minwidth)
+        return widthAdjust
+
+    def _column_char_to_integer(self,name):
+        assert isinstance(name,str),'the name(%s) of column must be str'%name
+        index = 0
+        for char in list(name.upper()):
+            index = index * 26 + ord(char) - ord('A') + 1
+        return index
+
+
+    def _column_integer_to_char(self,index):
+        assert isinstance(index,int),'the index(%s) of column must be integer'%index
+        name = NULLSTR
+        base = ord('Z') - ord('A') + 1
+        while index >= base:
+            name = name + chr(index // base + 64).upper()
+            index = index - (index // base) * base
+        name = name + chr(index % base + 65).upper()
+        return name
+
+
     def _get_maxrow(self,current_maxrow,tableName):
         maxrow = self.dictTables[tableName]['maxrow']
         return max(maxrow,current_maxrow)
+
 
     def _is_cell_pecentage(self,cell,tableName):
         isCellPecentage = False
@@ -128,10 +247,12 @@ class ExcelVisualization(InterpreterBase):
             isCellPecentage = not self._is_matched(pattern_percentage_exclude,cell.value)
         return isCellPecentage
 
+
     def _is_cell_emphasize(self,cell,tableName):
         pattern_emphasize = self.dictTables[tableName]['pattern_emphasize']
         isCellEmphasize = self._is_matched(pattern_emphasize,cell.value)
         return isCellEmphasize
+
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:
@@ -150,6 +271,7 @@ class ExcelVisualization(InterpreterBase):
         #self.writer = pd.ExcelWriter(self.analysizeresult, engine='openpyxl')
         #self.writer.book = self.workbook
         #self.writer.save()  # 生成一个新文件
+
 
 def create_object(gConfig):
     dataVisualization = ExcelVisualization(gConfig)
