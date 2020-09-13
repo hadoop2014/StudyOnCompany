@@ -98,7 +98,7 @@
       "bold":false,
       "#underline":"doubleAccounting"
     },
-    "builtin_formats": 3,
+    "builtin_formats": 4,
     "conditional_formatting": {
       "员工工资占营业收入比率": {
         "threshold": 0.15,
