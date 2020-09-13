@@ -88,7 +88,8 @@ select
     b.归属于上市公司股东的净资产,
     b.总资产,
     d.现金分红金额（含税）,
-    d.现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率,
+    round(replace(d.现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率,'%','')/100,4)
+        as 现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率,
     b.营业收入（上期）,
     b.归属于上市公司股东的净利润（上期）,
     b.归属于上市公司股东的扣除非经常性损益的净利润（上期）,
@@ -116,10 +117,14 @@ select
     c.固定资产,
     c.在建工程,
     h.期末账面价值 as 土地使用权,
-    c.投资性房地产,
+    case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.投资性房地产 else 0 end as 投资性房地产,
     c.商誉,
     c.预收款项,
-    c.应付票据及应付账款,
+    case when c.应付票据及应付账款 is not NULL then c.应付票据及应付账款 else
+        case when c.应付账款 is not NULL and c.应付票据 is not NULL
+            then replace(c.应付账款,',','') + replace(c.应付票据,',','') else 0
+        end
+    end as 应付票据及应付账款,
     c.应付账款,
     c.预付款项,
     c.应收账款,
@@ -129,9 +134,10 @@ select
     c.流动负债合计,
     c.存货,
     c.货币资金,
-    c.短期借款,
-    c.一年内到期的非流动负债,
-    c.长期借款,
+    case when c.短期借款 is not NULL and c.短期借款 != '' then c.短期借款 else 0 end as 短期借款,
+    case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != '' then c.一年内到期的非流动负债 else 0 end
+        as 一年内到期的非流动负债,
+    case when c.长期借款 is not NULL and c.长期借款 != '' then c.长期借款 else 0 end as 长期借款,
     c.应付债券,
     f.销售商品、提供劳务收到的现金,
     f.[六、期末现金及现金等价物余额],

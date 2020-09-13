@@ -79,11 +79,13 @@
     "visualize": "FinanceAnalysis v1.0.xlsx",
     "order": ["公司简称","报告时间 desc"],
     "startrow": 1,
+    "freezecol": 4,
     "maxrow": 1000,
+    "maxheight": 15,
     "maxwidth": 20,
     "minwidth": 8,
     "pattern_emphasize": "人均|率",
-    "percentage_exclude": ["人均营业额（万）","人均净利润（万）","经营活动产生的现金流量净额占净利润的比率"
+    "percentage_exclude": ["员工人均工资（万）","人均营业额（万）","人均净利润（万）","经营活动产生的现金流量净额占净利润的比率"
                           ,"预收总额和应收总额的比率","预收款项和应收账款的比率","流动比率","速动比率","现金及现金等价物余额占短期借债的比率"
                           ,"流动资产占总负债的比率","现金收入和营业收入的比率","现金收入和营业收入的比率","应收账款周转率","存货周转率"
                           ,"营业利润占营业资金的比率","营业收入占营业资金的比率"],
@@ -94,7 +96,243 @@
       "color_index_common":23,
       "color_index_emphasize": 53,
       "bold":false,
-      "underline":"doubleAccounting"
+      "#underline":"doubleAccounting"
+    },
+    "conditional_formatting": {
+      "员工工资占营业收入比率": {
+        "threshold": 0.15,
+        "color_index": 2,
+        "operator": "lessThan",
+        "value_format": "percentage"
+      },
+      "净资产比率": {
+        "threshold": 0.5,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "总资产利润率": {
+        "threshold": 0.1,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "人均营业额（万）": {
+        "threshold": 200,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "人均净利润（万）": {
+        "threshold": 15,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "经营活动产生的现金流量净额占净利润的比率": {
+        "threshold": 1,
+        "color_index": 2,
+        "operator": "",
+        "value_format": ""
+      },
+      "营业收入增长率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "归属于上市公司股东的净利润增长率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "",
+        "value_format": "percentage"
+      },
+      "归属于上市公司股东的扣除非经常性损益的净利润增长率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "经营活动产生的现金流量净额增长率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "所得税费用占剔除投资收益后利润的比率": {
+        "threshold": 0.15,
+        "color_index": 2,
+        "operator": "",
+        "value_format": "percentage"
+      },
+      "三费总额占营业收入的比率": {
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "lessThan",
+        "value_format": "percentage"
+      },
+      "费用总额占营业收入的比率":{
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "lessThan",
+        "value_format": "percentage"
+      },
+      "资产减值和折旧摊销占营业收入的比率":{
+        "threshold": 0.05,
+        "color_index": 2,
+        "operator": "lessThan",
+        "value_format": "percentage"
+      },
+      "营业利润率": {
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "",
+        "value_format": "percentage"
+      },
+      "毛利率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "净利率": {
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "平均净资产收益率": {
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "营业收入占平均总资产的比率": {
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "",
+        "value_format": ""
+      },
+      "净资产增长率":{
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "",
+        "value_format": "percentage"
+      },
+      "研发投入占营业收入的比率": {
+        "threshold": 0.08,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "资本化研发投入的比率": {
+        "threshold": 0.05,
+        "color_index": 2,
+        "operator": "",
+        "value_format": "percentage"
+      },
+      "在建工程占固定资产的比率": {
+        "threshold": 0.4,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "利润总额占生产资本的比率": {
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "商誉占营业收入的比率": {
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "",
+        "value_format": "percentage"
+      },
+      "应收账款占营业收入的比率": {
+        "threshold": 0.3,
+        "color_index": 3,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "预收总额和应收总额的比率": {
+        "threshold": 1,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "预收款项和应收账款的比率": {
+        "threshold": 1,
+        "color_index": 2,
+        "operator": "",
+        "value_format": ""
+      },
+      "流动比率": {
+        "threshold": 2,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "速动比率": {
+        "threshold": 1,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "现金及现金等价物余额占短期借债的比率": {
+        "threshold": 1.5,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "流动资产占总负债的比率": {
+        "threshold": 1.5,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "现金收入和营业收入的比率": {
+        "threshold": 1.13,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "应收账款周转率": {
+        "threshold": 5,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": ""
+      },
+      "存货周转率": {
+        "threshold": 2,
+        "color_index": 2,
+        "operator": "",
+        "value_format": ""
+      },
+      "营业利润占营业资金的比率": {
+        "threshold": 1,
+        "color_index": 2,
+        "operator": "",
+        "value_format": ""
+      },
+      "营业收入占营业资金的比率": {
+        "threshold": 2,
+        "color_index": 2,
+        "operator": "",
+        "value_format": ""
+      },
+      "还原后的净资产收益率（ROCE）": {
+        "threshold": 0.2,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      }
     }
   },
   "股票价值估算表": {

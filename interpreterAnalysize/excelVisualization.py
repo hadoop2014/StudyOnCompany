@@ -7,8 +7,11 @@
 
 from interpreterAnalysize.interpreterBaseClass import *
 from openpyxl import load_workbook,Workbook
-from openpyxl.styles import Font, colors, Alignment,Border,numbers
+from openpyxl.styles import Font, colors, Alignment,Border,numbers,PatternFill
 from openpyxl.utils import get_column_letter,get_column_interval
+from openpyxl.formatting import Rule
+from openpyxl.formatting.rule import ColorScaleRule, CellIsRule, FormulaRule
+from openpyxl.styles.differential import DifferentialStyle
 import pandas as pd
 
 
@@ -77,35 +80,15 @@ class ExcelVisualization(InterpreterBase):
 
 
     def _adjust_style_excel(self,workbook,sheetName,tableName):
-        font_settings = self.dictTables[tableName]['font_settings']
-        startrow = self.dictTables[tableName]['startrow']
-        font_common = Font(name=font_settings['name'], size=font_settings['size'], italic=font_settings['italic']
-                    ,color=colors.COLOR_INDEX[font_settings['color_index_common']], bold=font_settings['bold'], underline=None)
-        font_emphasize = Font(name=font_settings['name'], size=font_settings['size'], italic=font_settings['italic']
-                           , color=colors.COLOR_INDEX[font_settings['color_index_emphasize']], bold=font_settings['bold'],
-                           underline=None)
-        alignment_header = Alignment(horizontal='left', vertical='center', wrap_text=True)
-        alignment_field = Alignment(horizontal='right', vertical='center', wrap_text=False
-                                    ,justifyLastLine=True)
-        border = Border()
         sheet = workbook[sheetName]
-        maxrow = self._get_maxrow(sheet.max_row,tableName)
 
-        self._set_column_width(sheet,tableName)
+        self._set_height_and_width(sheet,tableName)
 
-        for i,cell in enumerate(sheet[startrow + 1]):
-            cell.font = font_common
-            cell.alignment = alignment_header
-            cell.border = border #去掉边框
-            if self._is_cell_emphasize(cell,tableName):
-                cell.font = font_emphasize
-            for index in range(maxrow):
-                if self._is_cell_pecentage(cell, tableName):
-                    sheet.cell(row = index + 1,column = i + 1).number_format = numbers.FORMAT_PERCENTAGE
-                if index > startrow:
-                    sheet.cell(row = index + 1,column = i + 1).alignment = alignment_field
+        self._set_freeze_pans(sheet,tableName)
 
+        self._set_font_and_style(sheet,tableName)
 
+        self._set_conditional_formatting(sheet,tableName)
 
         #blue_fill = PatternFill(start_color='FF0000FF', end_color='FF0000FF', fill_type='solid')
 
@@ -182,15 +165,78 @@ class ExcelVisualization(InterpreterBase):
             return
         startrow = self.dictTables[tableName]['startrow']
         dataframe.to_excel(excel_writer=writer, sheet_name=sheetName, index=None,header=True,startrow=startrow)
-        #dataframe.to_excel(writer.path,sheet_name=sheetName, index=None,header=False,startrow=startrow)
         writer.save()
 
 
-    def _set_column_width(self,sheet,tableName):
+    def _set_conditional_formatting(self,sheet,tableName):
+        req = ':([a-zA-Z]+)'
+        match = re.findall(req, sheet.dimensions)
+        assert isinstance(match, list) and len(match) > 0, 'sheet.dimensions(%s) is invalid!' % sheet.dimensions
+        startrow = self.dictTables[tableName]['startrow']
+        maxrow = self._get_maxrow(sheet.max_row,tableName)
+
+        conditional_formatting = self.dictTables[tableName]['conditional_formatting']
+        conditional_field = conditional_formatting.keys()
+        pattern_field = '|'.join(conditional_field)
+        weight = match[0]
+        letter_list = get_column_interval('A', weight)
+        for col_letter in letter_list:
+            col = sheet[col_letter]
+            field_name = col[startrow].value
+            if self._is_matched(pattern_field,field_name):
+                operator = conditional_formatting[field_name]['operator']
+                if operator != NULLSTR:
+                    threhold = conditional_formatting[field_name]['threshold']
+                    col[0].value = threhold
+                    color_index = conditional_formatting[field_name]['color_index']
+                    font = Font(color=colors.COLOR_INDEX[color_index])
+                    rule = CellIsRule(operator=operator, formula=[str(threhold)], stopIfTrue=False, font = font)
+                    rule_applys = col_letter + str(startrow + 2) + ":" + col_letter + str(maxrow)
+                    sheet.conditional_formatting.add(rule_applys, rule)
+        return
+
+
+    def _set_font_and_style(self,sheet, tableName):
+        font_settings = self.dictTables[tableName]['font_settings']
+        startrow = self.dictTables[tableName]['startrow']
+        font_common = Font(name=font_settings['name'], size=font_settings['size'], italic=font_settings['italic']
+                    ,color=colors.COLOR_INDEX[font_settings['color_index_common']], bold=font_settings['bold'], underline=None)
+        font_emphasize = Font(name=font_settings['name'], size=font_settings['size'], italic=font_settings['italic']
+                           , color=colors.COLOR_INDEX[font_settings['color_index_emphasize']], bold=font_settings['bold'],
+                           underline=None)
+        alignment_header = Alignment(horizontal='left', vertical='center', wrap_text=True)
+        alignment_field = Alignment(horizontal='right', vertical='center', wrap_text=False
+                                    ,justifyLastLine=True)
+        border = Border()
+        maxrow = self._get_maxrow(sheet.max_row,tableName)
+
+        for i, cell in enumerate(sheet[startrow + 1]):
+            cell.font = font_common
+            cell.alignment = alignment_header
+            cell.border = border  # 去掉边框
+            if self._is_cell_emphasize(cell, tableName):
+                cell.font = font_emphasize
+            for index in range(maxrow):
+                if self._is_cell_pecentage(cell, tableName):
+                    sheet.cell(row=index + 1, column=i + 1).number_format = numbers.FORMAT_PERCENTAGE_00
+                if index > startrow:
+                    sheet.cell(row=index + 1, column=i + 1).alignment = alignment_field
+
+
+    def _set_freeze_pans(self,sheet,tableName):
+        startrow = self.dictTables[tableName]['startrow']
+        freezecol = self.dictTables[tableName]['freezecol']
+        sheet.freeze_panes = get_column_letter(freezecol) + str(startrow + 2)
+
+
+    def _set_height_and_width(self,sheet,tableName):
         req = ':([a-zA-Z]+)'
         match = re.findall(req, sheet.dimensions)
         assert isinstance(match,list) and len(match) > 0,'sheet.dimensions(%s) is invalid!'%sheet.dimensions
-        #sheet.merge_cells(f'A1:{weight}1')
+        #设置标题头的行高
+        startrow = self.dictTables[tableName]['startrow']
+        maxheight = self.dictTables[tableName]['maxheight']
+        sheet.row_dimensions[startrow].height = maxheight
         #设置列宽
         weight = match[0]
         letter_list = get_column_interval('A',weight)
@@ -198,8 +244,8 @@ class ExcelVisualization(InterpreterBase):
             widthAdjust = self._get_col_max_width(sheet,col_letter,tableName)
             sheet.column_dimensions[col_letter].width = widthAdjust
 
+
     def _get_col_max_width(self,sheet,col_letter,tableName):
-        #maxrow = self._get_maxrow(sheet.max_row,tableName)
         #_get_col_max_width放在_adjust_style_excel的前面跑,这样设置才有效
         maxrow = sheet.max_row
         maxwidth = self.dictTables[tableName]['maxwidth']
@@ -214,6 +260,7 @@ class ExcelVisualization(InterpreterBase):
         widthAdjust = min(widthAdjust,maxwidth)
         widthAdjust = max(widthAdjust,minwidth)
         return widthAdjust
+
 
     def _column_char_to_integer(self,name):
         assert isinstance(name,str),'the name(%s) of column must be str'%name
