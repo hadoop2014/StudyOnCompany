@@ -30,10 +30,15 @@ class InterpreterNature(InterpreterBase):
         t_ignore = self.ignores
         t_ignore_COMMENT = r'#.*'
 
+        def t_VALUE(t):
+            r'[\u4E00-\u9FA5]+'
+            t.type = self._get_token_type(local_name,t.value,'VALUE')
+            return t
 
         def t_newline(t):
             r'\n+'
             t.lexer.lineno += t.value.count("\n")
+
 
         def t_error(t):
             self.logger.info("Illegal character '%s'" % t.value[0])
@@ -92,7 +97,8 @@ class InterpreterNature(InterpreterBase):
 
         def p_configuration_value(p):
             '''configuration : PARAMETER ':' NUMERIC
-                             | PARAMETER ':' TIME'''
+                             | PARAMETER ':' TIME
+                             | PARAMETER ':' VALUE'''
             self.names.update({p[1]:p[3]})
             self.logger.info("fetch config %s : %s"%(p[1],p[3]))
             p[0] = p[1] + ':' + p[3]
@@ -105,6 +111,18 @@ class InterpreterNature(InterpreterBase):
 
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
+
+
+    def _get_token_type(self, local_name,value, defaultType='VALUE'):
+        #解决保留字和VALUE的冲突问题
+        type = defaultType
+        for key,content in local_name.items():
+            if key.startswith('t_') and key not in ['t_NUMERIC','t_ignore','t_ignore_COMMENT','t_VALUE','t_newline','t_error']:
+                match = re.search(local_name[key],value)
+                if match is not None:
+                    type = key.split('_')[-1]
+                    break
+        return type
 
 
     def doWork(self,lexer=None,debug=False,tracking=False):

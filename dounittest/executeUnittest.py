@@ -9,6 +9,7 @@ import unittest
 from execute import *
 from interpreterAssemble import *
 
+
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         self.assertEqual(True, True)
@@ -18,6 +19,7 @@ class MyTestCase(unittest.TestCase):
         #self.gConfig.update({"gJsonBase".lower(): gJsonBase})
         #self.gConfig.update({"debugIsOn".lower():True})
         self.run_interpreter_yacc()
+
 
     def run_interpreter_yacc(self):
         #docformat = self.gConfig['taskName'.lower()]
@@ -34,6 +36,7 @@ class MyTestCase(unittest.TestCase):
         interpreterAccounting.initialize()
         interpreterAccounting.docParser._set_dataset(list([0,69]))
         interpreterAccounting.doWork(debug=True,tracking=False)
+
 
 if __name__ == '__main__':
     unittest.main()
