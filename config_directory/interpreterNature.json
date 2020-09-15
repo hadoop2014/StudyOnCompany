@@ -1,6 +1,8 @@
 {
-  "#tokens": ["批量运行","单个运行","执行",    "数据解析","数据分析",   "表",    "创建",  "展示",      "参数配置","参数名称",  "参数值", "数值",   "报告时间"],
-  "tokens":  ["BATCH", "SINGLE", "EXECUTE","PARSE", "ANALYSIZE", "TABLE","CREATE","VISUALIZE","CONFIG","PARAMETER","VALUE","NUMERIC","TIME"],
+  "#tokens": ["批量运行","单个运行","执行",    "数据解析","数据分析",   "表",    "创建",  "展示",      "参数配置","参数名称",
+              "参数值", "数值",   "报告时间"],
+  "tokens":  ["BATCH", "SINGLE", "EXECUTE","PARSE", "ANALYSIZE", "TABLE","CREATE","VISUALIZE","CONFIG","PARAMETER",
+              "VALUE","NUMERIC","TIME"],
 
   "BATCH": "批量运行|批量执行",
   "SINGLE": "单次运行|单次执行",
@@ -17,7 +19,7 @@
   "NUMERIC": "\\d+(\\.\\d{4})|\\d+(\\.\\d{1,2})?",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
-  "literals": ["(",")","（","）","{","}",":",","],
+  "literals": ["(",")","（","）","{","}",":",",","-"],
 
   "ignores": "\t "
 }

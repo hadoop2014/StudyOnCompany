@@ -26,14 +26,17 @@ class InterpreterNature(InterpreterBase):
             local_name['t_'+token] = self.dictTokens[token]
         self.logger.info('\n'+str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
+
         #t_ignore = " \t\n"
         t_ignore = self.ignores
         t_ignore_COMMENT = r'#.*'
+
 
         def t_VALUE(t):
             r'[\u4E00-\u9FA5]+'
             t.type = self._get_token_type(local_name,t.value,'VALUE')
             return t
+
 
         def t_newline(t):
             r'\n+'
@@ -50,31 +53,38 @@ class InterpreterNature(InterpreterBase):
         # dictionary of names
         self.names = {}
 
+
         def p_statement_expression(p):
             '''statement : statement expression
                          | expression'''
             pass
 
+
         def p_expression_batch_parse(p):
             '''expression : BATCH PARSE'''
             self._process_batch_parse()
+
 
         def p_expression_single_parse(p):
             '''expression : SINGLE PARSE'''
             self._process_single_parse()
 
+
         def p_expression_batch_analysize(p):
             '''expression : BATCH ANALYSIZE'''
             self._process_batch_analysize()
+
 
         def p_expression_single_analysize(p):
             '''expression : SINGLE ANALYSIZE'''
             self._process_single_analysize()
 
+
         def p_expression_create_table(p):
             '''expression : CREATE TABLE'''
             command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
             self._process_create_table(command)
+
 
         def p_expression_execute_analysize(p):
             '''expression : EXECUTE ANALYSIZE'''
@@ -91,9 +101,11 @@ class InterpreterNature(InterpreterBase):
             '''expression : CONFIG '{' configuration '}' '''
             p[0] = p[1] +'{ ' + p[3] +' }'
 
+
         def p_configuration(p):
             '''configuration : configuration ',' configuration '''
             p[0] = p[1] + ',' + p[3]
+
 
         def p_configuration_value(p):
             '''configuration : PARAMETER ':' NUMERIC
@@ -103,11 +115,13 @@ class InterpreterNature(InterpreterBase):
             self.logger.info("fetch config %s : %s"%(p[1],p[3]))
             p[0] = p[1] + ':' + p[3]
 
+
         def p_error(p):
             if p:
                 print("Syntax error at '%s:%s'" % (p.value,p.type))
             else:
                 print("Syntax error at EOF page")
+
 
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
@@ -117,7 +131,7 @@ class InterpreterNature(InterpreterBase):
         #解决保留字和VALUE的冲突问题
         type = defaultType
         for key,content in local_name.items():
-            if key.startswith('t_') and key not in ['t_NUMERIC','t_ignore','t_ignore_COMMENT','t_VALUE','t_newline','t_error']:
+            if key.startswith('t_') and key not in ['t_VALUE','t_ignore','t_ignore_COMMENT','t_newline','t_error']:
                 match = re.search(local_name[key],value)
                 if match is not None:
                     type = key.split('_')[-1]

@@ -109,11 +109,24 @@ class DocParserSql(DocParserBase):
             sql_df = pd.DataFrame(dataFrame.iloc[i]).T
             sql_df.columns = dataFrame.iloc[0].values
             isRecordExist = self._is_record_exist(conn, tableName, sql_df)
-            if not isRecordExist:
+            if isRecordExist:
+                sql = ''
+                sql = sql + 'delete from {}'.format(tableName)
+                sql = sql + '\nwhere 报告时间 = \'{}' .format(sql_df["报告时间"].values[0]) + '\''
+                sql = sql + '\n    and 报告类型 = \'{}'.format(sql_df['报告类型'].values[0]) + '\''
+                sql = sql + '\n    and 公司简称 = \'{}'.format(sql_df['公司简称'].values[0]) + '\''
+                self._sql_executer(sql)
+                self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
+                                                                            ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
+                sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+                conn.commit()
+                self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
+                                                                            ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
+            else:
                 sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
                 conn.commit()
-            else:
-                self.logger.info("table %s is already exist in database!"%tableName)
+                self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
+                                                                            ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
         conn.close()
 
 
