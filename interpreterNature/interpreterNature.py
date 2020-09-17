@@ -61,23 +61,30 @@ class InterpreterNature(InterpreterBase):
 
 
         def p_expression_batch_parse(p):
-            '''expression : BATCH PARSE'''
-            self._process_batch_parse()
+            '''expression : SCALE EXECUTE PARSE'''
+            if p[1] == "全量":
+                self._process_full_parse()
+            elif p[1] == "批量":
+                pass
+            elif p[1] == "单次":
+                self._process_single_parse()
+            else:
+                self.logger.info("Mistakes in grammar,the SCALE (%s) is not a valid token in [全量,批量,单次]"%p[1])
 
 
-        def p_expression_single_parse(p):
-            '''expression : SINGLE PARSE'''
-            self._process_single_parse()
+        #def p_expression_single_parse(p):
+        #    '''expression : SINGLE PARSE'''
+        #    self._process_single_parse()
 
 
-        def p_expression_batch_analysize(p):
-            '''expression : BATCH ANALYSIZE'''
-            self._process_batch_analysize()
+        #def p_expression_batch_analysize(p):
+        #    '''expression : BATCH ANALYSIZE'''
+        #    self._process_batch_analysize()
 
 
-        def p_expression_single_analysize(p):
-            '''expression : SINGLE ANALYSIZE'''
-            self._process_single_analysize()
+        #def p_expression_single_analysize(p):
+        #    '''expression : SINGLE ANALYSIZE'''
+        #    self._process_single_analysize()
 
 
         def p_expression_create_table(p):
@@ -86,9 +93,9 @@ class InterpreterNature(InterpreterBase):
             self._process_create_table(command)
 
 
-        def p_expression_execute_analysize(p):
-            '''expression : EXECUTE ANALYSIZE'''
-            self._process_single_analysize()
+        #def p_expression_execute_analysize(p):
+        #    '''expression : EXECUTE ANALYSIZE'''
+        #    self._process_single_analysize()
 
 
         def p_expression_visualize(p):
@@ -131,7 +138,7 @@ class InterpreterNature(InterpreterBase):
         #解决保留字和VALUE的冲突问题
         type = defaultType
         for key,content in local_name.items():
-            if key.startswith('t_') and key not in ['t_VALUE','t_ignore','t_ignore_COMMENT','t_newline','t_error']:
+            if key.startswith('t_') and key not in ['t_'+defaultType,'t_ignore','t_ignore_COMMENT','t_newline','t_error']:
                 match = re.search(local_name[key],value)
                 if match is not None:
                     type = key.split('_')[-1]
@@ -148,7 +155,7 @@ class InterpreterNature(InterpreterBase):
         return self._get_text()
 
 
-    def _process_batch_parse(self):
+    def _process_full_parse(self):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_batch_parse!')
             return
@@ -175,18 +182,18 @@ class InterpreterNature(InterpreterBase):
         return taskResult
 
 
-    def _process_batch_analysize(self):
-        if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing in _process_batch_analysize!')
-            return
-        pass
+    #def _process_batch_analysize(self):
+    #    if self.unitestIsOn:
+    #        self.logger.info('Now in unittest mode,do nothing in _process_batch_analysize!')
+    #        return
+    #    pass
 
 
-    def _process_single_analysize(self):
-        if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
-            return
-        pass
+    #def _process_single_analysize(self):
+    #    if self.unitestIsOn:
+    #        self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
+    #        return
+    #    pass
 
 
     def _process_create_table(self,command):
