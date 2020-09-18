@@ -65,26 +65,12 @@ class InterpreterNature(InterpreterBase):
             if p[1] == "全量":
                 self._process_full_parse()
             elif p[1] == "批量":
-                pass
+                self._process_batch_parse()
             elif p[1] == "单次":
                 self._process_single_parse()
             else:
                 self.logger.info("Mistakes in grammar,the SCALE (%s) is not a valid token in [全量,批量,单次]"%p[1])
 
-
-        #def p_expression_single_parse(p):
-        #    '''expression : SINGLE PARSE'''
-        #    self._process_single_parse()
-
-
-        #def p_expression_batch_analysize(p):
-        #    '''expression : BATCH ANALYSIZE'''
-        #    self._process_batch_analysize()
-
-
-        #def p_expression_single_analysize(p):
-        #    '''expression : SINGLE ANALYSIZE'''
-        #    self._process_single_analysize()
 
 
         def p_expression_create_table(p):
@@ -93,14 +79,10 @@ class InterpreterNature(InterpreterBase):
             self._process_create_table(command)
 
 
-        #def p_expression_execute_analysize(p):
-        #    '''expression : EXECUTE ANALYSIZE'''
-        #    self._process_single_analysize()
-
-
         def p_expression_visualize(p):
-            '''expression : VISUALIZE TABLE'''
-            command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
+            '''expression : SCALE VISUALIZE TABLE'''
+            command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            scale = p[1]
             self._process_visualize_table(command)
 
 
@@ -110,18 +92,48 @@ class InterpreterNature(InterpreterBase):
 
 
         def p_configuration(p):
-            '''configuration : configuration ',' configuration '''
-            p[0] = p[1] + ',' + p[3]
+            '''configuration : configuration  configuration '''
+            p[0] = p[1] + '\n' + p[2]
 
 
         def p_configuration_value(p):
             '''configuration : PARAMETER ':' NUMERIC
-                             | PARAMETER ':' TIME
-                             | PARAMETER ':' VALUE'''
-            self.names.update({p[1]:p[3]})
+                             | PARAMETER ':' time
+                             | PARAMETER ':' value'''
+            if p.slice[3].type == 'NUMERIC':
+                self.names.update({p[1]:list([p[3]])})
+            elif p.slice[3].type == 'time':
+                self.names.update({p[1]:self.names['timelist']})
+            elif p.slice[3].type == 'value':
+                self.names.update({p[1]:self.names['valuelist']})
             self.logger.info("fetch config %s : %s"%(p[1],p[3]))
             p[0] = p[1] + ':' + p[3]
 
+
+        def p_time(p):
+            '''time : TIME
+                    | TIME '-' TIME '''
+            if len(p.slice) == 4:
+                assert self._is_matched('\\d+年',p[1]) and self._is_matched('\\d+年',p[3])\
+                    ,"parameter %s or %s is not invalid TIME"%(p[1],p[3])
+                timelist = [str(year) + '年'  for year in range(int(p[1].split('年')[0]),int(p[3].split('年')[0]) + 1)]
+                p[0] = p[1] + p[2] + p[3]
+            else:
+                assert self._is_matched('\\d+年', p[1]) , "parameter %s is not invalid TIME" % (p[1])
+                timelist = list([p[1]])
+                p[0] = p[1]
+            self.names.update({'timelist':timelist})
+
+        def p_value(p):
+            '''value :  value ',' VALUE
+                     | VALUE'''
+            if len(p.slice) == 4:
+                valuelist = self.names['valuelist'] + list([p[3]])
+                p[0] = p[1] + p[2] + p[3]
+            else:
+                valuelist = list([p[1]])
+                p[0] = p[1]
+            self.names.update({'valuelist':valuelist})
 
         def p_error(p):
             if p:
@@ -157,7 +169,7 @@ class InterpreterNature(InterpreterBase):
 
     def _process_full_parse(self):
         if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing in _process_batch_parse!')
+            self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
             return
         taskResults = list()
         source_directory = os.path.join(self.gConfig['data_directory'], self.gConfig['source_directory'])
@@ -173,6 +185,25 @@ class InterpreterNature(InterpreterBase):
         self.logger.info(taskResults)
 
 
+    def _process_batch_parse(self):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_batch_parse!')
+            return
+        taskResults = list()
+        source_directory = os.path.join(self.gConfig['data_directory'], self.gConfig['source_directory'])
+        sourcefiles = os.listdir(source_directory)
+        for sourcefile in sourcefiles:
+            if not self._is_file_name_valid(sourcefile):
+                self.logger.warning("%s is not a valid file" % sourcefile)
+                continue
+            if self._is_file_selcted(sourcefile):
+                self.logger.info('start process %s' % sourcefile)
+                self.gConfig.update({'sourcefile': sourcefile})
+                taskResult = self._process_single_parse()
+                taskResults.append(taskResult)
+        self.logger.info(taskResults)
+
+
     def _process_single_parse(self):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_parse!')
@@ -182,6 +213,14 @@ class InterpreterNature(InterpreterBase):
         return taskResult
 
 
+    def _is_file_selcted(self,sourcefile):
+        assert self.names['公司简称'] != NULLSTR and self.names['报告类型'] != NULLSTR and self.names['报告时间'] != NULLSTR\
+            ,"parameter 公司简称,报告类型,报告年度 must not be NULL in 批量处理程序"
+
+        isFileSelected = self._is_matched('|'.join(self.names['公司简称']),sourcefile) \
+                         and self._is_matched('|'.join(self.names['报告类型']),sourcefile) \
+                         and self._is_matched('|'.join(self.names['报告时间']),sourcefile)
+        return isFileSelected
     #def _process_batch_analysize(self):
     #    if self.unitestIsOn:
     #        self.logger.info('Now in unittest mode,do nothing in _process_batch_analysize!')
@@ -209,6 +248,8 @@ class InterpreterNature(InterpreterBase):
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
         pass
+        self.gConfig.update(self.names)
+        self.interpreterAnalysize.initialize(self.gConfig)
         self.interpreterAnalysize.doWork(command)
 
 
@@ -225,7 +266,11 @@ class InterpreterNature(InterpreterBase):
 
 
     def initialize(self):
-        pass
+        self.names['公司简称'] = NULLSTR
+        self.names['报告时间'] = NULLSTR
+        self.names['报告类型'] = NULLSTR
+        self.names['timelist'] = NULLSTR
+        self.names['valuelist'] = NULLSTR
 
 
 def create_object(gConfig, interpreterDict):

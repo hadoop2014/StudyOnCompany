@@ -1,7 +1,8 @@
 {
-  "#tokens": ["创建",   "表",   "展示"],
-  "tokens":  ["CREATE","TABLE","VISUALIZE"],
+  "#tokens": ["创建",   "表",   "展示",     "处理规模"],
+  "tokens":  ["CREATE","TABLE","VISUALIZE","SCALE"],
 
+  "SCALE" : "全量|批量|单次",
   "CREATE": "创建",
   "#GENERATE": "生成",
   "VISUALIZE": "展示",

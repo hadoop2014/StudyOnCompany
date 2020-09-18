@@ -61,9 +61,10 @@ class InterpreterAnalysize(InterpreterBase):
 
 
         def p_expression_visualize_table(p):
-            '''expression : VISUALIZE TABLE'''
-            tableName = p[2]
-            self._process_visualize_table(tableName)
+            '''expression : SCALE VISUALIZE TABLE'''
+            tableName = p[3]
+            scale = p[1]
+            self._process_visualize_table(tableName,scale)
 
 
         def p_error(p):
@@ -92,7 +93,23 @@ class InterpreterAnalysize(InterpreterBase):
         assert isSuccess,"failed to execute sql"
 
 
-    def _process_visualize_table(self,tableName):
+    def _process_visualize_table(self,tableName,scale):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
+            return
+        visualize_file = self.dictTables[tableName]['visualize']
+        if visualize_file == NULLSTR:
+            self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
+            return
+        #if scale == '全量':
+        #    self.dataVisualization.read_and_visualize(visualize_file,tableName,sacle)
+        #else:
+        #将批量的配置代入dataVisualization
+        self.dataVisualization.initialize(self.gConfig)
+        self.dataVisualization.read_and_visualize(visualize_file,tableName,scale)
+
+
+    def _process_visualize_table_batch(self,tableName):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
             return
@@ -101,6 +118,7 @@ class InterpreterAnalysize(InterpreterBase):
             self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
             return
         #visualize_file = os.path.join(self.working_directory,visualize_file)
+        #self.dataVisualization
         self.dataVisualization.read_and_visualize(visualize_file,tableName)
 
 
@@ -110,8 +128,9 @@ class InterpreterAnalysize(InterpreterBase):
             return
 
 
-    def initialize(self):
-        pass
+    def initialize(self,gConfig=None):
+        if gConfig is not None:
+            self.gConfig = gConfig
 
 
 def create_object(gConfig,memberModuleDict):

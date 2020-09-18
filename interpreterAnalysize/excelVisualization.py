@@ -31,7 +31,7 @@ class ExcelVisualization(InterpreterBase):
         return visualization_name
 
 
-    def read_and_visualize(self,visualize_file,tableName):
+    def read_and_visualize(self,visualize_file,tableName,scale):
         # 专门用于写文件
         #table = dictTable['table']
         #tableName = dictTable['tableName']
@@ -68,7 +68,7 @@ class ExcelVisualization(InterpreterBase):
         #    dataframe = self._process_field_discard(dataframe, tableName)
 
         #    self._visualize_to_excel(writer,sheetName,dataframe,tableName)
-        dataframe = self._sql_to_dataframe(sheetName, tableName)
+        dataframe = self._sql_to_dataframe(tableName,scale)
 
         dataframe = self._process_field_discard(dataframe, tableName)
 
@@ -77,6 +77,7 @@ class ExcelVisualization(InterpreterBase):
         self._adjust_style_excel(workbook,sheetName,tableName)
         workbook.save(visualize_file)
         workbook.close()
+        self.logger.info('%s 展示 %s 成功!'%(scale,tableName))
 
 
     def _adjust_style_excel(self,workbook,sheetName,tableName):
@@ -140,11 +141,25 @@ class ExcelVisualization(InterpreterBase):
         '''
 
 
-    def _sql_to_dataframe(self,sheetName,tableName):
+    def _sql_to_dataframe(self,tableName,scale):
+        if scale == "批量":
+            assert ('公司简称' in self.gConfig.keys() and self.gConfig['公司简称'] != NULLSTR) \
+                and ('报告时间' in self.gConfig.keys() and self.gConfig['报告时间'] != NULLSTR) \
+                and ('报告类型' in self.gConfig.keys() and self.gConfig['报告类型'] != NULLSTR)\
+                ,"parameter 公司简称(%s) 报告时间(%s) 报告类型(%s) is not valid parameter"\
+                 %(self.gConfig['公司简称'],self.gConfig['报告时间'],self.gConfig['报告类型'])
+            #批量处理模式时会进入此分支
+            sql = ''
+            sql = sql + '\nselect * '
+            sql = sql + '\nfrom %s' % tableName
+            sql = sql + '\nwhere (' + ' or '.join(['公司简称 =' + '\'' +  company + '\''   for company in self.gConfig['公司简称']]) + ')'
+            sql = sql + '    and (' + ' or '.join(['报告时间 =' + '\'' + reporttime + '\'' for reporttime in self.gConfig['报告时间']]) + ')'
+            sql = sql + '    and (' + ' or '.join(['报告类型 =' + '\'' + reportype + '\'' for reportype in self.gConfig['报告类型']]) + ')'
+        else:
+            sql = ''
+            sql = sql + '\nselect * '
+            sql = sql + '\nfrom %s'%tableName
         order = self.dictTables[tableName]["order"]
-        sql = ''
-        sql = sql + '\nselect * '
-        sql = sql + '\nfrom %s'%tableName
         if isinstance(order,list) and len(order) > 0:
             sql = sql + '\norder by ' + ','.join(order)
         dataframe = pd.read_sql(sql, self._get_connect())
@@ -309,7 +324,9 @@ class ExcelVisualization(InterpreterBase):
         return isCellEmphasize
 
 
-    def initialize(self):
+    def initialize(self,gConfig = None):
+        if gConfig is not None:
+            self.gConfig = gConfig
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
         if os.path.exists(self.working_directory) == False:
