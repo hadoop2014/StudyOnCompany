@@ -1,0 +1,29 @@
+{
+  "#tokens": ["爬取",   "表",   "展示",     "处理规模"],
+  "tokens":  ["CRAWL","TABLE","VISUALIZE","SCALE"],
+
+  "SCALE" : "全量|批量|单次",
+  "CRAWL": "爬取",
+  "VISUALIZE": "展示",
+  "TABLE": "财务分析基础表|财务分析综合表|股票价值估算表|股票价格分析表",
+
+  "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
+  "literals": ["(",")","（","）","-","%","％"],
+
+  "ignores": "\t ",
+
+  "#公共字段表": "在所有的财务报表前都会增加这几个字段",
+  "公共表字段定义": {
+    "ID": "INTEGER PRIMARY KEY AUTOINCREMENT ",
+    "报告时间": "DATE NOT NULL",
+    "公司代码": "INTEGER NOT NULL",
+    "报告类型": "CHAR(20) NOT NULL",
+    "公司简称": "CHAR(10)",
+    "公司名称": "CHAR(50)",
+    "公司地址": "CHAR(10)",
+    "行业分类": "CHAR(10)",
+    "货币单位": "NUMERIC"
+  }
+
+
+}

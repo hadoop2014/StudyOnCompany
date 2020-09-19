@@ -70,8 +70,10 @@ class InterpreterAnalysize(InterpreterBase):
         def p_error(p):
             if p:
                 print("Syntax error at '%s:%s'" % (p.value,p.type))
+                self.logger.error("Syntax error at '%s:%s'" % (p.value, p.type))
             else:
                 print("Syntax error at EOF page")
+                self.logger.error("Syntax error at EOF page")
 
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
@@ -101,10 +103,6 @@ class InterpreterAnalysize(InterpreterBase):
         if visualize_file == NULLSTR:
             self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
             return
-        #if scale == '全量':
-        #    self.dataVisualization.read_and_visualize(visualize_file,tableName,sacle)
-        #else:
-        #将批量的配置代入dataVisualization
         self.dataVisualization.initialize(self.gConfig)
         self.dataVisualization.read_and_visualize(visualize_file,tableName,scale)
 
@@ -117,8 +115,6 @@ class InterpreterAnalysize(InterpreterBase):
         if visualize_file == NULLSTR:
             self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
             return
-        #visualize_file = os.path.join(self.working_directory,visualize_file)
-        #self.dataVisualization
         self.dataVisualization.read_and_visualize(visualize_file,tableName)
 
 

@@ -2,7 +2,7 @@
 # coding   : utf-8
 # @Time    : 6/9/2020 5:03 PM
 # @Author  : wu.hao
-# @File    : interpreterNature.py
+# @File    : interpreterCrawl.py
 # @Note    : 用接近自然语言的解释器处理各类事务,用于处理财务数据爬取,财务数据提取,财务数据分析.
 from ply import lex,yacc
 import time
@@ -13,6 +13,7 @@ class InterpreterNature(InterpreterBase):
         super(InterpreterNature, self).__init__(gConfig)
         self.interpreterAccounting = interpreterDict['accounting']
         self.interpreterAnalysize = interpreterDict['analysize']
+        self.interpreterCrawl = interpreterDict['crawl']
         self.interpretDefine()
 
 
@@ -93,7 +94,7 @@ class InterpreterNature(InterpreterBase):
 
         def p_configuration(p):
             '''configuration : configuration  configuration '''
-            p[0] = p[1] + '\n' + p[2]
+            p[0] = p[1] + ';' + p[2]
 
 
         def p_configuration_value(p):
@@ -138,8 +139,10 @@ class InterpreterNature(InterpreterBase):
         def p_error(p):
             if p:
                 print("Syntax error at '%s:%s'" % (p.value,p.type))
+                self.logger.error("Syntax error at '%s:%s'" % (p.value, p.type))
             else:
                 print("Syntax error at EOF page")
+                self.logger.error("Syntax error at EOF page")
 
 
         # Build the docparser
@@ -221,18 +224,6 @@ class InterpreterNature(InterpreterBase):
                          and self._is_matched('|'.join(self.names['报告类型']),sourcefile) \
                          and self._is_matched('|'.join(self.names['报告时间']),sourcefile)
         return isFileSelected
-    #def _process_batch_analysize(self):
-    #    if self.unitestIsOn:
-    #        self.logger.info('Now in unittest mode,do nothing in _process_batch_analysize!')
-    #        return
-    #    pass
-
-
-    #def _process_single_analysize(self):
-    #    if self.unitestIsOn:
-    #        self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
-    #        return
-    #    pass
 
 
     def _process_create_table(self,command):

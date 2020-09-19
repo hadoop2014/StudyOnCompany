@@ -36,6 +36,15 @@
       "datavisualization":"interpreterAnalysize.excelVisualization"
     }
   },
+  "crawl": {
+    "module": "interpreterCrawl.interpreterCrawl",
+    "config_file": "",
+    "config_json": "config_directory/interpreterCrawl.json",
+    "program_directory": "program_directory/interpreterCrawl/",
+    "member_modules": {
+      "crawlfinance":"interpreterCrawl.webcrawl.crawlFinance"
+    }
+  },
   "nature": {
     "module": "interpreterNature.interpreterNature",
     "config_file": "",
