@@ -324,9 +324,9 @@ class ExcelVisualization(InterpreterBase):
         return isCellEmphasize
 
 
-    def initialize(self,gConfig = None):
-        if gConfig is not None:
-            self.gConfig = gConfig
+    def initialize(self,dictParameter = None):
+        if dictParameter is not None:
+            self.gConfig.update(dictParameter)
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
         if os.path.exists(self.working_directory) == False:

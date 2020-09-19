@@ -124,9 +124,9 @@ class InterpreterAnalysize(InterpreterBase):
             return
 
 
-    def initialize(self,gConfig=None):
-        if gConfig is not None:
-            self.gConfig = gConfig
+    def initialize(self,dictParameter=None):
+        if dictParameter is not None:
+            self.gConfig.update(dictParameter)
 
 
 def create_object(gConfig,memberModuleDict):

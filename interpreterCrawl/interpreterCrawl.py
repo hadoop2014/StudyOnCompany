@@ -32,11 +32,6 @@ class InterpreterCrawl(InterpreterBase):
         t_ignore_COMMENT = r'#.*'
 
 
-        def t_VALUE(t):
-            r'[\u4E00-\u9FA5]+'
-            t.type = self._get_token_type(local_name,t.value,'VALUE')
-            return t
-
 
         def t_newline(t):
             r'\n+'
@@ -61,28 +56,22 @@ class InterpreterCrawl(InterpreterBase):
 
 
         def p_expression_crawl(p):
-            '''expression : SCALE CRAWL'''
-            p[0] = p[1] + p[2]
+            '''expression : SCALE CRAWL WEBSITE'''
+            p[0] = p[1] + p[2] + p[3]
+            self.logger.info('Start to crawl finance data from %s'%p[3])
+            website = p[3]
+            scale = p[1]
+            if p[1] != '批量':
+                self.logger.warning('the scale %s is not support,now only support scale \'全量\''%p[1])
+            self._process_crawl_from_website(website,scale)
 
 
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
 
 
-    def _get_token_type(self, local_name,value, defaultType='VALUE'):
-        #解决保留字和VALUE的冲突问题
-        type = defaultType
-        for key,content in local_name.items():
-            if key.startswith('t_') and key not in ['t_'+defaultType,'t_ignore','t_ignore_COMMENT','t_newline','t_error']:
-                match = re.search(local_name[key],value)
-                if match is not None:
-                    type = key.split('_')[-1]
-                    break
-        return type
-
-
-    def doWork(self,lexer=None,debug=False,tracking=False):
-        text = self._get_main_program()
+    def doWork(self,command,debug=False,tracking=False):
+        text = command
         self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
 
 
@@ -90,6 +79,10 @@ class InterpreterCrawl(InterpreterBase):
         return self._get_text()
 
 
+    def _process_crawl_from_website(self,website,scale):
+        assert website != NULLSTR,"website(%s) is invalid"%website
+        self.crawlFinance.initialize(self.gConfig)
+        self.crawlFinance.crawl_finance_data(website,scale)
 
 
     def _is_file_selcted(self,sourcefile):
@@ -115,12 +108,9 @@ class InterpreterCrawl(InterpreterBase):
         return isFileNameValid
 
 
-    def initialize(self):
-        self.names['公司简称'] = NULLSTR
-        self.names['报告时间'] = NULLSTR
-        self.names['报告类型'] = NULLSTR
-        self.names['timelist'] = NULLSTR
-        self.names['valuelist'] = NULLSTR
+    def initialize(self,dicParameter = None):
+        if dicParameter is not None:
+            self.gConfig.update(dicParameter)
 
 
 def create_object(gConfig,memberModuleDict):

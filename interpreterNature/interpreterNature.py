@@ -68,7 +68,8 @@ class InterpreterNature(InterpreterBase):
             elif p[1] == "批量":
                 self._process_batch_parse()
             elif p[1] == "单次":
-                self._process_single_parse()
+                dictParmeter = dict({'sourcefile':self.gConfig['sourcefile']})
+                self._process_single_parse(dictParmeter)
             else:
                 self.logger.info("Mistakes in grammar,the SCALE (%s) is not a valid token in [全量,批量,单次]"%p[1])
 
@@ -83,8 +84,12 @@ class InterpreterNature(InterpreterBase):
         def p_expression_visualize(p):
             '''expression : SCALE VISUALIZE TABLE'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
-            scale = p[1]
             self._process_visualize_table(command)
+
+        def p_expression_crawl(p):
+            '''expression : SCALE CRAWL WEBSITE'''
+            command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            self._process_crawl_finance(command)
 
 
         def p_expression_config(p):
@@ -179,11 +184,12 @@ class InterpreterNature(InterpreterBase):
         sourcefiles = os.listdir(source_directory)
         for sourcefile in sourcefiles:
             self.logger.info('start process %s' % sourcefile)
-            self.gConfig.update({'sourcefile': sourcefile})
+            #self.gConfig.update({'sourcefile': sourcefile})
             if not self._is_file_name_valid(sourcefile):
                 self.logger.warning("%s is not a valid file" % sourcefile)
                 continue
-            taskResult = self._process_single_parse()
+            dictParameter = dict({'sourcefile': sourcefile})
+            taskResult = self._process_single_parse(dictParameter)
             taskResults.append(taskResult)
         self.logger.info(taskResults)
 
@@ -201,17 +207,18 @@ class InterpreterNature(InterpreterBase):
                 continue
             if self._is_file_selcted(sourcefile):
                 self.logger.info('start process %s' % sourcefile)
-                self.gConfig.update({'sourcefile': sourcefile})
-                taskResult = self._process_single_parse()
+                #self.gConfig.update({'sourcefile': sourcefile})
+                dictParameter = dict({'sourcefile': sourcefile})
+                taskResult = self._process_single_parse(dictParameter)
                 taskResults.append(taskResult)
         self.logger.info(taskResults)
 
 
-    def _process_single_parse(self):
+    def _process_single_parse(self,dictParameter):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_parse!')
             return
-        self.interpreterAccounting.initialize(self.gConfig)
+        self.interpreterAccounting.initialize(dictParameter)
         taskResult = self.interpreterAccounting.doWork(debug=False, tracking=False)
         return taskResult
 
@@ -243,17 +250,14 @@ class InterpreterNature(InterpreterBase):
         self.interpreterAnalysize.initialize(self.gConfig)
         self.interpreterAnalysize.doWork(command)
 
-
-    def _is_file_name_valid(self,fileName):
-        assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
-        isFileNameValid = False
-        pattern = '年度报告|季度报告'
-        if isinstance(pattern, str) and isinstance(fileName, str):
-            if pattern != NULLSTR:
-                matched = re.search(pattern, fileName)
-                if matched is not None:
-                    isFileNameValid = True
-        return isFileNameValid
+    def _process_crawl_finance(self,command):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
+            return
+        pass
+        self.gConfig.update(self.names)
+        self.interpreterCrawl.initialize(self.gConfig)
+        self.interpreterCrawl.doWork(command)
 
 
     def initialize(self):

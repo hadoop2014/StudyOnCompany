@@ -7,6 +7,7 @@
 
 from interpreterAccounting.docparser.docParserBaseClass import *
 import pdfplumber
+import csv
 from functools import reduce
 
 
@@ -15,6 +16,8 @@ class DocParserPdf(DocParserBase):
         super(DocParserPdf, self).__init__(gConfig)
         self._interpretPrefix = NULLSTR
         self.table_settings = gConfig["table_settings"]
+        self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
+        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         #self._load_data()
 
 
@@ -279,6 +282,27 @@ class DocParserPdf(DocParserBase):
                 self.logger.info('debug:' + str(row))
 
 
+    def is_file_in_checkpoint(self,content):
+        if self.checkpointIsOn == False:
+            return False
+        with open(self.checkpointfilename, 'r', encoding='utf-8') as csv_in:
+            #reader = csv.reader(csv_in)
+            #reader = csv_in.readlines()
+            reader = csv_in.read().splitlines()
+            if content in reader:
+                return True
+
+    def save_checkpoint(self,content):
+        if self.checkpointIsOn == False:
+            return
+        checkpointfile = open(self.checkpointfilename, 'a', newline='', encoding='utf-8')
+        #checkpointwriter = csv.writer(checkpointfile)
+        #checkpointwriter.writerow(content)
+        checkpointfile.writelines(content+'\n')
+        checkpointfile.close()
+        self.logger.info("Success to save checkpoint %s to file %s"%(content,self.checkpointfilename))
+
+
     @property
     def interpretPrefix(self):
         return self._interpretPrefix
@@ -286,7 +310,7 @@ class DocParserPdf(DocParserBase):
 
     @interpretPrefix.setter
     def interpretPrefix(self,prefix):
-        assert isinstance(prefix,str),"para(%s) of set_interpretPrefix must be string"%value
+        assert isinstance(prefix,str),"para(%s) of set_interpretPrefix must be string"%prefix
         self._interpretPrefix = prefix
 
 
@@ -299,7 +323,16 @@ class DocParserPdf(DocParserBase):
         suffix = self.sourceFile.split('.')[-1]
         assert suffix.lower() in self.gConfig['pdfSuffix'.lower()], \
             'suffix of {} is invalid,it must one of {}'.format(self.sourceFile, self.gConfig['pdfSuffix'.lower()])
-
+        if self.checkpointIsOn:
+            if not os.path.exists(self.checkpointfilename):
+                fw = open(self.checkpointfilename,'w',newline='',encoding='utf-8')
+                fw.close()
+            #self.checkpointfile = open(self.checkpointfilename, 'w', newline='', encoding='utf-8')
+            #self.checkpointwriter = csv.writer(self.checkpointfile)
+            #self.checkpointreader = csv.reader(self.checkpointfile)
+        else:
+            if os.path.exists(self.checkpointfilename):
+                os.remove(self.checkpointfilename)
 
 def create_object(gConfig):
     parser=DocParserPdf(gConfig)

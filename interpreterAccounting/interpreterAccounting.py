@@ -452,6 +452,9 @@ class InterpreterAccounting(InterpreterBase):
     def doWork(self,lexer=None,debug=False,tracking=False):
         start_time = time.time()
         fileName = os.path.split(self.docParser.sourceFile)[-1]
+        if self.docParser.is_file_in_checkpoint(fileName):
+            self.logger.info('the file %s is already in checkpointfile,no need to process!'%fileName)
+            return
         self.logger.info("\n\n%s parse is starting!\n\n" % (fileName))
         for data in self.docParser:
             self.currentPageNumber = self.docParser.index
@@ -469,6 +472,7 @@ class InterpreterAccounting(InterpreterBase):
         else:
             self.logger.info('%s\ttable(%s) is failed to fetch'
                              %(sourceFile,failedTable))
+        self.docParser.save_checkpoint(fileName)
         self.docParser._close()
         self.logger.info('\n\n parse %s file end, time used %.4f' % (fileName,(time.time() - start_time)))
         return self.sqlParser.process_info
@@ -491,6 +495,7 @@ class InterpreterAccounting(InterpreterBase):
                                          ,'货币单位': self._unit_transfer(unit)})
             self.docParser._merge_table(self.names[tableName], interpretPrefix)
             if self.names[tableName]['tableEnd'] == True:
+                self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
                 self.excelParser.writeToStore(self.names[tableName])
                 self.sqlParser.writeToStore(self.names[tableName])
         self.logger.info('\nprefix: %s:'%interpretPrefix.replace('\n','\t') + str(self.names[tableName]))
@@ -509,6 +514,7 @@ class InterpreterAccounting(InterpreterBase):
                                      ,'货币单位': self.names['货币单位']})
         self.names[tableName].update({"table":table})
         self.names[tableName].update({"tableName":tableName})
+        self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
         self.excelParser.writeToStore(self.names[tableName])
         self.sqlParser.writeToStore(self.names[tableName])
 
@@ -578,7 +584,7 @@ class InterpreterAccounting(InterpreterBase):
         return unitStandardize
 
 
-    def initialize(self,gConfig=None):
+    def initialize(self,dictParameter=None):
         for tableName in self.tableNames:
             self.names.update({tableName:{'tableName':NULLSTR,'time':NULLSTR,'unit':NULLSTR,'currency':NULLSTR
                                           ,'company':NULLSTR,'公司名称':NULLSTR,'公司代码':NULLSTR,'公司简称':NULLSTR
@@ -592,8 +598,9 @@ class InterpreterAccounting(InterpreterBase):
             self.names.update({commonField:NULLSTR})
         for cirtical in self.criticals:
             self.names.update({self._get_critical_alias(cirtical):NULLSTR})
-        if gConfig is not None:
-            self.docParser._load_data(gConfig['sourcefile'])
+        if dictParameter is not None:
+            self.docParser._load_data(dictParameter['sourcefile'])
+            self.gConfig.update(dictParameter)
         else:
             self.docParser._load_data()
 

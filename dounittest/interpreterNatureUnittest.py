@@ -8,9 +8,8 @@ class MyTestCase(unittest.TestCase):
 
     def run_interpreter_yacc(self):
         input = ''
-        input = input + ' ##批量运行 财务报表解析\n'
-        input = input + ' 批量运行 财务报表解析'
-        input = input + ' 单次运行 财务报表解析 '
+        input = input + ' 批量 运行 财务报表解析'
+        input = input + ' 单次 运行 财务报表解析 '
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)

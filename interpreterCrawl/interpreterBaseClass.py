@@ -46,9 +46,9 @@ class InterpreterBase(BaseClass):
         self.literals = self.gJsonInterpreter['literals']
         self.ignores = self.gJsonInterpreter['ignores']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
-        self.tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|')]
-        self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
-                           keyword in self.tableNames}
+        self.websites = [website for website in self.gJsonInterpreter['WEBSITE'].split('|')]
+        self.dictWebsites = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
+                           keyword in self.websites}
 
 
     def _get_keyword(self,tableKeyword):

@@ -18,11 +18,11 @@ class DocParserBase(InterpreterBase):
         #self.mainprogram = self.gConfig['program_directory']
         self.logging_directory = os.path.join(self.logging_directory,'docparser', self._get_class_name(gConfig))
         self.model_savefile = os.path.join(self.working_directory,self._get_class_name(self.gConfig) + '.model')
-        self.checkpoint_filename = self._get_class_name(self.gConfig) + '.ckpt'
+        #self.checkpoint_filename = self._get_class_name(self.gConfig) + '.ckpt'
         self.source_directory = os.path.join(self.data_directory,self.gConfig['source_directory'])
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['source_directory'],self.gConfig['sourcefile'])
         self.taskResult = os.path.join(self.gConfig['working_directory'],self.gConfig['taskResult'.lower()])
-        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
+        #self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
 
     def _get_standardized_header(self,headerList,tableName):
         assert headerList is not None, 'sourceRow(%s) must not be None' % headerList

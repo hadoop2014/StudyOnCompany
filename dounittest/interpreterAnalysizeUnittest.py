@@ -11,7 +11,6 @@ class MyTestCase(unittest.TestCase):
         input = ''
         input = input + "  #创建 财务分析综合表\n"
         input = input + "  创建 股票价格分析表"
-        input = input + "  生成 财务分析综合表"
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)

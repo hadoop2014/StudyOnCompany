@@ -24,6 +24,7 @@ class BaseClass():
         self.debugIsOn = gConfig['debugIsOn'.lower()]
         self.program_directory = gConfig['program_directory']
         self.working_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
+        self.data_directory = gConfig['data_directory']
         #self.logging_directory = os.path.join(self.gConfig['logging_directory'], self._get_module_path())
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._data = list()
@@ -57,6 +58,41 @@ class BaseClass():
             self._data = [page for i, page in enumerate(self._data) if i in index]
             self._index = 0
             self._length = len(self._data)
+
+
+    def _is_file_name_valid(self,fileName):
+        assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
+        isFileNameValid = False
+        pattern = '年度报告|季度报告'
+        if isinstance(pattern, str) and isinstance(fileName, str):
+            if pattern != NULLSTR:
+                matched = re.search(pattern, fileName)
+                if matched is not None:
+                    isFileNameValid = True
+        return isFileNameValid
+
+
+    def _get_type_by_name(self,name):
+        assert self._is_matched('\\d+年',name),"name(%s) is invalid"%name
+        type = name
+        pattern = "\\d+年([\\u4E00-\\u9FA5]+)"
+        matched = re.findall(pattern,name)
+        if matched is not None:
+            type = matched.pop()
+        return type
+
+    def _get_path_by_type(self,type):
+        typeTranser = {
+            "年度报告": "年报",
+            "半年度报告": "半年报",
+            "第一季度报告": "季报",
+            "第三季度报告": "季报"
+        }
+        assert type in typeTranser.keys(),"type(%s) is invalid"%type
+        path = os.path.join(self.data_directory,typeTranser[type])
+        if not os.path.exists(path):
+            os.mkdir(path)
+        return path
 
 
     def _get_text(self,page):

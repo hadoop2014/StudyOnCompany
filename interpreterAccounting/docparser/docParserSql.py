@@ -20,6 +20,7 @@ class DocParserSql(DocParserBase):
         self._create_tables()
         self.process_info = {}
         self.dataTable = {}
+        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
 
 
     def loginfo(text = 'running '):
