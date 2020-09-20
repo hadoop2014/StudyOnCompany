@@ -266,6 +266,8 @@ class InterpreterAccounting(InterpreterBase):
             critical = self._get_critical_alias(p[1])
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})
+                if p[2] == NULLSTR and critical == '公司地址':
+                    self.names.update({critical:self.names['注册地址']})
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
 
 
@@ -403,13 +405,15 @@ class InterpreterAccounting(InterpreterBase):
                         | fetchtitle DISCARD
                         | '(' NAME ')' optional
                         | fetchtitle empty
-                        | DISCARD LOCATION COMPANY'''
+                        | DISCARD LOCATION COMPANY
+                        | optional TIME REPORT'''
             #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
             #DISCARD PUNCTUATION DISCARD DISCARD和t_ignore_COMMENT = "《.*》"一起解决亿纬锂能2018年财报中搜索无形资产情况时误判为到达页尾
             #DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
             #DISCARD LOCATION COMPANY解决海天味业2019年财报中出现合并资产负债表 2019 年 12 月 31 日  编制单位: 佛山市海天调味食品股份有限公司 单位:元 币种:人民币
+            #optional TIME REPORT解决隆基股份2017年财报,合并资产利润表达到页尾,而下一页开头出现"2017年年度报告"
             p[0] = p[1] + p[2]
 
 
@@ -456,6 +460,7 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('the file %s is already in checkpointfile,no need to process!'%fileName)
             return
         self.logger.info("\n\n%s parse is starting!\n\n" % (fileName))
+        self._get_time_type_by_name()
         for data in self.docParser:
             self.currentPageNumber = self.docParser.index
             text = self.docParser._get_text(data)
@@ -518,6 +523,13 @@ class InterpreterAccounting(InterpreterBase):
         self.excelParser.writeToStore(self.names[tableName])
         self.sqlParser.writeToStore(self.names[tableName])
 
+    def _get_time_type_by_name(self):
+        time = self._standardize('\\d+年',self.gConfig['sourcefile'])
+        type = self._standardize('|'.join(self.gJsonBase['报告类型']),self.gConfig['sourcefile'])
+        if self.names['报告时间'] == NULLSTR and time is not NaN:
+            self.names["报告时间"] = time
+        if self.names['报告类型'] == NULLSTR and type is not NaN:
+            self.names['报告类型'] = type
 
     def _construct_table(self,tableNmae):
         headers = self.dictTables[tableNmae]['header']

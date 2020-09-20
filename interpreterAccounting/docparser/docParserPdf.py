@@ -271,9 +271,15 @@ class DocParserPdf(DocParserBase):
     def save_checkpoint(self,content):
         if self.checkpointIsOn == False:
             return
-        checkpointfile = open(self.checkpointfilename, 'a', newline='', encoding='utf-8')
-        checkpointfile.writelines(content+'\n')
-        checkpointfile.close()
+        with open(self.checkpointfilename, 'r+', newline='', encoding='utf-8') as checkpointfile:
+            reader = checkpointfile.read().splitlines()
+            reader = reader + [content]
+            reader.sort()
+            lines = [line + '\n' for line in reader]
+            checkpointfile.seek(0)
+            checkpointfile.truncate()
+            checkpointfile.writelines(lines)
+            #checkpointfile.close()
         self.logger.info("Success to save checkpoint %s to file %s"%(content,self.checkpointfilename))
 
 
