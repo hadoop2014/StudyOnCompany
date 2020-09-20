@@ -35,7 +35,6 @@ class CrawlFinance(CrawlBase):
         downloadList = list()
         query_path = self.dictWebsites[website]['query_path']
         headers = self.dictWebsites[website]["headers"]
-        headers['User-Agent'] = random.choice(self.dictWebsites[website]["user_agent"])  # 定义User_Agent
         query = self.dictWebsites[website]['query']
         query.update({'seDate': self._sedate_transfer(self.gConfig['报告时间'])})
         query.update({'category': self._category_transfer(self.gConfig['报告类型'], website)})
@@ -45,6 +44,7 @@ class CrawlFinance(CrawlBase):
         exception = self.dictWebsites[website]['exception']
         for company in companys:
             query['searchkey'] = company
+            query['stock'] = ""
             if company in exception.keys():
                 query['stock'] = ','.join([exception[company]['stock'],exception[company]['secid']])
                 query['searchkey'] = exception[company]['searchkey']
@@ -61,6 +61,8 @@ class CrawlFinance(CrawlBase):
             #         'seDate': '2020-01-01~2020-04-26',  # 时间区间
             #         "isHLtitle": 'true'
             #         }
+            time.sleep(random.random() * self.dictWebsites[website]['WAIT_TIME'])
+            headers['User-Agent'] = random.choice(self.dictWebsites[website]["user_agent"])  # 定义User_Agent
             try:
                 query_response = self._get_response(query_path,headers=headers,data=query,RESPONSE_TIMEOUT=RESPONSE_TIMEOUT)
                 recordNum = query_response["totalRecordNum"]

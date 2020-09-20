@@ -175,6 +175,8 @@ class InterpreterNature(InterpreterBase):
             return
         taskResults = list()
         sourcefiles = self._get_needed_files(scale)
+        sourcefiles = list(sourcefiles)
+        sourcefiles.sort()
         for sourcefile in sourcefiles:
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})
