@@ -403,10 +403,11 @@ class InterpreterAccounting(InterpreterBase):
                         | optional fetchtitle DISCARD
                         | fetchtitle DISCARD DISCARD DISCARD DISCARD
                         | fetchtitle DISCARD
-                        | '(' NAME ')' optional
                         | fetchtitle empty
+                        | '(' NAME ')' optional
                         | DISCARD LOCATION COMPANY
-                        | optional TIME REPORT'''
+                        | optional TIME REPORT
+                        | DISCARD DISCARD DISCARD'''
             #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
@@ -414,7 +415,8 @@ class InterpreterAccounting(InterpreterBase):
             #DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
             #DISCARD LOCATION COMPANY解决海天味业2019年财报中出现合并资产负债表 2019 年 12 月 31 日  编制单位: 佛山市海天调味食品股份有限公司 单位:元 币种:人民币
             #optional TIME REPORT解决隆基股份2017年财报,合并资产利润表达到页尾,而下一页开头出现"2017年年度报告"
-            p[0] = p[1] + p[2]
+            #DISCARD DISCARD DISCARD解决理邦仪器：2019年年度报告的主要会计数据识别不到的问题
+            p[0] = p[1]
 
 
         def p_optional(p):
