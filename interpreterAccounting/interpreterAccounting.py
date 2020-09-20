@@ -469,10 +469,10 @@ class InterpreterAccounting(InterpreterBase):
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
             self.logger.info("%s\tall table is success fetched!"%(sourceFile))
+            self.docParser.save_checkpoint(fileName)
         else:
             self.logger.info('%s\ttable(%s) is failed to fetch'
                              %(sourceFile,failedTable))
-        self.docParser.save_checkpoint(fileName)
         self.docParser._close()
         self.logger.info('\n\n parse %s file end, time used %.4f' % (fileName,(time.time() - start_time)))
         return self.sqlParser.process_info

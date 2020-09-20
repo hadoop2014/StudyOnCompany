@@ -2,14 +2,10 @@
 # coding   : utf-8
 
 import sys
-import time
-import re
-from baseClass import NULLSTR
 from datafetch import getConfig
-import os
 from interpreterAssemble import InterpreterAssemble
-from loggerClass import Logger
 
+'''
 check_book = None
 
 def docParse(parser, interpreter, taskName, gConfig, lexer=None, debug=False, tracking=False):
@@ -107,6 +103,7 @@ def is_file_name_valid(fileName):
             if matched is not None:
                 isFileNameValid = True
     return isFileNameValid
+'''
 
 def run_task_in_nature():
     interpreterNature = InterpreterAssemble().get_interpreter_nature()
@@ -123,19 +120,12 @@ def main():
         else:
             #该模式为从python -m 方式调用
             unittestIsOn = gConfig['unittestIsOn'.lower()]
-        taskName = sys.argv[1]
     else:
         #该模式为从pycharm调用
         unittestIsOn = gConfig['unittestIsOn'.lower()]
         assert unittestIsOn == False, \
             'Now in training mode,unitestIsOn must be False whitch in configbase.ini'
-        taskName = gConfig['taskName'.lower()]
 
-    #if validate_parameter(taskName,gConfig) == True:
-        #run_task(taskName,gConfig,unittestIsOn)
-    #    run_task_new()
-    #else:
-    #    raise ValueError("(%s %s %s %s) is not supported now!"%(gConfig))
     run_task_in_nature()
 
 if __name__=='__main__':

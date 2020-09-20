@@ -18,7 +18,7 @@
   },
   "accounting": {
     "module": "interpreterAccounting.interpreterAccounting",
-    "config_file": "config_directory/configpdf.ini",
+    "config_file": "",
     "config_json": "config_directory/interpreterAccounting.json",
     "program_directory": "",
     "member_modules": {

@@ -15,7 +15,7 @@ class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
         self._interpretPrefix = NULLSTR
-        self.table_settings = gConfig["table_settings"]
+        #self.table_settings = gConfig["table_settings"]
         self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         #self._load_data()
@@ -90,7 +90,8 @@ class DocParserPdf(DocParserBase):
             else:
                 value = str(value)
             return value
-        table_settings = dict([(key,valueTransfer(key,value)) for key,value in self.table_settings.items()])
+        #table_settings = dict([(key,valueTransfer(key,value)) for key,value in self.table_settings.items()])
+        table_settings = dict()
         table_settings = self._get_special_settings(dictTable,table_settings)
         return table_settings
 

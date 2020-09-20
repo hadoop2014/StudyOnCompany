@@ -4,31 +4,14 @@
 import unittest
 from interpreterAssemble import *
 
-#class BaseParser(BaseClass):
-#    def __init__(self,gConfig):
-#        super(BaseParser, self).__init__(gConfig)
-
-#    def _load_data(self,input = None):
-#        if input is None:
-#            input = list()
-#        self._data = input
-#        self._index = 0
-#        self._length = len(self._data)
 
 class MyTestCase(unittest.TestCase):
     def test_something(self):
-        #self.gConfig = getConfig.get_config('config_directory/configbase.ini')
-        #gJsonAccounting,gJsonBase = getConfig.get_config_json('config_directory/interpreterAccounting.json')
-        #self.gConfig.update({"gJsonInterpreter".lower(): gJsonAccounting})
-        #self.gConfig.update({"gJsonBase".lower(): gJsonBase})
-        #testParser = BaseParser(self.gConfig)
-        #self.interpreter = interpretAccounting.create_object(gConfig=self.gConfig, docParser=testParser)
         self.interpreter = InterpreterAssemble().interpreter_assemble('accounting')
         self.run_interpreter_lexer()
         self.run_interpreter_yacc()
 
     def run_interpreter_lexer(self):
-        #test lexer
         input = ''
         input = input + ' -1,370,249,543.00  1234  1,234 0.0045 40.51% (-0.05%)'
         input = input + ' 63340.SH'
@@ -146,10 +129,7 @@ class MyTestCase(unittest.TestCase):
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)
-        #testParser._load_data([input])
         self.interpreter.initialize()
-        #self.interpreter.docParser._loader_data([input])
-        #self.interpreter.docParser._set_dataset([input])
         self.interpreter.parser.parse(input,lexer=self.interpreter.lexer,debug=True,tracking=True)
 
 if __name__ == '__main__':
