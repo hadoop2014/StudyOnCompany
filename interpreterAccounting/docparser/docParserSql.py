@@ -142,6 +142,7 @@ class DocParserSql(DocParserBase):
             if isinstance(value,str):
                 if value != NONESTR and value != NULLSTR:
                     value = re.sub('不适用$',NULLSTR,value)
+                    value = re.sub('附注',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"
                     value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
                     value = re.sub('^）\\s*',NULLSTR,value)
                     result = re.split("[ ]{2,}",value,maxsplit=1)
