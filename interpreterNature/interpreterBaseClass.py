@@ -25,11 +25,6 @@ class InterpreterBase(BaseClass):
 
 
     def _load_data(self,input=None):
-        #file_object = open(self.mainprogram)
-        #try:
-        #    file_context = file_object.read()  # file_context是一个string，读取完后，就失去了对test.txt的文件引用
-        #finally:
-        #    file_object.close()
         file_context = self._get_file_context(self.mainprogram)
         self._data = file_context
         self._index = 0

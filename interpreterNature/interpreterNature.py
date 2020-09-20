@@ -51,8 +51,9 @@ class InterpreterNature(InterpreterBase):
         # Build the lexer
         self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
 
-        # dictionary of names
-        self.names = {}
+        # dictionary of names_global
+        self.names_global = {}
+        self.names_local = {}
 
 
         def p_statement_expression(p):
@@ -63,16 +64,8 @@ class InterpreterNature(InterpreterBase):
 
         def p_expression_batch_parse(p):
             '''expression : SCALE EXECUTE PARSE'''
-            if p[1] == "全量":
-                self._process_full_parse()
-            elif p[1] == "批量":
-                self._process_batch_parse()
-            elif p[1] == "单次":
-                dictParmeter = dict({'sourcefile':self.gConfig['sourcefile']})
-                self._process_single_parse(dictParmeter)
-            else:
-                self.logger.info("Mistakes in grammar,the SCALE (%s) is not a valid token in [全量,批量,单次]"%p[1])
-
+            scale = p[1]
+            self._process_parse(scale)
 
 
         def p_expression_create_table(p):
@@ -85,6 +78,7 @@ class InterpreterNature(InterpreterBase):
             '''expression : SCALE VISUALIZE TABLE'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
             self._process_visualize_table(command)
+
 
         def p_expression_crawl(p):
             '''expression : SCALE CRAWL WEBSITE'''
@@ -107,11 +101,12 @@ class InterpreterNature(InterpreterBase):
                              | PARAMETER ':' time
                              | PARAMETER ':' value'''
             if p.slice[3].type == 'NUMERIC':
-                self.names.update({p[1]:list([p[3]])})
+                self.names_global.update({p[1]:list([p[3]])})
             elif p.slice[3].type == 'time':
-                self.names.update({p[1]:self.names['timelist']})
+                self.names_global.update({p[1]:self.names_local['timelist']})
             elif p.slice[3].type == 'value':
-                self.names.update({p[1]:self.names['valuelist']})
+                self.names_global.update({p[1]:self.names_local['valuelist']})
+            self._parameter_check(p[1], self.names_global[p[1]])
             self.logger.info("fetch config %s : %s"%(p[1],p[3]))
             p[0] = p[1] + ':' + p[3]
 
@@ -120,26 +115,25 @@ class InterpreterNature(InterpreterBase):
             '''time : TIME
                     | TIME '-' TIME '''
             if len(p.slice) == 4:
-                assert self._is_matched('\\d+年',p[1]) and self._is_matched('\\d+年',p[3])\
-                    ,"parameter %s or %s is not invalid TIME"%(p[1],p[3])
                 timelist = [str(year) + '年'  for year in range(int(p[1].split('年')[0]),int(p[3].split('年')[0]) + 1)]
                 p[0] = p[1] + p[2] + p[3]
             else:
-                assert self._is_matched('\\d+年', p[1]) , "parameter %s is not invalid TIME" % (p[1])
                 timelist = list([p[1]])
                 p[0] = p[1]
-            self.names.update({'timelist':timelist})
+            self.names_local.update({'timelist':timelist})
+
 
         def p_value(p):
-            '''value :  value ',' VALUE
+            '''value : value ',' VALUE
                      | VALUE'''
             if len(p.slice) == 4:
-                valuelist = self.names['valuelist'] + list([p[3]])
+                valuelist = self.names_local['valuelist'] + list([p[3]])
                 p[0] = p[1] + p[2] + p[3]
             else:
                 valuelist = list([p[1]])
                 p[0] = p[1]
-            self.names.update({'valuelist':valuelist})
+            self.names_local.update({'valuelist':valuelist})
+
 
         def p_error(p):
             if p:
@@ -175,6 +169,20 @@ class InterpreterNature(InterpreterBase):
         return self._get_text()
 
 
+    def _process_parse(self,scale):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
+            return
+        taskResults = list()
+        sourcefiles = self._get_needed_files(scale)
+        for sourcefile in sourcefiles:
+            self.logger.info('start process %s' % sourcefile)
+            dictParameter = dict({'sourcefile': sourcefile})
+            taskResult = self._process_single_parse(dictParameter)
+            taskResults.append(taskResult)
+        self.logger.info(taskResults)
+
+    '''
     def _process_full_parse(self):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
@@ -201,18 +209,19 @@ class InterpreterNature(InterpreterBase):
         taskResults = list()
         source_directory = os.path.join(self.gConfig['data_directory'], self.gConfig['source_directory'])
         sourcefiles = os.listdir(source_directory)
+        checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
         for sourcefile in sourcefiles:
             if not self._is_file_name_valid(sourcefile):
                 self.logger.warning("%s is not a valid file" % sourcefile)
                 continue
-            if self._is_file_selcted(sourcefile):
+            if self._is_file_selected(sourcefile):
                 self.logger.info('start process %s' % sourcefile)
                 #self.gConfig.update({'sourcefile': sourcefile})
                 dictParameter = dict({'sourcefile': sourcefile})
                 taskResult = self._process_single_parse(dictParameter)
                 taskResults.append(taskResult)
         self.logger.info(taskResults)
-
+    '''
 
     def _process_single_parse(self,dictParameter):
         if self.unitestIsOn:
@@ -221,16 +230,6 @@ class InterpreterNature(InterpreterBase):
         self.interpreterAccounting.initialize(dictParameter)
         taskResult = self.interpreterAccounting.doWork(debug=False, tracking=False)
         return taskResult
-
-
-    def _is_file_selcted(self,sourcefile):
-        assert self.names['公司简称'] != NULLSTR and self.names['报告类型'] != NULLSTR and self.names['报告时间'] != NULLSTR\
-            ,"parameter 公司简称,报告类型,报告年度 must not be NULL in 批量处理程序"
-
-        isFileSelected = self._is_matched('|'.join(self.names['公司简称']),sourcefile) \
-                         and self._is_matched('|'.join(self.names['报告类型']),sourcefile) \
-                         and self._is_matched('|'.join(self.names['报告时间']),sourcefile)
-        return isFileSelected
 
 
     def _process_create_table(self,command):
@@ -246,26 +245,107 @@ class InterpreterNature(InterpreterBase):
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
         pass
-        self.gConfig.update(self.names)
+        self.gConfig.update(self.names_global)
         self.interpreterAnalysize.initialize(self.gConfig)
         self.interpreterAnalysize.doWork(command)
+
 
     def _process_crawl_finance(self,command):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
         pass
-        self.gConfig.update(self.names)
+        self.gConfig.update(self.names_global)
         self.interpreterCrawl.initialize(self.gConfig)
         self.interpreterCrawl.doWork(command)
 
 
+    def _get_needed_files(self,scale):
+        sourcefiles = list()
+        if scale == '单次':
+            sourcefiles = list([self.gConfig['sourcefile']])
+        else:
+            if self.names_global['报告类型'] == NULLSTR:
+                source_directory = os.path.join(self.gConfig['data_directory'], self.gConfig['source_directory'])
+                sourcefiles = os.listdir(source_directory)
+            else:
+                for type  in self.names_global['报告类型']:
+                    source_directory = self._get_path_by_type(type)
+                    sourcefiles = sourcefiles + os.listdir(source_directory)
+            sourcefilesValid = [sourcefile for sourcefile in sourcefiles if self._is_file_name_valid(sourcefile)]
+            sourcefilesInvalid = set(sourcefiles).difference(set(sourcefilesValid))
+            if len(sourcefilesInvalid) > 0:
+                for sourcefile in sourcefilesInvalid:
+                     self.logger.warning('These file is can not be parse:%s'%sourcefile)
+
+            if scale == '批量':
+                sourcefilesValid = [sourcefile  for sourcefile in sourcefilesValid if self._is_file_selected(sourcefile)]
+
+            sourcefilesValid = self._remove_duplicate_files(sourcefilesValid)
+
+            checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
+            if isinstance(checkpoint,list) and len(checkpoint) > 0:
+                sourcefilesRemainder = set(sourcefilesValid).difference(set(checkpoint))
+                sourcefilesDone = set(sourcefilesValid).difference(set(sourcefilesRemainder))
+                if len(sourcefilesDone) > 0:
+                    for sourcefile in sourcefilesDone:
+                        self.logger.info('the file %s is already in checkpointfile,no need to process!'%sourcefile)
+                sourcefiles = sourcefilesRemainder
+            else:
+                sourcefiles = sourcefilesValid
+            #sourcefiles = self._remove_duplicate_files(list(sourcefiles))
+        return sourcefiles
+
+
+    def _remove_duplicate_files(self,sourcefiles):
+        #上峰水泥：2015年年度报告（更新后）.PDF和（000672）上峰水泥：2015年年度报告（更新后）.PDF并存时,则去掉前者(即去掉长度短的)
+        assert isinstance(sourcefiles,list),"Parameter sourcefiles must be list!"
+        nameStandardize = self.gJsonInterpreter['nameStandardize']
+        dictDuplicate = dict()
+        for sourcefile in sourcefiles:
+            standardizedName = self._standardize(nameStandardize,sourcefile)
+            if standardizedName is NaN:
+                self.logger.warning('Filename %s is invalid!'%sourcefile)
+                continue
+            if len(dictDuplicate) == 0:
+                dictDuplicate.update({standardizedName:sourcefile})
+            else:
+                if standardizedName in dictDuplicate.keys():
+                    if len(dictDuplicate[standardizedName]) < len(sourcefile):
+                        self.logger.info("File %s is duplicated and replaced by %s"
+                                         %(dictDuplicate[standardizedName],sourcefile))
+                        dictDuplicate.update({standardizedName:sourcefile})
+                else:
+                    dictDuplicate.update({standardizedName: sourcefile})
+        sourcefiles = dictDuplicate.values()
+        return sourcefiles
+
+
+    def _is_file_selected(self, sourcefile):
+        assert self.names_global['公司简称'] != NULLSTR and self.names_global['报告类型'] != NULLSTR and self.names_global['报告时间'] != NULLSTR\
+            ,"parameter 公司简称,报告类型,报告年度 must not be NULL in 批量处理程序"
+        isFileSelected = self._is_matched('|'.join(self.names_global['公司简称']), sourcefile) \
+                         and self._is_matched('|'.join(self.names_global['报告类型']), sourcefile) \
+                         and self._is_matched('|'.join(self.names_global['报告时间']), sourcefile)
+        return isFileSelected
+
+
+    def _parameter_check(self,key,values):
+        assert isinstance(values,list),"values(%s) is not a list"%values
+        isCheckOk = False
+        parametercheck = self.gJsonInterpreter['parametercheck']
+        for value in values:
+            if key in parametercheck.keys():
+                isCheckOk = self._is_matched(parametercheck[key],value)
+            assert isCheckOk,"Value(%s) is invalid,it must match pattern %s"%(value,parametercheck[key])
+
+
     def initialize(self):
-        self.names['公司简称'] = NULLSTR
-        self.names['报告时间'] = NULLSTR
-        self.names['报告类型'] = NULLSTR
-        self.names['timelist'] = NULLSTR
-        self.names['valuelist'] = NULLSTR
+        self.names_global['公司简称'] = NULLSTR
+        self.names_global['报告时间'] = NULLSTR
+        self.names_global['报告类型'] = NULLSTR
+        self.names_local['timelist'] = NULLSTR
+        self.names_local['valuelist'] = NULLSTR
 
 
 def create_object(gConfig, interpreterDict):

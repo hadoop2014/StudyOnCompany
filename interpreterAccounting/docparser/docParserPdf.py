@@ -15,7 +15,6 @@ class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
         self._interpretPrefix = NULLSTR
-        #self.table_settings = gConfig["table_settings"]
         self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         #self._load_data()
@@ -49,27 +48,6 @@ class DocParserPdf(DocParserBase):
 
     def _get_tables(self,dictTable):
         page = self.__getitem__(self._index-1)
-        '''
-        table_settings = {
-            "vertical_strategy": "lines",
-            "horizontal_strategy": "lines",
-            "explicit_vertical_lines": [],
-            "explicit_horizontal_lines": [],
-            #"snap_tolerance": DEFAULT_SNAP_TOLERANCE,
-            #"join_tolerance": DEFAULT_JOIN_TOLERANCE,
-            #"edge_min_length": 3,
-            #"min_words_vertical": DEFAULT_MIN_WORDS_VERTICAL,
-            #"min_words_horizontal": DEFAULT_MIN_WORDS_HORIZONTAL,
-            #"keep_blank_chars": False,
-            #"text_tolerance": 3,
-            #"text_x_tolerance": 3,
-            #"text_y_tolerance": 3,
-            #"intersection_tolerance": 3,
-            #"intersection_x_tolerance": 3,
-            #"intersection_y_tolerance": 3,
-
-        }
-        '''
         table_settings = self._get_table_settings(dictTable)
         self._debug_extract_tables(page,table_settings)
         return page.extract_tables(table_settings=table_settings)
@@ -90,14 +68,13 @@ class DocParserPdf(DocParserBase):
             else:
                 value = str(value)
             return value
-        #table_settings = dict([(key,valueTransfer(key,value)) for key,value in self.table_settings.items()])
-        table_settings = dict()
-        table_settings = self._get_special_settings(dictTable,table_settings)
+        table_settings = self._get_special_settings(dictTable)
         return table_settings
 
 
-    def _get_special_settings(self,dictTable,table_settings):
+    def _get_special_settings(self,dictTable):
         keyName = '默认值'
+        table_settings = dict()
         snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
         if dictTable['公司简称'] != NULLSTR:
             keyName = dictTable['公司简称']
@@ -286,22 +263,26 @@ class DocParserPdf(DocParserBase):
     def is_file_in_checkpoint(self,content):
         if self.checkpointIsOn == False:
             return False
-        with open(self.checkpointfilename, 'r', encoding='utf-8') as csv_in:
-            #reader = csv.reader(csv_in)
-            #reader = csv_in.readlines()
-            reader = csv_in.read().splitlines()
-            if content in reader:
-                return True
+        reader = self.get_checkpoint()
+        if content in reader:
+            return True
+
 
     def save_checkpoint(self,content):
         if self.checkpointIsOn == False:
             return
         checkpointfile = open(self.checkpointfilename, 'a', newline='', encoding='utf-8')
-        #checkpointwriter = csv.writer(checkpointfile)
-        #checkpointwriter.writerow(content)
         checkpointfile.writelines(content+'\n')
         checkpointfile.close()
         self.logger.info("Success to save checkpoint %s to file %s"%(content,self.checkpointfilename))
+
+
+    def get_checkpoint(self):
+        if self.checkpointIsOn == False:
+            return
+        with open(self.checkpointfilename, 'r', encoding='utf-8') as csv_in:
+            reader = csv_in.read().splitlines()
+        return reader
 
 
     @property
@@ -334,6 +315,7 @@ class DocParserPdf(DocParserBase):
         else:
             if os.path.exists(self.checkpointfilename):
                 os.remove(self.checkpointfilename)
+
 
 def create_object(gConfig):
     parser=DocParserPdf(gConfig)

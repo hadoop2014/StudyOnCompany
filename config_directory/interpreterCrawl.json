@@ -52,9 +52,16 @@
      "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.2pre) Gecko/20070215 K-Ninja/2.1.1",
      "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9) Gecko/20080705 Firefox/3.0 Kapiko/3.0",
      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"],
-    "nameStandardize": "[\\d]*[\\u4E00-\\u9FA5|：]+\\d+[\\u4E00-\\u9FA5]+",
+    "nameStandardize": "(（\\d+）)*[\\u4E00-\\u9FA5|：]+\\d+[\\u4E00-\\u9FA5]+(（[\\u4E00-\\u9FA5]+）)*",
     "nameDiscard": ["摘要","取消","英文"],
-    "RESPONSE_TIMEOUT": 10
+    "RESPONSE_TIMEOUT": 10,
+    "exception": {
+      "通策医疗": {
+        "stock": "600763",
+        "secid": "gssh0600763",
+        "searchkey": ""
+      }
+    }
   }
 
 

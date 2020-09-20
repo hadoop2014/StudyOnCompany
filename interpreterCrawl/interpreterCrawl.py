@@ -45,7 +45,7 @@ class InterpreterCrawl(InterpreterBase):
         # Build the lexer
         self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
 
-        # dictionary of names
+        # dictionary of names_global
         self.names = {}
 
 

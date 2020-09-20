@@ -63,7 +63,8 @@ class BaseClass():
     def _is_file_name_valid(self,fileName):
         assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
         isFileNameValid = False
-        pattern = '年度报告|季度报告'
+        reportTypes = self.gJsonBase['报告类型']
+        pattern = '|'.join(reportTypes)
         if isinstance(pattern, str) and isinstance(fileName, str):
             if pattern != NULLSTR:
                 matched = re.search(pattern, fileName)
@@ -81,23 +82,42 @@ class BaseClass():
             type = matched.pop()
         return type
 
+
     def _get_path_by_type(self,type):
-        typeTranser = {
-            "年度报告": "年报",
-            "半年度报告": "半年报",
-            "第一季度报告": "季报",
-            "第三季度报告": "季报"
-        }
-        assert type in typeTranser.keys(),"type(%s) is invalid"%type
-        path = os.path.join(self.data_directory,typeTranser[type])
+        #typeTranser = {
+        #    "年度报告": "年报",
+        #    "半年度报告": "半年报",
+        #    "第一季度报告": "季报",
+        #    "第三季度报告": "季报"
+        #}
+        #types = ['年度报告','半年度报告','第一季度报告','第三季度报告']
+        reportTypes = self.gJsonBase['报告类型']
+        assert type in reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,reportTypes)
+        path = os.path.join(self.data_directory,type)
         if not os.path.exists(path):
             os.mkdir(path)
         return path
 
 
+    def _get_path_by_name(self,name):
+        type = self._get_type_by_name(name)
+        path = self._get_path_by_type(type)
+        return path
+
     def _get_text(self,page):
         return page
 
+
+
+    def _standardize(self,fieldStandardize,field):
+        standardizedField = field
+        if isinstance(field, str) and isinstance(fieldStandardize, str) and fieldStandardize !="":
+            matched = re.search(fieldStandardize, field)
+            if matched is not None:
+                standardizedField = matched[0]
+            else:
+                standardizedField = NaN
+        return standardizedField
 
     def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:

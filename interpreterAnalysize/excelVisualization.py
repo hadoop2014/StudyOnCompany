@@ -42,14 +42,14 @@ class ExcelVisualization(InterpreterBase):
         #writer.book = workbook
         visualize_file = os.path.join(self.working_directory,visualize_file)
         #assert os.path.exists(visualize_file),"the file %s is not exists,you must create it first!"%visualize_file
-        if self.checkpointIsOn == False:
+        #if self.checkpointIsOn == False:
             # 没有启用备份文件时,初始化workbook
-            if os.path.exists(visualize_file):
-                os.remove(visualize_file)
-            workbook = Workbook()
-            writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
-            writer.book = workbook
-            writer.save()  # 生成一个新文件
+        if os.path.exists(visualize_file):
+            os.remove(visualize_file)
+        workbook = Workbook()
+        writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
+        writer.book = workbook
+        writer.save()  # 生成一个新文件
         workbook = load_workbook(visualize_file)
         #workbook.get_active_sheet().title = tableName
         writer = pd.ExcelWriter(visualize_file,engine='openpyxl')

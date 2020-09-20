@@ -6,7 +6,6 @@
 # @Note    : 用于财务数据分析
 
 from interpreterAnalysize.interpreterBaseClass import *
-import pandas as pd
 from ply import lex,yacc
 
 
@@ -44,7 +43,7 @@ class InterpreterAnalysize(InterpreterBase):
         # Build the lexer
         self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
 
-        # dictionary of names
+        # dictionary of names_global
         self.names = {}
 
 

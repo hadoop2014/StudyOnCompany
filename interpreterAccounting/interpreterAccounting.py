@@ -55,7 +55,7 @@ class InterpreterAccounting(InterpreterBase):
         )
 
 
-        # dictionary of names
+        # dictionary of names_global
         self.names = {}
 
 
@@ -107,7 +107,7 @@ class InterpreterAccounting(InterpreterBase):
             unit = p[6].split(':')[-1].split('：')[-1]
             self.names['货币单位'] = self._unit_transfer(unit)
             currency = p[5]
-            #currency = self.names['currency']
+            #currency = self.names_global['currency']
             company = self.names['company']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True

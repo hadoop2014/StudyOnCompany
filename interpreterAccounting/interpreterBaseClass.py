@@ -13,14 +13,10 @@ class InterpreterBase(BaseClass):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
         self.interpreter_name = self._get_class_name(self.gConfig)
-        #self.working_directory = os.path.join(self.gConfig['working_directory'],'interpreter',self.interpreter_name)
-        #self.working_directory = os.path.join(self.gConfig['working_directory'],self._get_module_path())
         self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)
-        #self.mainprogram = self.gConfig['program_directory']
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
         self._get_interpreter_keyword()
-        #self.interpretDefine()
 
 
     def _get_class_name(self, gConfig):
