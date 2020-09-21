@@ -528,7 +528,7 @@ class InterpreterAccounting(InterpreterBase):
     def _get_time_type_by_name(self,filename):
         time = self._standardize('\\d+年',filename)
         type = self._standardize('|'.join(self.gJsonBase['报告类型']),filename)
-        company = re.findall("([\\u4E00-\\u9FA5]{3,})：",filename)
+        company = re.findall("([\\u4E00-\\u9FA5]+)：",filename)
         if self.names['报告时间'] == NULLSTR and time is not NaN:
             self.names["报告时间"] = time
         if self.names['报告类型'] == NULLSTR and type is not NaN:
