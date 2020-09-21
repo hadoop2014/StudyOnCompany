@@ -462,7 +462,7 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('the file %s is already in checkpointfile,no need to process!'%fileName)
             return
         self.logger.info("\n\n%s parse is starting!\n\n" % (fileName))
-        self._get_time_type_by_name()
+        self._get_time_type_by_name(self.gConfig['sourcefile'])
         for data in self.docParser:
             self.currentPageNumber = self.docParser.index
             text = self.docParser._get_text(data)
@@ -525,13 +525,16 @@ class InterpreterAccounting(InterpreterBase):
         self.excelParser.writeToStore(self.names[tableName])
         self.sqlParser.writeToStore(self.names[tableName])
 
-    def _get_time_type_by_name(self):
-        time = self._standardize('\\d+年',self.gConfig['sourcefile'])
-        type = self._standardize('|'.join(self.gJsonBase['报告类型']),self.gConfig['sourcefile'])
+    def _get_time_type_by_name(self,filename):
+        time = self._standardize('\\d+年',filename)
+        type = self._standardize('|'.join(self.gJsonBase['报告类型']),filename)
+        company = re.findall("([\\u4E00-\\u9FA5]{3,})：",filename)
         if self.names['报告时间'] == NULLSTR and time is not NaN:
             self.names["报告时间"] = time
         if self.names['报告类型'] == NULLSTR and type is not NaN:
             self.names['报告类型'] = type
+        if self.names['公司简称'] ==NULLSTR and len(company) > 0:
+            self.names['公司简称'] = company.pop()
 
     def _construct_table(self,tableNmae):
         headers = self.dictTables[tableNmae]['header']
