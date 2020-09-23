@@ -93,7 +93,8 @@ class MyTestCase(unittest.TestCase):
 
     def run_interpreter_yacc(self):
         input = ''
-        input = input + "(本公司)的利润分配方案或预案及资本公积金转增股本方案如下"
+        input = input + ' 在职员工的数量合计 21,056'
+        input = input + " (本公司)的利润分配方案或预案及资本公积金转增股本方案如下"
         input = input + ''' 七、 近三年主要会计数据和财务指标
                             (一) 主要会计数据
                             单位：元  币种：人民币

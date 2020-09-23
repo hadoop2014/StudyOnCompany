@@ -97,7 +97,7 @@ select
     b.归属于上市公司股东的净资产（上期）,
     b.总资产（上期）,
     e.营业成本,
-    e.投资收益,
+    case when e.投资收益 != '' then e.投资收益 else 0 end as 投资收益,
     e.三、营业利润,
     e.四、利润总额,
     e.所得税费用,
@@ -118,7 +118,7 @@ select
     c.在建工程,
     h.期末账面价值 as 土地使用权,
     case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.投资性房地产 else 0 end as 投资性房地产,
-    c.商誉,
+    case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
     c.预收款项,
     case when c.应付票据及应付账款 is not NULL then c.应付票据及应付账款 else
         case when c.应付账款 is not NULL and c.应付票据 is not NULL
