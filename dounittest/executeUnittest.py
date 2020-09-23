@@ -18,7 +18,7 @@ class MyTestCase(unittest.TestCase):
     def run_interpreter_yacc(self):
         interpreterAccounting = InterpreterAssemble().interpreter_assemble('accounting')
         interpreterAccounting.initialize()
-        interpreterAccounting.docParser._set_dataset(list([0,1,2,4,5,6]))
+        interpreterAccounting.docParser._set_dataset(list([0,1,2,4,151,152,153,154]))
         interpreterAccounting.doWork(debug=True,tracking=False)
 
 
