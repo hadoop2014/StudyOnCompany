@@ -144,6 +144,8 @@ class DocParserSql(DocParserBase):
                     value = re.sub('不适用$',NULLSTR,value)
                     value = re.sub('附注',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"
                     value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
+                    value = re.sub('^上升',NULLSTR,value)#解决京新药业2017年年报,主要会计数据的一列数据中出现"上升 0.49个百分点"
+                    value = re.sub('个百分点$',NULLSTR,value)#解决京新药业2017年年报,主要会计数据的一列数据中出现"上升 0.49个百分点"
                     value = re.sub('^）\\s*',NULLSTR,value)
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
@@ -368,13 +370,15 @@ class DocParserSql(DocParserBase):
     def _process_header_discard(self, dataFrame, tableName):
         #去掉无用的表头;把字段名由index转为column
         headerDiscard = self.dictTables[tableName]['headerDiscard']
-        #headerDiscardPattern = '|'.join(headerDiscard)
+        headerDiscardPattern = '|'.join(headerDiscard)
         #同时对水平表进行转置,把字段名由index转为column,便于插入sqlite3数据库
         dataFrame = dataFrame.T.copy()
         #删除需要丢弃的表头,该表头由self.dictTables[tableName]['headerDiscard']定义
-        #indexDiscardHeader = [self._is_field_matched(headerDiscardPattern,x) for x in dataFrame.index.values]
-        indexDiscardHeader = dataFrame.index.isin(headerDiscard + self._get_invalid_field())
+        indexDiscardHeader = [self._is_field_matched(headerDiscardPattern,x) for x in dataFrame.index.values]
         #主要会计数据的第一个index为空字段,该代码会判断为Ture,所以要重新设置为False
+        indexDiscardHeader[0] = False
+        dataFrame.loc[indexDiscardHeader] = NaN
+        indexDiscardHeader = dataFrame.index.isin(self._get_invalid_field())
         indexDiscardHeader[0] = False
         dataFrame.loc[indexDiscardHeader] = NaN
         dataFrame = dataFrame.dropna(axis=0).copy()

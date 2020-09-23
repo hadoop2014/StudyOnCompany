@@ -537,13 +537,18 @@ class InterpreterAccounting(InterpreterBase):
         time = self._standardize('\\d+年',filename)
         type = self._standardize('|'.join(self.gJsonBase['报告类型']),filename)
         company = self._standardize(self.gJsonInterpreter['DISCARD'],filename)
-        #company = re.findall("([\\u4E00-\\u9FA5]+)：",filename)
+        code = self._standardize('（\\d+）',filename)
         if self.names['报告时间'] == NULLSTR and time is not NaN:
             self.names["报告时间"] = time
         if self.names['报告类型'] == NULLSTR and type is not NaN:
             self.names['报告类型'] = type
-        if self.names['公司简称'] ==NULLSTR and len(company) > 0:
+        if self.names['公司简称'] ==NULLSTR and company is not NaN:
             self.names['公司简称'] = company
+        if self.names['公司代码'] ==NULLSTR and code is not NaN:
+            code = code.replace('（',NULLSTR).replace('）',NULLSTR)
+            self.names['公司代码'] = code
+        self.logger.info('fetch data from filename:%s %s %s %s'
+                         %(self.names["公司代码"],self.names["公司简称"],self.names["报告时间"],self.names["报告类型"]))
 
     def _construct_table(self,tableNmae):
         headers = self.dictTables[tableNmae]['header']
