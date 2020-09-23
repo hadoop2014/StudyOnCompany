@@ -208,8 +208,10 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional TIME optional UNIT finis NUMERIC
                           | TABLE optional NUMERIC
                           | TABLE optional TIME NUMERIC
-                          | TABLE optional UNIT CURRENCY NUMERIC'''
+                          | TABLE optional UNIT CURRENCY NUMERIC
+                          | TABLE optional COMPANY NUMERIC'''
             #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
+            #TABLE optional COMPANY NUMERIC解决大立科技2018年年报合并资产负债表出现在页尾的情况.
             #TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
@@ -238,9 +240,9 @@ class InterpreterAccounting(InterpreterBase):
         def p_fetchdata_referencedouble(p):
             '''fetchdata : REFERENCE DISCARD REFERENCE NUMERIC
                          | REFERENCE NUMERIC REFERENCE DISCARD '''
-            if self.names[self._get_reference_alias(p[1])] == NULLSTR \
-                and self.names[self._get_reference_alias(p[3])] == NULLSTR:
+            if self.names[self._get_reference_alias(p[1])] == NULLSTR :
                 self.names.update({self._get_reference_alias(p[1]):p[2]})
+            if self.names[self._get_reference_alias(p[3])] == NULLSTR:
                 self.names.update({self._get_reference_alias(p[3]):p[4]})
             self.logger.info('fetchdata reference %s -> %s %s,%s -> %s %s'%(p[1],self._get_reference_alias(p[1]),p[2]
                              ,p[3],self._get_reference_alias(p[3]),p[4]))
@@ -249,9 +251,9 @@ class InterpreterAccounting(InterpreterBase):
         def p_fetchdata_referencetriple(p):
             '''fetchdata : REFERENCE NUMERIC term REFERENCE DISCARD DISCARD'''
             #解决华新水泥2018年报中,股票简称不能识别的问题
-            if self.names[self._get_reference_alias(p[1])] == NULLSTR \
-                and self.names[self._get_reference_alias(p[4])] == NULLSTR:
+            if self.names[self._get_reference_alias(p[1])] == NULLSTR :
                 self.names.update({self._get_reference_alias(p[1]):p[2]})
+            if self.names[self._get_reference_alias(p[4])] == NULLSTR:
                 self.names.update({self._get_reference_alias(p[4]):p[5]})
             self.logger.info('fetchdata reference %s -> %s %s,%s -> %s %s'%(p[1],self._get_reference_alias(p[1]),p[2]
                              ,p[3],self._get_reference_alias(p[3]),p[4]))
@@ -303,10 +305,10 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchtitle : COMPANY TIME REPORT'''
             if self.names['公司名称'] == NULLSTR :
                 self.names.update({'公司名称':p[1]})
-            if self.names['报告时间'] == NULLSTR \
-                and self.names['报告类型'] == NULLSTR:
+            if self.names['报告时间'] == NULLSTR :
                 years = self._time_transfer(p[2])
                 self.names.update({'报告时间':years})
+            if self.names['报告类型'] == NULLSTR:
                 self.names.update({'报告类型':p[3]})
             self.logger.info('fetchtitle %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
@@ -318,10 +320,10 @@ class InterpreterAccounting(InterpreterBase):
             #解决海螺水泥2018年报第1页title的识别问题
             if self.names['公司名称'] == NULLSTR :
                 self.names.update({'公司名称': p[1]})
-            if self.names['报告时间'] == NULLSTR \
-                and self.names['报告类型'] == NULLSTR:
+            if self.names['报告时间'] == NULLSTR :
                 years = self._time_transfer(p[4])
                 self.names.update({'报告时间':years})
+            if self.names['报告类型'] == NULLSTR:
                 self.names.update({'报告类型':self._get_unit_alias(p[5])})
             self.logger.info('fetchtitle long %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
@@ -362,7 +364,7 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_useless(p):
             '''useless : PUNCTUATION
-                       | DISCARD
+                       | discard
                        | WEBSITE
                        | EMAIL
                        | NAME
@@ -399,15 +401,12 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_optional_optional(p):
-            '''optional : DISCARD optional
-                        | optional fetchtitle DISCARD
-                        | fetchtitle DISCARD DISCARD DISCARD DISCARD
-                        | fetchtitle DISCARD
+            '''optional : fetchtitle discard
                         | fetchtitle empty
-                        | '(' NAME ')' optional
+                        | optional COMPANY fetchtitle
+                        | optional COMPANY
                         | DISCARD LOCATION COMPANY
-                        | optional TIME REPORT
-                        | DISCARD DISCARD DISCARD'''
+                        | optional TIME REPORT'''
             #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
@@ -416,16 +415,25 @@ class InterpreterAccounting(InterpreterBase):
             #DISCARD LOCATION COMPANY解决海天味业2019年财报中出现合并资产负债表 2019 年 12 月 31 日  编制单位: 佛山市海天调味食品股份有限公司 单位:元 币种:人民币
             #optional TIME REPORT解决隆基股份2017年财报,合并资产利润表达到页尾,而下一页开头出现"2017年年度报告"
             #DISCARD DISCARD DISCARD解决理邦仪器：2019年年度报告的主要会计数据识别不到的问题
+            #20200923,去掉DISCARD optional,optional fetchtitle DISCARD,fetchtitle DISCARD DISCARD DISCARD DISCARD,fetchtitle DISCARD,'(' NAME ')' optional,DISCARD DISCARD DISCARD
             p[0] = p[1]
 
 
         def p_optional(p):
             '''optional : empty
-                        | COMPANY '''
+                        | COMPANY
+                        | discard'''
             if p.slice[1].type == 'COMPANY':
                 self.names['company'] = p[1]
             p[0] = p[1]
             print('optional',p[0])
+
+
+        def p_discard(p):
+            '''discard : DISCARD discard
+                       | DISCARD
+                       | '(' NAME ')' discard'''
+            p[0] = p[1]
 
 
         def p_finis(p):
@@ -528,13 +536,14 @@ class InterpreterAccounting(InterpreterBase):
     def _get_time_type_by_name(self,filename):
         time = self._standardize('\\d+年',filename)
         type = self._standardize('|'.join(self.gJsonBase['报告类型']),filename)
-        company = re.findall("([\\u4E00-\\u9FA5]+)：",filename)
+        company = self._standardize(self.gJsonInterpreter['DISCARD'],filename)
+        #company = re.findall("([\\u4E00-\\u9FA5]+)：",filename)
         if self.names['报告时间'] == NULLSTR and time is not NaN:
             self.names["报告时间"] = time
         if self.names['报告类型'] == NULLSTR and type is not NaN:
             self.names['报告类型'] = type
         if self.names['公司简称'] ==NULLSTR and len(company) > 0:
-            self.names['公司简称'] = company.pop()
+            self.names['公司简称'] = company
 
     def _construct_table(self,tableNmae):
         headers = self.dictTables[tableNmae]['header']

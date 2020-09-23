@@ -200,6 +200,7 @@ where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a
     and (a.报告时间 = f.报告时间 and a.公司代码 = f.公司代码 and a.报告类型 = f.报告类型)
     and (a.报告时间 = g.报告时间 and a.公司代码 = g.公司代码 and a.报告类型 = g.报告类型)
     and (a.报告时间 = h.报告时间 and a.公司代码 = h.公司代码 and a.报告类型 = h.报告类型 and h.项目 = '土地使用权')
+    and (a.报告时间 != '' and a.公司代码 != '' and a.报告类型 != '')
 order by a.报告时间,a.公司代码,a.报告类型;
 
 CREATE INDEX IF NOT EXISTS [财务分析基础表索引] on [财务分析基础表] (
