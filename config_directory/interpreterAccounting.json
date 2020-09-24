@@ -128,7 +128,7 @@
     "headerStandardize": "[\\u4E00-\\u9FA5]{2,}",
     "fieldDiscard": ["项目"],
     "fieldFirst": "营业收入",
-    "fieldLast": "经营活动产生的现金流量净额",
+    "fieldLast": "经营活动产生的现金流量净额|现金流量净额",
     "fieldFromHeader": "季度",
     "fieldAlias": {
       "归属于上市公司股东的扣除非经常性损益的净利润": "归属于上市公司股东的扣除非经常性损益后的净利润"

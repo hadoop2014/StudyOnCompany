@@ -53,6 +53,7 @@ class DocParserSql(DocParserBase):
 
         #对数据进行预处理,两行并在一行的分开,去掉空格等
         dataframe = self._process_value_pretreat(dataframe,tableName)
+
         #针对合并所有者权益表的前三列空表头进行合并,对转置表进行预转置,使得其处理和其他表一致
         dataframe = self._process_header_merge_simple(dataframe, tableName)
 
@@ -142,10 +143,11 @@ class DocParserSql(DocParserBase):
             if isinstance(value,str):
                 if value != NONESTR and value != NULLSTR:
                     value = re.sub('不适用$',NULLSTR,value)
-                    value = re.sub('附注',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"
+                    value = re.sub('^附注',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"
                     value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
                     value = re.sub('^上升',NULLSTR,value)#解决京新药业2017年年报,主要会计数据的一列数据中出现"上升 0.49个百分点"
                     value = re.sub('个百分点$',NULLSTR,value)#解决京新药业2017年年报,主要会计数据的一列数据中出现"上升 0.49个百分点"
+                    value = re.sub('^注释',NULLSTR,value)#解决灰顶科技2019年年报中,合并资产负债表,合并利润表中的字段出现'注释'
                     value = re.sub('^）\\s*',NULLSTR,value)
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
