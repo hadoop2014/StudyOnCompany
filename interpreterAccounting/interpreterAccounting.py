@@ -32,7 +32,7 @@ class InterpreterAccounting(InterpreterBase):
         #t_ignore = " \t\n"
         t_ignore = self.ignores
         #解决亿纬锂能2018年财报中,'无形资产情况'和'单位: 元'之间,插入了《.... 5 .....》中间带有数字,导致误判为搜索到页尾
-        t_ignore_COMMENT = "《.*》|《.*|.*》"
+        t_ignore_COMMENT = "《.*》"
 
 
         def t_newline(t):
@@ -166,8 +166,10 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchtable_timedouble(p):
-            '''fetchtable : TABLE optional TIME TIME'''
+            '''fetchtable : TABLE optional TIME TIME
+                          | TABLE optional TIME DISCARD TIME'''
             #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
+            #TABLE optional TIME DISCARD TIME解决康龙化成：2019年年度报告中主要会计数据的表头不规范, 两个TIME直接插入一个DISCARD
             tableName = self._get_tablename_alias(str.strip(p[1]))
             if len(self.names[tableName]['page_numbers']) != 0:
                 if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
@@ -183,9 +185,9 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
-
+        '''
         def p_fetchtable_timedouble_discard(p):
-            '''fetchtable : TABLE DISCARD DISCARD TIME TIME'''
+            'fetchtable : TABLE DISCARD DISCARD TIME TIME'
             #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
             tableName = self._get_tablename_alias(str.strip(p[1]))
             if len(self.names[tableName]['page_numbers']) != 0:
@@ -201,7 +203,7 @@ class InterpreterAccounting(InterpreterBase):
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-
+        '''
 
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
@@ -399,14 +401,10 @@ class InterpreterAccounting(InterpreterBase):
             else:
                 p[0] = float(p[1].replace(',',''))
 
-
         def p_optional_optional(p):
-            '''optional : fetchtitle discard
-                        | fetchtitle empty
-                        | optional COMPANY fetchtitle
-                        | optional COMPANY
-                        | DISCARD LOCATION COMPANY
-                        | optional TIME REPORT'''
+            '''optional : optional discard
+                        | optional fetchtitle
+                        | optional title'''
             #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
@@ -418,13 +416,32 @@ class InterpreterAccounting(InterpreterBase):
             #20200923,去掉DISCARD optional,optional fetchtitle DISCARD,fetchtitle DISCARD DISCARD DISCARD DISCARD,fetchtitle DISCARD,'(' NAME ')' optional,DISCARD DISCARD DISCARD
             p[0] = p[1]
 
+        '''
+        def p_optional_optional(p):
+            ''optional : fetchtitle discard
+                        | fetchtitle empty
+                        | optional COMPANY fetchtitle
+                        | optional COMPANY
+                        | optional TIME REPORT
+                        | DISCARD LOCATION COMPANY''
+            #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
+            #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
+            #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
+            #DISCARD PUNCTUATION DISCARD DISCARD和t_ignore_COMMENT = "《.*》"一起解决亿纬锂能2018年财报中搜索无形资产情况时误判为到达页尾
+            #DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
+            #DISCARD LOCATION COMPANY解决海天味业2019年财报中出现合并资产负债表 2019 年 12 月 31 日  编制单位: 佛山市海天调味食品股份有限公司 单位:元 币种:人民币
+            #optional TIME REPORT解决隆基股份2017年财报,合并资产利润表达到页尾,而下一页开头出现"2017年年度报告"
+            #DISCARD DISCARD DISCARD解决理邦仪器：2019年年度报告的主要会计数据识别不到的问题
+            #20200923,去掉DISCARD optional,optional fetchtitle DISCARD,fetchtitle DISCARD DISCARD DISCARD DISCARD,fetchtitle DISCARD,'(' NAME ')' optional,DISCARD DISCARD DISCARD
+            p[0] = p[1]
+        '''
 
         def p_optional(p):
             '''optional : empty
-                        | COMPANY
+                        | company
                         | discard'''
-            if p.slice[1].type == 'COMPANY':
-                self.names['company'] = p[1]
+            #if p.slice[1].type == 'COMPANY':
+            #    self.names['company'] = p[1]
             p[0] = p[1]
             print('optional',p[0])
 
@@ -435,6 +452,15 @@ class InterpreterAccounting(InterpreterBase):
                        | '(' NAME ')' discard'''
             p[0] = p[1]
 
+        def p_company(p):
+            '''company : COMPANY
+                       | LOCATION COMPANY
+                       | discard COMPANY
+                       '''
+            for slice in p.slice:
+                if slice.type == 'COMPANY':
+                    self.names['company'] = p[1]
+            p[0] = p[1]
 
         def p_finis(p):
             '''finis : empty
@@ -483,7 +509,7 @@ class InterpreterAccounting(InterpreterBase):
         self.logger.info('%s\tprocess_info:'%sourceFile + str(self.sqlParser.process_info))
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
-            self.logger.info("%s\tall table is success fetched!"%(sourceFile))
+            self.logger.info("%s\tall table is success fetched!\n"%(sourceFile))
             self.docParser.save_checkpoint(fileName)
         else:
             self.logger.info('%s\ttable(%s) is failed to fetch'

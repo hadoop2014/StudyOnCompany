@@ -105,7 +105,10 @@ class InterpreterNature(InterpreterBase):
             elif p.slice[3].type == 'time':
                 self.names_global.update({p[1]:self.names_local['timelist']})
             elif p.slice[3].type == 'value':
-                self.names_global.update({p[1]:self.names_local['valuelist']})
+                if isinstance(self.names_global[p[1]],list):
+                    self.names_global.update({p[1]:self.names_global[p[1]] + self.names_local['valuelist']})
+                else:
+                    self.names_global.update({p[1]:self.names_local['valuelist']})
             self._parameter_check(p[1], self.names_global[p[1]])
             self.logger.info("fetch config %s : %s"%(p[1],p[3]))
             p[0] = p[1] + ':' + p[3]
