@@ -70,7 +70,7 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_header_standardize(dataframe,tableName)
 
         #把表字段名进行标准化
-        dataframe = self._process_field_standardize(dataframe,tableName)
+        #dataframe = self._process_field_standardize(dataframe,tableName)
 
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称,统一后再去重
         dataframe = self._process_field_alias(dataframe,tableName)
@@ -179,6 +179,12 @@ class DocParserSql(DocParserBase):
         # 增加blankFrame来驱动最后一个field的合并
         blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
         dataFrame = dataFrame.append(blankFrame)
+        isRowAllInvalid = self._is_row_all_invalid(dataFrame.iloc[0])
+        if isRowAllInvalid:
+            # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
+            # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
+            dataFrame.iloc[0] = NaN
+            dataFrame = dataFrame.dropna()
         for index, field in enumerate(dataFrame.iloc[:, 0]):
             isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
@@ -233,6 +239,7 @@ class DocParserSql(DocParserBase):
     def _process_field_merge_simple(self,dataFrame,tableName):
         mergedRow = None
         lastIndex = 0
+        countIndex = len(dataFrame.index.values)
         mergedFields = reduce(self._merge,dataFrame.iloc[:,0].tolist())
         isStandardizeStrictMode = self._is_standardize_strict_mode(mergedFields,tableName)
         #增加blankFrame来驱动最后一个field的合并
@@ -273,9 +280,40 @@ class DocParserSql(DocParserBase):
                         # 把前期合并的行赋值到dataframe的上一行
                         dataFrame.iloc[lastIndex] = mergedRow
                         dataFrame.iloc[lastIndex + 1:index] = NaN
-                    if mergedRow is not None and mergedRow[0] != NULLSTR:
-                        #解决大立科技2018年财报中主要会计数据解析不准确的问题,原因是总资产(元)前面接了一个空字段,空字段的行需要合并到下一行中
-                        mergedRow = None
+                    if mergedRow is not None:
+                        if mergedRow[0] != NULLSTR:
+                            #解决大立科技2018年财报中主要会计数据解析不准确的问题,原因是总资产(元)前面接了一个空字段,空字段的行需要合并到下一行中
+                            mergedRow = None
+                        elif self._is_header_in_row(mergedRow,tableName):
+                            #解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
+                            mergedRow = None
+                        else:
+                            #上一行是以空字符开头的行,需要和本行进行合并,不能设置mergedRow = None
+                            pass
+                    # 如果field为空的情况下,下一行的field仍旧是空行,则当前行空字段行需要并入mergedRow
+                    '''aheaderField = None
+                    if index + 1 < countIndex:
+                        aheaderField = dataFrame.iloc[index + 1, 0]
+                    if aheaderField != NULLSTR:
+                        mergedField = mergedRow[0]
+                        if self._is_valid(mergedField):
+                            # 当前字段为'',下一个字段有效,如果合并后的字段为标准字段,则认为合并成功
+                            if self._is_field_in_standardize_by_mode(mergedField, isStandardizeStrictMode, tableName):
+                                if index > lastIndex + 1 and mergedRow is not None:
+                                    dataFrame.iloc[lastIndex] = mergedRow
+                                    dataFrame.iloc[lastIndex + 1:index] = NaN
+                                mergedRow = None'''
+                else:
+                    #解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
+                    if mergedRow is not None :
+                        mergedField = mergedRow[0]
+                        if self._is_field_in_standardize_by_mode(mergedField,isStandardizeStrictMode,tableName):
+                            if index > lastIndex + 1 and mergedRow is not None:
+                                # 把前期合并的行赋值到dataframe的上一行
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = NaN
+                            mergedRow = None
+
 
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()

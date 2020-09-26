@@ -76,13 +76,17 @@ class DocParserPdf(DocParserBase):
         keyName = '默认值'
         table_settings = dict()
         snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
+        #新增join_tolerance,解决康泰生物：2018年年度报告.PDF中合并利润表,合并资产负债表的解析不正确问题
+        join_tolerance = self.gJsonBase['table_settings'][keyName]["join_tolerance"]
         if dictTable['公司简称'] != NULLSTR:
             keyName = dictTable['公司简称']
             if keyName in self.gJsonBase['table_settings'].keys():
-                if dictTable['报告时间'] == self.gJsonBase['table_settings'][keyName]['报告时间'] \
+                if dictTable['报告时间'] in self.gJsonBase['table_settings'][keyName]['报告时间'] \
                     and dictTable['报告类型'] == self.gJsonBase['table_settings'][keyName]['报告类型']:
                     snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
+                    join_tolerance = self.gJsonBase['table_settings'][keyName]["join_tolerance"]
         table_settings.update({"snap_tolerance":snap_tolerance})
+        table_settings.update({"join_tolerance":join_tolerance})
         return table_settings
 
 
