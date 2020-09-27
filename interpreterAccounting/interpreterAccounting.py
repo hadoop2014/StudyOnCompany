@@ -185,6 +185,25 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
+        def p_fetchtable_header(p):
+            '''fetchtable : TABLE optional HEADER'''
+            #专门用于解决杰瑞股份2016,2017,2018,2019年年度报告中现金流量表补充资料,无形资产情况搜索不到的情况.
+            tableName = self._get_tablename_alias(str.strip(p[1]))
+            if len(self.names[tableName]['page_numbers']) != 0:
+                if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
+                    self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (
+                    p[1], tableName, p[3], self.currentPageNumber))
+                    return
+            if self._is_reatch_max_pages(self.names[tableName], tableName) is True:
+                self.docParser.interpretPrefix = NULLSTR
+                return
+            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
+            unit = NULLSTR
+            currency = self.names['currency']
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
+            tableBegin = True
+            self._process_fetch_table(tableName, tableBegin, interpretPrefix, unit, currency)
+
         '''
         def p_fetchtable_timedouble_discard(p):
             'fetchtable : TABLE DISCARD DISCARD TIME TIME'
@@ -208,13 +227,14 @@ class InterpreterAccounting(InterpreterBase):
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
                           | TABLE optional TIME optional UNIT finis NUMERIC
-                          | TABLE optional NUMERIC
+                          | TABLE optional NUMERIC NAME
                           | TABLE optional TIME NUMERIC
                           | TABLE optional UNIT CURRENCY NUMERIC
                           | TABLE optional COMPANY NUMERIC'''
             #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
             #TABLE optional COMPANY NUMERIC解决大立科技2018年年报合并资产负债表出现在页尾的情况.
             #TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
+            #TABLE optional NUMERIC NAME在原语法末尾增加NAME,原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
@@ -228,8 +248,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchtable_skipword(p):
-            '''fetchtable : TABLE HEADER
-                          | TABLE optional TABLE
+            '''fetchtable : TABLE optional TABLE
                           | TABLE optional PUNCTUATION'''
             #去掉了语法TABLE term,该语法和TABLE optional NUMERIC冲突
             #去掉合并资产负债表项目
