@@ -76,7 +76,7 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_field_alias(dataframe,tableName)
 
         #把表字段名统一命名后,再进行标准化之后去重复
-        dataframe = self._process_field_standardize(dataframe,tableName)
+        #dataframe = self._process_field_standardize(dataframe,tableName)
 
         #处理重复字段
         dataframe = self._process_field_duplicate(dataframe,tableName)
@@ -117,6 +117,10 @@ class DocParserSql(DocParserBase):
                 sql = sql + '\nwhere 报告时间 = \'{}' .format(sql_df["报告时间"].values[0]) + '\''
                 sql = sql + '\n    and 报告类型 = \'{}'.format(sql_df['报告类型'].values[0]) + '\''
                 sql = sql + '\n    and 公司简称 = \'{}'.format(sql_df['公司简称'].values[0]) + '\''
+                fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
+                if fieldFromHeader != NULLSTR:
+                    # 对于分季度财务数据和合并所有者权益变动表及无形资产情况,报告时间都是同一年,所以必须通过季度来判断记录是否唯一
+                    sql = sql + ' and {} = \'{}\''.format(fieldFromHeader, sql_df[fieldFromHeader].values[0])
                 self._sql_executer(sql)
                 self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
                                                                             ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
@@ -437,8 +441,15 @@ class DocParserSql(DocParserBase):
 
     def _process_field_alias(self,dataFrame,tableName):
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称
+        #针对主要会计数据,需要在标准化前进行统一命名
         aliasedFields = self._get_aliased_fields(dataFrame.iloc[0].tolist(), tableName)
         dataFrame.iloc[0] = aliasedFields
+        #对于合并利润表,需要在标准化后进行统一命名
+        dataFrame = self._process_field_standardize(dataFrame,tableName)
+        aliasedFields = self._get_aliased_fields(dataFrame.iloc[0].tolist(), tableName)
+        dataFrame.iloc[0] = aliasedFields
+        #统一命名之后,再次进行标准化
+        dataFrame = self._process_field_standardize(dataFrame, tableName)
         return dataFrame
 
 

@@ -84,7 +84,8 @@ class DocParserPdf(DocParserBase):
                 if dictTable['报告时间'] in self.gJsonBase['table_settings'][keyName]['报告时间'] \
                     and dictTable['报告类型'] == self.gJsonBase['table_settings'][keyName]['报告类型']:
                     snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
-                    join_tolerance = self.gJsonBase['table_settings'][keyName]["join_tolerance"]
+                    if "join_tolerance" in self.gJsonBase['table_settings'][keyName].keys():
+                        join_tolerance = self.gJsonBase['table_settings'][keyName]["join_tolerance"]
         table_settings.update({"snap_tolerance":snap_tolerance})
         table_settings.update({"join_tolerance":join_tolerance})
         return table_settings
@@ -150,7 +151,7 @@ class DocParserPdf(DocParserBase):
     def _is_table_start_simple(self,tableName,fieldList,secondFieldList):
         assert isinstance(fieldList, list) and isinstance(secondFieldList, list), \
             "fieldList and headerList must be list,but now get %s %s" % (type(fieldList), type(secondFieldList))
-        isTableStart = False
+        isTableStart,isTableStartFirst,isTableStartSecond = False,False,False
         mergedFields = reduce(self._merge, fieldList)
         mergedFieldsSecond = reduce(self._merge, secondFieldList)
         headerFirst = self.dictTables[tableName]["header"][0]
@@ -168,12 +169,17 @@ class DocParserPdf(DocParserBase):
             mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
             matched = re.search(patternHeaderFirst, mergedFields)
             if matched is not None:
-                isTableStart = True
+                isTableStartFirst = True
         if isinstance(mergedFieldsSecond, str) and isinstance(patternHeaderSecond, str) :
             mergedFieldsSecond = mergedFieldsSecond.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
             matched = re.search(patternHeaderSecond, mergedFieldsSecond)
             if matched is not None:
-                isTableStart = True
+                isTableStartSecond = True
+        if tableName == '无形资产情况':
+            #解决杰瑞股份2018年年报无形资产情况,同一个页面出现了另外一张表,两张表的第一列完全相同,所以需要判断第二列结果才行
+            isTableStart = isTableStartFirst and isTableStartSecond
+        else:
+            isTableStart = isTableStartFirst or isTableStartSecond
         return isTableStart
 
     '''

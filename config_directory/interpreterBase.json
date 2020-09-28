@@ -13,68 +13,63 @@
     "麦克韦尔": {
       "报告时间": ["2018年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "九安医疗": {
       "报告时间": ["2018年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "迪安诊断": {
       "报告时间": ["2018年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "北方华创": {
       "报告时间": ["2019年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "华侨城A": {
       "报告时间": ["2018年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "华兰生物": {
       "报告时间": ["2019年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "大博医疗": {
       "报告时间": ["2019年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "大立科技": {
       "报告时间": ["2019年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "#龙蟒佰利": {
       "报告时间": "2019年",
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "国瓷材料": {
       "报告时间": ["2016年"],
       "报告类型": "年度报告",
-      "snap_tolerance": 6,
-      "join_tolerance": 3
+      "snap_tolerance": 6
     },
     "康泰生物": {
       "报告时间": ["2017年","2018年","2019年"],
       "报告类型": "年度报告",
       "snap_tolerance": 6,
       "join_tolerance": 6
+    },
+    "科伦药业": {
+      "报告时间": ["2018年"],
+      "报告类型": "年度报告",
+      "snap_tolerance": 6
     }
   },
 
