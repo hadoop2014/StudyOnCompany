@@ -164,7 +164,8 @@ class DocParserPdf(DocParserBase):
         #考虑两种情况,表头的第一个字段为空,则直接以fieldFirst来匹配,如果不为空,则以表头第一个字段 + fieldFirst 来匹配
         patternHeaderFirst = '|'.join(['^' + field for field in fieldFirst.split('|')]
                                     +['^' + headerFirst + field for field in fieldFirst.split('|')])
-        patternHeaderSecond = '^' + headerSecond
+        #patternHeaderSecond = '^' + headerSecond
+        patternHeaderSecond = '|'.join(['^' + field for field in headerSecond.split('|')])
         if isinstance(mergedFields, str) and isinstance(patternHeaderFirst, str) :
             mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
             matched = re.search(patternHeaderFirst, mergedFields)

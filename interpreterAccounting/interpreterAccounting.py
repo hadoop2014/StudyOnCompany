@@ -206,25 +206,6 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = True
             self._process_fetch_table(tableName, tableBegin, interpretPrefix, unit, currency)
 
-        '''
-        def p_fetchtable_timedouble_discard(p):
-            'fetchtable : TABLE DISCARD DISCARD TIME TIME'
-            #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
-            tableName = self._get_tablename_alias(str.strip(p[1]))
-            if len(self.names[tableName]['page_numbers']) != 0:
-                if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
-                    self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
-                    return
-            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = NULLSTR
-                return
-            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
-            unit = NULLSTR
-            currency = self.names['currency']
-            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
-            tableBegin = True
-            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-        '''
 
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional UNIT NUMERIC
