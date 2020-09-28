@@ -115,8 +115,10 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchtable_searchnotime(p):
-            '''fetchtable : TABLE optional UNIT finis '''
+            '''fetchtable : TABLE optional UNIT finis
+                          | TABLE optional UNIT CURRENCY NUMERIC HEADER'''
             #第二个语法针对的是主要会计数据
+            #TABLE optional UNIT CURRENCY NUMERIC HEADER解决万东医疗2019年年报普通股现金分行情况表搜索不到问题
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:

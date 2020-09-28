@@ -116,7 +116,7 @@ select
     b.期末总股本,
     c.固定资产,
     c.在建工程,
-    h.期末账面价值 as 土地使用权,
+    case when h.期末账面价值 != '' then h.期末账面价值 else 0 end as 土地使用权,
     case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.投资性房地产 else 0 end as 投资性房地产,
     case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
     c.预收款项,
