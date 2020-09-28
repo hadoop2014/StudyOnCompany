@@ -174,6 +174,17 @@ class DocParserSql(DocParserBase):
                                                          .replace('(','（').replace(')','）')))
         return dataFrame
 
+    def _rowDiscard(self,row,tableName):
+        if self._is_header_in_row(row.tolist(),tableName) and row[0] == NULLSTR:
+            row = row.apply(lambda value: NaN)
+        return row
+
+    def _discard_header_row(self,dataFrame,tableName):
+        #针对主要会计数据,去掉其表头
+        dataFrame = dataFrame.apply(lambda row:self._rowDiscard(row,tableName), axis=1)
+        dataFrame = dataFrame.dropna(axis=0).copy()
+        return dataFrame
+
 
     def _process_header_merge_simple(self, dataFrame, tableName):
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
@@ -236,6 +247,8 @@ class DocParserSql(DocParserBase):
             dataFrame.loc[indexDiscardField] = NaN
             dataFrame.columns = columns
             dataFrame = dataFrame.dropna(axis=0).copy()
+            #主要会计数据的表头通过上述过程去不掉,采用专门的函数去掉
+            dataFrame = self._discard_header_row(dataFrame,tableName)
         return dataFrame
 
 
@@ -253,8 +266,8 @@ class DocParserSql(DocParserBase):
         for index,field in enumerate(dataFrame.iloc[:,0].tolist()):
             #识别新字段的起始行
             isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
-            isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
-            if isRowNotAnyNone or isHeaderInRow:
+            #isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
+            if isRowNotAnyNone:# or isHeaderInRow:
                 if self._is_field_match_standardize(field,tableName):
                     if index > lastIndex + 1 and mergedRow is not None:
                         # 把前期合并的行赋值到dataframe的上一行
@@ -269,14 +282,14 @@ class DocParserSql(DocParserBase):
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = NaN
                             mergedRow = None
-                        elif isRowNotAnyNone == True and isHeaderInRow == False:
+                        elif isRowNotAnyNone == True :#and isHeaderInRow == False:
                             if mergedField == NULLSTR and self._is_header_in_row(mergedRow,tableName):
                                 if index > lastIndex + 1:
                                     dataFrame.iloc[lastIndex] = mergedRow
                                     dataFrame.iloc[lastIndex + 1:index] = NaN
                                 mergedRow = None
-                        elif isRowNotAnyNone == True and isHeaderInRow == True:
-                            mergedRow = None
+                        #elif isRowNotAnyNone == True and isHeaderInRow == True:
+                        #    mergedRow = None
             else:
                 #if self._is_field_match_standardize(field,tableName):
                 if self._is_field_in_standardize_by_mode(field, isStandardizeStrictMode, tableName):

@@ -38,10 +38,10 @@ class DocParserPdf(DocParserBase):
         else:
             pageText = page.extract_text()
         if pageText is not None:
-            pageText = self._interpretPrefix + pageText + self.EOF
+            pageText = self._interpretPrefix + pageText + EOF
         else:
             #千禾味业：2019年度审计报告.PDF文件中全部是图片,没有文字,需要做特殊处理
-            pageText = self._interpretPrefix + self.EOF
+            pageText = self._interpretPrefix + EOF
             self.logger.error('the %s page %d\'s text of is be None' % (self.sourceFile,self._index))
         return pageText
 

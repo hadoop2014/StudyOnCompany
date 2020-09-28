@@ -14,6 +14,7 @@ import sqlite3 as sqlite
 NULLSTR = ''
 NONESTR = 'None'
 NaN = np.nan
+EOF = 'EOF'
 
 
 class BaseClass():
@@ -31,7 +32,7 @@ class BaseClass():
         self._index = 0
         self._length = len(self._data)
         #不同的类继承BaseClass时,logger采用不同的名字
-        self.EOF = gConfig['EOF'.lower()]
+        #self.EOF = gConfig['EOF'.lower()]
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
 
