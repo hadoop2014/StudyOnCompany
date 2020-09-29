@@ -175,7 +175,7 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
     def _rowDiscard(self,row,tableName):
-        if self._is_header_in_row(row.tolist(),tableName) and row[0] == NULLSTR:
+        if self._is_header_in_row(row.tolist(),tableName):# and row[0] == NULLSTR:
             row = row.apply(lambda value: NaN)
         return row
 
@@ -242,11 +242,12 @@ class DocParserSql(DocParserBase):
             dataFrame.set_index(0,inplace=True)
             dataFrame = dataFrame.T.copy()
         else:
-            columns = dataFrame.iloc[0].copy()
-            indexDiscardField = dataFrame.iloc[:, 0].isin([firstHeader])
-            dataFrame.loc[indexDiscardField] = NaN
-            dataFrame.columns = columns
-            dataFrame = dataFrame.dropna(axis=0).copy()
+            #columns = dataFrame.iloc[0].copy()
+            #indexDiscardField = dataFrame.iloc[:, 0].isin([firstHeader])
+            #dataFrame.loc[indexDiscardField] = NaN
+            #dataFrame.columns = columns
+            dataFrame.columns = dataFrame.iloc[0].copy()
+            #dataFrame = dataFrame.dropna(axis=0).copy()
             #主要会计数据的表头通过上述过程去不掉,采用专门的函数去掉
             dataFrame = self._discard_header_row(dataFrame,tableName)
         return dataFrame
@@ -263,12 +264,15 @@ class DocParserSql(DocParserBase):
         blankFrame = pd.DataFrame(['']*len(dataFrame.columns.values),index=dataFrame.columns).T
         dataFrame = dataFrame.append(blankFrame)
 
+        #解决合并利润表中某些字段的'-'符合使用不一致,统一替换城'－'
+        dataFrame.iloc[:,0] = dataFrame.iloc[:,0].apply(lambda value:value.replace('-','－'))
         for index,field in enumerate(dataFrame.iloc[:,0].tolist()):
             #识别新字段的起始行
             isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             #isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
             if isRowNotAnyNone:# or isHeaderInRow:
-                if self._is_field_match_standardize(field,tableName):
+                #if self._is_field_match_standardize(field,tableName):
+                if self._is_field_in_standardize_by_mode(field,isStandardizeStrictMode,tableName):
                     if index > lastIndex + 1 and mergedRow is not None:
                         # 把前期合并的行赋值到dataframe的上一行
                         dataFrame.iloc[lastIndex] = mergedRow
@@ -282,13 +286,17 @@ class DocParserSql(DocParserBase):
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = NaN
                             mergedRow = None
+                        '''
                         elif isRowNotAnyNone == True :#and isHeaderInRow == False:
                             if mergedField == NULLSTR and self._is_header_in_row(mergedRow,tableName):
                                 if index > lastIndex + 1:
                                     dataFrame.iloc[lastIndex] = mergedRow
                                     dataFrame.iloc[lastIndex + 1:index] = NaN
-                                mergedRow = None
+                                mergedRow = None'''
                         #elif isRowNotAnyNone == True and isHeaderInRow == True:
+                        #    mergedRow = None
+                        #elif self._is_row_all_blank(dataFrame.iloc[index]):
+                            #解决北达药业2018年年报无形资产情况表解析不正确
                         #    mergedRow = None
             else:
                 #if self._is_field_match_standardize(field,tableName):
@@ -324,7 +332,9 @@ class DocParserSql(DocParserBase):
                     #解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
                     if mergedRow is not None :
                         mergedField = mergedRow[0]
-                        if self._is_field_in_standardize_by_mode(mergedField,isStandardizeStrictMode,tableName):
+                        if self._is_field_in_standardize_by_mode(mergedField,isStandardizeStrictMode,tableName)\
+                            and self._is_valid(field):
+                            #只有当mergedField是合法字段,同时当前字段不是''或则None时,才确认字段拼接成功,否则继续拼接
                             if index > lastIndex + 1 and mergedRow is not None:
                                 # 把前期合并的行赋值到dataframe的上一行
                                 dataFrame.iloc[lastIndex] = mergedRow
@@ -554,7 +564,8 @@ class DocParserSql(DocParserBase):
         else:
             firstField = row_or_field
         fieldFirst = self.dictTables[tableName]["fieldFirst"]
-        fieldFirst = '^' + fieldFirst
+        #解决部分主要会计数据表中,前面几个字段拼成一起的情况
+        fieldFirst = '^' + fieldFirst + '$'
         isFirstFieldInRow = self._is_field_matched(fieldFirst, firstField)
         return isFirstFieldInRow
 
@@ -632,6 +643,9 @@ class DocParserSql(DocParserBase):
     def _is_row_not_any_none(self,row:DataFrame):
         return (row != NONESTR).all()
 
+
+    def _is_row_all_blank(self,row:DataFrame):
+        return (row == NULLSTR).all()
 
     def _is_record_exist(self, conn, tableName, dataFrame):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.

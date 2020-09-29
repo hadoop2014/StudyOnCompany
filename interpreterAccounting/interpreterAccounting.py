@@ -229,8 +229,10 @@ class InterpreterAccounting(InterpreterBase):
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
         def p_fetchtable_reatchtail_wrong(p):
-            '''fetchtable : TABLE optional NUMERIC '-' '''
-            # TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
+            '''fetchtable : TABLE optional NUMERIC '-'
+                          | TABLE optional NUMERIC DISCARD'''
+            #TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
+            #TABLE optional NUMERIC DISCARD解决青松股份2016年年报第10页出现无形资产情况表的误判
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.warning("fetchtable warning(reach tail but is wrong) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
 
@@ -272,7 +274,8 @@ class InterpreterAccounting(InterpreterBase):
                          | CRITICAL NUMERIC
                          | CRITICAL '-'
                          | CRITICAL empty
-                         | CRITICAL LOCATION'''
+                         | CRITICAL LOCATION
+                         | CRITICAL COMPANY'''
             critical = self._get_critical_alias(p[1])
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})
@@ -322,6 +325,20 @@ class InterpreterAccounting(InterpreterBase):
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2] + p[3]
 
+        '''
+        def p_fetchtitle_company_reverse(p):
+            ''fetchtitle : TIME REPORT COMPANY''
+            if self.names['公司名称'] == NULLSTR :
+                self.names.update({'公司名称':p[3]})
+            if self.names['报告时间'] == NULLSTR :
+                years = self._time_transfer(p[1])
+                self.names.update({'报告时间':years})
+            if self.names['报告类型'] == NULLSTR:
+                self.names.update({'报告类型':p[2]})
+            self.logger.info('fetchtitle %s %s%s page %d'
+                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            p[0] = p[1] + p[2] + p[3]
+        '''
 
         def p_fetchtitle_long(p):
             '''fetchtitle : COMPANY NAME skipword TIME REPORT '''

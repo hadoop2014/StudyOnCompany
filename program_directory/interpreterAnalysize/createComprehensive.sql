@@ -219,8 +219,9 @@ select
     a.应付债券,
     round(replace(a.流动资产合计,',','')/replace(a.流动负债合计,',',''),2) as 流动比率,
     round((replace(a.流动资产合计,',','') - replace(a.存货,',',''))/replace(a.流动负债合计,',',''),2) as 速动比率,
-    round(replace(a.六、期末现金及现金等价物余额,',','')/(replace(a.短期借款,',','') + replace(a.一年内到期的非流动负债,',','')),2)
-        as 现金及现金等价物余额占短期借债的比率,
+    case when (replace(a.短期借款,',','') + replace(a.一年内到期的非流动负债,',','')) = 0 then 'INF'
+        else round(replace(a.六、期末现金及现金等价物余额,',','')/(replace(a.短期借款,',','') + replace(a.一年内到期的非流动负债,',','')),2)
+        end as 现金及现金等价物余额占短期借债的比率,
     round(replace(a.流动资产合计,',','')/replace(a.负债合计,',',''),2) as 流动资产占总负债的比率,
     a.销售商品、提供劳务收到的现金,
     a.[六、期末现金及现金等价物余额] as 现金及现金等价物余额,
