@@ -35,6 +35,7 @@ class DocParserPdf(DocParserBase):
         if self._index == 1 :
             #解决贵州茅台年报中,贵州茅台酒股份有限公司2018 年年度报告,被解析成"贵州茅台酒股份有限公司 年年度报告 2018
             pageText = page.extract_text(y_tolerance=4)
+            #pageText = page.extract_text()
         else:
             pageText = page.extract_text()
         if pageText is not None:

@@ -309,12 +309,12 @@ class DocParserSql(DocParserBase):
                         if mergedRow[0] != NULLSTR:
                             #解决大立科技2018年财报中主要会计数据解析不准确的问题,原因是总资产(元)前面接了一个空字段,空字段的行需要合并到下一行中
                             mergedRow = None
-                        elif self._is_header_in_row(mergedRow,tableName):
+                        #elif self._is_header_in_row(mergedRow,tableName):
                             #解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
-                            mergedRow = None
-                        else:
+                        #    mergedRow = None
+                        #else:
                             #上一行是以空字符开头的行,需要和本行进行合并,不能设置mergedRow = None
-                            pass
+                        #    pass
                     # 如果field为空的情况下,下一行的field仍旧是空行,则当前行空字段行需要并入mergedRow
                     '''aheaderField = None
                     if index + 1 < countIndex:

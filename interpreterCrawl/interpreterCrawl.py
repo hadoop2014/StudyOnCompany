@@ -66,6 +66,15 @@ class InterpreterCrawl(InterpreterBase):
             self._process_crawl_from_website(website,scale)
 
 
+        def p_error(p):
+            if p:
+                print("Syntax error at '%s:%s'" % (p.value,p.type))
+                self.logger.error("Syntax error at '%s:%s'" % (p.value, p.type))
+            else:
+                print("Syntax error at EOF page")
+                self.logger.error("Syntax error at EOF page")
+
+
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
 

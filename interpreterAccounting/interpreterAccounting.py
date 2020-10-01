@@ -76,6 +76,7 @@ class InterpreterAccounting(InterpreterBase):
                           | fetchdata expression
                           | fetchtitle expression
                           | title expression
+                          | illegalword expression
                           | skipword '''
             p[0] = p[1]
 
@@ -291,24 +292,11 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1]
 
 
-        def p_skipword_group(p):
-            '''skipword : '(' skipword ')'
-                        | '(' skipword '）'
-                        | '（' skipword '）'
-                        | '（' skipword ')' '''
-            p[0] = p[2]
-
-
-        def p_skipword(p):
-            '''skipword : useless skipword
-                        | term skipword
-                        | useless
-                        | term
-                        | '(' skipword error
-                        | '(' skipword REFERENCE NUMERIC ')'
-                        | '（' skipword REFERENCE NUMERIC '）'
-                        | '(' skipword REFERENCE NAME ')'
-                        | '（' skipword REFERENCE NAME '）' '''
+        def p_illegalword(p):
+            '''illegalword : TIME
+                           | LOCATION '''
+            #所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
+            #TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
             p[0] = p[1]
 
 
@@ -378,6 +366,29 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1] + p[2]
 
 
+
+        def p_skipword_group(p):
+            '''skipword : '(' skipword ')'
+                        | '(' skipword '）'
+                        | '（' skipword '）'
+                        | '（' skipword ')' '''
+            p[0] = p[2]
+
+
+        def p_skipword(p):
+            '''skipword : useless skipword
+                        | term skipword
+                        | useless
+                        | term
+                        | '(' skipword error
+                        | '(' skipword REFERENCE NUMERIC ')'
+                        | '（' skipword REFERENCE NUMERIC '）'
+                        | '(' skipword REFERENCE NAME ')'
+                        | '（' skipword REFERENCE NAME '）' '''
+            p[0] = p[1]
+
+
+
         def p_useless_reduce(p):
             '''useless : '(' useless ')'
                        | '(' useless '）'
@@ -394,14 +405,13 @@ class InterpreterAccounting(InterpreterBase):
                        | EMAIL
                        | NAME
                        | HEADER
-                       | TIME
                        | UNIT
                        | CURRENCY
-                       | LOCATION
                        | '-'
                        | '%'
                        | '％' '''
             p[0] = p[1]
+            #                       | LOCATION
 
 
         def p_term_group(p):
@@ -453,7 +463,8 @@ class InterpreterAccounting(InterpreterBase):
         def p_discard(p):
             '''discard : DISCARD discard
                        | DISCARD
-                       | '(' NAME ')' discard'''
+                       | '(' NAME ')' discard
+                       | DISCARD LOCATION'''
             p[0] = p[1]
 
         def p_company(p):
@@ -563,6 +574,7 @@ class InterpreterAccounting(InterpreterBase):
         self.excelParser.writeToStore(self.names[tableName])
         self.sqlParser.writeToStore(self.names[tableName])
 
+
     def _get_time_type_by_name(self,filename):
         time = self._standardize('\\d+年',filename)
         type = self._standardize('|'.join(self.gJsonBase['报告类型']),filename)
@@ -579,6 +591,7 @@ class InterpreterAccounting(InterpreterBase):
             self.names['公司代码'] = code
         self.logger.info('fetch data from filename:%s %s %s %s'
                          %(self.names["公司代码"],self.names["公司简称"],self.names["报告时间"],self.names["报告类型"]))
+
 
     def _construct_table(self,tableNmae):
         headers = self.dictTables[tableNmae]['header']
