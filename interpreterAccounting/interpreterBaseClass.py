@@ -80,6 +80,13 @@ class InterpreterBase(BaseClass):
         return alias
 
 
+    def _unduplicate(self,field1,field2):
+        unduplicate = list(field1)
+        if unduplicate[-1] != field2:
+            unduplicate = unduplicate + [field2]
+        return unduplicate
+
+
     def _merge(self,field1, field2,isFieldJoin=True):
         if self._is_valid(field2):
             if self._is_valid(field1):

@@ -6,6 +6,7 @@
 # @Note    : 用于从财务报表中提取财务数据
 from ply import lex,yacc
 import time
+from functools import reduce
 from interpreterAccounting.interpreterBaseClass import *
 
 
@@ -281,8 +282,16 @@ class InterpreterAccounting(InterpreterBase):
             critical = self._get_critical_alias(p[1])
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})
-                if p[2] == NULLSTR and critical == '公司地址':
-                    self.names.update({critical:self.names['注册地址']})
+                if critical == '公司地址':
+                    if p[2] != NULLSTR:
+                        self.names.update({critical:self._eliminate_duplicates(p[2])})
+                    else:
+                        self.names.update({critical:self.names['注册地址']})
+                elif critical == '公司名称' and p[2] != NULLSTR :
+                    self.names.update({critical:self._eliminate_duplicates(p[2])})
+                elif critical == '注册地址' and p[2] != NULLSTR:
+                    self.names.update({critical: self._eliminate_duplicates(p[2])})
+
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
 
 
@@ -298,7 +307,8 @@ class InterpreterAccounting(InterpreterBase):
                            | LOCATION
                            | COMPANY
                            | REPORT
-                           | TABLE parenthese'''
+                           | TABLE parenthese
+                           | TABLE discard parenthese'''
             #所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
             #TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
             #TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
@@ -308,7 +318,7 @@ class InterpreterAccounting(InterpreterBase):
         def p_fetchtitle_company(p):
             '''fetchtitle : COMPANY TIME REPORT'''
             if self.names['公司名称'] == NULLSTR :
-                self.names.update({'公司名称':p[1]})
+                self.names.update({'公司名称':self._eliminate_duplicates(p[1])})
             if self.names['报告时间'] == NULLSTR :
                 years = self._time_transfer(p[2])
                 self.names.update({'报告时间':years})
@@ -337,7 +347,7 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchtitle : COMPANY NAME skipword TIME REPORT '''
             #解决海螺水泥2018年报第1页title的识别问题
             if self.names['公司名称'] == NULLSTR :
-                self.names.update({'公司名称': p[1]})
+                self.names.update({'公司名称': self._eliminate_duplicates(p[1])})
             if self.names['报告时间'] == NULLSTR :
                 years = self._time_transfer(p[4])
                 self.names.update({'报告时间':years})
@@ -380,7 +390,9 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[2]
 
         def p_parenthese(p):
-            '''content : content discard
+            '''content : content '（' content '）'
+                       | content '(' content ')'
+                       | content discard
                        | content REFERENCE NUMERIC
                        | content REFERENCE NAME
                        | content term
@@ -390,13 +402,18 @@ class InterpreterAccounting(InterpreterBase):
                        | content UNIT
                        | content '-'
                        | content CURRENCY
+                       | content HEADER
+                       | content LOCATION
                        | TIME
                        | NAME
                        | PUNCTUATION
                        | WEBSITE
                        | UNIT
                        | discard
-                       | term '''
+                       | term
+                       | '%'
+                       | '-'
+                       | COMPANY '''
             p[0] = p[1]
             #'（' content '）'
 
@@ -505,7 +522,7 @@ class InterpreterAccounting(InterpreterBase):
                        '''
             for slice in p.slice:
                 if slice.type == 'COMPANY':
-                    self.names['company'] = p[1]
+                    self.names['company'] = self._eliminate_duplicates(p[1])
             p[0] = p[1]
 
         def p_finis(p):
@@ -604,6 +621,15 @@ class InterpreterAccounting(InterpreterBase):
         self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
         self.excelParser.writeToStore(self.names[tableName])
         self.sqlParser.writeToStore(self.names[tableName])
+
+
+    def _eliminate_duplicates(self,source):
+        target = NULLSTR
+        if source == NULLSTR:
+            return target
+        target = reduce(self._unduplicate,list(source))
+        target = ''.join(target)
+        return  target
 
 
     def _get_time_type_by_name(self,filename):

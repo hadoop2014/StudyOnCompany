@@ -179,7 +179,9 @@ class DocParserPdf(DocParserBase):
                 isTableStartSecond = True
         if tableName == '无形资产情况':
             #解决杰瑞股份2018年年报无形资产情况,同一个页面出现了另外一张表,两张表的第一列完全相同,所以需要判断第二列结果才行
-            isTableStart = isTableStartFirst and isTableStartSecond
+            #星源材质2019年年报中无形资产情况出现在页尾,且只有一行表头: 项目 土地使用权 专利权 非专利技术 软件及其他 合计. 这个时候isTableStartFirst失效
+            #isTableStart = isTableStartFirst and isTableStartSecond
+            isTableStart = isTableStartSecond
         else:
             isTableStart = isTableStartFirst or isTableStartSecond
         return isTableStart
