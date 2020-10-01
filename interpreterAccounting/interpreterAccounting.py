@@ -62,7 +62,8 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_statement_grouphalf(p):
             '''statement : statement ')'
-                         | statement '）' '''
+                         | statement '）'
+                         | statement error '''
             p[0] = p[1]
 
 
@@ -305,10 +306,12 @@ class InterpreterAccounting(InterpreterBase):
         def p_illegalword(p):
             '''illegalword : TIME
                            | LOCATION
-                           | COMPANY
                            | REPORT
+                           | COMPANY
+                           | COMPANY NAME DISCARD
                            | TABLE parenthese
-                           | TABLE discard parenthese'''
+                           | TABLE discard parenthese
+                           | TABLE TIME discard NUMERIC'''
             #所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
             #TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
             #TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
@@ -344,7 +347,7 @@ class InterpreterAccounting(InterpreterBase):
         '''
 
         def p_fetchtitle_long(p):
-            '''fetchtitle : COMPANY NAME skipword TIME REPORT '''
+            '''fetchtitle : COMPANY NAME parenthese TIME REPORT '''
             #解决海螺水泥2018年报第1页title的识别问题
             if self.names['公司名称'] == NULLSTR :
                 self.names.update({'公司名称': self._eliminate_duplicates(p[1])})
@@ -361,6 +364,7 @@ class InterpreterAccounting(InterpreterBase):
         def p_fetchtitle_skipword(p):
             '''fetchtitle : COMPANY error
                          | COMPANY TIME DISCARD
+                         | COMPANY TIME NUMERIC
                          | COMPANY DISCARD
                          | COMPANY PUNCTUATION'''
             #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
@@ -385,13 +389,15 @@ class InterpreterAccounting(InterpreterBase):
             '''parenthese : '(' content ')'
                         | '(' content '）'
                         | '（' content '）'
-                        | '（' content ')' '''
+                        | '（' content ')'
+                        | '（' '）' '''
             #专门用于处理括号里的内容
             p[0] = p[2]
 
         def p_parenthese(p):
             '''content : content '（' content '）'
                        | content '(' content ')'
+                       | content '（' '）'
                        | content discard
                        | content REFERENCE NUMERIC
                        | content REFERENCE NAME
@@ -404,6 +410,7 @@ class InterpreterAccounting(InterpreterBase):
                        | content CURRENCY
                        | content HEADER
                        | content LOCATION
+                       | content WEBSITE
                        | TIME
                        | NAME
                        | PUNCTUATION
@@ -411,11 +418,13 @@ class InterpreterAccounting(InterpreterBase):
                        | UNIT
                        | discard
                        | term
+                       | LOCATION
+                       | CURRENCY
                        | '%'
                        | '-'
                        | COMPANY '''
             p[0] = p[1]
-            #'（' content '）'
+
 
         #def p_skipword_group(p):
         #    '''skipword : '(' skipword ')'

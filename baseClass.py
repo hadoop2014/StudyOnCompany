@@ -14,7 +14,7 @@ import sqlite3 as sqlite
 NULLSTR = ''
 NONESTR = 'None'
 NaN = np.nan
-EOF = 'EOF'
+EOF = 'EOF）'  #加）可解决Syntax error at EOF问题
 
 
 class BaseClass():
