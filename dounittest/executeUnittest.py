@@ -20,7 +20,7 @@ class MyTestCase(unittest.TestCase):
         interpreterAccounting.initialize()
         #interpreterAccounting.docParser._set_dataset(list([0,1,2,3,4,8,44,83,84,85]))
         #interpreterAccounting.docParser._set_dataset(list([0, 5,9,19,20,37,38,65,84,89]))
-        interpreterAccounting.docParser._set_dataset(list([0, 57]))
+        interpreterAccounting.docParser._set_dataset(list([0,1, 3,6,37,48,57,58,65,140,162]))
         interpreterAccounting.doWork(debug=True,tracking=False)
 
 

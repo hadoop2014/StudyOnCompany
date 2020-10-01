@@ -77,6 +77,7 @@ class InterpreterAccounting(InterpreterBase):
                           | fetchtitle expression
                           | title expression
                           | illegalword expression
+                          | parenthese
                           | skipword '''
             p[0] = p[1]
 
@@ -294,9 +295,13 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_illegalword(p):
             '''illegalword : TIME
-                           | LOCATION '''
+                           | LOCATION
+                           | COMPANY
+                           | REPORT
+                           | TABLE parenthese'''
             #所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
             #TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
+            #TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
             p[0] = p[1]
 
 
@@ -366,36 +371,61 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1] + p[2]
 
 
-
-        def p_skipword_group(p):
-            '''skipword : '(' skipword ')'
-                        | '(' skipword '）'
-                        | '（' skipword '）'
-                        | '（' skipword ')' '''
+        def p_parenthese_group(p):
+            '''parenthese : '(' content ')'
+                        | '(' content '）'
+                        | '（' content '）'
+                        | '（' content ')' '''
+            #专门用于处理括号里的内容
             p[0] = p[2]
+
+        def p_parenthese(p):
+            '''content : content discard
+                       | content REFERENCE NUMERIC
+                       | content REFERENCE NAME
+                       | content term
+                       | content TIME
+                       | content PUNCTUATION
+                       | content NAME
+                       | content UNIT
+                       | content '-'
+                       | content CURRENCY
+                       | TIME
+                       | NAME
+                       | PUNCTUATION
+                       | WEBSITE
+                       | UNIT
+                       | discard
+                       | term '''
+            p[0] = p[1]
+            #'（' content '）'
+
+        #def p_skipword_group(p):
+        #    '''skipword : '(' skipword ')'
+        #                | '(' skipword '）'
+        #                | '（' skipword '）'
+        #                | '（' skipword ')' '''
+        #    p[0] = p[2]
 
 
         def p_skipword(p):
             '''skipword : useless skipword
                         | term skipword
                         | useless
+                        | '-' useless
                         | term
-                        | '(' skipword error
-                        | '(' skipword REFERENCE NUMERIC ')'
-                        | '（' skipword REFERENCE NUMERIC '）'
-                        | '(' skipword REFERENCE NAME ')'
-                        | '（' skipword REFERENCE NAME '）' '''
+                        | '-' term %prec UMINUS'''
             p[0] = p[1]
 
 
 
-        def p_useless_reduce(p):
-            '''useless : '(' useless ')'
-                       | '(' useless '）'
-                       | '（' useless '）'
-                       | '（' useless ')'
-                       | '-' useless '''
-            p[0] = p[1]
+        #def p_useless_reduce(p):
+        #    '''useless : '(' useless ')'
+        #               | '(' useless '）'
+        #               | '（' useless '）'
+        #               | '（' useless ')'
+        #               | '-' useless '''
+        #    p[0] = p[1]
 
 
         def p_useless(p):
@@ -414,11 +444,11 @@ class InterpreterAccounting(InterpreterBase):
             #                       | LOCATION
 
 
-        def p_term_group(p):
-            '''term : '(' term ')'
-                    |  '（' term '）'
-                    | '-' term %prec UMINUS '''
-            p[0] = -p[2]  #财务报表中()表示负值
+        #def p_term_group(p):
+        #    '''term : '(' term ')'
+        #            |  '（' term '）'
+        #            | '-' term %prec UMINUS '''
+        #    p[0] = -p[2]  #财务报表中()表示负值
 
 
         def p_term_percentage(p):
@@ -434,10 +464,12 @@ class InterpreterAccounting(InterpreterBase):
             else:
                 p[0] = float(p[1].replace(',',''))
 
+
         def p_optional_optional(p):
             '''optional : optional discard
                         | optional fetchtitle
-                        | optional title'''
+                        | optional title
+                        | '(' NAME ')' discard '''
             #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
@@ -463,7 +495,6 @@ class InterpreterAccounting(InterpreterBase):
         def p_discard(p):
             '''discard : DISCARD discard
                        | DISCARD
-                       | '(' NAME ')' discard
                        | DISCARD LOCATION'''
             p[0] = p[1]
 
