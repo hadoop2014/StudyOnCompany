@@ -39,12 +39,18 @@ class DocParserPdf(DocParserBase):
         else:
             pageText = page.extract_text()
         if pageText is not None:
-            pageText = self._interpretPrefix + pageText + EOF
+            pageText = self._interpretPrefix + pageText + self._get_tail()
         else:
             #千禾味业：2019年度审计报告.PDF文件中全部是图片,没有文字,需要做特殊处理
-            pageText = self._interpretPrefix + EOF
+            pageText = self._interpretPrefix + self._get_tail()
             self.logger.error('the %s page %d\'s text of is be None' % (self.sourceFile,self._index))
         return pageText
+
+
+    def _get_tail(self):
+        #在每一页的结尾增加TAIL EOF
+        tail = self.gJsonInterpreter['TAIL'] + ' ' + EOF
+        return tail
 
 
     def _get_tables(self,dictTable):

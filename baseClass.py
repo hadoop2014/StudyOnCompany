@@ -14,7 +14,7 @@ import sqlite3 as sqlite
 NULLSTR = ''
 NONESTR = 'None'
 NaN = np.nan
-EOF = 'EOF）'  #加）可解决Syntax error at EOF问题
+EOF = 'EOF）'  #加）可解决fidller
 
 
 class BaseClass():
@@ -74,6 +74,21 @@ class BaseClass():
         return isFileNameValid
 
 
+
+    def _get_token_type(self, local_name,value,typeLict,defaultType):
+        #根据传入的TypeList,让lexer从defaultType中进一步细分出所需的type(从TypeList中选出)
+        #Local_name中保存了每个Type所对应的正则表达式
+        #VALUE为lexer所识别的值
+        assert(typeLict,list),"parameter typeList must be a list!"
+        type = defaultType
+        for key in typeLict:
+            match = re.search(local_name[key],value)
+            if match is not None:
+                type = key.split('_')[-1]
+                break
+        return type
+
+
     def _get_type_by_name(self,name):
         assert self._is_matched('\\d+年',name),"name(%s) is invalid"%name
         type = name
@@ -105,6 +120,7 @@ class BaseClass():
         path = self._get_path_by_type(type)
         return path
 
+
     def _get_text(self,page):
         return page
 
@@ -119,6 +135,7 @@ class BaseClass():
             else:
                 standardizedField = NaN
         return standardizedField
+
 
     def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:

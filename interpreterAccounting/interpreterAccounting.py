@@ -30,6 +30,25 @@ class InterpreterAccounting(InterpreterBase):
             local_name['t_'+token] = self.dictTokens[token]
         self.logger.info('\n'+str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
+        def t_TIME(t):
+            "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+—\\d+\\s*月|\\d+\\s*(年|月|日)*-\\d+\\s*(年|月|日)|\\d+\\s*年|[○一二三四五六七八九〇]{4}\\s*年"
+            return t
+
+        def t_NUMERIC(t):
+            r'\d+[,\d]*(\.\d{4})|\d+[,\d]*(\.\d{1,2})?'
+            #从NUMRIC细分出NUMERO
+            typeList = ['t_NUMERO']
+            t.type = self._get_token_type(local_name, t.value, typeList, defaultType='NUMERIC')
+            return t
+
+
+        def t_NAME(t):
+            r'[a-zA-Z_][a-zA-Z0-9_]*'
+            # 从NAME细分出TAIL
+            typeList = ['t_TAIL']
+            t.type = self._get_token_type(local_name, t.value, typeList, defaultType='NAME')
+            return t
+
         #t_ignore = " \t\n"
         t_ignore = self.ignores
         #解决亿纬锂能2018年财报中,'无形资产情况'和'单位: 元'之间,插入了《.... 5 .....》中间带有数字,导致误判为搜索到页尾
@@ -78,9 +97,10 @@ class InterpreterAccounting(InterpreterBase):
                           | fetchdata expression
                           | fetchtitle expression
                           | title expression
-                          | illegalword expression
+                          | illegalword
                           | parenthese
-                          | skipword '''
+                          | skipword
+                          | tail '''
             p[0] = p[1]
 
 
@@ -212,12 +232,12 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchtable_reatchtail(p):
-            '''fetchtable : TABLE optional UNIT NUMERIC
-                          | TABLE optional TIME optional UNIT finis NUMERIC
-                          | TABLE optional NUMERIC
-                          | TABLE optional TIME NUMERIC
-                          | TABLE optional UNIT CURRENCY NUMERIC
-                          | TABLE optional COMPANY NUMERIC'''
+            '''fetchtable : TABLE optional UNIT tail
+                          | TABLE optional TIME optional UNIT finis tail
+                          | TABLE optional tail
+                          | TABLE optional TIME tail
+                          | TABLE optional UNIT CURRENCY tail
+                          | TABLE optional COMPANY tail'''
             #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
             #TABLE optional COMPANY NUMERIC解决大立科技2018年年报合并资产负债表出现在页尾的情况.
             #TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
@@ -307,11 +327,14 @@ class InterpreterAccounting(InterpreterBase):
             '''illegalword : TIME
                            | LOCATION
                            | REPORT
+                           | NUMERO
+                           | NUMERO NUMERO
+                           | NUMERO '）'
                            | COMPANY
                            | COMPANY NAME DISCARD
                            | TABLE parenthese
                            | TABLE discard parenthese
-                           | TABLE TIME discard NUMERIC'''
+                           | TABLE optional TIME discard NUMERIC'''
             #所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
             #TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
             #TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
@@ -411,6 +434,8 @@ class InterpreterAccounting(InterpreterBase):
                        | content HEADER
                        | content LOCATION
                        | content WEBSITE
+                       | content NUMERO
+                       | content '%'
                        | TIME
                        | NAME
                        | PUNCTUATION
@@ -418,6 +443,7 @@ class InterpreterAccounting(InterpreterBase):
                        | UNIT
                        | discard
                        | term
+                       | NUMERO
                        | LOCATION
                        | CURRENCY
                        | '%'
@@ -491,6 +517,7 @@ class InterpreterAccounting(InterpreterBase):
                 p[0] = float(p[1].replace(',',''))
 
 
+
         def p_optional_optional(p):
             '''optional : optional discard
                         | optional fetchtitle
@@ -524,6 +551,7 @@ class InterpreterAccounting(InterpreterBase):
                        | DISCARD LOCATION'''
             p[0] = p[1]
 
+
         def p_company(p):
             '''company : COMPANY
                        | LOCATION COMPANY
@@ -534,6 +562,7 @@ class InterpreterAccounting(InterpreterBase):
                     self.names['company'] = self._eliminate_duplicates(p[1])
             p[0] = p[1]
 
+
         def p_finis(p):
             '''finis : empty
                      | CURRENCY
@@ -543,6 +572,14 @@ class InterpreterAccounting(InterpreterBase):
                 self.names['currency'] = p[1]
             p[0] = p[1]
             print('finis',p[0])
+
+
+        def p_tail(p):
+            '''tail : NUMERO TAIL
+                    | NUMERO NUMERO TAIL'''
+            tail = ' '.join([str(slice) for slice in p if slice is not None])
+            self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
+            p[0] = p[1]
 
 
         def p_empty(p):
@@ -636,7 +673,7 @@ class InterpreterAccounting(InterpreterBase):
         target = NULLSTR
         if source == NULLSTR:
             return target
-        target = reduce(self._unduplicate,list(source))
+        target = reduce(self._deduplicate, list(source))
         target = ''.join(target)
         return  target
 

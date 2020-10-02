@@ -35,7 +35,8 @@ class InterpreterNature(InterpreterBase):
 
         def t_VALUE(t):
             r'[\u4E00-\u9FA5]+'
-            t.type = self._get_token_type(local_name,t.value,'VALUE')
+            typeList = [key for key in local_name.keys() if key.startswith('t_') and key not in ['t_VALUE','t_ignore','t_ignore_COMMENT','t_newline','t_error']]
+            t.type = self._get_token_type(local_name, t.value,typeList,defaultType='VALUE')
             return t
 
 
@@ -149,18 +150,6 @@ class InterpreterNature(InterpreterBase):
 
         # Build the docparser
         self.parser = yacc.yacc(outputdir=self.working_directory)
-
-
-    def _get_token_type(self, local_name,value, defaultType='VALUE'):
-        #解决保留字和VALUE的冲突问题
-        type = defaultType
-        for key,content in local_name.items():
-            if key.startswith('t_') and key not in ['t_'+defaultType,'t_ignore','t_ignore_COMMENT','t_newline','t_error']:
-                match = re.search(local_name[key],value)
-                if match is not None:
-                    type = key.split('_')[-1]
-                    break
-        return type
 
 
     def doWork(self,lexer=None,debug=False,tracking=False):

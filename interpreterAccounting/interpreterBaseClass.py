@@ -80,7 +80,7 @@ class InterpreterBase(BaseClass):
         return alias
 
 
-    def _unduplicate(self,field1,field2):
+    def _deduplicate(self, field1, field2):
         unduplicate = list(field1)
         if unduplicate[-1] != field2:
             unduplicate = unduplicate + [field2]
