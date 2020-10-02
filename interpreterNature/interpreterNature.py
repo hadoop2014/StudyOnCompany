@@ -5,7 +5,6 @@
 # @File    : interpreterCrawl.py
 # @Note    : 用接近自然语言的解释器处理各类事务,用于处理财务数据爬取,财务数据提取,财务数据分析.
 from ply import lex,yacc
-import time
 from interpreterNature.interpreterBaseClass import *
 
 class InterpreterNature(InterpreterBase):
@@ -66,7 +65,8 @@ class InterpreterNature(InterpreterBase):
         def p_expression_batch_parse(p):
             '''expression : SCALE EXECUTE PARSE'''
             scale = p[1]
-            self._process_parse(scale)
+            isForced = (p[2] == '强制运行')
+            self._process_parse(scale,isForced)
 
 
         def p_expression_create_table(p):
@@ -161,14 +161,18 @@ class InterpreterNature(InterpreterBase):
         return self._get_text()
 
 
-    def _process_parse(self,scale):
+    def _process_parse(self,scale,isForced = False):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
             return
         taskResults = list()
-        sourcefiles = self._get_needed_files(scale)
+        sourcefiles = self._get_needed_files(scale,isForced)
         sourcefiles = list(sourcefiles)
         sourcefiles.sort()
+        #if isForced:
+            #删除checkpoint文件对应的文件
+        #    self.logger.info('force to start process........\n')
+        #    self.interpreterAccounting.docParser.remove_checkpoint_files(sourcefiles)
         for sourcefile in sourcefiles:
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})
@@ -254,10 +258,10 @@ class InterpreterNature(InterpreterBase):
         self.interpreterCrawl.doWork(command)
 
 
-    def _get_needed_files(self,scale):
+    def _get_needed_files(self,scale,isForced = False):
         sourcefiles = list()
         if scale == '单次':
-            sourcefiles = list([self.gConfig['sourcefile']])
+            sourcefilesValid = list([self.gConfig['sourcefile']])
         else:
             if self.names_global['报告类型'] == NULLSTR:
                 source_directory = os.path.join(self.gConfig['data_directory'], self.gConfig['source_directory'])
@@ -277,6 +281,7 @@ class InterpreterNature(InterpreterBase):
 
             sourcefilesValid = self._remove_duplicate_files(sourcefilesValid)
 
+        if isForced == False:
             checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
             if isinstance(checkpoint,list) and len(checkpoint) > 0:
                 sourcefilesRemainder = set(sourcefilesValid).difference(set(checkpoint))
@@ -287,7 +292,10 @@ class InterpreterNature(InterpreterBase):
                 sourcefiles = sourcefilesRemainder
             else:
                 sourcefiles = sourcefilesValid
-            #sourcefiles = self._remove_duplicate_files(list(sourcefiles))
+        else:
+            self.logger.info('force to start process........\n')
+            sourcefiles = list(sourcefilesValid)
+            self.interpreterAccounting.docParser.remove_checkpoint_files(sourcefiles)
         return sourcefiles
 
 

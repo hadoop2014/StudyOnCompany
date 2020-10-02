@@ -311,6 +311,25 @@ class DocParserPdf(DocParserBase):
         return reader
 
 
+    def remove_checkpoint_files(self,sourcefiles):
+        assert isinstance(sourcefiles,list),'Parameter sourcefiles must be list!'
+        if self.checkpointIsOn == False:
+            return
+
+        with open(self.checkpointfilename, 'r+', newline='', encoding='utf-8') as checkpointfile:
+            reader = checkpointfile.read().splitlines()
+            resultfiles = list(set(reader).difference(set(sourcefiles)))
+            resultfiles.sort()
+            lines = [line + '\n' for line in resultfiles]
+            checkpointfile.seek(0)
+            checkpointfile.truncate()
+            checkpointfile.writelines(lines)
+            removedfiles = list(set(reader).difference(set(resultfiles)))
+        if len(removedfiles) > 0:
+            removedlines = '\n\t\t\t\t'.join(removedfiles)
+            self.logger.info("Success to remove from checkpointfile %s : %s"%(self.checkpointfilename,removedlines))
+
+
     @property
     def interpretPrefix(self):
         return self._interpretPrefix

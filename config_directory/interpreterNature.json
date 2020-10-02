@@ -5,7 +5,7 @@
               "VALUE","NUMERIC","TIME",  "CRAWL","WEBSITE"],
 
   "SCALE": "全量|批量|单次",
-  "EXECUTE": "运行",
+  "EXECUTE": "运行|强制运行",
   "PARSE": "财务报表解析",
   "CREATE": "创建",
   "VISUALIZE": "展示",
