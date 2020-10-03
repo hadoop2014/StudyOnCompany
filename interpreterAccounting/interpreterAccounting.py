@@ -707,7 +707,7 @@ class InterpreterAccounting(InterpreterBase):
                                          ,'报告类型': self.names['报告类型']
                                          ,'公司地址': self.names['公司地址']
                                          ,'行业分类': self.names['行业分类']
-                                         ,'货币单位': unit})
+                                         ,'货币单位': self._unit_transfer(unit)})
             self.docParser._merge_table(self.names[tableName], interpretPrefix)
             if self.names[tableName]['tableEnd'] == True:
                 self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
