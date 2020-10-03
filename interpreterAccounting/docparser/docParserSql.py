@@ -7,7 +7,7 @@
 
 from interpreterAccounting.docparser.docParserBaseClass import  *
 import sqlite3 as sqlite
-from sqlalchemy import create_engine
+#from sqlalchemy import create_engine
 import pandas as pd
 from pandas import DataFrame
 import time
@@ -669,8 +669,8 @@ class DocParserSql(DocParserBase):
         return sqlite.connect(self.database)
 
 
-    def _get_engine(self):
-        return create_engine(os.path.join('sqlite:///',self.database))
+    #def _get_engine(self):
+    #    return create_engine(os.path.join('sqlite:///',self.database))
 
 
     def _fetch_all_tables(self, cursor):

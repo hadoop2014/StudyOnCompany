@@ -607,8 +607,8 @@ class InterpreterAccounting(InterpreterBase):
             for slice in p.slice:
                 if slice.type == 'UNIT':
                     unit = slice.value.split(':')[-1].split('：')[-1]
-                    self.names['unit'] = self._unit_transfer(unit)
-                    self.names['货币单位'] = self.names['unit']
+                    self.names['unit'] = unit
+                    self.names['货币单位'] = self._unit_transfer(unit)
                 elif slice.type == 'CURRENCY':
                     self.names['currency'] = slice.value
             prefix = ' '.join([str(slice) for slice in p if slice is not None])
