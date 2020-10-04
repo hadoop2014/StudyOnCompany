@@ -43,13 +43,14 @@ class InterpreterAccounting(InterpreterBase):
             t.type = self._get_token_type(local_name, t.value, typeList, defaultType='NUMERIC')
             return t
 
-
+        '''
         def t_NAME(t):
             r'[a-zA-Z_][a-zA-Z0-9_]*'
             # 从NAME细分出TAIL
             typeList = ['t_TAIL']
             t.type = self._get_token_type(local_name, t.value, typeList, defaultType='NAME')
             return t
+       '''
 
         #t_ignore = " \t\n"
         t_ignore = self.ignores
@@ -94,7 +95,8 @@ class InterpreterAccounting(InterpreterBase):
                           | fetchtitle expression
                           | illegalword
                           | parenthese
-                          | skipword '''
+                          | skipword
+                          | tail'''
             p[0] = p[1]
 
 
@@ -256,7 +258,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchdata_referencetriple(p):
-            '''fetchdata : REFERENCE NUMERIC term REFERENCE DISCARD DISCARD'''
+            '''fetchdata : REFERENCE NUMERIC NUMERIC REFERENCE DISCARD DISCARD'''
             #解决华新水泥2018年报中,股票简称不能识别的问题
             if self.names[self._get_reference_alias(p[1])] == NULLSTR :
                 self.names.update({self._get_reference_alias(p[1]):p[2]})
@@ -428,19 +430,10 @@ class InterpreterAccounting(InterpreterBase):
             #TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
             p[0] = p[1]
 
-        '''
-        def p_skipword(p):
-            ''skipword : useless ''
-        #                | term skipword
-        #                | useless
-        #                | '-' useless
-        #                | term
-        #                | '-' term''
-            p[0] = p[1]
-        '''
 
         def p_skipword(p):
             '''skipword : skipword term
+                       | skipword '%'
                        | discard
                        | LOCATION
                        | REPORT
@@ -457,12 +450,12 @@ class InterpreterAccounting(InterpreterBase):
                        | '％' '''
             p[0] = p[1]
 
-
+        '''
         def p_term_percentage(p):
-            '''term : NUMERIC '%'
-                    | NUMERIC '％' '''
+            ''term : NUMERIC '%'
+                    | NUMERIC '％' '
             p[0] = round(float(p[1].replace(',','')) * 0.01,4)
-
+        '''
 
         def p_term_numeric(p):
             '''term : NUMERIC '''
@@ -473,7 +466,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_discard(p):
-            '''discard : DISCARD discard
+            '''discard :   DISCARD discard
                        | DISCARD '''
             p[0] = p[1]
 
@@ -514,7 +507,7 @@ class InterpreterAccounting(InterpreterBase):
             '''tail : NUMERO TAIL
                     | NUMERO NUMERO TAIL'''
             tail = ' '.join([str(slice) for slice in p if slice is not None])
-            #self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
+            self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
             p[0] = p[1]
 
 

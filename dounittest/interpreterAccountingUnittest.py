@@ -32,6 +32,14 @@ class MyTestCase(unittest.TestCase):
         input = input + ' 1．不能重分类进损益的其他综合收益'
         input = input + ' 减：所得税费用'
         input = input + ' （一）归属母公司所有者的其他综合收益的税后净额'
+        input = input + ' TAILMustBeLongerThenNAME'
+        input = input + ' 华侨城A'
+        input = input + ' http://www.see99.com.cn'
+        input = input + ' 中国浙江省温州市'
+        input = input + ' 第三季度报告'
+        input = input + ' 公司简称'
+        input = input + ' 研发投入金额（元）'
+        input = input + ' 的普通股股利分配方案'
         self.interpreter.lexer.input(input)
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(-,'-',1,1)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'1,370,249,543.00',1,2)")
@@ -81,7 +89,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'5114002017043',3,314)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(-,'-',3,327)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NAME,'L',3,328)")
-        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'1',3,332)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERO,'1',3,332)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'不能重分类进损益的其他综合收益',3,334)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'减',3,350)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'所得税费用',3,352)")
@@ -89,6 +97,15 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'一',3,359)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(）,'）',3,360)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'归属母公司所有者的其他综合收益的税后净额',3,361)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(TAIL,'TAILMustBeLongerThenNAME',3,382)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'华侨城A',3,407)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(WEBSITE,'http://www.see99.com.cn',3,412)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(LOCATION,'中国浙江省',3,436)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(LOCATION,'温州市',3,441)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(REPORT,'第三季度报告',3,445)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(REFERENCE,'公司简称',3,452)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(CRITICAL,'研发投入金额（元）',3,457)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(TABLE,'的普通股股利分配方案',3,467)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"None")
 
     def run_interpreter_yacc(self):
