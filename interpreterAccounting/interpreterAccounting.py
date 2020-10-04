@@ -222,13 +222,14 @@ class InterpreterAccounting(InterpreterBase):
         def p_fetchtable_wrong(p):
             '''fetchtablewrong : TABLE optional TABLE
                           | TABLE optional PUNCTUATION
-                          | TABLE '(' NUMERO ')'
+                          | TABLE optional '(' NUMERO ')'
                           | TABLE optional '（' NUMERO '）'
-                          | TABLE '(' discard ')'
                           | TABLE optional '（' discard '）'
-                          | TABLE optional '(' NAME ')'
+                          | TABLE optional '(' discard ')'
                           | TABLE optional '-'
                           | TABLE optional time optional  NUMERIC'''
+            # TABLE optional '(' NAME ')' 和optional  '(' NAME ')'冲突
+            # TABLE '(' discard ')' 可用
             #TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
             #TABLE optional NUMERIC DISCARD解决青松股份2016年年报第10页出现无形资产情况表的误判
             #去掉 TABLE '(' DISCARD ')'
@@ -250,8 +251,8 @@ class InterpreterAccounting(InterpreterBase):
                         | optional LOCATION
                         | optional HEADER
                         | optional NUMERO
+                        | optional '(' NAME ')'
                         | discard
-                        | '(' NAME ')'
                         | empty '''
             # optional fetchtitle 被optioanl COMPANY time取代
             # optional CURRENCY 解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表,现金流量表补充资料等情况

@@ -244,7 +244,7 @@ class DocParserSql(DocParserBase):
     def _process_field_merge_simple(self,dataFrame,tableName):
         mergedRow = None
         lastIndex = 0
-        countIndex = len(dataFrame.index.values)
+        #countIndex = len(dataFrame.index.values)
         mergedFields = reduce(self._merge,dataFrame.iloc[:,0].tolist())
         isStandardizeStrictMode = self._is_standardize_strict_mode(mergedFields,tableName)
         #增加blankFrame来驱动最后一个field的合并
@@ -257,8 +257,8 @@ class DocParserSql(DocParserBase):
             #识别新字段的起始行
             isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             if isRowNotAnyNone:# or isHeaderInRow:
-                #if self._is_field_match_standardize(field,tableName):
-                if self._is_field_in_standardize_by_mode(field,isStandardizeStrictMode,tableName):
+                if self._is_field_match_standardize(field,tableName):
+                #if self._is_field_in_standardize_by_mode(field,isStandardizeStrictMode,tableName):
                     if index > lastIndex + 1 and mergedRow is not None:
                         # 把前期合并的行赋值到dataframe的上一行
                         dataFrame.iloc[lastIndex] = mergedRow
