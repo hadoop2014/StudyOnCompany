@@ -107,8 +107,14 @@ class DocParserPdf(DocParserBase):
         tableName = dictTable['tableName']
         fetchTables = self._get_tables(dictTable)
         page_numbers = dictTable['page_numbers']
-        processedTable,isTableEnd = self._process_table(page_numbers,fetchTables, tableName)
+        processedTable,isTableEnd,isTableStart = self._process_table(page_numbers,fetchTables, tableName)
         dictTable.update({'tableEnd':isTableEnd})
+        if len(page_numbers) == 1 and isTableStart == False:
+            #这种情况下表明解释器在搜索时出现了误判,需要重置搜索条件,解决三诺生物2019年年报第60,61页出现了错误的合并资产负责表,真正的在第100页.
+            self.logger.warning('fetchtable failed for %s is not needed page %d!'%(tableName,page_numbers[0]))
+            dictTable.update({'page_numbers':list()})
+            dictTable.update({'tableBegin': isTableStart})
+            self.interpretPrefix = NULLSTR
         if isinstance(savedTable, list):
             savedTable.extend(processedTable)
         else:
@@ -126,10 +132,12 @@ class DocParserPdf(DocParserBase):
             return processedTable,isTableEnd
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
+        #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
+        secondFieldList = [row[1] for row in processedTable]
+        isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
         isTableEnd = self._is_table_end(tableName,fieldList)
         if len(tables) == 1:
-            return processedTable, isTableEnd
-
+            return processedTable, isTableEnd,isTableStart
         processedTable = NULLSTR
         for index,table in enumerate(tables):
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
@@ -137,7 +145,7 @@ class DocParserPdf(DocParserBase):
                 continue
             fieldList = [row[0] for row in table]
             secondFieldList = [row[1] for row in table]
-            headerList = table[0]
+            #headerList = table[0]
             #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.
             isTableEnd = self._is_table_end(tableName, fieldList)
             #isTableStart = self._is_table_start(tableName,fieldList,headerList)
@@ -152,7 +160,7 @@ class DocParserPdf(DocParserBase):
             elif isTableEnd == True :
                 processedTable = table
                 break
-        return processedTable,isTableEnd
+        return processedTable,isTableEnd,isTableStart
 
 
     def _is_table_start_simple(self,tableName,fieldList,secondFieldList):

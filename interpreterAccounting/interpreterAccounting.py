@@ -227,8 +227,8 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE '(' discard ')'
                           | TABLE optional '（' discard '）'
                           | TABLE optional '(' NAME ')'
-                          | TABLE optional NUMERO '-'
-                          | TABLE optional NUMERO DISCARD'''
+                          | TABLE optional '-'
+                          | TABLE optional time optional  NUMERIC'''
             #TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
             #TABLE optional NUMERIC DISCARD解决青松股份2016年年报第10页出现无形资产情况表的误判
             #去掉 TABLE '(' DISCARD ')'
@@ -237,6 +237,8 @@ class InterpreterAccounting(InterpreterBase):
             #去掉合并资产负债表项目
             #去掉TABLE PUNCTUATION减少语法冲突
             #去掉TABLE parenthese,识别海螺水泥2018年年报分季度主要财务时,发生冲突
+            #TABLE optional time optional  NUMERIC可以过滤掉三诺生物2019年年报第60页出现了合并资产负责表,但不是所需要的,真正的表在第100页
+            #TABLE optional NUMERO DISCARD 需要去掉,会导致三诺生物2018年年报 合并资产负债表搜索失败
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
             self.logger.warning("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             p[0] = p[1] + p[2]
@@ -247,7 +249,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional COMPANY
                         | optional LOCATION
                         | optional HEADER
-                        | numero
+                        | optional NUMERO
                         | discard
                         | '(' NAME ')'
                         | empty '''
@@ -528,8 +530,8 @@ class InterpreterAccounting(InterpreterBase):
             '''unit : UNIT
                     | UNIT CURRENCY
                     | CURRENCY UNIT
-                    | '（' UNIT '）'
-                    | discard unit'''
+                    | '（' UNIT '）' '''
+            #           | discard unit''
             for slice in p.slice:
                 if slice.type == 'UNIT':
                     unit = slice.value.split(':')[-1].split('：')[-1]
@@ -562,12 +564,13 @@ class InterpreterAccounting(InterpreterBase):
             #self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
             p[0] = p[1]
 
-
+        '''
         def p_numero(p):
-            '''numero : NUMERO
-                      | discard NUMERO '''
+            ''numero : NUMERO
+                      | discard NUMERO ''
             #用于解决三诺生物2018年年报中,多个表TABLE后插入数字
             p[0] = p[1]
+        '''
 
 
         def p_empty(p):
