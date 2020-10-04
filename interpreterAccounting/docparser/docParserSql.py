@@ -89,8 +89,7 @@ class DocParserSql(DocParserBase):
         self._write_to_sqlite3(dataframe,tableName)
         self.process_info.update({tableName:time.time() - self.process_info[tableName]})
 
-
-    @loginfo()
+    #@loginfo()
     def _table_to_dataframe(self,table,tableName):
         horizontalTable = self.dictTables[tableName]['horizontalTable']
         if horizontalTable == True:
@@ -401,7 +400,7 @@ class DocParserSql(DocParserBase):
             if field in duplicatedFieldsStandard:
                 duplicatedFieldsResult += [field]
             else:
-                self.logger.warning('field %s is not exist in %s'%(field,tableName))
+                self.logger.warning('failed to add field: %s is not exist in %s'%(field,tableName))
                 #删除该字段
                 indexDiscardField = dataFrame.iloc[0].isin([field])
                 discardColumns = indexDiscardField[indexDiscardField == True].index.tolist()
@@ -455,8 +454,8 @@ class DocParserSql(DocParserBase):
 
     def _process_header_standardize(self,dataFrame,tableName):
         #把表头字段进行标准化
-        standardizedHeaders = self._get_standardized_header(dataFrame.index.tolist(),tableName)
-        dataFrame.index = standardizedHeaders
+        standardizedHeaders = self._get_standardized_header(dataFrame.index.values[1:].tolist(),tableName)
+        dataFrame.index.values[1:] = standardizedHeaders
         #在标准化后,某些无用字段可能被标准化为NaN,需要去掉
         #dataFrame.loc[NaN] = NaN
         #dataFrame = dataFrame.dropna(axis=1).copy()
@@ -475,7 +474,6 @@ class DocParserSql(DocParserBase):
         aliasedFields = fieldList
         fieldAlias = self.dictTables[tableName]['fieldAlias']
         fieldAliasKeys = list(self.dictTables[tableName]['fieldAlias'].keys())
-
         if len(fieldAliasKeys) > 0:
             aliasedFields = [self._alias(field, fieldAlias) for field in fieldList]
         return aliasedFields

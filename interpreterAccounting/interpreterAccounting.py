@@ -33,6 +33,7 @@ class InterpreterAccounting(InterpreterBase):
 
         def t_TIME(t):
             "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+\\s*[—|-]\\s*\\d+\\s*月|\\d+\\s*(年|月|日)*\\s*[—|-]\\s*\\d+\\s*(年|月|日)|\\d+\\s*年\\s*\\d+\\s*月|\\d+\\s*年|[○一二三四五六七八九〇]{4}\\s*年"
+            #该函数会覆盖interpreterAccounting.json中定义的TIME的正则表达式,所以必须使得函数中的正则表达式和.json文件中配置的相同
             return t
 
 
@@ -99,37 +100,42 @@ class InterpreterAccounting(InterpreterBase):
                           | tail'''
             p[0] = p[1]
 
-        #def p_expression_reduce(p):
-        #    '''expression : expression tail
-        #                  | expression parenthese
-        #                  | expression illegalword
-        #                  | expression fetchdata
-        #                  | expression fetchtitle
-        #                  | expression fetchtable
-        #                  | skipword
-        #                  | fetchtitle
-        #                  | fetchtable'''
-        #    p[0] = p[1]
 
-
-        def p_fetchtable_search(p):
-            '''fetchtable : TABLE optional time optional unit finis '''
+        def p_fetchtable(p):
+            '''fetchtable : TABLE optional time optional unit finis
+                          | TABLE optional unit finis
+                          | TABLE optional time optional TIME
+                          | TABLE optional HEADER HEADER'''
             # TABLE optional time optional CURRENCY UNIT finis解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
+            # TABLE optional UNIT CURRENCY finis第二个语法针对的是主要会计数据
+            # TABLE optional UNIT CURRENCY NUMERO HEADER解决万东医疗2019年年报普通股现金分红情况表搜索不到问题,被TABLE optional UNIT finis 取代
+            # fetchtable : TABLE optional '（' unit '）' finis 解决海螺水泥2018年财报分季度主要财务表的识别问题
+            # TABLE optional CURRENCY UNIT finis 解决海螺水泥2018年财报现金流量表补充资料 的识别问题
+            # TABLE optional TIME DISCARD TIME解决康龙化成：2019年年度报告中主要会计数据的表头不规范, 两个TIME直接插入一个DISCARD
+            # TABLE optional HEADER HEADER 专门用于解决杰瑞股份2016,2017,2018,2019年年度报告中现金流量表补充资料,无形资产情况搜索不到的情况.
             tableName = self._get_tablename_alias(str.strip(p[1]))
-            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
+            #interpretPrefix必须用\n做连接,lexer需要用到\n
+            self.logger.info("fetchtable %s -> %s :%s page %d!" % (p[1],tableName,interpretPrefix.replace('\n',' '),self.currentPageNumber))
+            if len(self.names[tableName]['page_numbers']) != 0:
+                # 处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景,实际通过语法规则,已经规避了该问题
+                if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
+                    self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
+                    return
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
             unit = self.names['unit']
             currency = self.names['currency']
             company = self.names['company']
-            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
+            if self.names['公司地址'] == NULLSTR:
+                self.names['公司地址'] = self.names['address']
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
 
-
+        '''
         def p_fetchtable_searchnotime(p):
-            '''fetchtable : TABLE optional unit finis '''
+            ''fetchtable : TABLE optional unit finis ''
             #TABLE optional UNIT CURRENCY finis第二个语法针对的是主要会计数据
             #TABLE optional UNIT CURRENCY NUMERO HEADER解决万东医疗2019年年报普通股现金分红情况表搜索不到问题,被TABLE optional UNIT finis 取代
             #fetchtable : TABLE optional '（' unit '）' finis 解决海螺水泥2018年财报分季度主要财务表的识别问题
@@ -141,14 +147,15 @@ class InterpreterAccounting(InterpreterBase):
                 return
             unit = self.names['unit']
             currency = self.names['currency']
+            if self.names['公司地址'] == NULLSTR:
+                self.names['公司地址'] = self.names['address']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-
-
+        '''
+        '''
         def p_fetchtable_timedouble(p):
-            '''fetchtable : TABLE optional time optional TIME '''
-            #              | TABLE optional time DISCARD TIME'''
+            ''fetchtable : TABLE optional time optional TIME ''
             #处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景
             #TABLE optional TIME DISCARD TIME解决康龙化成：2019年年度报告中主要会计数据的表头不规范, 两个TIME直接插入一个DISCARD
             tableName = self._get_tablename_alias(str.strip(p[1]))
@@ -162,13 +169,15 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             unit = NULLSTR
             currency = self.names['currency']
+            if self.names['公司地址'] == NULLSTR:
+                self.names['公司地址'] = self.names['address']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-
-
+       '''
+        '''
         def p_fetchtable_header(p):
-            '''fetchtable : TABLE optional HEADER HEADER'''
+            ''fetchtable : TABLE optional HEADER HEADER''
             #专门用于解决杰瑞股份2016,2017,2018,2019年年度报告中现金流量表补充资料,无形资产情况搜索不到的情况.
             tableName = self._get_tablename_alias(str.strip(p[1]))
             if len(self.names[tableName]['page_numbers']) != 0:
@@ -182,10 +191,12 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             unit = NULLSTR
             currency = self.names['currency']
+            if self.names['公司地址'] == NULLSTR:
+                self.names['公司地址'] = self.names['address']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName, tableBegin, interpretPrefix, unit, currency)
-
+       '''
 
         def p_fetchtable_reatchtail(p):
             '''fetchtable : TABLE optional unit tail
@@ -197,13 +208,13 @@ class InterpreterAccounting(InterpreterBase):
             #TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
             #TABLE optional COMPANY tail已经被TABLE optional unit tail取代
             tableName = self._get_tablename_alias(str.strip(p[1]))
-            self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
+            interpretPrefix = '\n'.join([str(slice) for slice in p[:-1] if slice is not None]) + '\n'
+            self.logger.info("fetchtable warning(reach tail) %s -> %s : %s page %d" % (p[1], tableName, interpretPrefix.replace('\n',''), self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
             unit = NULLSTR
             currency = self.names['currency']
-            interpretPrefix = '\n'.join([str(slice) for slice in p[:-1] if slice is not None]) + '\n'
             tableBegin = False
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
@@ -231,7 +242,7 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1] + p[2]
 
 
-        def p_optional_optional(p):
+        def p_optional(p):
             '''optional : optional discard
                         | optional COMPANY
                         | optional LOCATION
@@ -254,6 +265,8 @@ class InterpreterAccounting(InterpreterBase):
             for slice in p.slice:
                 if slice.type == 'COMPANY':
                     self.names['company'] = self._eliminate_duplicates(slice.value)
+                if slice.type == 'LOCATION':
+                    self.names['address'] = self._eliminate_duplicates(slice.value)
             prefix = ' '.join([str(slice) for slice in p if slice is not None])
             p[0] = prefix
 
@@ -311,23 +324,35 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1]
 
 
-        def p_fetchtitle_company(p):
-            '''fetchtitle : COMPANY TIME REPORT'''
+        def p_fetchtitle(p):
+            '''fetchtitle : TIME REPORT
+                          | company TIME REPORT
+                          | company selectable TIME REPORT'''
             #TIME REPORT COMPANY没有必要，用TIME REPORT生效即可，COMPANY可以通过CRITICAL COMPANY获取
-            if self.names['公司名称'] == NULLSTR :
-                self.names.update({'公司名称':self._eliminate_duplicates(p[1])})
-            if self.names['报告时间'] == NULLSTR :
-                years = self._time_transfer(p[2])
-                self.names.update({'报告时间':years})
-            if self.names['报告类型'] == NULLSTR:
-                self.names.update({'报告类型':p[3]})
-            self.logger.info('fetchtitle %s %s%s page %d'
-                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
-            p[0] = p[1] + p[2] + p[3]
+            #COMPANY selectable TIME REPORT 解决海螺水泥2018年报第1页title的识别问题
+            for slice in p.slice:
+                if slice.type == 'company':
+                    if self.names['公司名称'] == NULLSTR :
+                        self.names.update({'公司名称':self.names['company']})
+                    if self.names['公司地址'] == NULLSTR:
+                        self.names.update({'公司地址': self.names['address']})
+                if self.names['报告时间'] == NULLSTR and slice.type == 'TIME':
+                    years = self._time_transfer(slice.value)
+                    self.names.update({'报告时间':years})
+                if self.names['报告类型'] == NULLSTR and slice.type == 'REPORT':
+                    self.names.update({'报告类型':slice.value})
+                #if self.names['公司地址'] == NULLSTR and slice.type == 'LOCATION':
+                #    self.names.update({'公司地址': slice.value})
+            #self.logger.info('fetchtitle %s %s %s%s page %d'
+            #        % (self.names['公司地址'],self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            prefix = ' '.join([str(slice) for slice in p if slice is not None])
+            self.logger.info('fetchtitle %s page %d '%(prefix,self.currentPageNumber))
+            p[0] = prefix
 
 
+        '''
         def p_fetchtitle_long(p):
-            '''fetchtitle : COMPANY selectable TIME REPORT '''
+            ''fetchtitle : COMPANY selectable TIME REPORT ''
             #selectable 解决海螺水泥2018年报第1页title的识别问题
             if self.names['公司名称'] == NULLSTR :
                 self.names.update({'公司名称': self._eliminate_duplicates(p[1])})
@@ -339,11 +364,11 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('fetchtitle long %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[3] + p[4]
+        '''
 
-
-
+        '''
         def p_fetchtitle_title(p):
-            '''fetchtitle : TIME REPORT'''
+            ''fetchtitle : TIME REPORT''
             if self.names['报告时间'] == NULLSTR \
                 and self.names['报告类型'] == NULLSTR:
                 years = self._time_transfer(p[1])
@@ -351,16 +376,18 @@ class InterpreterAccounting(InterpreterBase):
                 self.names.update({'报告类型':p[2]})
             self.logger.info('title %s%s page %d'% (self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2]
-
+        '''
 
         def p_fetchtitle_wrong(p):
-            '''fetchtitlewrong : COMPANY error
-                         | COMPANY TIME DISCARD
-                         | COMPANY TIME NUMERIC
-                         | COMPANY DISCARD
-                         | COMPANY PUNCTUATION
-                         | COMPANY NAME DISCARD
-                         | COMPANY '''
+            '''fetchtitlewrong : fetchtitlewrong TAIL
+                         | company error
+                         | company TIME DISCARD
+                         | company TIME NUMERIC
+                         | company DISCARD
+                         | company PUNCTUATION
+                         | company NAME DISCARD
+                         | company
+                         | TIME '''
             #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
             #去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
             #TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在skipword中增加REPORT
@@ -396,6 +423,7 @@ class InterpreterAccounting(InterpreterBase):
                        | content REFERENCE NAME
                        | content term
                        | content TIME
+                       | content REPORT
                        | content PUNCTUATION
                        | content NAME
                        | content UNIT
@@ -430,8 +458,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_illegalword(p):
-            '''illegalword : TIME
-                           | NUMERO
+            '''illegalword : NUMERO
                            | NUMERO NUMERO
                            | NUMERO '）'
                            | fetchtablewrong
@@ -447,6 +474,7 @@ class InterpreterAccounting(InterpreterBase):
         def p_skipword(p):
             '''skipword : skipword term
                        | skipword '%'
+                       | skipword TAIL
                        | discard
                        | LOCATION
                        | REPORT
@@ -484,6 +512,17 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1]
 
 
+        def p_company(p):
+            '''company : COMPANY
+                       | LOCATION COMPANY'''
+            for slice in p.slice:
+                if slice.type == 'COMPANY':
+                    self.names['company'] = self._eliminate_duplicates(slice.value)
+                if slice.type == 'LOCATION':
+                    self.names['address'] = self._eliminate_duplicates(slice.value)
+            prefix = ' '.join([str(slice) for slice in p if slice is not None])
+            p[0] = prefix
+
 
         def p_unit(p):
             '''unit : UNIT
@@ -513,14 +552,14 @@ class InterpreterAccounting(InterpreterBase):
                      | NUMERO HEADER
                      | empty '''
             p[0] = '\n'.join([str(slice) for slice in p if slice is not None])
-            self.logger.info('finis： %s'%p[0])
+            #self.logger.info('finis： %s'%p[0])
 
 
         def p_tail(p):
             '''tail : NUMERO TAIL
                     | NUMERO NUMERO TAIL'''
             tail = ' '.join([str(slice) for slice in p if slice is not None])
-            self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
+            #self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
             p[0] = p[1]
 
 
@@ -570,8 +609,7 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info("%s\tall table is success fetched!\n"%(sourceFile))
             self.docParser.save_checkpoint(fileName)
         else:
-            self.logger.info('%s\ttable(%s) is failed to fetch'
-                             %(sourceFile,failedTable))
+            self.logger.warning('%s\ttable(%s) is failed to fetch' %(sourceFile,failedTable))
         self.docParser._close()
         self.logger.info('\n\n parse %s file end, time used %.4f' % (fileName,(time.time() - start_time)))
         return self.sqlParser.process_info
@@ -706,7 +744,10 @@ class InterpreterAccounting(InterpreterBase):
             unitStandardize = transfer[unitStandardize]
         else:
             unitStandardize = 1
-            self.logger.warning('%s is not the unit of currency'%unit)
+            if unit == NULLSTR:
+                self.logger.warning('unit is NULLSTR!')
+            else:
+                self.logger.warning('%s is not the unit of currency!'%unit)
         return unitStandardize
 
 
@@ -719,7 +760,7 @@ class InterpreterAccounting(InterpreterBase):
                                           ,"注册地址": NULLSTR
                                           ,'table':NULLSTR,'tableBegin':False,'tableEnd':False
                                           ,"page_numbers":list()}})
-        self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR})
+        self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR,'address':NULLSTR})
         for commonField,_ in self.commonFileds.items():
             self.names.update({commonField:NULLSTR})
         for cirtical in self.criticals:
