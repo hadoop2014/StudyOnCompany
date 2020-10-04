@@ -169,10 +169,6 @@ class InterpreterNature(InterpreterBase):
         sourcefiles = self._get_needed_files(scale,isForced)
         sourcefiles = list(sourcefiles)
         sourcefiles.sort()
-        #if isForced:
-            #删除checkpoint文件对应的文件
-        #    self.logger.info('force to start process........\n')
-        #    self.interpreterAccounting.docParser.remove_checkpoint_files(sourcefiles)
         for sourcefile in sourcefiles:
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})

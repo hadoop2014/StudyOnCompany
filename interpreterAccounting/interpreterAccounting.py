@@ -30,9 +30,11 @@ class InterpreterAccounting(InterpreterBase):
             local_name['t_'+token] = self.dictTokens[token]
         self.logger.info('\n'+str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
+
         def t_TIME(t):
-            "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+—\\d+\\s*月|\\d+\\s*(年|月|日)*-\\d+\\s*(年|月|日)|\\d+\\s*年|[○一二三四五六七八九〇]{4}\\s*年"
+            "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+\\s*[—|-]\\s*\\d+\\s*月|\\d+\\s*(年|月|日)*\\s*[—|-]\\s*\\d+\\s*(年|月|日)|\\d+\\s*年\\s*\\d+\\s*月|\\d+\\s*年|[○一二三四五六七八九〇]{4}\\s*年"
             return t
+
 
         def t_NUMERIC(t):
             r'\d+[,\d]*(\.\d{4})|\d+[,\d]*(\.\d{1,2})?'
@@ -69,12 +71,6 @@ class InterpreterAccounting(InterpreterBase):
         self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
 
 
-        # Parsing rules
-        precedence = (
-            ('right', 'UMINUS'),
-        )
-
-
         # dictionary of names_global
         self.names = {}
 
@@ -96,23 +92,20 @@ class InterpreterAccounting(InterpreterBase):
             '''expression : fetchtable expression
                           | fetchdata expression
                           | fetchtitle expression
-                          | title expression
                           | illegalword
                           | parenthese
-                          | skipword
-                          | tail '''
+                          | skipword '''
             p[0] = p[1]
 
 
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional time optional unit finis '''
+            # TABLE optional time optional CURRENCY UNIT finis解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
-            #unit = p[5].split(':')[-1].split('：')[-1]
-            #self.names['货币单位'] = self._unit_transfer(unit)
             unit = self.names['unit']
             currency = self.names['currency']
             company = self.names['company']
@@ -120,79 +113,24 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
 
-        '''
-        def p_fetchtable_searchlong(p):
-            "'fetchtable : TABLE optional time optional CURRENCY UNIT finis ''
-            #解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
-            tableName = self._get_tablename_alias(str.strip(p[1]))
-            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
-            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = NULLSTR
-                return
-            unit = p[6].split(':')[-1].split('：')[-1]
-            self.names['货币单位'] = self._unit_transfer(unit)
-            currency = p[5]
-            #currency = self.names_global['currency']
-            company = self.names['company']
-            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
-            tableBegin = True
-            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
-        '''
 
         def p_fetchtable_searchnotime(p):
             '''fetchtable : TABLE optional unit finis '''
-            #              | TABLE optional UNIT CURRENCY finis'''
-            #第二个语法针对的是主要会计数据
+            #TABLE optional UNIT CURRENCY finis第二个语法针对的是主要会计数据
             #TABLE optional UNIT CURRENCY NUMERO HEADER解决万东医疗2019年年报普通股现金分红情况表搜索不到问题,被TABLE optional UNIT finis 取代
+            #fetchtable : TABLE optional '（' unit '）' finis 解决海螺水泥2018年财报分季度主要财务表的识别问题
+            #TABLE optional CURRENCY UNIT finis 解决海螺水泥2018年财报现金流量表补充资料 的识别问题
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[3],self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
-            #unit = p[3].split(':')[-1].split('：')[-1]
-            #self.names['货币单位'] = self._unit_transfer(unit)
             unit = self.names['unit']
             currency = self.names['currency']
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
-        '''
-        def p_fetchtable_searchbracket(p):
-            ''fetchtable : TABLE optional '（' unit '）' finis ''
-            #第二个语法针对的是主要会计数据
-            #解决海螺水泥2018年财报分季度主要财务表的识别问题
-            tableName = self._get_tablename_alias(str.strip(p[1]))
-            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[4],self.currentPageNumber))
-            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = NULLSTR
-                return
-            #unit = p[4].split(':')[-1].split('：')[-1]
-            #self.names['货币单位'] = self._unit_transfer(unit)
-            unit = self.names['unit']
-            currency = self.names['currency']
-            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
-            tableBegin = True
-            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-        '''
-        '''
-        def p_fetchtable_searchcurrencyunit(p):
-            'fetchtable : TABLE optional CURRENCY UNIT finis ''
-            #第二个语法针对的是主要会计数据
-            #解决海螺水泥2018年财报现金流量表补充资料 的识别问题
-            tableName = self._get_tablename_alias(str.strip(p[1]))
-            self.logger.info("fetchtable %s -> %s %s page %d" % (p[1],tableName,p[4],self.currentPageNumber))
-            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
-                self.docParser.interpretPrefix = NULLSTR
-                return
-            unit = p[4].split(':')[-1].split('：')[-1]
-            self.names['货币单位'] = self._unit_transfer(unit)
-            currency = self.names['currency']
-            #interpretPrefix = '\n'.join([slice for slice in p if slice is not None and slice != 'optional']) + '\n'
-            interpretPrefix = '\n'.join([slice.value for slice in p.slice if slice.value is not None and slice.type != 'optional']) + '\n'
-            tableBegin = True
-            self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
-        '''
 
         def p_fetchtable_timedouble(p):
             '''fetchtable : TABLE optional time optional TIME '''
@@ -213,6 +151,7 @@ class InterpreterAccounting(InterpreterBase):
             interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             tableBegin = True
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
+
 
         def p_fetchtable_header(p):
             '''fetchtable : TABLE optional HEADER HEADER'''
@@ -239,11 +178,10 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional time optional unit tail
                           | TABLE optional tail
                           | TABLE optional time tail '''
-            #              | TABLE optional unit tail'''
-            #              | TABLE optional COMPANY tail'''
             #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
             #TABLE optional COMPANY NUMERIC解决大立科技2018年年报合并资产负债表出现在页尾的情况.
             #TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
+            #TABLE optional COMPANY tail已经被TABLE optional unit tail取代
             tableName = self._get_tablename_alias(str.strip(p[1]))
             self.logger.info("fetchtable warning(reach tail) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
@@ -255,23 +193,15 @@ class InterpreterAccounting(InterpreterBase):
             tableBegin = False
             self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
 
-        '''
-        def p_fetchtable_reatchtail_wrong(p):
-            ''fetchtablewrong : TABLE optional NUMERIC '-'
-                          | TABLE optional NUMERIC DISCARD''
-            #TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
-            #TABLE optional NUMERIC DISCARD解决青松股份2016年年报第10页出现无形资产情况表的误判
-            tableName = self._get_tablename_alias(str.strip(p[1]))
-            self.logger.warning("fetchtable warning(reach tail but is wrong) %s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
-        '''
 
-        def p_fetchtable_skipword(p):
+        def p_fetchtable_wrong(p):
             '''fetchtablewrong : TABLE optional TABLE
                           | TABLE optional PUNCTUATION
                           | TABLE '(' NUMERO ')'
                           | TABLE optional '（' NUMERO '）'
                           | TABLE '(' discard ')'
                           | TABLE optional '（' discard '）'
+                          | TABLE optional '(' NAME ')'
                           | TABLE optional NUMERO '-'
                           | TABLE optional NUMERO DISCARD'''
             #TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
@@ -283,7 +213,7 @@ class InterpreterAccounting(InterpreterBase):
             #去掉TABLE PUNCTUATION减少语法冲突
             #去掉TABLE parenthese,识别海螺水泥2018年年报分季度主要财务时,发生冲突
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
-            self.logger.error("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
+            self.logger.warning("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             p[0] = p[1] + p[2]
 
 
@@ -296,8 +226,7 @@ class InterpreterAccounting(InterpreterBase):
                         | discard
                         | '(' NAME ')'
                         | empty '''
-            # | optional fetchtitle
-            # | optional title
+            # optional fetchtitle 被optioanl COMPANY time取代
             # optional CURRENCY 解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表,现金流量表补充资料等情况
             #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
             #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
@@ -314,17 +243,6 @@ class InterpreterAccounting(InterpreterBase):
             prefix = ' '.join([str(slice) for slice in p if slice is not None])
             p[0] = prefix
 
-        '''
-        def p_optional(p):
-            ''optional : numero
-                        | discard
-                        | '(' NAME ')'
-                        | empty''
-            # 第3条规则'(' NAME ')' 解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
-            prefix = ' '.join([str(slice) for slice in p if slice is not None])
-            p[0] = prefix
-            print('optional',p[0])
-        '''
 
         def p_fetchdata_referencedouble(p):
             '''fetchdata : REFERENCE DISCARD REFERENCE NUMERIC
@@ -367,11 +285,10 @@ class InterpreterAccounting(InterpreterBase):
                     self.names.update({critical:self._eliminate_duplicates(p[2])})
                 elif critical == '注册地址' and p[2] != NULLSTR:
                     self.names.update({critical: self._eliminate_duplicates(p[2])})
-
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
 
 
-        def p_fetchdata_skipword(p):
+        def p_fetchdata_wrong(p):
             '''fetchdatawrong : CRITICAL CRITICAL
                          | REFERENCE NUMERIC NAME
                          | REFERENCE NUMERIC TIME
@@ -380,25 +297,9 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1]
 
 
-        def p_illegalword(p):
-            '''illegalword : TIME
-                           | LOCATION
-                           | REPORT
-                           | NUMERO
-                           | NUMERO NUMERO
-                           | NUMERO '）'
-                           | fetchtablewrong
-                           | fetchdatawrong
-                           | fetchtitlewrong '''
-            #TABLE discard parenthese  该语句和TABLE optional ( UNIT ) finis语句冲突
-            #所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
-            #TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
-            #TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
-            p[0] = p[1]
-
-
         def p_fetchtitle_company(p):
             '''fetchtitle : COMPANY TIME REPORT'''
+            #TIME REPORT COMPANY没有必要，用TIME REPORT生效即可，COMPANY可以通过CRITICAL COMPANY获取
             if self.names['公司名称'] == NULLSTR :
                 self.names.update({'公司名称':self._eliminate_duplicates(p[1])})
             if self.names['报告时间'] == NULLSTR :
@@ -410,37 +311,35 @@ class InterpreterAccounting(InterpreterBase):
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             p[0] = p[1] + p[2] + p[3]
 
-        '''
-        def p_fetchtitle_company_reverse(p):
-            ''fetchtitle : TIME REPORT COMPANY''
-            if self.names['公司名称'] == NULLSTR :
-                self.names.update({'公司名称':p[3]})
-            if self.names['报告时间'] == NULLSTR :
-                years = self._time_transfer(p[1])
-                self.names.update({'报告时间':years})
-            if self.names['报告类型'] == NULLSTR:
-                self.names.update({'报告类型':p[2]})
-            self.logger.info('fetchtitle %s %s%s page %d'
-                             % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
-            p[0] = p[1] + p[2] + p[3]
-        '''
 
         def p_fetchtitle_long(p):
-            '''fetchtitle : COMPANY NAME parenthese TIME REPORT '''
-            #解决海螺水泥2018年报第1页title的识别问题
+            '''fetchtitle : COMPANY selectable TIME REPORT '''
+            #selectable 解决海螺水泥2018年报第1页title的识别问题
             if self.names['公司名称'] == NULLSTR :
                 self.names.update({'公司名称': self._eliminate_duplicates(p[1])})
             if self.names['报告时间'] == NULLSTR :
-                years = self._time_transfer(p[4])
+                years = self._time_transfer(p[3])
                 self.names.update({'报告时间':years})
             if self.names['报告类型'] == NULLSTR:
-                self.names.update({'报告类型':self._get_unit_alias(p[5])})
+                self.names.update({'报告类型':self._get_unit_alias(p[4])})
             self.logger.info('fetchtitle long %s %s%s page %d'
                              % (self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
-            p[0] = p[1] + p[4] + p[5]
+            p[0] = p[1] + p[3] + p[4]
 
 
-        def p_fetchtitle_skipword(p):
+
+        def p_fetchtitle_title(p):
+            '''fetchtitle : TIME REPORT'''
+            if self.names['报告时间'] == NULLSTR \
+                and self.names['报告类型'] == NULLSTR:
+                years = self._time_transfer(p[1])
+                self.names.update({'报告时间':years})
+                self.names.update({'报告类型':p[2]})
+            self.logger.info('title %s%s page %d'% (self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
+            p[0] = p[1] + p[2]
+
+
+        def p_fetchtitle_wrong(p):
             '''fetchtitlewrong : COMPANY error
                          | COMPANY TIME DISCARD
                          | COMPANY TIME NUMERIC
@@ -450,20 +349,18 @@ class InterpreterAccounting(InterpreterBase):
                          | COMPANY '''
             #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
             #去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
-            #TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在useless中增加REPORT
+            #TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在skipword中增加REPORT
             #去掉fetchdata : COMPANY error,和fetchtitle : COMPANY error冲突
             p[0] = p[1]
 
 
-        def p_title(p):
-            '''title : TIME REPORT'''
-            if self.names['报告时间'] == NULLSTR \
-                and self.names['报告类型'] == NULLSTR:
-                years = self._time_transfer(p[1])
-                self.names.update({'报告时间':years})
-                self.names.update({'报告类型':p[2]})
-            self.logger.info('title %s%s page %d'% (self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
-            p[0] = p[1] + p[2]
+        def p_selectable(p):
+            '''selectable : selectable parenthese
+                          | selectable NAME
+                          | NAME '''
+            #解决海螺水泥2018年报第1页title的识别问题
+            #解决康龙化成2019年年报第1页title的识别问题
+            p[0] = p[1]
 
 
         def p_parenthese_group(p):
@@ -498,6 +395,7 @@ class InterpreterAccounting(InterpreterBase):
                        | content COMPANY
                        | content REFERENCE
                        | content CRITICAL
+                       | content TAIL
                        | TIME
                        | NAME
                        | PUNCTUATION
@@ -508,6 +406,7 @@ class InterpreterAccounting(InterpreterBase):
                        | NUMERO
                        | LOCATION
                        | CURRENCY
+                       | HEADER
                        | '%'
                        | '％'
                        | '-'
@@ -515,55 +414,48 @@ class InterpreterAccounting(InterpreterBase):
             p[0] = p[1]
 
 
-        #def p_skipword_group(p):
-        #    '''skipword : '(' skipword ')'
-        #                | '(' skipword '）'
-        #                | '（' skipword '）'
-        #                | '（' skipword ')' '''
-        #    p[0] = p[2]
-
-
-        def p_skipword(p):
-            '''skipword : useless skipword
-                        | term skipword
-                        | useless
-                        | '-' useless
-                        | term
-                        | '-' term %prec UMINUS'''
+        def p_illegalword(p):
+            '''illegalword : TIME
+                           | NUMERO
+                           | NUMERO NUMERO
+                           | NUMERO '）'
+                           | fetchtablewrong
+                           | fetchdatawrong
+                           | fetchtitlewrong '''
+            #TABLE discard parenthese  该语句和TABLE optional ( UNIT ) finis语句冲突
+            #所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
+            #TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
+            #TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
             p[0] = p[1]
 
+        '''
+        def p_skipword(p):
+            ''skipword : useless ''
+        #                | term skipword
+        #                | useless
+        #                | '-' useless
+        #                | term
+        #                | '-' term''
+            p[0] = p[1]
+        '''
 
-
-        #def p_useless_reduce(p):
-        #    '''useless : '(' useless ')'
-        #               | '(' useless '）'
-        #               | '（' useless '）'
-        #               | '（' useless ')'
-        #               | '-' useless '''
-        #    p[0] = p[1]
-
-
-        def p_useless(p):
-            '''useless : PUNCTUATION
+        def p_skipword(p):
+            '''skipword : skipword term
                        | discard
+                       | LOCATION
+                       | REPORT
                        | WEBSITE
                        | EMAIL
                        | NAME
                        | HEADER
                        | UNIT
                        | CURRENCY
+                       | term
+                       | PUNCTUATION
                        | '-'
                        | '%'
                        | '％' '''
             p[0] = p[1]
-            #                       | LOCATION
-
-
-        #def p_term_group(p):
-        #    '''term : '(' term ')'
-        #            |  '（' term '）'
-        #            | '-' term %prec UMINUS '''
-        #    p[0] = -p[2]  #财务报表中()表示负值
 
 
         def p_term_percentage(p):
@@ -585,17 +477,6 @@ class InterpreterAccounting(InterpreterBase):
                        | DISCARD '''
             p[0] = p[1]
 
-        '''
-        def p_company(p):
-            ''company : COMPANY
-                       | LOCATION COMPANY
-                       | discard COMPANY
-                       ''
-            for slice in p.slice:
-                if slice.type == 'COMPANY':
-                    self.names['company'] = self._eliminate_duplicates(p[1])
-            p[0] = p[1]
-        '''
 
 
         def p_unit(p):
@@ -610,7 +491,7 @@ class InterpreterAccounting(InterpreterBase):
                     self.names['unit'] = unit
                     self.names['货币单位'] = self._unit_transfer(unit)
                 elif slice.type == 'CURRENCY':
-                    self.names['currency'] = slice.value
+                    self.names['currency'] = slice.value.split(':')[-1].split('：')[-1]
             prefix = ' '.join([str(slice) for slice in p if slice is not None])
             p[0] = prefix
 
@@ -625,18 +506,15 @@ class InterpreterAccounting(InterpreterBase):
             '''finis : NUMERO
                      | NUMERO HEADER
                      | empty '''
-            #if p.slice[1].type == 'CURRENCY':
-            #    p[1] = p[1].split(':')[-1].split('：')[-1]
-            #    self.names['currency'] = p[1]
             p[0] = '\n'.join([str(slice) for slice in p if slice is not None])
-            print('finis',p[0])
+            self.logger.info('finis： %s'%p[0])
 
 
         def p_tail(p):
             '''tail : NUMERO TAIL
                     | NUMERO NUMERO TAIL'''
             tail = ' '.join([str(slice) for slice in p if slice is not None])
-            self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
+            #self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
             p[0] = p[1]
 
 

@@ -8,7 +8,7 @@ from interpreterAssemble import *
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         self.interpreter = InterpreterAssemble().interpreter_assemble('accounting')
-        #self.run_interpreter_lexer()
+        self.run_interpreter_lexer()
         self.run_interpreter_yacc()
 
     def run_interpreter_lexer(self):
@@ -93,6 +93,7 @@ class MyTestCase(unittest.TestCase):
 
     def run_interpreter_yacc(self):
         input = ''
+        input = input + ' 2020 年 03 月    2000年 7 - 8月    2000年 - 3000年   2000年 — 3000年'
         input = input + ' 《证券发行与承销管理办法》 我梦是谁'
         input = input + ' 下简称“中国证监会”）《证券发行与承销管理办法》第十七条规定'
         input = input + ' 在职员工的数量合计 21,056'

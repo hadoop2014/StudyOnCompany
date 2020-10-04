@@ -327,7 +327,7 @@ class DocParserPdf(DocParserBase):
             removedfiles = list(set(reader).difference(set(resultfiles)))
         if len(removedfiles) > 0:
             removedlines = '\n\t\t\t\t'.join(removedfiles)
-            self.logger.info("Success to remove from checkpointfile %s : %s"%(self.checkpointfilename,removedlines))
+            self.logger.info("Success to remove from checkpointfile : %s"%(removedlines))
 
 
     @property
