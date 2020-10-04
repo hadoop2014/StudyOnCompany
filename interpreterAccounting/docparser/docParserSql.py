@@ -16,7 +16,6 @@ import time
 class DocParserSql(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserSql, self).__init__(gConfig)
-        #self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
         self._create_tables()
         self.process_info = {}
         self.dataTable = {}
@@ -105,33 +104,27 @@ class DocParserSql(DocParserBase):
         return dataFrame,countTotalFields
 
 
-    def _write_to_sqlite3(self, dataFrame,tableName):
+    def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
         conn = self._get_connect()
-        for i in range(1,len(dataFrame.index)):
-            sql_df = pd.DataFrame(dataFrame.iloc[i]).T
-            sql_df.columns = dataFrame.iloc[0].values
-            isRecordExist = self._is_record_exist(conn, tableName, sql_df)
-            if isRecordExist:
-                sql = ''
-                sql = sql + 'delete from {}'.format(tableName)
-                sql = sql + '\nwhere 报告时间 = \'{}' .format(sql_df["报告时间"].values[0]) + '\''
-                sql = sql + '\n    and 报告类型 = \'{}'.format(sql_df['报告类型'].values[0]) + '\''
-                sql = sql + '\n    and 公司简称 = \'{}'.format(sql_df['公司简称'].values[0]) + '\''
-                fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
-                if fieldFromHeader != NULLSTR:
-                    # 对于分季度财务数据和合并所有者权益变动表及无形资产情况,报告时间都是同一年,所以必须通过季度来判断记录是否唯一
-                    sql = sql + ' and {} = \'{}\''.format(fieldFromHeader, sql_df[fieldFromHeader].values[0])
-                self._sql_executer(sql)
-                self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
-                                                                            ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
-                sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
-                conn.commit()
-                self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
-                                                                            ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
-            else:
-                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
-                conn.commit()
-                self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
+        dataFrame = dataFrame.T
+        sql_df = dataFrame.set_index(dataFrame.columns[0],inplace=False).T
+        isRecordExist = self._is_record_exist(conn, tableName, sql_df)
+        if isRecordExist:
+            condition = self._get_condition(sql_df)
+            sql = ''
+            sql = sql + 'delete from {}'.format(tableName)
+            sql = sql + '\nwhere ' + condition
+            self._sql_executer(sql)
+            self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
+                                                                        ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
+            sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+            conn.commit()
+            self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
+                                                                        ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
+        else:
+            sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
+            conn.commit()
+            self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
                                                                             ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
         conn.close()
 
@@ -242,12 +235,7 @@ class DocParserSql(DocParserBase):
             dataFrame.set_index(0,inplace=True)
             dataFrame = dataFrame.T.copy()
         else:
-            #columns = dataFrame.iloc[0].copy()
-            #indexDiscardField = dataFrame.iloc[:, 0].isin([firstHeader])
-            #dataFrame.loc[indexDiscardField] = NaN
-            #dataFrame.columns = columns
             dataFrame.columns = dataFrame.iloc[0].copy()
-            #dataFrame = dataFrame.dropna(axis=0).copy()
             #主要会计数据的表头通过上述过程去不掉,采用专门的函数去掉
             dataFrame = self._discard_header_row(dataFrame,tableName)
         return dataFrame
@@ -269,7 +257,6 @@ class DocParserSql(DocParserBase):
         for index,field in enumerate(dataFrame.iloc[:,0].tolist()):
             #识别新字段的起始行
             isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
-            #isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
             if isRowNotAnyNone:# or isHeaderInRow:
                 #if self._is_field_match_standardize(field,tableName):
                 if self._is_field_in_standardize_by_mode(field,isStandardizeStrictMode,tableName):
@@ -286,20 +273,10 @@ class DocParserSql(DocParserBase):
                                 dataFrame.iloc[lastIndex] = mergedRow
                                 dataFrame.iloc[lastIndex + 1:index] = NaN
                             mergedRow = None
-                        '''
-                        elif isRowNotAnyNone == True :#and isHeaderInRow == False:
-                            if mergedField == NULLSTR and self._is_header_in_row(mergedRow,tableName):
-                                if index > lastIndex + 1:
-                                    dataFrame.iloc[lastIndex] = mergedRow
-                                    dataFrame.iloc[lastIndex + 1:index] = NaN
-                                mergedRow = None'''
-                        #elif isRowNotAnyNone == True and isHeaderInRow == True:
-                        #    mergedRow = None
                         #elif self._is_row_all_blank(dataFrame.iloc[index]):
                             #解决北达药业2018年年报无形资产情况表解析不正确
                         #    mergedRow = None
             else:
-                #if self._is_field_match_standardize(field,tableName):
                 if self._is_field_in_standardize_by_mode(field, isStandardizeStrictMode, tableName):
                     if index > lastIndex + 1 and mergedRow is not None:
                         # 把前期合并的行赋值到dataframe的上一行
@@ -647,16 +624,12 @@ class DocParserSql(DocParserBase):
     def _is_row_all_blank(self,row:DataFrame):
         return (row == NULLSTR).all()
 
-    def _is_record_exist(self, conn, tableName, dataFrame):
+
+    def _is_record_exist(self, conn, tableName, dataFrame:DataFrame):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
-        fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
-        primaryKey = [key for key,value in self.commonFileds.items() if value.find('NOT NULL') >= 0]
         #对于Sqlit3,字符串表示为'string' ,而不是"string".
-        condition = ' and '.join([str(key) + '=\'' + str(dataFrame[key].values[0]) + '\'' for key in primaryKey])
+        condition = self._get_condition(dataFrame)
         sql = 'select count(*) from {} where '.format(tableName) + condition
-        if fieldFromHeader != NULLSTR:
-            #对于分季度财务数据,报告时间都是同一年,所以必须通过季度来判断记录是否唯一
-            sql = sql + ' and {} = \'{}\''.format(fieldFromHeader,dataFrame[fieldFromHeader].values[0])
         result = conn.execute(sql).fetchall()
         isRecordExist = False
         if len(result) > 0:
@@ -664,13 +637,20 @@ class DocParserSql(DocParserBase):
         return isRecordExist
 
 
+    def _get_condition(self,dataFrame):
+        primaryKey = [key for key, value in self.commonFileds.items() if value.find('NOT NULL') >= 0]
+        # 对于Sqlit3,字符串表示为'string' ,而不是"string".
+        joined = list()
+        for key in primaryKey:
+            current = '(' + ' or '.join(['{} = \'{}\''.format(key,value) for value in set(dataFrame[key].tolist())]) + ')'
+            joined = joined + list([current])
+        condition = ' and '.join(joined)
+        return condition
+
+
     def _get_connect(self):
         #用于获取数据库连接
         return sqlite.connect(self.database)
-
-
-    #def _get_engine(self):
-    #    return create_engine(os.path.join('sqlite:///',self.database))
 
 
     def _fetch_all_tables(self, cursor):

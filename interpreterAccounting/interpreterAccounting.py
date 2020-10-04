@@ -99,6 +99,18 @@ class InterpreterAccounting(InterpreterBase):
                           | tail'''
             p[0] = p[1]
 
+        #def p_expression_reduce(p):
+        #    '''expression : expression tail
+        #                  | expression parenthese
+        #                  | expression illegalword
+        #                  | expression fetchdata
+        #                  | expression fetchtitle
+        #                  | expression fetchtable
+        #                  | skipword
+        #                  | fetchtitle
+        #                  | fetchtable'''
+        #    p[0] = p[1]
+
 
         def p_fetchtable_search(p):
             '''fetchtable : TABLE optional time optional unit finis '''
@@ -412,7 +424,8 @@ class InterpreterAccounting(InterpreterBase):
                        | '%'
                        | '％'
                        | '-'
-                       | COMPANY '''
+                       | COMPANY
+                       | REFERENCE '''
             p[0] = p[1]
 
 
