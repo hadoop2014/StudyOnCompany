@@ -69,6 +69,7 @@ class InterpreterAccounting(InterpreterBase):
             t.lexer.skip(1)
 
 
+
         # Build the lexer
         self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
 
@@ -388,6 +389,7 @@ class InterpreterAccounting(InterpreterBase):
                          | company TIME DISCARD
                          | company TIME NUMERIC
                          | company TIME NUMERO
+                         | company selectable DISCARD
                          | company
                          | TIME '''
             # company DISCARD 去掉

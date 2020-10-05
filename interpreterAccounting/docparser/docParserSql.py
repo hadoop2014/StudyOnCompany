@@ -57,8 +57,8 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_header_merge_simple(dataframe, tableName)
 
         #把跨多个单元格的表字段名合并成一个
-        #dataframe = self._process_field_merge_simple(dataframe,tableName)
-        dataframe = self._process_field_merge_simple_expired(dataframe, tableName)
+        dataframe = self._process_field_merge_simple(dataframe,tableName)
+        #dataframe = self._process_field_merge_simple_expired(dataframe, tableName)
 
         #去掉空字段及无用字段
         dataframe = self._process_field_discard(dataframe, tableName)
@@ -243,19 +243,82 @@ class DocParserSql(DocParserBase):
 
     @loginfo()
     def _process_field_merge_simple(self,dataFrame:DataFrame,tableName):
-        mergedRow = None
-        lastIndex = 0
-        mergedColumn = reduce(self._merge, dataFrame.iloc[:, 0].tolist())
-        blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
+        #增加一行空白行,以推动最后一个字段的合并
+        blankFrame = pd.DataFrame(['']*len(dataFrame.columns.values),index=dataFrame.columns).T
         dataFrame = dataFrame.append(blankFrame)
         # 解决合并利润表中某些字段的'-'符合使用不一致,统一替换城'－'
         dataFrame.iloc[:,0] = self._fieldname_pretreat(dataFrame.iloc[:,0])
-        #dataFrame.iloc[:, 0] = dataFrame.iloc[:, 0].apply(lambda value: value.replace('-', '－'))
+        mergedColumn = reduce(self._merge, dataFrame.iloc[:, 0].tolist())
+        lexer = self.dictLexers[tableName]['lexer']
+        dictToken = self.dictLexers[tableName]['dictToken']
+        lexer.input(mergedColumn)
+        dictFieldPos = dict()
+        for index,tok in enumerate(lexer):
+            dictFieldPos.update({index:{'lexpos':tok.lexpos,'value':tok.value,'type':tok.type}})
+            self.logger.info('the lexer matched the field %d %s %s %s\t%s'%(index,tok.lexpos,tok.value,tok.type,dictToken[tok.type]))
+
+        countPos = len(dictFieldPos.keys())
+        countTotal = len(mergedColumn)
+        posIndex = 0
+        fieldPos = 0
+        mergedRow = None
+        lastIndex = 0
+        lexPos = dictFieldPos[posIndex]['lexpos']
+        for index,field in enumerate(dataFrame.iloc[:,0].tolist()):
+            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
+            while fieldPos > lexPos and lexPos < countTotal:
+                # 字段位置超前了,lexPos追平
+                posIndex = posIndex + 1
+                if posIndex < countPos:
+                    lexPos = dictFieldPos[posIndex]['lexpos']
+                    #追上来的过程中,以前合并的字段就不要了
+                    mergedRow = None
+                else:
+                    lexPos = countTotal
+                    break
+
+            if fieldPos == lexPos:
+                if fieldPos > lexPos and posIndex < countPos:
+                    #如果fieldPos 比 lexPos大,说明lex没有匹配到字段开头,则存在错误
+                    self.logger.error("failed to match the whole field %s %s match %s"%(tableName,dictFieldPos[posIndex]['value'],field))
+                #说明在该位置搜索到了字段
+                if self._is_valid(field):
+                    if index > lastIndex + 1 and mergedRow is not None:
+                        # 把前期合并的行赋值到dataframe的上一行
+                        dataFrame.iloc[lastIndex] = mergedRow
+                        dataFrame.iloc[lastIndex + 1:index] = NaN
+                    mergedRow = None
+                    #开始搜寻下一个字段
+                    posIndex = posIndex + 1
+                else:
+                    #正对字段名是None和NULLSTR的处理,这两种情况下,该字段不占用字符串长度
+                    if field == NULLSTR and isRowNotAnyNone:
+                        #如果是空字段,而且没有一个是None,说明是全空白字段,或者带有数值,该段要向下一个字段合并,并且把前面的mergedRow清空
+                        if index > lastIndex + 1 and mergedRow is not None:
+                            # 把前期合并的行赋值到dataframe的上一行
+                            dataFrame.iloc[lastIndex] = mergedRow
+                            dataFrame.iloc[lastIndex + 1:index] = NaN
+                        mergedRow = None
+                        # 开始搜寻下一个字段
+                        posIndex = posIndex + 1
 
 
+            #更新字段位置和lex位置
+            if posIndex < countPos:
+                lexPos = dictFieldPos[posIndex]['lexpos']
+            else:
+                lexPos = countTotal
+            fieldLen = self._get_field_len(field)
+            fieldPos = fieldPos + fieldLen
+
+            if mergedRow is None:
+                mergedRow = dataFrame.iloc[index].tolist()
+                lastIndex = index
+            else:
+                mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
         return dataFrame
 
-
+    '''
     @loginfo()
     def _process_field_merge_simple_expired(self, dataFrame, tableName):
         mergedRow = None
@@ -308,7 +371,7 @@ class DocParserSql(DocParserBase):
                             #上一行是以空字符开头的行,需要和本行进行合并,不能设置mergedRow = None
                         #    pass
                     # 如果field为空的情况下,下一行的field仍旧是空行,则当前行空字段行需要并入mergedRow
-                    '''aheaderField = None
+                    ''aheaderField = None
                     if index + 1 < countIndex:
                         aheaderField = dataFrame.iloc[index + 1, 0]
                     if aheaderField != NULLSTR:
@@ -319,7 +382,7 @@ class DocParserSql(DocParserBase):
                                 if index > lastIndex + 1 and mergedRow is not None:
                                     dataFrame.iloc[lastIndex] = mergedRow
                                     dataFrame.iloc[lastIndex + 1:index] = NaN
-                                mergedRow = None'''
+                                mergedRow = None''
                 else:
                     #解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
                     if mergedRow is not None :
@@ -340,7 +403,7 @@ class DocParserSql(DocParserBase):
             else:
                 mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
         return dataFrame
-
+    '''
 
     @loginfo()
     def _process_field_common(self, dataFrame, dictTable, countFieldDiscard,tableName):
@@ -486,10 +549,17 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
 
+    def _get_field_len(self,field):
+        if self._is_valid(field):
+            fieldLen = len(field)
+        else:
+            # 如果是None和NULLSTR,这两种情况是不占用字段长度的,返回0
+            fieldLen = 0
+        return fieldLen
+
+
     def _fieldname_pretreat(self,row):
         #将所有正则表达式中要用到的字符全部替换成中文字符
-        #dataFrame.iloc[:, 0] = dataFrame.iloc[:, 0].apply(lambda value:
-        #                                                  value.replace('-', '－').replace('(','（').replace(')','）').replace('.','．'))
         row = row.apply(lambda value:value.replace('-', '－').replace('(','（').replace(')','）').replace('.','．'))
         return row
 
@@ -527,16 +597,6 @@ class DocParserSql(DocParserBase):
             standardizedFields = [self._standardize(fieldStandardizeStrict, field) for field in fieldList]
         else:
             standardizedFields = self._standardize(fieldStandardizeStrict, fieldList)
-        return standardizedFields
-
-
-    def _get_standardized_field(self,fieldList,tableName):
-        assert fieldList is not None,'sourceRow(%s) must not be None'%fieldList
-        fieldStandardize = self.dictTables[tableName]['fieldStandardize']
-        if isinstance(fieldList,list):
-            standardizedFields = [self._standardize(fieldStandardize,field) for field in fieldList]
-        else:
-            standardizedFields = self._standardize(fieldStandardize,fieldList)
         return standardizedFields
 
 
