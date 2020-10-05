@@ -95,7 +95,7 @@ class InterpreterBase(BaseClass):
         #对所有的表字段进行标准化
         standardFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'], tableName)
         if len(standardFields) != len(set(standardFields)):
-            self.logger.info("the fields of %s has duplicated!" % tableName)
+            self.logger.warning("the fields of %s has duplicated:%s!" % (tableName,' '.join(standardFields)))
         #去掉标准化字段后的重复字段
         standardFields = list(set(standardFields))
         #建立token和标准化字段之间的索引表
@@ -111,9 +111,10 @@ class InterpreterBase(BaseClass):
                 self.logger.warning("%s has same field after standardize in fieldAlias:%s %s"%(tableName,key,value))
         #判断fieldAlias中经过标准化后是否有重复字段,如果存在,则配置是不合适的
         if len(self.dictTables[tableName]['fieldAlias'].keys()) != len(dictAlias.keys()):
-            self.logger.warning('It is duplicated field in fieldAlias of %s' % tableName)
+            self.logger.warning('It is same field after standard in fieldAlias of %s:%s'
+                                % (tableName,' '.join(self.dictTables[tableName]['fieldAlias'].keys())))
         #判断fieldAlias中是否存在fieldName中不存在的字段,如果存在,则配置上存在错误.
-        fieldDiff = set(dictAlias.values()).difference(standardFields)
+        fieldDiff = set(dictAlias.values()).difference(set(standardFields))
         if len(fieldDiff) > 0:
             if NaN in fieldDiff:
                 self.logger.error('error in fieldAlias of %s, NaN is exists'%tableName)
@@ -128,6 +129,30 @@ class InterpreterBase(BaseClass):
         for key in standardFields:
             dictMerged.setdefault(key,[]).append(key)
 
+        #最后把VIRTUALFIELD加上
+        #dictTokens.update({'VIRTUALFIELD':self.gJsonInterpreter['VIRTUALFIELD']})
+        discardField = self.dictTables[tableName]['fieldDiscard']
+        standardDiscardFields = self._get_standardized_field(discardField,tableName)
+        if len(standardDiscardFields) > len(set(standardDiscardFields)):
+            #如果fieldDiscard中在标准化后存在重复字段,则去重
+            self.logger.warning('%s has duplicated discardField after standardize:%s!'%(tableName,' '.join(standardDiscardFields)))
+            standardDiscardFields = list(set(standardDiscardFields))
+        virtualField = self.gJsonInterpreter['VIRTUALFIELD']
+        fieldsIndex.update({'VIRTUALFIELD':virtualField})
+        #增加一个默认值
+        standardDiscardFields = standardDiscardFields + [virtualField]
+        #判断标准化后的fieldDiscard和Merged后的Key值是否还有重复,有则去掉
+        fieldJoint = set(standardDiscardFields) & set(dictMerged.keys())
+        if len(fieldJoint) > 0:
+            if NaN in fieldJoint:
+                self.logger.error('%s fieldDiscard has NaN field'%tableName)
+            else:
+                self.logger.error("%s has dupicated fieldDiscard with fieldName:%s!"%(tableName,' '.join(list(fieldJoint))))
+            standardDiscardFields = list(set(standardDiscardFields).difference(fieldJoint))
+        for value in standardDiscardFields:
+            if value is not NaN:
+                dictMerged.setdefault(virtualField,[]).append(value)
+
         #构造dictTokens,token搜索的正则表达式即字段名的前面加上patternPrefix,后面加上patternSuffix
         patternPrefix = self.dictTables[tableName]['patternPrefix']
         patternSuffix = self.dictTables[tableName]['patternSuffix']
@@ -137,8 +162,6 @@ class InterpreterBase(BaseClass):
             fieldList = sorted(dictMerged[field],key = lambda x:len(x),reverse=True)
             pattern = [patternPrefix+field+patternSuffix for field in fieldList]
             dictTokens.update({token:'|'.join(pattern)})
-        #最后把ILLEGALFIELD加上
-        #dictTokens.update({'ILLEGALFIELD':self.gJsonInterpreter['ILLEGALFIELD']})
         return dictTokens
 
 
