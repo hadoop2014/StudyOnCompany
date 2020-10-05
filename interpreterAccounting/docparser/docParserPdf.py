@@ -109,9 +109,11 @@ class DocParserPdf(DocParserBase):
         page_numbers = dictTable['page_numbers']
         processedTable,isTableEnd,isTableStart = self._process_table(page_numbers,fetchTables, tableName)
         dictTable.update({'tableEnd':isTableEnd})
-        if len(page_numbers) == 1 and isTableStart == False:
+        if len(page_numbers) == 1 and isTableStart == False and processedTable == NULLSTR:
             #这种情况下表明解释器在搜索时出现了误判,需要重置搜索条件,解决三诺生物2019年年报第60,61页出现了错误的合并资产负责表,真正的在第100页.
-            self.logger.warning('fetchtable failed for %s is not needed page %d!'%(tableName,page_numbers[0]))
+            #这种情况下还需要判断processedTable是否有效,如果有效,说明已经搜索到了,此时忽略isTableStart
+            self.logger.warning('fetchtable failed for %s is not needed ,prefix : %s page %d!'
+                                %(tableName,self.interpretPrefix.replace('\n',' '),page_numbers[0]))
             dictTable.update({'page_numbers':list()})
             dictTable.update({'tableBegin': isTableStart})
             self.interpretPrefix = NULLSTR
@@ -133,8 +135,10 @@ class DocParserPdf(DocParserBase):
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
         #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
-        secondFieldList = [row[1] for row in processedTable]
-        isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
+        isTableStart = False
+        if len(processedTable[0]) > 1:
+            secondFieldList = [row[1] for row in processedTable]
+            isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
         isTableEnd = self._is_table_end(tableName,fieldList)
         if len(tables) == 1:
             return processedTable, isTableEnd,isTableStart

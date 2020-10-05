@@ -57,7 +57,8 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_header_merge_simple(dataframe, tableName)
 
         #把跨多个单元格的表字段名合并成一个
-        dataframe = self._process_field_merge_simple(dataframe,tableName)
+        #dataframe = self._process_field_merge_simple(dataframe,tableName)
+        dataframe = self._process_field_merge_simple_expired(dataframe, tableName)
 
         #去掉空字段及无用字段
         dataframe = self._process_field_discard(dataframe, tableName)
@@ -157,14 +158,14 @@ class DocParserSql(DocParserBase):
         return value
 
 
-    def _process_value_pretreat(self,dataFrame,tableName):
+    def _process_value_pretreat(self,dataFrame:DataFrame,tableName):
         #采用正则表达式替换空字符,对一个字段中包含两个数字字符串的进行拆分
         #解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景.
         #东材科技2018年年报,普通股现金分红流量表,表头有很多空格,影响_process_header_discard,需要去掉
         dataFrame.iloc[1:,1:]  = dataFrame.iloc[1:,1:].apply(self._rowPretreat,axis=1)
-        dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR)
-                                                         .replace('(','（').replace(')','）')))
+        dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR).replace('(','（').replace(')','）')))
         return dataFrame
+
 
     def _rowDiscard(self,row,tableName):
         if self._is_header_in_row(row.tolist(),tableName):# and row[0] == NULLSTR:
@@ -241,7 +242,22 @@ class DocParserSql(DocParserBase):
 
 
     @loginfo()
-    def _process_field_merge_simple(self,dataFrame,tableName):
+    def _process_field_merge_simple(self,dataFrame:DataFrame,tableName):
+        mergedRow = None
+        lastIndex = 0
+        mergedColumn = reduce(self._merge, dataFrame.iloc[:, 0].tolist())
+        blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
+        dataFrame = dataFrame.append(blankFrame)
+        # 解决合并利润表中某些字段的'-'符合使用不一致,统一替换城'－'
+        dataFrame.iloc[:,0] = self._fieldname_pretreat(dataFrame.iloc[:,0])
+        #dataFrame.iloc[:, 0] = dataFrame.iloc[:, 0].apply(lambda value: value.replace('-', '－'))
+
+
+        return dataFrame
+
+
+    @loginfo()
+    def _process_field_merge_simple_expired(self, dataFrame, tableName):
         mergedRow = None
         lastIndex = 0
         #countIndex = len(dataFrame.index.values)
@@ -468,6 +484,14 @@ class DocParserSql(DocParserBase):
         dataFrame.iloc[0] = standardizedFields
         dataFrame = dataFrame.dropna(axis = 1).copy()
         return dataFrame
+
+
+    def _fieldname_pretreat(self,row):
+        #将所有正则表达式中要用到的字符全部替换成中文字符
+        #dataFrame.iloc[:, 0] = dataFrame.iloc[:, 0].apply(lambda value:
+        #                                                  value.replace('-', '－').replace('(','（').replace(')','）').replace('.','．'))
+        row = row.apply(lambda value:value.replace('-', '－').replace('(','（').replace(')','）').replace('.','．'))
+        return row
 
 
     def _get_aliased_fields(self, fieldList, tableName):

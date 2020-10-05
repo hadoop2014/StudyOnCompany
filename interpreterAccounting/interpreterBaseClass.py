@@ -39,7 +39,7 @@ class InterpreterBase(BaseClass):
         self.criticalAlias = self.gJsonInterpreter['criticalAlias']
         self.criticals = self.gJsonInterpreter['CRITICAL'].split('|')
         self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
-        self.unitAlias = self.gJsonInterpreter['unitAlias']
+        self.reportAlias = self.gJsonInterpreter['reportAlias']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
         self.tableAlias = self.gJsonInterpreter['tableAlias']
         #tableNames标准化,去掉正则表达式中的$^
@@ -51,9 +51,9 @@ class InterpreterBase(BaseClass):
         self.dictKeyword = self._get_keyword(self.tableKeyword)
 
 
-    def _get_unit_alias(self,unit):
-        aliasedUnit = self._alias(unit, self.unitAlias)
-        return aliasedUnit
+    def _get_report_alias(self, report):
+        aliasedReport = self._alias(report, self.reportAlias)
+        return aliasedReport
 
 
     def _get_reference_alias(self,refernece):

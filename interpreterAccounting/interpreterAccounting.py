@@ -257,7 +257,7 @@ class InterpreterAccounting(InterpreterBase):
             # optional fetchtitle 被optioanl COMPANY time取代
             # optional CURRENCY 解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表,现金流量表补充资料等情况
             #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
-            #第3条规则'(' NAME ')' optional解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
+            #第3条规则optional '(' NAME ')' 解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
             #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
             #DISCARD PUNCTUATION DISCARD DISCARD和t_ignore_COMMENT = "《.*》"一起解决亿纬锂能2018年财报中搜索无形资产情况时误判为到达页尾
             #DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
@@ -265,6 +265,7 @@ class InterpreterAccounting(InterpreterBase):
             #optional TIME REPORT解决隆基股份2017年财报,合并资产利润表达到页尾,而下一页开头出现"2017年年度报告"
             #DISCARD DISCARD DISCARD解决理邦仪器：2019年年度报告的主要会计数据识别不到的问题
             #20200923,去掉DISCARD optional,optional fetchtitle DISCARD,fetchtitle DISCARD DISCARD DISCARD DISCARD,fetchtitle DISCARD,'(' NAME ')' optional,DISCARD DISCARD DISCARD
+            #optional NUMERO用于解决三诺生物2018年年报中,多个表TABLE后插入数字
             for slice in p.slice:
                 if slice.type == 'COMPANY':
                     self.names['company'] = self._eliminate_duplicates(slice.value)
@@ -343,7 +344,7 @@ class InterpreterAccounting(InterpreterBase):
                     years = self._time_transfer(slice.value)
                     self.names.update({'报告时间':years})
                 if self.names['报告类型'] == NULLSTR and slice.type == 'REPORT':
-                    self.names.update({'报告类型':slice.value})
+                    self.names.update({'报告类型':self._get_report_alias(slice.value)})
                 #if self.names['公司地址'] == NULLSTR and slice.type == 'LOCATION':
                 #    self.names.update({'公司地址': slice.value})
             #self.logger.info('fetchtitle %s %s %s%s page %d'
@@ -386,11 +387,12 @@ class InterpreterAccounting(InterpreterBase):
                          | company error
                          | company TIME DISCARD
                          | company TIME NUMERIC
-                         | company DISCARD
-                         | company PUNCTUATION
-                         | company NAME DISCARD
+                         | company TIME NUMERO
                          | company
                          | TIME '''
+            # company DISCARD 去掉
+            # company PUNCTUATION 去掉
+            # company NAME DISCARD 去掉
             #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
             #去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
             #TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在skipword中增加REPORT
@@ -424,7 +426,7 @@ class InterpreterAccounting(InterpreterBase):
                        | content discard
                        | content REFERENCE NUMERIC
                        | content REFERENCE NAME
-                       | content term
+                       | content NUMERIC
                        | content TIME
                        | content REPORT
                        | content PUNCTUATION
@@ -447,7 +449,7 @@ class InterpreterAccounting(InterpreterBase):
                        | WEBSITE
                        | UNIT
                        | discard
-                       | term
+                       | NUMERIC
                        | NUMERO
                        | LOCATION
                        | CURRENCY
@@ -475,7 +477,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_skipword(p):
-            '''skipword : skipword term
+            '''skipword : skipword NUMERIC
                        | skipword '%'
                        | skipword TAIL
                        | discard
@@ -487,7 +489,7 @@ class InterpreterAccounting(InterpreterBase):
                        | HEADER
                        | UNIT
                        | CURRENCY
-                       | term
+                       | NUMERIC
                        | PUNCTUATION
                        | '-'
                        | '%'
@@ -500,17 +502,17 @@ class InterpreterAccounting(InterpreterBase):
                     | NUMERIC '％' '
             p[0] = round(float(p[1].replace(',','')) * 0.01,4)
         '''
-
+        '''
         def p_term_numeric(p):
-            '''term : NUMERIC '''
+            ''term : NUMERIC ''
             if p[1].find('.') < 0 :
                 p[0] = int(p[1].replace(',',''))
             else:
                 p[0] = float(p[1].replace(',',''))
-
+        '''
 
         def p_discard(p):
-            '''discard :   DISCARD discard
+            '''discard : DISCARD discard
                        | DISCARD '''
             p[0] = p[1]
 
@@ -532,7 +534,7 @@ class InterpreterAccounting(InterpreterBase):
                     | UNIT CURRENCY
                     | CURRENCY UNIT
                     | '（' UNIT '）' '''
-            #           | discard unit''
+            # 去掉discard unit,作为最小粒度语法单元,引入discard会带来语法冲突
             for slice in p.slice:
                 if slice.type == 'UNIT':
                     unit = slice.value.split(':')[-1].split('：')[-1]
@@ -547,6 +549,7 @@ class InterpreterAccounting(InterpreterBase):
         def p_time(p):
             '''time : TIME
                     | TIME REPORT'''
+            #仅用于fetchtable
             p[0] = p[1]
 
 
@@ -598,6 +601,7 @@ class InterpreterAccounting(InterpreterBase):
             return
         self.logger.info("\n\n%s parse is starting!\n\n" % (fileName))
         self._get_time_type_by_name(self.gConfig['sourcefile'])
+        self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
         for data in self.docParser:
             self.currentPageNumber = self.docParser.index
             text = self.docParser._get_text(data)
@@ -636,7 +640,6 @@ class InterpreterAccounting(InterpreterBase):
                                          ,'货币单位': self._unit_transfer(unit)})
             self.docParser._merge_table(self.names[tableName], interpretPrefix)
             if self.names[tableName]['tableEnd'] == True:
-                self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
                 self.excelParser.writeToStore(self.names[tableName])
                 self.sqlParser.writeToStore(self.names[tableName])
         self.logger.info('\nprefix: %s:'%interpretPrefix.replace('\n','\t') + str(self.names[tableName]))
@@ -655,7 +658,7 @@ class InterpreterAccounting(InterpreterBase):
                                      ,'货币单位': self.names['货币单位']})
         self.names[tableName].update({"table":table})
         self.names[tableName].update({"tableName":tableName})
-        self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
+        #self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
         self.excelParser.writeToStore(self.names[tableName])
         self.sqlParser.writeToStore(self.names[tableName])
 
