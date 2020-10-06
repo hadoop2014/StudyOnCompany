@@ -221,14 +221,14 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchtable_wrong(p):
-            '''fetchtablewrong : TABLE optional TABLE
-                          | TABLE optional PUNCTUATION
+            '''fetchtablewrong :  TABLE optional PUNCTUATION
                           | TABLE optional '(' NUMERO ')'
                           | TABLE optional '（' NUMERO '）'
                           | TABLE optional '（' discard '）'
                           | TABLE optional '(' discard ')'
                           | TABLE optional '-'
                           | TABLE optional time optional  NUMERIC'''
+            #TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
             # TABLE optional '(' NAME ')' 和optional  '(' NAME ')'冲突
             # TABLE '(' discard ')' 可用
             #TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判

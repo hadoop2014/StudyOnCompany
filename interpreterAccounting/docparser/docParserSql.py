@@ -187,7 +187,8 @@ class DocParserSql(DocParserBase):
         # 增加blankFrame来驱动最后一个field的合并
         blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
         dataFrame = dataFrame.append(blankFrame)
-        isRowAllInvalid = self._is_row_all_invalid(dataFrame.iloc[0])
+        #isRowAllInvalid = self._is_row_all_invalid(dataFrame.iloc[0]) #里面有一个逻辑:如果所有都是空行,则返回False,不再适用
+        isRowAllInvalid = (dataFrame.iloc[0] == NULLSTR).all()
         if isRowAllInvalid:
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.

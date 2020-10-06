@@ -128,10 +128,10 @@ class DocParserPdf(DocParserBase):
 
 
     def _process_table(self,page_numbers,tables,tableName):
-        processedTable,isTableEnd = NULLSTR , False
+        processedTable,isTableEnd,isTableStart = NULLSTR , False,False
         assert isinstance(page_numbers,list) and len(page_numbers) > 0,"page_number(%s) must not be NULL"%page_numbers
         if len(tables) == 0:
-            return processedTable,isTableEnd
+            return processedTable,isTableEnd,isTableStart
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         fieldList = [row[0] for row in processedTable]
         #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
