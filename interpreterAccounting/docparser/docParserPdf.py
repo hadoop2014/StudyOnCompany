@@ -114,9 +114,9 @@ class DocParserPdf(DocParserBase):
             #这种情况下还需要判断processedTable是否有效,如果有效,说明已经搜索到了,此时忽略isTableStart
             self.logger.warning('fetchtable failed for %s is not needed ,prefix : %s page %d!'
                                 %(tableName,self.interpretPrefix.replace('\n',' '),page_numbers[0]))
-            dictTable.update({'page_numbers':list()})
             dictTable.update({'tableBegin': isTableStart})
             self.interpretPrefix = NULLSTR
+            return dictTable
         if isinstance(savedTable, list):
             savedTable.extend(processedTable)
         else:
@@ -168,6 +168,10 @@ class DocParserPdf(DocParserBase):
 
 
     def _is_table_start_simple(self,tableName,fieldList,secondFieldList):
+        # 解决隆基股份2018年年度报告的无形资产情况,同一页中出现多张表也有相同的表头的第一字段'项目'
+        # 针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
+        # 解决海螺水泥2018年年报中,主要会计数据的表头为'项 目'和规范的表头'主要会计数据'不一致,采用方法使得该表头失效
+        # 解决通策医疗2019年年报中无形资产情况表所在的页中,存在另外一个表头 "项目名称",会导致用"^项目"去匹配时出现误判
         assert isinstance(fieldList, list) and isinstance(secondFieldList, list), \
             "fieldList and headerList must be list,but now get %s %s" % (type(fieldList), type(secondFieldList))
         isTableStart,isTableStartFirst,isTableStartSecond = False,False,False
@@ -203,59 +207,6 @@ class DocParserPdf(DocParserBase):
         else:
             isTableStart = isTableStartFirst or isTableStartSecond
         return isTableStart
-
-    '''
-    def _is_table_start(self,tableName,fieldList,headerList):
-        #针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
-        assert isinstance(fieldList,list) and isinstance(headerList,list),\
-            "fieldList and headerList must be list,but now get %s %s"%(type(fieldList),type(headerList))
-        isTableStart = False
-        mergedFields = reduce(self._merge, fieldList)
-        mergedHeaders = reduce(self._merge, headerList)
-        firstHeaderInRow = headerList[0]
-        headerFirst = self.dictTables[tableName]["header"][0]
-        if headerFirst ==NULLSTR:
-            headerFirst = self._get_standardized_header(self.dictTables[tableName]['header'][1], tableName)
-        fieldFirst = self.dictTables[tableName]['fieldFirst']
-        assert fieldFirst != NULLSTR,'the first field of %s must not be NULL'%tableName
-        if headerFirst == NULLSTR or firstHeaderInRow == NULLSTR:
-            #headerFirst == NULLSTR针对分季度主要财务数据的场景
-            #firstHaderInRow == NULLSTR针对主要会计数据中部分财报第一个字段为空(本应该为'主要会计数据')
-            if firstHeaderInRow == NULLSTR:
-                #headerFirstTemp = self._get_standardized_header(self.dictTables[tableName]['header'][1], tableName)
-                headerFirstTemp = self.dictTables[tableName]['header'][1]
-            else:
-                headerFirstTemp = headerFirst
-            headerFirstTemp = headerFirstTemp.replace('(', '（').replace(')', '）')
-            assert headerFirstTemp != NULLSTR,'the second header of %s must not be NULL'%tableName
-            if isinstance(mergedHeaders, str) and isinstance(headerFirstTemp, str):
-                mergedHeaders = mergedHeaders.replace('(', '（').replace(')', '）').replace(' ',NULLSTR)
-                matched = re.search('^' + headerFirstTemp, mergedHeaders)
-                if matched is not None:
-                    isTableStart = True
-        elif headerFirst != firstHeaderInRow and self._is_header_in_row(headerList,tableName):
-            #解决海螺水泥2018年年报中,主要会计数据的表头为'项 目'和规范的表头'主要会计数据'不一致,采用方法使得该表头失效
-            fieldFirst = firstHeaderInRow.replace(' ',NULLSTR) + fieldFirst
-            #解决通策医疗2019年年报中无形资产情况表所在的页中,存在另外一个表头 "项目名称",会导致用"^项目"去匹配时出现误判
-            headerFirst = NULLSTR
-        headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
-        fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
-        if headerFirst != NULLSTR:
-            #fieldFirst = '^' + fieldFirst
-            headerFirst = '^' + headerFirst
-            #headerFirst = '|'.join([headerFirst,fieldFirst])
-            #解决隆基股份2018年年度报告的无形资产情况,同一页中出现多张表也有相同的表头的第一字段'项目',
-            headerFirst = ''.join([headerFirst, fieldFirst])
-        else:
-            fieldFirst = '^' + fieldFirst
-            headerFirst = fieldFirst
-        if isinstance(mergedFields, str) and isinstance(headerFirst, str) and headerFirst != NULLSTR:
-            mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ',NULLSTR)
-            matched = re.search(headerFirst, mergedFields)
-            if matched is not None:
-                isTableStart = True
-        return isTableStart
-    '''
 
 
     def _is_table_end(self,tableName,fieldList):
@@ -312,7 +263,7 @@ class DocParserPdf(DocParserBase):
             checkpointfile.truncate()
             checkpointfile.writelines(lines)
             #checkpointfile.close()
-        self.logger.info("Success to save checkpoint %s to file %s"%(content,self.checkpointfilename))
+        #self.logger.info("Success to save checkpoint %s to file %s"%(content,self.checkpointfilename))
 
 
     def get_checkpoint(self):

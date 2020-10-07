@@ -97,49 +97,6 @@ class ExcelVisualization(InterpreterBase):
         #rule = Rule('expression', formula=['E3 > 3'], dxf=dxf)
         #ws.conditional_formatting.add('E3', rule)
 
-    '''
-        def adjustExcelStyle(self):
-            # 调整excel的样式
-            # 设置对齐、线性、边框、字体
-            from openpyxl.styles import Alignment
-            from openpyxl.styles import Side, Border
-            from openpyxl.styles import Font
-
-            sheet = self.workbook[self.workbook.sheetnames[0]]
-            sheet.insert_rows(idx=0)  # 插入第一行
-            font = Font(name='宋体', size=18, bold=True)
-            sheet['A1'] = '皮卡丘体育2020年06月新学员信息登记表'
-            sheet['A1'].font = font  # 设置字体大小和加粗
-
-            req = ':(\w)'
-            weight = re.findall(req, sheet.dimensions)[0]
-            sheet.merge_cells(f'A1:{weight}1')
-
-            # 样式先准备好
-            alignment = Alignment(horizontal='center', vertical='center')
-            side = Side(style='thin', color='000000')
-            border = Border(left=side, right=side, top=side, bottom=side)
-
-            # 遍历cell设置样式
-            rows = sheet[f'{sheet.dimensions}']
-            for row in rows:
-                for cell in row:
-                    cell.alignment = alignment
-                    cell.border = border
-
-            # 设置前两行的行高
-            sheet.row_dimensions[1].height = 38
-            sheet.row_dimensions[2].height = 38
-
-            # 设置列宽
-            letter_lst = [chr(i + 64).upper() for i in range(2, ord(weight) - ord('A') + 1 + 1)]
-            sheet.column_dimensions['A'].width = 8
-            for i in letter_lst:
-                sheet.column_dimensions[f'{i}'].width = 14
-
-            self.workbook.save(filename=self.targetFile)
-        '''
-
 
     def _sql_to_dataframe(self,tableName,scale):
         if scale == "批量":

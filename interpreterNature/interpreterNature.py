@@ -174,49 +174,9 @@ class InterpreterNature(InterpreterBase):
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})
             taskResult = self._process_single_parse(dictParameter)
-            taskResults.append(taskResult)
-        self.logger.info(taskResults)
+            taskResults.append(str(taskResult))
+        self.logger.info('运行结果汇总如下:\n\t\t\t\t'+'\n\t\t\t\t'.join(taskResults))
 
-    '''
-    def _process_full_parse(self):
-        if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
-            return
-        taskResults = list()
-        source_directory = os.path.join(self.gConfig['data_directory'], self.gConfig['source_directory'])
-        sourcefiles = os.listdir(source_directory)
-        for sourcefile in sourcefiles:
-            self.logger.info('start process %s' % sourcefile)
-            #self.gConfig.update({'sourcefile': sourcefile})
-            if not self._is_file_name_valid(sourcefile):
-                self.logger.warning("%s is not a valid file" % sourcefile)
-                continue
-            dictParameter = dict({'sourcefile': sourcefile})
-            taskResult = self._process_single_parse(dictParameter)
-            taskResults.append(taskResult)
-        self.logger.info(taskResults)
-
-
-    def _process_batch_parse(self):
-        if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing in _process_batch_parse!')
-            return
-        taskResults = list()
-        source_directory = os.path.join(self.gConfig['data_directory'], self.gConfig['source_directory'])
-        sourcefiles = os.listdir(source_directory)
-        checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
-        for sourcefile in sourcefiles:
-            if not self._is_file_name_valid(sourcefile):
-                self.logger.warning("%s is not a valid file" % sourcefile)
-                continue
-            if self._is_file_selected(sourcefile):
-                self.logger.info('start process %s' % sourcefile)
-                #self.gConfig.update({'sourcefile': sourcefile})
-                dictParameter = dict({'sourcefile': sourcefile})
-                taskResult = self._process_single_parse(dictParameter)
-                taskResults.append(taskResult)
-        self.logger.info(taskResults)
-    '''
 
     def _process_single_parse(self,dictParameter):
         if self.unitestIsOn:

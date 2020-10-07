@@ -20,7 +20,118 @@ class DocParserSql(DocParserBase):
         self.process_info = {}
         self.dataTable = {}
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
+        self.dictLexers = self._construct_lexers()
 
+    def _construct_lexers(self):
+        dictLexer = dict()
+        for tableName in self.dictTables.keys():
+            dictTokens = self._get_dict_tokens(tableName)
+            lexer = self._get_lexer(dictTokens, tableName)
+            dictLexer.update({tableName: {'lexer': lexer, "dictToken": dictTokens}})
+            self.logger.info('success to create lexer for %s!' % tableName)
+        return dictLexer
+
+    def _get_lexer(self, dictTokens, tableName):
+        # Tokens
+        # 采用动态变量名
+        tokens = list(dictTokens.keys())
+        local_name = locals()
+        for token in tokens:
+            local_name['t_' + token] = dictTokens[token]
+        # self.logger.info(
+        #    '%s:\n'%tableName + str({key: value for key, value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
+
+        t_ignore = " \n"
+
+        def t_newline(t):
+            r'\n+'
+            t.lexer.lineno += t.value.count("\n")
+
+        def t_error(t):
+            print("Illegal character '%s'" % t.value[0])
+            t.lexer.skip(1)
+            # t.type = 'ILLEGALFIELD'
+            # return t
+
+        # Build the lexer
+        lexer = lex.lex(outputdir=self.working_directory)
+        return lexer
+
+    def _get_dict_tokens(self, tableName):
+        # 对所有的表字段进行标准化
+        standardFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'], tableName)
+        if len(standardFields) != len(set(standardFields)):
+            self.logger.warning("the fields of %s has duplicated:%s!" % (tableName, ' '.join(standardFields)))
+        # 去掉标准化字段后的重复字段
+        standardFields = list(set(standardFields))
+        # 建立token和标准化字段之间的索引表
+        fieldsIndex = dict([('FIELD' + str(index), field) for index, field in enumerate(standardFields)])
+        # 对字段别名表进行标准化,并去重
+        dictAlias = {}
+        for key, value in self.dictTables[tableName]['fieldAlias'].items():
+            keyStandard = self._get_standardized_field(key, tableName)
+            valueStandard = self._get_standardized_field(value, tableName)
+            if keyStandard != valueStandard:
+                dictAlias.update({keyStandard: valueStandard})
+            else:
+                self.logger.warning("%s has same field after standardize in fieldAlias:%s %s" % (tableName, key, value))
+        # 判断fieldAlias中经过标准化后是否有重复字段,如果存在,则配置是不合适的
+        if len(self.dictTables[tableName]['fieldAlias'].keys()) != len(dictAlias.keys()):
+            self.logger.warning('It is same field after standard in fieldAlias of %s:%s'
+                                % (tableName, ' '.join(self.dictTables[tableName]['fieldAlias'].keys())))
+        # 判断fieldAlias中是否存在fieldName中不存在的字段,如果存在,则配置上存在错误.
+        fieldDiff = set(dictAlias.values()).difference(set(standardFields))
+        if len(fieldDiff) > 0:
+            if NaN in fieldDiff:
+                self.logger.error('error in fieldAlias of %s, NaN is exists' % tableName)
+            else:
+                self.logger.error(
+                    "error in fieldAlias of %s,field not exists : %s" % (tableName, ' '.join(list(fieldDiff))))
+        # 在dictAlias中去掉fieldName中不存在的字段
+        dictAlias = dict([(key, value) for key, value in dictAlias.items() if value not in fieldDiff])
+        # 对fieldAlias和fieldName进行合并
+        dictMerged = {}
+        for key, value in dictAlias.items():
+            dictMerged.setdefault(value, []).append(key)
+        for key in standardFields:
+            dictMerged.setdefault(key, []).append(key)
+
+        # 最后把VIRTUALFIELD加上
+        # dictTokens.update({'VIRTUALFIELD':self.gJsonInterpreter['VIRTUALFIELD']})
+        discardField = self.dictTables[tableName]['fieldDiscard']
+        standardDiscardFields = self._get_standardized_field(discardField, tableName)
+        if len(standardDiscardFields) > len(set(standardDiscardFields)):
+            # 如果fieldDiscard中在标准化后存在重复字段,则去重
+            self.logger.warning(
+                '%s has duplicated discardField after standardize:%s!' % (tableName, ' '.join(standardDiscardFields)))
+            standardDiscardFields = list(set(standardDiscardFields))
+        virtualField = self.gJsonInterpreter['VIRTUALFIELD']
+        fieldsIndex.update({'VIRTUALFIELD': virtualField})
+        # 增加一个默认值
+        standardDiscardFields = standardDiscardFields + [virtualField]
+        # 判断标准化后的fieldDiscard和Merged后的Key值是否还有重复,有则去掉
+        fieldJoint = set(standardDiscardFields) & set(dictMerged.keys())
+        if len(fieldJoint) > 0:
+            if NaN in fieldJoint:
+                self.logger.error('%s fieldDiscard has NaN field' % tableName)
+            else:
+                self.logger.error(
+                    "%s has dupicated fieldDiscard with fieldName:%s!" % (tableName, ' '.join(list(fieldJoint))))
+            standardDiscardFields = list(set(standardDiscardFields).difference(fieldJoint))
+        for value in standardDiscardFields:
+            if value is not NaN:
+                dictMerged.setdefault(virtualField, []).append(value)
+
+        # 构造dictTokens,token搜索的正则表达式即字段名的前面加上patternPrefix,后面加上patternSuffix
+        patternPrefix = self.dictTables[tableName]['patternPrefix']
+        patternSuffix = self.dictTables[tableName]['patternSuffix']
+        dictTokens = dict()
+        for token, field in fieldsIndex.items():
+            # 生成pattern时要逆序排列,确保长的字符串在前面
+            fieldList = sorted(dictMerged[field], key=lambda x: len(x), reverse=True)
+            pattern = [patternPrefix + field + patternSuffix for field in fieldList]
+            dictTokens.update({token: '|'.join(pattern)})
+        return dictTokens
 
     def loginfo(text = 'running '):
         def decorator(func):
@@ -47,7 +158,8 @@ class DocParserSql(DocParserBase):
         table = dictTable['table']
         tableName = dictTable['tableName']
 
-        self.process_info.update({tableName:time.time()})
+        #if dictTable['tableEnd'] == True:
+        self.process_info.update({tableName:{'processtime':time.time()}})
         dataframe,countTotalFields = self._table_to_dataframe(table,tableName)#pd.DataFrame(table[1:],columns=table[0],index=None)
 
         #对数据进行预处理,两行并在一行的分开,去掉空格等
@@ -88,7 +200,9 @@ class DocParserSql(DocParserBase):
 
         #把dataframe写入sqlite3数据库
         self._write_to_sqlite3(dataframe,tableName)
-        self.process_info.update({tableName:time.time() - self.process_info[tableName]})
+        #if dictTable['tableEnd'] == True:
+        self.process_info[tableName].update({'processtime':time.time() - self.process_info[tableName]['processtime']})
+
 
     #@loginfo()
     def _table_to_dataframe(self,table,tableName):
@@ -163,7 +277,7 @@ class DocParserSql(DocParserBase):
         #解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景.
         #东材科技2018年年报,普通股现金分红流量表,表头有很多空格,影响_process_header_discard,需要去掉
         dataFrame.iloc[1:,1:]  = dataFrame.iloc[1:,1:].apply(self._rowPretreat,axis=1)
-        dataFrame = dataFrame.apply(lambda row:row.apply(lambda x:x.replace(' ',NULLSTR).replace('(','（').replace(')','）')))
+        dataFrame.iloc[:,:] = dataFrame.iloc[:,:].apply(lambda row:row.apply(lambda x: x.replace(' ',NULLSTR).replace('(','（').replace(')','）')))
         return dataFrame
 
 
@@ -171,6 +285,7 @@ class DocParserSql(DocParserBase):
         if self._is_header_in_row(row.tolist(),tableName):# and row[0] == NULLSTR:
             row = row.apply(lambda value: NaN)
         return row
+
 
     def _discard_header_row(self,dataFrame,tableName):
         #针对主要会计数据,去掉其表头
@@ -188,7 +303,9 @@ class DocParserSql(DocParserBase):
         blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
         dataFrame = dataFrame.append(blankFrame)
         #isRowAllInvalid = self._is_row_all_invalid(dataFrame.iloc[0]) #里面有一个逻辑:如果所有都是空行,则返回False,不再适用
-        isRowAllInvalid = (dataFrame.iloc[0] == NULLSTR).all()
+        #isRowAllInvalid = (dataFrame.iloc[0] == NULLSTR).all()
+        #康泰生物：2016年年度报告.PDF合并所有者权益变动表第一行全部为None
+        isRowAllInvalid = self._is_row_all_blank(dataFrame.iloc[0]) or self._is_row_all_none(dataFrame.iloc[0])
         if isRowAllInvalid:
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
@@ -244,6 +361,10 @@ class DocParserSql(DocParserBase):
 
     @loginfo()
     def _process_field_merge_simple(self,dataFrame:DataFrame,tableName):
+        # 解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
+        # 解决贝达药业2018年年报无形资产情况表解析不正确
+        # 解决大立科技2018年财报中主要会计数据解析不准确的问题,原因是总资产(元)前面接了一个空字段,空字段的行需要合并到下一行中
+        # 解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
         #增加一行空白行,以推动最后一个字段的合并
         blankFrame = pd.DataFrame(['']*len(dataFrame.columns.values),index=dataFrame.columns).T
         dataFrame = dataFrame.append(blankFrame)
@@ -706,6 +827,10 @@ class DocParserSql(DocParserBase):
 
     def _is_row_all_blank(self,row:DataFrame):
         return (row == NULLSTR).all()
+
+
+    def _is_row_all_none(self,row:DataFrame):
+        return (row == NONESTR).all()
 
 
     def _is_record_exist(self, conn, tableName, dataFrame:DataFrame):
