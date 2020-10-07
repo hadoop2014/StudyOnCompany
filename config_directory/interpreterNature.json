@@ -1,6 +1,6 @@
 {
   "#tokens": ["批量运行","执行",    "数据解析",   "表",    "创建",  "展示",      "参数配置","参数名称",
-              "参数值", "数值",   "报告时间","爬取",  "网站"],
+              "参数值", "数值",   "报告时间","爬取",  "网站", "测试数据"],
   "tokens":  ["SCALE", "EXECUTE","PARSE",  "TABLE","CREATE","VISUALIZE","CONFIG","PARAMETER",
               "VALUE","NUMERIC","TIME",  "CRAWL","WEBSITE"],
 

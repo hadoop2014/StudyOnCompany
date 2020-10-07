@@ -114,7 +114,8 @@ class DocParserPdf(DocParserBase):
             #这种情况下还需要判断processedTable是否有效,如果有效,说明已经搜索到了,此时忽略isTableStart
             self.logger.warning('fetchtable failed for %s is not needed ,prefix : %s page %d!'
                                 %(tableName,self.interpretPrefix.replace('\n',' '),page_numbers[0]))
-            dictTable.update({'tableBegin': isTableStart})
+            dictTable.update({'tableBegin': False})
+            dictTable.update({'tableEnd': False})
             self.interpretPrefix = NULLSTR
             return dictTable
         if isinstance(savedTable, list):
@@ -141,6 +142,9 @@ class DocParserPdf(DocParserBase):
             isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
         isTableEnd = self._is_table_end(tableName,fieldList)
         if len(tables) == 1:
+            #（000652）泰达股份：2019年年度报告.PDF P40页出现了错误的普通股现金分红情况表的语句,这个时候不能够把带有值的processedTable返回
+            if len(page_numbers) == 1 and isTableStart == False:
+                processedTable = NULLSTR
             return processedTable, isTableEnd,isTableStart
         processedTable = NULLSTR
         for index,table in enumerate(tables):

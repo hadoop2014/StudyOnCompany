@@ -180,6 +180,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional HEADER
                         | optional NUMERO
                         | optional '(' NAME ')'
+                        | optional '（' LABEL '）'
                         | discard
                         | empty '''
             # optional fetchtitle 被optioanl COMPANY time取代
@@ -288,6 +289,7 @@ class InterpreterAccounting(InterpreterBase):
                          | company TIME DISCARD
                          | company TIME NUMERIC
                          | company TIME NUMERO
+                         | company TIME LABEL
                          | company selectable DISCARD
                          | company
                          | TIME '''
@@ -344,6 +346,7 @@ class InterpreterAccounting(InterpreterBase):
                        | content REFERENCE
                        | content CRITICAL
                        | content TAIL
+                       | content LABEL
                        | TIME
                        | NAME
                        | PUNCTUATION
@@ -355,6 +358,7 @@ class InterpreterAccounting(InterpreterBase):
                        | LOCATION
                        | CURRENCY
                        | HEADER
+                       | LABEL
                        | '%'
                        | '％'
                        | '-'
@@ -392,6 +396,7 @@ class InterpreterAccounting(InterpreterBase):
                        | CURRENCY
                        | NUMERIC
                        | PUNCTUATION
+                       | LABEL
                        | '-'
                        | '%'
                        | '％' '''

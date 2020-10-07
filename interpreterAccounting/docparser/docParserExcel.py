@@ -21,6 +21,7 @@ class DocParserExcel(DocParserBase):
         # 专门用于写文件
         table = dictTable['table']
         tableName = dictTable['tableName']
+        assert len(table) > 0,("%s is empty : %s"%(tableName,dictTable))
         workbook = load_workbook(self.targetFile)
         if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
             workbook.remove(workbook['Sheet'])  # 删除空工作薄

@@ -95,7 +95,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'减',3,350)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'所得税费用',3,352)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(（,'（',3,358)")
-        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'一',3,359)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(LABEL,'一',3,359)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(）,'）',3,360)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(DISCARD,'归属母公司所有者的其他综合收益的税后净额',3,361)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(TAIL,'TAILMustBeLongerThenNAME',3,382)")
@@ -108,10 +108,11 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(CRITICAL,'研发投入金额（元）',3,457)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(TABLE,'的普通股股利分配方案',3,467)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(COMPANY,'中微半导体设备（上海）股份有限公司',3,478)")
+        #self.assertEqual(self.interpreter.lexer.token().__str__(), "LexToken(（,'（',3,496)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"None")
 
     def run_interpreter_yacc(self):
-        input = ''
+        input = '（一）'
         input = input + ' 2020 年 03 月    2000年 7 - 8月    2000年 - 3000年   2000年 — 3000年'
         input = input + ' 《证券发行与承销管理办法》 我梦是谁'
         input = input + ' 下简称“中国证监会”）《证券发行与承销管理办法》第十七条规定'

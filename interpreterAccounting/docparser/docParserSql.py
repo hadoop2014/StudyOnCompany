@@ -374,12 +374,14 @@ class DocParserSql(DocParserBase):
         lexer = self.dictLexers[tableName]['lexer']
         dictToken = self.dictLexers[tableName]['dictToken']
         lexer.input(mergedColumn)
-        dictFieldPos = dict()
+        dictFieldPos = dict({0:{"lexpos":0,'value':NULLSTR,'type':NULLSTR}})
         for index,tok in enumerate(lexer):
             dictFieldPos.update({index:{'lexpos':tok.lexpos,'value':tok.value,'type':tok.type}})
             self.logger.info('the lexer matched the field %d %s %s %s\t%s'%(index,tok.lexpos,tok.value,tok.type,dictToken[tok.type]))
 
         countPos = len(dictFieldPos.keys())
+        if countPos <= 1:
+            self.logger.error('%s failed to use lexer %s !'%(tableName,mergedColumn))
         countTotal = len(mergedColumn)
         posIndex = 0
         fieldPos = 0
