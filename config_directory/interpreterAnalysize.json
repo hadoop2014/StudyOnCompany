@@ -299,7 +299,7 @@
         "value_format": ""
       },
       "现金收入和营业收入的比率": {
-        "threshold": 1.13,
+        "threshold": 1.0,
         "color_index": 2,
         "operator": "greaterThan",
         "value_format": ""

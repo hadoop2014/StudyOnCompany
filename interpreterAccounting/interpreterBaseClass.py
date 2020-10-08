@@ -49,6 +49,24 @@ class InterpreterBase(BaseClass):
         self.commonFileds = self.gJsonInterpreter['公共表字段定义']
         self.tableKeyword = self.gJsonInterpreter['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
+        self.dictTables = self._fields_replace_punctuate(self.dictTables)
+
+
+    def _fields_replace_punctuate(self,dictTables):
+        for tableName in dictTables.keys():
+            dictTables[tableName].update({'header':list(map(self._replace_fieldname,self.dictTables[tableName]['header']))})
+            dictTables[tableName].update({'fieldName':list(map(self._replace_fieldname,self.dictTables[tableName]['fieldName']))})
+            dictTables[tableName].update({'headerDiscard': list(map(self._replace_fieldname, self.dictTables[tableName]['headerDiscard']))})
+            dictTables[tableName].update({'fieldDiscard': list(map(self._replace_fieldname, self.dictTables[tableName]['fieldDiscard']))})
+            dictTables[tableName].update({'fieldFirst': self._replace_fieldname(self.dictTables[tableName]['fieldFirst'])})
+            dictTables[tableName].update({'fieldLast': self._replace_fieldname(self.dictTables[tableName]['fieldLast'])})
+            dictTables[tableName].update(
+                {'fieldAlias':dict(zip(list(map(self._replace_fieldname, self.dictTables[tableName]['fieldAlias'].keys()))
+                                       ,list(map(self._replace_fieldname,self.dictTables[tableName]['fieldAlias'].values()))))})
+        self.logger.warning("函数_fields_replace_punctuate把interpreterAccounting.json中配置的所有表的字段名中的英文标点替换为中文的,"
+                            + "但是字段'header','fieldFirst','fieldLast'中采用了正则表达式,这要求正则表达式中不要出现'('')''-''.'等字符!")
+        return dictTables
+
 
     def _get_standardized_field(self,fieldList,tableName):
         assert fieldList is not None,'sourceRow(%s) must not be None'%fieldList
@@ -78,6 +96,18 @@ class InterpreterBase(BaseClass):
     def _get_tablename_alias(self,tablename):
         aliasedTablename = self._alias(tablename, self.tableAlias)
         return aliasedTablename
+
+
+    def _replace_fieldname(self, field):
+        #所有英文标点替换成中文标点,避免和正则表达式中的保留字冲突
+        field = field.replace('(','（').replace(')','）').replace(' ',NULLSTR)
+        field = field.replace(':','：').replace('-','－').replace('.','．')
+        return field
+
+    def _replace_value(self,value):
+        value = value.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
+        #数值中-,.号是有意义的不能随便替换
+        return value
 
 
     def _alias(self, name, dictAlias):

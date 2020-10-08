@@ -88,6 +88,7 @@ class InterpreterAccounting(InterpreterBase):
                           | fetchtitle expression
                           | illegalword
                           | parenthese
+                          | parenthese TAIL
                           | skipword
                           | tail'''
             p[0] = p[1]
@@ -153,6 +154,8 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional '（' NUMERO '）'
                           | TABLE optional '（' discard '）'
                           | TABLE optional '(' discard ')'
+                          | TABLE optional '(' LABEL ')'
+                          | TABLE optional LABEL
                           | TABLE optional '-'
                           | TABLE optional time optional  NUMERIC'''
             #TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
@@ -168,6 +171,7 @@ class InterpreterAccounting(InterpreterBase):
             #去掉TABLE parenthese,识别海螺水泥2018年年报分季度主要财务时,发生冲突
             #TABLE optional time optional  NUMERIC可以过滤掉三诺生物2019年年报第60页出现了合并资产负责表,但不是所需要的,真正的表在第100页
             #TABLE optional NUMERO DISCARD 需要去掉,会导致三诺生物2018年年报 合并资产负债表搜索失败
+            #TABLE optional '(' LABEL ')'解决海天味业2016年年报 出现" 近三年主要会计数据和财务指标(一) 主要会计数据",第一个TABLE '近三年主要会计数据和财务指标'是误判
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
             self.logger.warning("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             p[0] = p[1] + p[2]
@@ -182,6 +186,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
                         | discard
+                        | NUMERIC
                         | empty '''
             # optional fetchtitle 被optioanl COMPANY time取代
             # optional CURRENCY 解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表,现金流量表补充资料等情况
@@ -326,6 +331,7 @@ class InterpreterAccounting(InterpreterBase):
             '''content : content '（' content '）'
                        | content '(' content ')'
                        | content '（' '）'
+                       | content '(' ')'
                        | content discard
                        | content REFERENCE NUMERIC
                        | content REFERENCE NAME
@@ -425,8 +431,10 @@ class InterpreterAccounting(InterpreterBase):
             '''unit : UNIT
                     | UNIT CURRENCY
                     | CURRENCY UNIT
-                    | '（' UNIT '）' '''
+                    | '（' UNIT '）'
+                    | '(' DISCARD CURRENCY UNIT ')' '''
             # 去掉discard unit,作为最小粒度语法单元,引入discard会带来语法冲突
+            #'(' DISCARD CURRENCY UNIT ')'解决海天味业2016年年报中出现 (金额单位：人民币元)
             for slice in p.slice:
                 if slice.type == 'UNIT':
                     unit = slice.value.split(':')[-1].split('：')[-1]
@@ -453,6 +461,7 @@ class InterpreterAccounting(InterpreterBase):
         def p_finis(p):
             '''finis : NUMERO
                      | NUMERO HEADER
+                     | HEADER
                      | empty '''
             p[0] = '\n'.join([str(slice) for slice in p if slice is not None])
             #self.logger.info('finis： %s'%p[0])
@@ -507,16 +516,16 @@ class InterpreterAccounting(InterpreterBase):
         if len(failedTable) == 0:
             self.logger.info("%s\tall table is success fetched!\n"%(sourceFile))
             self.docParser.save_checkpoint(fileName)
-            resuleInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time),'failedTable': failedTable})
+            resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time),'failedTable': failedTable})
         else:
             self.logger.warning('%s\ttable(%s) is failed to fetch' %(sourceFile,failedTable))
-            resuleInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time)
+            resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time)
                               ,'failedTable': list([(tableName,self.names[tableName]['page_numbers']) for tableName in failedTable])})
         self.docParser._close()
         self.logger.info('\n\n parse %s file end, time used %.4f' % (fileName,(time.time() - start_time)))
         #self.sqlParser.process_info.update({'sourcefile':fileName,'failedTable':failedTable})
         #return self.sqlParser.process_info
-        return resuleInfo
+        return resultInfo
 
 
     def _process_fetch_table(self, tableName, tableBegin, interpretPrefix, unit=NULLSTR, currency=NULLSTR, company=NULLSTR):

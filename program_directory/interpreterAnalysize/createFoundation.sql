@@ -132,7 +132,7 @@ select
     case when c.应付账款 is not NULL then c.应付账款 else 0 end as 应付账款,
     c.预付款项,
     case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then c.应收票据及应收账款
-        else ifnull(c.应收账款,0) end as 应收账款,
+        else iif(c.应收账款 is not NULL and c.应收账款 != '',c.应收账款,0) end as 应收账款,
     case when c.应收票据 is not NULL and c.应收票据 != '' then c.应收票据 else 0 end as 应收票据,
     c.流动资产合计,
     c.负债合计,
