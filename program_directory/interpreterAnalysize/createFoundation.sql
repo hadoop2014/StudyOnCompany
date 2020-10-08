@@ -118,7 +118,7 @@ select
     --"无形资产-内部研发","所得税税率",
     b.期末总股本,
     replace(c.固定资产,',','') as 固定资产,
-    c.在建工程,
+    iif(c.在建工程 != '',c.在建工程,0) as 在建工程,
     case when h.期末账面价值 != '' then h.期末账面价值 else 0 end as 土地使用权,
     case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.投资性房地产 else 0 end as 投资性房地产,
     --case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
@@ -137,7 +137,7 @@ select
     c.流动资产合计,
     c.负债合计,
     c.流动负债合计,
-    c.存货,
+    iif(c.存货 != '',c.存货,0) as 存货,
     c.货币资金,
     case when c.短期借款 is not NULL and c.短期借款 != '' then c.短期借款 else 0 end as 短期借款,
     case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != '' then c.一年内到期的非流动负债 else 0 end

@@ -10,6 +10,7 @@ import sqlite3 as sqlite
 #from sqlalchemy import create_engine
 import pandas as pd
 from pandas import DataFrame
+from ply import lex
 import time
 
 

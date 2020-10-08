@@ -134,6 +134,7 @@ class DocParserPdf(DocParserBase):
         if len(tables) == 0:
             return processedTable,isTableEnd,isTableStart
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
+        processedTable = self._discard_last_row(processedTable,tableName)
         fieldList = [row[0] for row in processedTable]
         #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
         isTableStart = False
@@ -148,7 +149,8 @@ class DocParserPdf(DocParserBase):
             return processedTable, isTableEnd,isTableStart
         processedTable = NULLSTR
         for index,table in enumerate(tables):
-            table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
+            table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table ]
+            table = self._discard_last_row(table,tableName)
             if len(table[0]) <= 1:
                 continue
             fieldList = [row[0] for row in table]
@@ -169,6 +171,15 @@ class DocParserPdf(DocParserBase):
                 processedTable = table
                 break
         return processedTable,isTableEnd,isTableStart
+
+
+    def _discard_last_row(self,table,tableName):
+        #引入maxFieldLen是为了解决（002555）三七互娱：2018年年度报告.PDF,主要会计数据,在最后一个字段'归属于上市公司股东的净资产（元）'后面又加了一段无用的话,直接去掉
+        maxFieldLen = self.dictTables[tableName]['maxFieldLen']
+        if isinstance(table[-1][0],str) and len(table[-1][0]) > 2 * maxFieldLen:
+            #去掉最后一个超长且无用的字段
+            table = table[:-1]
+        return  table
 
 
     def _is_table_start_simple(self,tableName,fieldList,secondFieldList):

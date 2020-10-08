@@ -27,18 +27,21 @@ class Logger():
         if self._logger.hasHandlers() is False:
         # 3.1 设置文件日志模式
             self._logger.addHandler(self._get_file_handler(dictLogger['DEFAULT_LOG_FILENAME'.lower()],
-                                                      int(dictLogger['LOGGING_BACKUP_COUNT'.lower()])))
+                                                           int(dictLogger['LOGGING_BACKUP_COUNT'.lower()]),
+                                                           int(dictLogger['MAXBYTES'.lower()])))
         # 3.2 设置终端日志模式
             self._logger.addHandler(self._get_console_handler())
         # 4. 设置日志等级
         self._logger.setLevel(dictLogger['DEFAULT_LOG_LEVEL'.lower()])
 
-    def _get_file_handler(self, filename,backupCount):
+    def _get_file_handler(self, filename,backupCount,maxBytes):
         '''返回一个文件日志handler'''
         # 1. 获取一个文件日志handler
-        filehandler = handlers.TimedRotatingFileHandler(filename=filename, when="midnight", interval=1,
-                                                        backupCount=backupCount,
-                                                        atTime=None,encoding="utf-8")
+        #filehandler = handlers.TimedRotatingFileHandler(filename=filename, when="midnight", interval=1,
+        #                                                backupCount=backupCount,
+        #                                                atTime=None,encoding="utf-8")
+        filehandler = handlers.RotatingFileHandler(filename=filename, mode='a', maxBytes=maxBytes,
+                                                   backupCount=backupCount, encoding="utf-8", delay=False)
         # 2. 设置日志格式
         filehandler.setFormatter(self.formatter)
         # 3. 返回

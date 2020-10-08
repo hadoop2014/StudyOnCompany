@@ -257,8 +257,10 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchdatawrong : REFERENCE NUMERIC NAME
                          | REFERENCE NUMERIC TIME
                          | REFERENCE NUMERIC DISCARD
+                         | REFERENCE NUMERIC LOCATION
                          | REFERENCE REFERENCE
-                         | REFERENCE DISCARD'''
+                         | REFERENCE DISCARD
+                         | REFERENCE LABEL'''
             p[0] = p[1]
 
 
