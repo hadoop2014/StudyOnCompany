@@ -104,6 +104,8 @@ class InterpreterBase(BaseClass):
         #所有英文标点替换成中文标点,避免和正则表达式中的保留字冲突
         field = field.replace('(','（').replace(')','）').replace(' ',NULLSTR)
         field = field.replace(':','：').replace('-','－').replace('.','．')
+        #―‖为鱼跃医疗2016年年报中出现的不规范字符,等同于““
+        field = field.replace('―','“').replace('‖','“')
         return field
 
     def _replace_value(self,value):
