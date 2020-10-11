@@ -556,9 +556,14 @@ class DocParserSql(DocParserBase):
         #去掉空字段,针对主要会计数据这张表,需要提出掉其空字段
         #对于普通股现金分红情况表,则忽略这一过程
         fieldDiscard = self.dictTables[tableName]['fieldDiscard']
+        fieldDiscardPattern = '|'.join(fieldDiscard)
+        indexDiscardField = [self._is_field_matched(fieldDiscardPattern, x) for x in dataFrame.iloc[:,0]]
+        # 主要会计数据的第一个index为空字段,该代码会判断为Ture,所以要重新设置为False
+        #indexDiscardHeader[0] = False
+        dataFrame.loc[indexDiscardField] = NaN
         #对非中文字符全部替换为中文字符,这部分工作已经在_fields_replace_punctuate完成
         #fieldDiscard = [field.replace('(','（').replace(')','）').replace(' ',NULLSTR) for field in fieldDiscard]
-        indexDiscardField = dataFrame.iloc[:,0].isin(fieldDiscard+self._get_invalid_field())
+        indexDiscardField = dataFrame.iloc[:,0].isin(self._get_invalid_field())
         dataFrame.loc[indexDiscardField] = NaN
         dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
