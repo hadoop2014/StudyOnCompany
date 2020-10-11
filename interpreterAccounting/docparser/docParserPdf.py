@@ -152,6 +152,7 @@ class DocParserPdf(DocParserBase):
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table ]
             table = self._discard_last_row(table,tableName)
             if len(table[0]) <= 1:
+                #海螺水泥2015年年报，合并现金流量表数据解析错误，只有2列，第二列是附注，没有任何有效数据
                 continue
             fieldList = [row[0] for row in table]
             secondFieldList = [row[1] for row in table]

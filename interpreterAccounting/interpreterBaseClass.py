@@ -65,6 +65,7 @@ class InterpreterBase(BaseClass):
                                        ,list(map(self._replace_fieldname,self.dictTables[tableName]['fieldAlias'].values()))))})
             dictTables[tableName].update(
                 {'maxFieldLen':reduce(max,list(map(len,dictTables[tableName]['fieldName'])))})
+            dictTables[tableName].update({'maxHeaderNum':len(dictTables[tableName]['header'])})
         self.logger.warning("函数_fields_replace_punctuate把interpreterAccounting.json中配置的所有表的字段名中的英文标点替换为中文的,"
                             + "但是字段'header','fieldFirst','fieldLast'中采用了正则表达式,这要求正则表达式中不要出现'('')''-''.'等字符!")
         return dictTables
