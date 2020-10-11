@@ -308,8 +308,8 @@ class DocParserSql(DocParserBase):
         #isRowAllInvalid = self._is_row_all_invalid(dataFrame.iloc[0]) #里面有一个逻辑:如果所有都是空行,则返回False,不再适用
         #isRowAllInvalid = (dataFrame.iloc[0] == NULLSTR).all()
         #康泰生物：2016年年度报告.PDF合并所有者权益变动表第一行全部为None
-        isRowAllInvalid = self._is_row_all_blank(dataFrame.iloc[0]) or self._is_row_all_none(dataFrame.iloc[0])
-        if isRowAllInvalid:
+        #isRowAllInvalid = self._is_row_all_blank(dataFrame.iloc[0]) or self._is_row_all_none(dataFrame.iloc[0])
+        if self._is_row_all_invalid(dataFrame.iloc[0]):
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
             dataFrame.iloc[0] = NaN
@@ -742,9 +742,9 @@ class DocParserSql(DocParserBase):
     def _is_row_all_invalid(self,row:DataFrame):
         #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True
         isRowAllInvalid = False
-        if (row == NULLSTR).all():
+        #if (row == NULLSTR).all():
             #如果是空行,返回False,空行有特殊用途,一般加到最后一行来驱动前一个字段的合并
-            return isRowAllInvalid
+        #    return isRowAllInvalid
         mergedField = reduce(self._merge,row.tolist())
         #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
         isRowAllInvalid = not self._is_valid(mergedField)
@@ -755,13 +755,14 @@ class DocParserSql(DocParserBase):
         return (row != NONESTR).all()
 
 
+    '''
     def _is_row_all_blank(self,row:DataFrame):
         return (row == NULLSTR).all()
 
 
     def _is_row_all_none(self,row:DataFrame):
         return (row == NONESTR).all()
-
+   '''
 
     def _is_record_exist(self, conn, tableName, dataFrame:DataFrame):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
