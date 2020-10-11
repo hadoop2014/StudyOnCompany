@@ -299,16 +299,16 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchtitle_wrong(p):
-            '''fetchtitlewrong : fetchtitlewrong TAIL
-                         | company error
+            '''fetchtitlewrong : company error
                          | company TIME DISCARD
                          | company TIME NUMERIC
                          | company TIME NUMERO
                          | company TIME LABEL
+                         | company TIME LOCATION
                          | company selectable DISCARD
-                         | company selectable TAIL
                          | company
                          | TIME '''
+            # | company selectable TAIL  fetchtitlewrong TAIL
             # company DISCARD 去掉
             # company PUNCTUATION 去掉
             # company NAME DISCARD 去掉
@@ -402,7 +402,6 @@ class InterpreterAccounting(InterpreterBase):
         def p_skipword(p):
             '''skipword : skipword NUMERIC
                        | skipword '%'
-                       | skipword TAIL
                        | discard
                        | LOCATION
                        | REPORT
@@ -418,6 +417,7 @@ class InterpreterAccounting(InterpreterBase):
                        | '-'
                        | '%'
                        | '％' '''
+            #                       | skipword TAIL
             p[0] = p[1]
 
 

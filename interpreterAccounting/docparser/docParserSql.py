@@ -182,14 +182,8 @@ class DocParserSql(DocParserBase):
         #把表头进行标准化
         dataframe = self._process_header_standardize(dataframe,tableName)
 
-        #把表字段名进行标准化
-        #dataframe = self._process_field_standardize(dataframe,tableName)
-
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称,统一后再去重
         dataframe = self._process_field_alias(dataframe,tableName)
-
-        #把表字段名统一命名后,再进行标准化之后去重复
-        #dataframe = self._process_field_standardize(dataframe,tableName)
 
         #处理重复字段
         dataframe = self._process_field_duplicate(dataframe,tableName)
@@ -641,7 +635,7 @@ class DocParserSql(DocParserBase):
         duplicatedField = [duplicate(fieldName) for fieldName in fieldList]
         return duplicatedField
 
-
+    '''
     def _get_standardized_field_strict(self,fieldList,tableName):
         assert fieldList is not None, 'sourceRow(%s) must not be None' % fieldList
         fieldStandardizeStrict = self.dictTables[tableName]['fieldStandardizeStrict']
@@ -650,8 +644,8 @@ class DocParserSql(DocParserBase):
         else:
             standardizedFields = self._standardize(fieldStandardizeStrict, fieldList)
         return standardizedFields
-
-
+    '''
+    '''
     def _is_standardize_strict_mode(self,mergedFields, tableName):
         isStandardizeStrictMode = False
         standardizedFieldsStrict = self._get_standardized_field_strict(self.dictTables[tableName]['fieldName'],
@@ -663,8 +657,8 @@ class DocParserSql(DocParserBase):
                 if matched is not None:
                     isStandardizeStrictMode = True
         return isStandardizeStrictMode
-
-
+    '''
+    '''
     def _is_first_field_in_row(self, row_or_field, tableName):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
@@ -679,8 +673,9 @@ class DocParserSql(DocParserBase):
         fieldFirst = '^' + fieldFirst + '$'
         isFirstFieldInRow = self._is_field_matched(fieldFirst, firstField)
         return isFirstFieldInRow
+    '''
 
-
+    '''
     def _is_field_match_standardize(self, field, tableName):
         isFieldInList = False
         standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)
@@ -696,16 +691,16 @@ class DocParserSql(DocParserBase):
                 isFieldInList = True
                 break
         return isFieldInList
-
-
+    '''
+    '''
     def _is_field_in_standardize_by_mode(self,field,isStandardizeStrict,tableName):
         if isStandardizeStrict == True:
             isFieldInStandardize = self._is_field_in_standardize_strict(field,tableName)
         else:
             isFieldInStandardize = self._is_field_in_standardize(field,tableName)
         return isFieldInStandardize
-
-
+    '''
+    '''
     def _is_field_in_standardize(self,field,tableName):
         # 把field按严格标准进行标准化,然后和判断该字段是否和同样方法标准化后的某个字段相同.
         isFieldInList = False
@@ -721,8 +716,8 @@ class DocParserSql(DocParserBase):
         if fieldStrict in standardizedFields:
             isFieldInList = True
         return isFieldInList
-
-
+    '''
+    '''
     def _is_field_in_standardize_strict(self, field,tableName):
         #把field按严格标准进行标准化,然后和判断该字段是否和同样方法标准化后的某个字段相同.
         isFieldInList = False
@@ -737,7 +732,7 @@ class DocParserSql(DocParserBase):
         if fieldStrict in standardizedFieldsStrict:
             isFieldInList = True
         return isFieldInList
-
+    '''
 
     def _is_row_all_invalid(self,row:DataFrame):
         #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True
