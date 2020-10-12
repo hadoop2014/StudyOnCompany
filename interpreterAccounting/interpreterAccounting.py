@@ -193,9 +193,9 @@ class InterpreterAccounting(InterpreterBase):
                         | optional NUMERO
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
-                        | discard
                         | NUMERIC
                         | empty '''
+            # optional : discard 去掉，减少语法冲突
             # optional fetchtitle 被optioanl COMPANY time取代
             # optional CURRENCY 解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表,现金流量表补充资料等情况
             #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
@@ -344,8 +344,6 @@ class InterpreterAccounting(InterpreterBase):
                        | content '（' '）'
                        | content '(' ')'
                        | content discard
-                       | content REFERENCE NUMERIC
-                       | content REFERENCE NAME
                        | content NUMERIC
                        | content TIME
                        | content REPORT
@@ -359,6 +357,7 @@ class InterpreterAccounting(InterpreterBase):
                        | content WEBSITE
                        | content NUMERO
                        | content '%'
+                       | content '％'
                        | content COMPANY
                        | content REFERENCE
                        | content CRITICAL
@@ -381,6 +380,8 @@ class InterpreterAccounting(InterpreterBase):
                        | '-'
                        | COMPANY
                        | REFERENCE '''
+            # content REFERENCE NUMERIC 去掉
+            # content REFERENCE NAME 去掉
             p[0] = p[1]
 
 
@@ -557,6 +558,7 @@ class InterpreterAccounting(InterpreterBase):
         #                             ,'tableBegin': tableBegin
         #                             ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
         self.names[tableName].update({'tableName': tableName,'tableBegin': tableBegin
+                                     ,'公司简称':self.names['公司简称'],'报告时间': self.names['报告时间'],'报告类型': self.names['报告类型']
                                      ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
         #self.names['货币单位'] = self._unit_transfer(unit)
         if self.names[tableName]['tableEnd'] == False:
@@ -648,7 +650,9 @@ class InterpreterAccounting(InterpreterBase):
                 if os.path.exists(sourceFile):
                     dataFrame = pd.read_excel(sourceFile,sheet_name=tableName,header=None,dtype=str)
                     dataFrame.fillna(NULLSTR,inplace=True)
-                    table = np.array(dataFrame).tolist()
+                    #table = np.array(dataFrame).tolist()
+                    table = dataFrame.values.tolist()
+                    table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
                 else:
                     self.logger.info('%s failed to load data from %s'%(self.gConfig['sourcefile'],sourceFile))
             else:
@@ -660,7 +664,6 @@ class InterpreterAccounting(InterpreterBase):
             print(e)
             self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json!'
                               %(company,reportTime,reportType,tableName))
-        table = [list(map(lambda x:str(x).replace('\n',NULLSTR),row)) for row in table]
         return table
 
 

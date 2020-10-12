@@ -61,6 +61,7 @@ class DocParserPdf(DocParserBase):
 
 
     def _get_table_settings(self,dictTable):
+        '''
         def valueTransfer(key,value):
             if key not in ["vertical_strategy","horizontal_strategy","explicit_vertical_lines","explicit_horizontal_lines",
                            "keep_blank_chars","intersection_x_tolerance","intersection_y_tolerance"]:
@@ -75,6 +76,7 @@ class DocParserPdf(DocParserBase):
             else:
                 value = str(value)
             return value
+        '''
         table_settings = self._get_special_settings(dictTable)
         return table_settings
 

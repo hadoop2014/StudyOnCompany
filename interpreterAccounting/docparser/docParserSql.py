@@ -182,6 +182,12 @@ class DocParserSql(DocParserBase):
         #把表头进行标准化
         dataframe = self._process_header_standardize(dataframe,tableName)
 
+        #如果dataframe之有一行数据，说明从docParserPdf推送过来的数据是不正确的：只有表头，没有任何有效数据。
+        if dataframe.shape[0] <= 1:
+            self.logger.error("failed to process %s, the table has only on row:%s"%(tableName,dataframe.values))
+            self.process_info.pop(tableName)
+            return
+
         #同一张表的相同字段在不同财务报表中名字不同,需要统一为相同名称,统一后再去重
         dataframe = self._process_field_alias(dataframe,tableName)
 
@@ -309,10 +315,10 @@ class DocParserSql(DocParserBase):
             dataFrame.iloc[0] = NaN
             dataFrame = dataFrame.dropna()
         for index, field in enumerate(dataFrame.iloc[:, 0]):
-            #isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
+            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
             isHeaderInMergedRow = self._is_header_in_row(mergedRow,tableName)
-            isRowAllInvalid = self._is_row_all_invalid(dataFrame.iloc[index])
+            isRowAllInvalid = self._is_row_all_invalid_exclude_blank(dataFrame.iloc[index])
             if isRowAllInvalid == False:
                 if isHeaderInRow == False:
                     #表字段所在的行,清空合并行
@@ -320,18 +326,28 @@ class DocParserSql(DocParserBase):
                         if index > lastIndex + 1:
                             dataFrame.iloc[lastIndex] = mergedRow
                             dataFrame.iloc[lastIndex + 1:index] = NaN
-                    mergedRow = None
+                        mergedRow = None
+                    elif isHorizontalTable == True :
+                        if isRowNotAnyNone == True:
+                            if self._is_first_field_in_row(mergedRow, tableName):
+                                if index > lastIndex + 1:
+                                    dataFrame.iloc[lastIndex] = mergedRow
+                                    dataFrame.iloc[lastIndex + 1:index] = NaN
+                                mergedRow = None
+                    else:
+                        mergedRow = None
                 else:
                     if isHeaderInMergedRow == False:
                         #解决再升科技2018年年报,合并所有者权益变动表在每个分页中插入了表头
                         # 解决大立科技：2018年年度报告,有一行", , , ,调整前,调整后, , , , ",满足isRowNotAnyNone==True条件,但是需要继续合并
                         mergedRow = None
-                #if isRowNotAnyNone == True: #and isHeaderInRow == True:
-                    #表头或表字段所在的起始行
+                #if isRowNotAnyNone == True and isHorizontalTable == True: #and isHeaderInRow == True:
+                    #表头或表字段所在的起始行,针对普通股分红情况表，在该函数中要把字段的合并也一起做了
                 #    if self._is_first_field_in_row(mergedRow, tableName):
                 #        if index > lastIndex + 1:
                 #            dataFrame.iloc[lastIndex] = mergedRow
                 #            dataFrame.iloc[lastIndex + 1:index] = NaN
+                #        mergedRow = None
                 #if not (isHeaderInRow == True and isHeaderInMergedRow == True):
                     #解决大立科技：2018年年度报告,有一行", , , ,调整前,调整后, , , , ",满足isRowNotAnyNone==True条件,但是需要继续合并
                 #    mergedRow = None
@@ -658,7 +674,7 @@ class DocParserSql(DocParserBase):
                     isStandardizeStrictMode = True
         return isStandardizeStrictMode
     '''
-    '''
+
     def _is_first_field_in_row(self, row_or_field, tableName):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
@@ -673,7 +689,7 @@ class DocParserSql(DocParserBase):
         fieldFirst = '^' + fieldFirst + '$'
         isFirstFieldInRow = self._is_field_matched(fieldFirst, firstField)
         return isFirstFieldInRow
-    '''
+
 
     '''
     def _is_field_match_standardize(self, field, tableName):
@@ -734,12 +750,19 @@ class DocParserSql(DocParserBase):
         return isFieldInList
     '''
 
-    def _is_row_all_invalid(self,row:DataFrame):
+    def _is_row_all_invalid_exclude_blank(self,row:DataFrame):
         #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True
         isRowAllInvalid = False
-        #if (row == NULLSTR).all():
+        if (row == NULLSTR).all():
             #如果是空行,返回False,空行有特殊用途,一般加到最后一行来驱动前一个字段的合并
-        #    return isRowAllInvalid
+            return isRowAllInvalid
+        mergedField = reduce(self._merge,row.tolist())
+        #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
+        isRowAllInvalid = not self._is_valid(mergedField)
+        return isRowAllInvalid
+
+
+    def _is_row_all_invalid(self,row:DataFrame):
         mergedField = reduce(self._merge,row.tolist())
         #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
         isRowAllInvalid = not self._is_valid(mergedField)
