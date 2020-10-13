@@ -213,7 +213,7 @@ class InterpreterAccounting(InterpreterBase):
                     self.names['company'] = self._eliminate_duplicates(slice.value)
                 if slice.type == 'LOCATION':
                     self.names['address'] = self._eliminate_duplicates(slice.value)
-            prefix = ' '.join([str(slice) for slice in p if slice is not None])
+            prefix = ''.join([str(slice) for slice in p if slice is not None])
             p[0] = prefix
 
 
@@ -401,9 +401,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_skipword(p):
-            '''skipword : skipword NUMERIC
-                       | skipword '%'
-                       | discard
+            '''skipword : discard
                        | LOCATION
                        | REPORT
                        | WEBSITE
@@ -419,6 +417,8 @@ class InterpreterAccounting(InterpreterBase):
                        | '%'
                        | '％' '''
             #                       | skipword TAIL
+            # skipword NUMERIC
+            #           | skipword '%'
             p[0] = p[1]
 
 

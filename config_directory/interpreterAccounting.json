@@ -25,7 +25,7 @@
   "EMAIL": "[a-zA-Z_][a-zA-Z0-9_]*@[.\\w]*\\.(com|cn|org)",
   "#DISCARD": "注意,这里采用的是按规则长度的倒排序,discard要保持低长度,才能排在最后面,其他的规则才能优先执行",
   "DISCARD": "[\\u4E00-\\u9FA5|A-Z]+",
-  "LABEL" : "(一|二|三|四|五|六|七|八|九|十|〇){1,2}",
+  "LABEL" : "(一|二|三|四|五|六|七|八|九|十|〇){1,2}(?=[）|)|、])",
   "TAIL": "TAILMustBeLongerThenNAME",
   "#NUMERO": "定义NUMERO此处不起作用，真正起作用的是interpreterAccounting中的ｔ_NUMERO函数",
   "NUMERO": "^\\d{1,3}$",
@@ -175,7 +175,7 @@
     "headerStandardize": "\\d+\\s*年|[\\u4E00-\\u9FA5]{2,}",
     "fieldDiscard": ["每10股送红股数","每10股转增数","每10股派息数（元）","年度资本公积金转增股本情况","每股派发现金红利"
                     ,"以现金方式要约回购股份资金计入现金分红的金额","以现金方式要约回购股份资金计入现金分红的比例"],
-    "fieldFirst": "\\d+\\s*年|年度\\d+\\s*年",
+    "fieldFirst": "\\d{4}\\s*年|年度\\d{4}\\s*年",
     "fieldLast": "\\d+年|\\d+年半年度|\\d+年中期",
     "fieldFromHeader": "",
     "fieldAlias": {

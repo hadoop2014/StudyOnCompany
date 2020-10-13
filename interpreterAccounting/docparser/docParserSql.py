@@ -360,7 +360,11 @@ class DocParserSql(DocParserBase):
         if isHorizontalTable == True:
             #如果是转置表,则在此处做一次转置,后续的处理就和非转置表保持一致了
             #去掉最后一行空行
-            indexDiscardField = dataFrame.iloc[:, 0].isin(self._get_invalid_field())
+            #indexDiscardField = dataFrame.iloc[:, 0].isin(self._get_invalid_field())
+            #dataFrame.loc[indexDiscardField] = NaN
+            #解决（300326）凯利泰：2018年年度报告.PDF，普通股现金分红请表，除了第一行解析正常为“”
+            indexDiscardField = [not self._is_first_field_in_row(x,tableName) for x in dataFrame.iloc[:,0]]
+            indexDiscardField[0] = False
             dataFrame.loc[indexDiscardField] = NaN
             dataFrame = dataFrame.dropna(axis=0)
             #把第一列做成索引
@@ -678,7 +682,7 @@ class DocParserSql(DocParserBase):
     def _is_first_field_in_row(self, row_or_field, tableName):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
-        if row_or_field == None:
+        if row_or_field is None or row_or_field is NaN:
             return False
         if isinstance(row_or_field, list):
             firstField = row_or_field[0]
