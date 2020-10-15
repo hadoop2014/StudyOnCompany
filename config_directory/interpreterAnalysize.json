@@ -239,7 +239,7 @@
         "value_format": "percentage"
       },
       "在建工程占固定资产的比率": {
-        "threshold": 0.4,
+        "threshold": 0.3,
         "color_index": 2,
         "operator": "greaterThan",
         "value_format": "percentage"

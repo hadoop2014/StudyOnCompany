@@ -21,7 +21,7 @@ class MyTestCase(unittest.TestCase):
         #interpreterAccounting.docParser._set_dataset(list([0,1,2,3,4,8,44,83,84,85]))
         #interpreterAccounting.docParser._set_dataset(list([0, 5,9,19,20,37,38,65,84,89]))
         #interpreterAccounting.docParser._set_dataset(list([0,1,3,6,7,8,9,13,24,53,73,97,127]))
-        interpreterAccounting.docParser._set_dataset(list([0,57,58]))
+        interpreterAccounting.docParser._set_dataset(list([0,152,153, 154, 155]))
         interpreterAccounting.docParser.remove_checkpoint_files(list([interpreterAccounting.gConfig['sourcefile']]))
         interpreterAccounting.doWork(debug=True,tracking=False)
 

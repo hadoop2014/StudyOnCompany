@@ -119,12 +119,12 @@ select
     --"无形资产-内部研发","所得税税率",
     b.期末总股本,
     replace(c.固定资产,',','') as 固定资产,
-    iif(c.在建工程 != '',c.在建工程,0) as 在建工程,
+    case when c.在建工程 != '' then c.在建工程 else 0 end as 在建工程,
     case when h.期末账面价值 != '' then h.期末账面价值 else 0 end as 土地使用权,
     case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.投资性房地产 else 0 end as 投资性房地产,
     --case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
-    iif(c.商誉 != '',c.商誉,0) as 商誉,
-    iif(c.预收款项 is not NULL and 预收款项 != '',c.预收款项,0) as 预收款项,
+    case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
+    case when c.预收款项 is not NULL and 预收款项 != '' then c.预收款项 else 0 end as 预收款项,
     case when c.应付票据及应付账款 is not NULL then replace(c.应付票据及应付账款,',','') else
         case when c.应付账款 is not NULL and c.应付票据 is not NULL
             then replace(c.应付账款,',','') + replace(c.应付票据,',','') else 0
@@ -132,13 +132,14 @@ select
     end as 应付票据及应付账款,
     case when c.应付账款 is not NULL then c.应付账款 else 0 end as 应付账款,
     c.预付款项,
-    case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then c.应收票据及应收账款
-        else iif(c.应收账款 is not NULL and c.应收账款 != '',c.应收账款,0) end as 应收账款,
+    case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then c.应收票据及应收账款 else
+        case when c.应收账款 is not NULL and c.应收账款 != '' then c.应收账款 else 0 end
+    end as 应收账款,
     case when c.应收票据 is not NULL and c.应收票据 != '' then c.应收票据 else 0 end as 应收票据,
     c.流动资产合计,
     c.负债合计,
     c.流动负债合计,
-    iif(c.存货 != '',c.存货,0) as 存货,
+    case when c.存货 != '' then c.存货 else 0 end as 存货,
     c.货币资金,
     case when c.短期借款 is not NULL and c.短期借款 != '' then c.短期借款 else 0 end as 短期借款,
     case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != '' then c.一年内到期的非流动负债 else 0 end
