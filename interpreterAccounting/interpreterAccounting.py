@@ -533,13 +533,30 @@ class InterpreterAccounting(InterpreterBase):
         else:
             self.logger.info('failed to fetch %s\t tables:%s!\n' % (sourceFile, failedTable))
             self.logger.info('now start to repair the fetch failed tables!\n')
-            #self.logger.info('success to process %s\t process_info:' % sourceFile + str(self.sqlParser.process_info))
+            #通过repair_list对表进行恢复,返回可能回恢复的列表
             repairedTable = self._process_repair_table(failedTable)
+            #再次获取failedTable,表示在进行表恢复操作后,仍然失败的表
+            failedTableAgain = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
+            #去掉尝试修复而没有修复的表
+            #repairedTable = repairedTable.difference(failedTableAgain)
             self.logger.info('success to fetch %s\t process_info:' % sourceFile + str(self.sqlParser.process_info))
             self.logger.info('failed to fetch %s\t tables:%s!' % (sourceFile, failedTable))
             if len(repairedTable) > 0:
-                self.logger.info('success to repair %s\t tables:%s'%(sourceFile ,repairedTable))
-            failedTable = failedTable.difference(repairedTable)
+                commonRepairTable = repairedTable & failedTable
+                #去掉尝试修复而没有修复成功的表
+                commonRepairTable = commonRepairTable.difference(failedTableAgain)
+                if len(commonRepairTable) > 0:
+                    self.logger.info('success to repair %s\t tables:%s'%(sourceFile ,commonRepairTable))
+                forceRepairTable = repairedTable.difference(failedTable)
+                #去掉尝试修复而没有修复成功的表
+                if len(forceRepairTable) > 0:
+                    forceRepairTableFailed = forceRepairTable & failedTableAgain
+                    if len(forceRepairTableFailed) == 0:
+                        self.logger.info('success to force repair %s\t tables:%s' % (sourceFile, forceRepairTable))
+                    else:
+                        self.logger.info('failed to force repair %s\t tables:%s' % (sourceFile, forceRepairTable))
+                #self.logger.info('success to repair %s\t tables:%s'%(sourceFile ,repairedTable))
+            failedTable = failedTableAgain#.difference(repairedTable)
             if len(failedTable) > 0:
                 self.logger.info('remain failed to process %s\t tables:%s!' %(sourceFile,failedTable))
             else:
@@ -607,12 +624,17 @@ class InterpreterAccounting(InterpreterBase):
         assert isinstance(failedTable,set) and len(failedTable) > 0, "failedTable must be a set and not be NULL"
         #isRepaired = False
         company,reportTime,reportType = self.names['公司简称'],self.names['报告时间'],self.names['报告类型']
+        isRepairListsInvalid, tableList, sourceFile = self._check_repair_lists(company,reportTime,reportType,failedTable)
         #self.names[tableName].update({"table": table})
         repairedTable = set()
-        for tableName in sorted(failedTable):
+        if isRepairListsInvalid == False:
+            return repairedTable
+        #for tableName in sorted(failedTable):
+        for tableName in sorted(tableList):
             self.logger.debug('\n')
             self.logger.debug('now start to repair %s'%tableName)
-            table = self._repair_table(company, reportTime, reportType, tableName)
+            #table = self._repair_table(company,reportTime,reportType, tableName)
+            table = self._repair_table(sourceFile, tableName)
             if len(table) > 0:
                 self.names[tableName].update({'tableName': tableName, 'table': table, 'tableBegin': True, "tableEnd": True})
                 self._parse_table(tableName)
@@ -634,6 +656,72 @@ class InterpreterAccounting(InterpreterBase):
         self.sqlParser.writeToStore(self.names[tableName])
 
 
+    def _check_repair_lists(self,company,reportTime,reportType,failedTable):
+        assert company != NULLSTR and reportTime != NULLSTR and reportType != NULLSTR and isinstance(failedTable,set) \
+            , "Parameter: company(%s) reportTime(%s) reportType(%s) must not be NULL and failedTable(%s) must be set!" % (
+        company, reportTime, reportType, failedTable)
+        isRepairListsInvalid = False
+        tableList = list()
+        sourceFile = NULLSTR
+        try:
+            repair_lists = self.gJsonBase['repair_lists']
+            tableList = repair_lists[company][reportType][reportTime]['tableList']
+            tableFile = repair_lists[company][reportType][reportTime]['tableFile']
+            assert self._check_table_file(company,reportType,reportTime,tableFile) \
+                   ,"file: %s is wrong ,it is not match %s %s %s"%(tableFile,company,reportTime,reportType)
+            filePath = repair_lists['filePath']
+            if isinstance(tableList,list) and len(tableList) > 0 and tableFile != NULLSTR:
+                sourceFile = os.path.join(filePath,tableFile)
+                if not os.path.exists(sourceFile):
+                    self.logger.info('%s failed to load data from %s'%(self.gConfig['sourcefile'],sourceFile))
+                    return isRepairListsInvalid
+                commonTables = set(tableList) & failedTable
+                notConfigTables = failedTable.difference(commonTables)
+                forceRepairTables = set(tableList).difference(failedTable)
+                if len(notConfigTables) > 0:
+                    self.logger.warning('%s: %s 没有在repair_lists中配置,无法修复!'%(tableFile,notConfigTables))
+                if len(forceRepairTables) > 0:
+                    self.logger.warning('%s: %s 不在failedTalbe中,但是将被尝试强制修复!'%(tableFile,forceRepairTables))
+                isRepairListsInvalid = True
+            #else:
+            #    self.logger.warning("%s failed to find %s in interpreterBase.repair_lists %s"%(self.gConfig['sourcefile'],failedTable,tableList))
+        except Exception as e:
+            print(e)
+            self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json!'
+                              %(company,reportTime,reportType,failedTable))
+        return isRepairListsInvalid,tableList,sourceFile
+
+
+    def _repair_table(self, sourceFile, tableName):
+        assert sourceFile != NULLSTR and tableName != NULLSTR\
+            ,"Parameter: sourceFile(%s) tableName(%s) must not be NULL!" % (sourceFile, tableName)
+        table = list()
+        try:
+            #if isinstance(tableList, list) and tableName in tableList and tableFile != NULLSTR:
+            #    sourceFile = os.path.join(filePath, tableFile)
+            #    if os.path.exists(sourceFile):
+            dataFrame = pd.read_excel(sourceFile, sheet_name=tableName, header=None, dtype=str)
+            dataFrame.fillna(NULLSTR, inplace=True)
+            # table = np.array(dataFrame).tolist()
+            table = dataFrame.values.tolist()
+            table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
+            #    else:
+            #        self.logger.info('%s failed to load data from %s' % (self.gConfig['sourcefile'], sourceFile))
+            #else:
+            #    self.logger.warning("%s failed to find %s in interpreterBase.repair_lists %s" % (
+            #    self.gConfig['sourcefile'], tableName, tableList))
+        except XLRDError as e:
+            print(e)
+            self.logger.info('failed to find %s in %s' % (tableName, sourceFile))
+        except Exception as e:
+            print(e)
+            self.logger.error('some error occured when repair %s %s'%(os.path.split(sourceFile)[-1],tableName))
+        #    self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json!'
+        #                     % (company, reportTime, reportType, tableName))
+        return table
+
+
+    '''
     def _repair_table(self,company,reportTime,reportType,tableName):
         assert company != NULLSTR and reportTime != NULLSTR and reportType != NULLSTR and tableName != NULLSTR \
               ,"Parameter: company(%s) reportTime(%s) reportType(%s) tableName(%s) must not be NULL!"%(company,reportTime,reportType,tableName)
@@ -666,7 +754,7 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json!'
                               %(company,reportTime,reportType,tableName))
         return table
-
+    '''
 
     def _check_table_file(self,company, reportType, reportTime,tableFile):
         companyCheck,timeCheck,typeCheck,codeCheck = self._get_time_type_by_name(tableFile)

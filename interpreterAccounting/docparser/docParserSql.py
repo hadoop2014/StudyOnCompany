@@ -262,6 +262,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('^注释',NULLSTR,value)#解决灰顶科技2019年年报中,合并资产负债表,合并利润表中的字段出现'注释'
                     value = re.sub('^）\\s*',NULLSTR,value)
                     value = re.sub('^同比增加',NULLSTR,value)#解决冀东水泥：2017年年度报告.PDF主要会计数据中的一列数据中出现'同比增加',导致_precess_header_merge_simple误判
+                    value = re.sub('注$', NULLSTR, value)#解决康泰生物2018年年报中普通股现金分红情况表中出现中文字符'注',导致_process_merge_header_simple出问题
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
@@ -334,6 +335,14 @@ class DocParserSql(DocParserBase):
                                     dataFrame.iloc[lastIndex] = mergedRow
                                     dataFrame.iloc[lastIndex + 1:index] = NaN
                                 mergedRow = None
+                        else:
+                            #康泰生物2019年年报普通股现金分红情况表,有一列全部为None,此时isRowNotAnyNone失效
+                            if self._is_first_field_in_row(mergedRow,tableName) and self._is_first_field_in_row(field,tableName):
+                                if index > lastIndex + 1:
+                                    dataFrame.iloc[lastIndex] = mergedRow
+                                    dataFrame.iloc[lastIndex + 1:index] = NaN
+                                mergedRow = None
+                                self.logger.warning('%s 出现某一列全部解析为None情况,just for debug!'%tableName)
                     else:
                         mergedRow = None
                 else:
