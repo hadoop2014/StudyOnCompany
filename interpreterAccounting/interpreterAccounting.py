@@ -565,7 +565,7 @@ class InterpreterAccounting(InterpreterBase):
             resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time)
                               ,'failedTable': list([(tableName,self.names[tableName]['page_numbers']) for tableName in failedTable])})
         self.docParser._close()
-        self.logger.info('\n\n parse %s file end, time used %.4f' % (fileName,(time.time() - start_time)))
+        self.logger.info('parse %s file end, time used %.4f\n\n' % (fileName,(time.time() - start_time)))
         return resultInfo
 
 
@@ -672,19 +672,19 @@ class InterpreterAccounting(InterpreterBase):
             filePath = repair_lists['filePath']
             if isinstance(tableList,list) and len(tableList) > 0 and tableFile != NULLSTR:
                 sourceFile = os.path.join(filePath,tableFile)
-                if not os.path.exists(sourceFile):
-                    self.logger.info('%s failed to load data from %s'%(self.gConfig['sourcefile'],sourceFile))
-                    return isRepairListsInvalid
-                commonTables = set(tableList) & failedTable
-                notConfigTables = failedTable.difference(commonTables)
-                forceRepairTables = set(tableList).difference(failedTable)
-                if len(notConfigTables) > 0:
-                    self.logger.warning('%s: %s 没有在repair_lists中配置,无法修复!'%(tableFile,notConfigTables))
-                if len(forceRepairTables) > 0:
-                    self.logger.warning('%s: %s 不在failedTalbe中,但是将被尝试强制修复!'%(tableFile,forceRepairTables))
-                isRepairListsInvalid = True
-            #else:
-            #    self.logger.warning("%s failed to find %s in interpreterBase.repair_lists %s"%(self.gConfig['sourcefile'],failedTable,tableList))
+                if os.path.exists(sourceFile):
+                    commonTables = set(tableList) & failedTable
+                    notConfigTables = failedTable.difference(commonTables)
+                    forceRepairTables = set(tableList).difference(failedTable)
+                    if len(notConfigTables) > 0:
+                        self.logger.warning('%s: %s 没有在repair_lists中配置,无法修复!'%(tableFile,notConfigTables))
+                    if len(forceRepairTables) > 0:
+                        self.logger.warning('%s: %s 不在failedTalbe中,但是将被尝试强制修复!'%(tableFile,forceRepairTables))
+                    isRepairListsInvalid = True
+                else:
+                    self.logger.info('%s failed to load data from %s' % (self.gConfig['sourcefile'], sourceFile))
+                    #return isRepairListsInvalid, tableList, sourceFile
+                #    self.logger.warning("%s failed to find %s in interpreterBase.repair_lists %s"%(self.gConfig['sourcefile'],failedTable,tableList))
         except Exception as e:
             print(e)
             self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json!'

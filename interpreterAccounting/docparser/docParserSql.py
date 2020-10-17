@@ -134,6 +134,7 @@ class DocParserSql(DocParserBase):
             dictTokens.update({token: '|'.join(pattern)})
         return dictTokens
 
+
     def loginfo(text = 'running '):
         def decorator(func):
             @functools.wraps(func)

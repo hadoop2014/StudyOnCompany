@@ -39,7 +39,7 @@ class DocParserPdf(DocParserBase):
         else:
             pageText = page.extract_text()
         if pageText is not None:
-            pageText = self._interpretPrefix + pageText + self._get_tail()
+            pageText = self._interpretPrefix + pageText.rstrip() + self._get_tail()
         else:
             #千禾味业：2019年度审计报告.PDF文件中全部是图片,没有文字,需要做特殊处理
             pageText = self._interpretPrefix + self._get_tail()
@@ -49,7 +49,9 @@ class DocParserPdf(DocParserBase):
 
     def _get_tail(self):
         #在每一页的结尾增加TAIL EOF
-        tail = self.gJsonInterpreter['TAIL'] + ' ' + EOF
+        #self._standardize(self.gJsonInterpreter['NAME'],self.gJsonInterpreter['TAIL'])为了解决（603960）克来机电：2017年年度报告.PDF
+        #其(1) 现金流量表补充资料出现在页尾,如下"现金流量表补充资料　√适用 □不适用 审计报告第 68 页"
+        tail = self._standardize(self.gJsonInterpreter['NAME'],self.gJsonInterpreter['TAIL']) + ' ' + EOF
         return tail
 
 
