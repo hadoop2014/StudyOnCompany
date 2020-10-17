@@ -109,7 +109,7 @@ select
     e.管理费用,
     e.财务费用,
     case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else
-        case when e.研发费用 is not NULL then replace(e.研发费用,',','') else 0 end
+        case when e.研发费用 is not NULL and e.研发费用 != '' then replace(e.研发费用,',','') else 0 end
     end as 研发费用,
     case when a.本期资本化研发投入修正 != '' then a.本期资本化研发投入修正 else 0 end as 资本化研发投入,
     case when g.资产减值准备 != '' then g.资产减值准备 else 0 end as 资产减值准备 ,

@@ -5,6 +5,8 @@
   "SCALE" : "全量|批量|单次",
   "CRAWL": "爬取",
   "WEBSITE": "巨潮资讯网",
+  "#VALUE": "该定义不用于token,仅仅用于crawlFinance.py中的_secname_transfer函数",
+  "VALUE": "[\\u4E00-\\u9FA5|A-Z|Ａ-Ｚ]+",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
@@ -149,6 +151,11 @@
       "尚荣医疗": {
         "stock": "002551",
         "secid": "9900018063",
+        "searchkey": ""
+      },
+      "华侨城A": {
+        "stock": "000069",
+        "secid": "gssz0000069",
         "searchkey": ""
       }
 

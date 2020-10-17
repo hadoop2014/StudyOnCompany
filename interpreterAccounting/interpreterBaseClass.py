@@ -65,7 +65,7 @@ class InterpreterBase(BaseClass):
                                        ,list(map(self._replace_fieldname,self.dictTables[tableName]['fieldAlias'].values()))))})
             dictTables[tableName].update(
                 {'maxFieldLen':reduce(max,list(map(len,dictTables[tableName]['fieldName'])))})
-            dictTables[tableName].update({'maxHeaderNum':len(dictTables[tableName]['header'])})
+            #dictTables[tableName].update({'maxHeaderNum':len(dictTables[tableName]['header'])})
         self.logger.warning("函数_fields_replace_punctuate把interpreterAccounting.json中配置的所有表的字段名中的英文标点替换为中文的,"
                             + "但是字段'header','fieldFirst','fieldLast'中采用了正则表达式,这要求正则表达式中不要出现'('')''-''.'等字符!")
         return dictTables
@@ -104,9 +104,12 @@ class InterpreterBase(BaseClass):
     def _replace_fieldname(self, field):
         #所有英文标点替换成中文标点,避免和正则表达式中的保留字冲突
         field = field.replace('(','（').replace(')','）').replace(' ',NULLSTR)
-        field = field.replace(':','：').replace('-','－').replace('.','．')
+        field = field.replace(':','：').replace('-','－').replace('—','－')
+        field = field.replace('.','．')
         #―‖为鱼跃医疗2016年年报中出现的不规范字符,等同于““
         field = field.replace('―','“').replace('‖','“')
+        #解决华侨城A 2018年年报无形资产情况表中出现 '1、将净利润调节为经营活动现金流量',替换成 '1．将净利润调节为经营活动现金流量'
+        field = re.sub('(^\\d)(、)','\g<1>．',field)
         return field
 
     def _replace_value(self,value):

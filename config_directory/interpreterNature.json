@@ -14,7 +14,8 @@
   "PARAMETER": "报告时间|报告类型|公司简称|公司代码",
   "CRAWL": "爬取",
   "WEBSITE": "巨潮资讯网",
-  "VALUE": "[\\u4E00-\\u9FA5]+",
+  "#VALUE": "该配置实际不起作用,而是由interpreterNature.py中的t_VALUE函数起作用",
+  "VALUE": "[\\u4E00-\\u9FA5|A-Z]+",
   "TIME": "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年",
   "NUMERIC": "\\d+(\\.\\d{4})|\\d+(\\.\\d{1,2})?",
 

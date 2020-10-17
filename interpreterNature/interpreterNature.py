@@ -32,9 +32,8 @@ class InterpreterNature(InterpreterBase):
         t_ignore_COMMENT = r'#.*'
 
 
-
         def t_VALUE(t):
-            r'[\u4E00-\u9FA5]+'
+            r'[\u4E00-\u9FA5|A-Z]+'
             typeList = [key for key in local_name.keys() if key.startswith('t_') and key not in ['t_VALUE','t_ignore','t_ignore_COMMENT','t_newline','t_error']]
             t.type = self._get_token_type(local_name, t.value,typeList,defaultType='VALUE')
             return t

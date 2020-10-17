@@ -164,6 +164,7 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional '(' discard ')'
                           | TABLE optional '(' LABEL ')'
                           | TABLE optional LABEL
+                          | TABLE optional NUMERIC
                           | TABLE optional '-'
                           | TABLE optional time optional  NUMERIC'''
             #TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
@@ -444,10 +445,11 @@ class InterpreterAccounting(InterpreterBase):
             '''unit : UNIT
                     | UNIT CURRENCY
                     | CURRENCY UNIT
+                    | CURRENCY DISCARD UNIT
                     | '（' UNIT '）'
                     | '(' DISCARD CURRENCY UNIT ')' '''
-            # 去掉discard unit,作为最小粒度语法单元,引入discard会带来语法冲突
-            #'(' DISCARD CURRENCY UNIT ')'解决海天味业2016年年报中出现 (金额单位：人民币元)
+            # CURRENCY DISCARD UNIT解决华侨城A2019年报P123,合并股东权益变动表的搜索不到问题
+            # '(' DISCARD CURRENCY UNIT ')'解决海天味业2016年年报中出现 (金额单位：人民币元)
             for slice in p.slice:
                 if slice.type == 'UNIT':
                     unit = slice.value.split(':')[-1].split('：')[-1]

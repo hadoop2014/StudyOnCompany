@@ -10,6 +10,7 @@ class MyTestCase(unittest.TestCase):
         input = ''
         input = input + ' 批量 运行 财务报表解析'
         input = input + ' 单次 运行 财务报表解析 '
+        input = input + ' 参数配置{公司简称: 华侨城A,华侨城Ａ}'
         self.interpreter.lexer.input(input)
         for tok in self.interpreter.lexer:
             print(tok)

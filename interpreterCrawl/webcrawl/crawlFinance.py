@@ -134,10 +134,13 @@ class CrawlFinance(CrawlBase):
 
     def _secname_transfer(self, secName):
         company = secName
-        pattern =  "[\\u4E00-\\u9FA5]+"
+        #pattern =  "[\\u4E00-\\u9FA5]+"
+        pattern = self.gJsonInterpreter['VALUE']
         matched = re.findall(pattern,secName)
         if matched is not None:
             company = ''.join(matched)
+        #全角字符转换成半角字符，比如把 华侨城Ａ 转换成 华侨城A
+        company = self._strQ2B(company)
         return company
 
 

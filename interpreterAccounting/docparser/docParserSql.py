@@ -614,6 +614,7 @@ class DocParserSql(DocParserBase):
         #在标准化后,某些无用字段可能被标准化为NaN,需要去掉
         #dataFrame.loc[NaN] = NaN
         #dataFrame = dataFrame.dropna(axis=1).copy()
+        dataFrame = self._discard_unnecessary_row(dataFrame,tableName)
         return dataFrame
 
 
@@ -622,6 +623,19 @@ class DocParserSql(DocParserBase):
         standardizedFields = self._get_standardized_field(dataFrame.iloc[0].tolist(),tableName)
         dataFrame.iloc[0] = standardizedFields
         dataFrame = dataFrame.dropna(axis = 1).copy()
+        return dataFrame
+
+
+    def _discard_unnecessary_row(self,dataFrame,tableName):
+        maxHeaders = self.dictTables[tableName]['maxHeaders'] + 1
+        fieldFromHeader = self.dictTables[tableName]['fieldFromHeader']
+        if fieldFromHeader == NULLSTR:
+            #对于合并所有者权益变动表,无形资产情况,分季度主要财务数据等表,不需要对多余的行进行裁剪
+            maxRows = len(dataFrame.index.values)
+            if maxRows > maxHeaders:
+                #对于超出最大头长度的行进行拆解,解决华侨城A 2018年包中,合并资产负债表 有三列数据,其中最后一列数据是不需要的
+                dataFrame.iloc[maxHeaders:maxRows] = NaN
+                dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
 
 

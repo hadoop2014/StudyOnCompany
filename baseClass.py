@@ -3,6 +3,8 @@
 # @Time    : 9/25/2019 5:03 PM
 # @Author  : wu.hao
 # @File    : docParserBaseClass.py
+from six import unichr
+
 from loggerClass import *
 import functools
 import numpy as np
@@ -135,6 +137,38 @@ class BaseClass():
             else:
                 standardizedField = NaN
         return standardizedField
+
+
+    def _strQ2B(self,ustring):
+        """把字符串全角转半角"""
+        rstring = ""
+        for uchar in ustring:
+            inside_code = ord(uchar)
+            if inside_code == 0x3000:
+                inside_code = 0x0020
+            else:
+                inside_code -= 0xfee0
+            if inside_code < 0x0020 or inside_code > 0x7e:  # 转完之后不是半角字符返回原来的字符
+                rstring += uchar
+            else:
+                rstring += unichr(inside_code)
+        return rstring
+
+
+    def _strB2Q(self,ustring):
+        """把字符串半角转全角"""
+        rstring = ""
+        for uchar in ustring:
+            inside_code = ord(uchar)
+            if inside_code == 0x0020:  # 除了空格其他的全角半角的公式为:半角=全角-0xfee0
+                inside_code = 0x3000
+            else:
+                inside_code += 0xfee0
+            if inside_code < 0x0020 or inside_code > 0x7e:  # 不是半角字符就返回原来的字符
+                rstring += uchar
+            else:
+                rstring += unichr(inside_code)
+        return rstring
 
 
     def _merge_table(self, dictTable=None,interpretPrefix=None):
