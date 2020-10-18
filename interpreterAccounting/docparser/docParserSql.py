@@ -519,6 +519,8 @@ class DocParserSql(DocParserBase):
                     #解决迪安诊断2018年财报主要会计数据中,把最后一行拆为"归属于上市公司股东的净资产（元"和"）"
                     #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充
                     value = re.sub('.*-$',NULLSTR,value)
+                    #尚荣医疗2017年年报,现金流量表补充资料中的无效值用 '一'填充
+                    value = re.sub('^一$',NULLSTR,value)
             except Exception as e:
                 print(e)
             return value

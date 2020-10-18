@@ -110,6 +110,10 @@ class InterpreterBase(BaseClass):
         field = field.replace('―','“').replace('‖','“')
         #解决华侨城A 2018年年报无形资产情况表中出现 '1、将净利润调节为经营活动现金流量',替换成 '1．将净利润调节为经营活动现金流量'
         field = re.sub('(^\\d)(、)','\g<1>．',field)
+        #解决尚荣医疗2019年年报中,无形资产情况表中出现' 一．二．',全部替换为' 一、 二、'
+        field = re.sub('(^[一二三四五六七八九])(．)','\g<1>、',field)
+        # 解决尚荣医疗2019年年报中,无形资产情况表中出现“一” 情况
+        field = re.sub('“一”(号填列)','“－”\g<1>',field)
         return field
 
     def _replace_value(self,value):

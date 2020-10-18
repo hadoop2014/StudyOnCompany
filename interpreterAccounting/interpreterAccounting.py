@@ -161,7 +161,9 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional LABEL
                           | TABLE optional NUMERIC
                           | TABLE optional '-'
-                          | TABLE optional time optional  NUMERIC'''
+                          | TABLE optional time optional  NUMERIC
+                          | TABLE optional error '''
+            # TABLE optional error  解决尚荣医疗2016年 P90页,合并资产负债表搜索错误 ,而导致连续多页搜索错误
             #TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
             # TABLE optional '(' NAME ')' 和optional  '(' NAME ')'冲突
             # TABLE '(' discard ')' 可用
@@ -438,7 +440,9 @@ class InterpreterAccounting(InterpreterBase):
                     | CURRENCY UNIT
                     | CURRENCY DISCARD UNIT
                     | '（' UNIT '）'
-                    | '(' DISCARD CURRENCY UNIT ')' '''
+                    | '(' DISCARD CURRENCY UNIT ')'
+                    | '（' DISCARD CURRENCY UNIT '）' '''
+            #  '（' DISCARD CURRENCY UNIT '）' 解决尚荣医疗 2019年报中出现 （除特别注明外，金额单位均为人民币）
             # CURRENCY DISCARD UNIT解决华侨城A2019年报P123,合并股东权益变动表的搜索不到问题
             # '(' DISCARD CURRENCY UNIT ')'解决海天味业2016年年报中出现 (金额单位：人民币元)
             for slice in p.slice:
