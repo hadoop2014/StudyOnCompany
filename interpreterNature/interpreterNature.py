@@ -119,7 +119,7 @@ class InterpreterNature(InterpreterBase):
             '''time : TIME
                     | TIME '-' TIME '''
             if len(p.slice) == 4:
-                timelist = [str(year) + '年'  for year in range(int(p[1].split('年')[0]),int(p[3].split('年')[0]) + 1)]
+                timelist = [str(year) + '年'  for year in range(int(p[1].split('年')[0]) - 1,int(p[3].split('年')[0]) + 1)]
                 p[0] = p[1] + p[2] + p[3]
             else:
                 timelist = list([p[1]])
@@ -210,6 +210,8 @@ class InterpreterNature(InterpreterBase):
             return
         pass
         self.gConfig.update(self.names_global)
+        # 爬取时在时间上少设置1年,因为2020年的时间本来就会爬取2019年的数据
+        self.gConfig.update({'报告时间': self.names_global['报告时间'][1:]})
         self.interpreterCrawl.initialize(self.gConfig)
         self.interpreterCrawl.doWork(command)
 

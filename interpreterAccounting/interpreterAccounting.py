@@ -485,6 +485,7 @@ class InterpreterAccounting(InterpreterBase):
         def p_tail(p):
             '''tail : NUMERO TAIL
                     | NUMERO NUMERO TAIL'''
+            # tail : TAIL 解决华侨城A 2016年, 无形资产情况出现在页尾,但是没有页码
             tail = ' '.join([str(slice) for slice in p if slice is not None])
             #self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
             p[0] = p[1]
@@ -558,7 +559,7 @@ class InterpreterAccounting(InterpreterBase):
                     else:
                         self.logger.info('failed to force repair %s\t tables:%s' % (sourceFile, forceRepairTable))
                 #self.logger.info('success to repair %s\t tables:%s'%(sourceFile ,repairedTable))
-            failedTable = failedTableAgain#.difference(repairedTable)
+            failedTable = self._remove_not_required(failedTableAgain,sourceFile)#.difference(repairedTable)
             if len(failedTable) > 0:
                 self.logger.info('remain failed to process %s\t tables:%s!' %(sourceFile,failedTable))
             else:
@@ -658,6 +659,24 @@ class InterpreterAccounting(InterpreterBase):
         self.sqlParser.writeToStore(self.names[tableName])
 
 
+    def _remove_not_required(self,failedTable,fileName):
+        assert isinstance(failedTable,set) and fileName != NULLSTR\
+            ,"parameter failedTable(%s) must be a list and fileName(%s) must not be NULL!"%(failedTable,fileName)
+        notRequired = self.gJsonBase['repair_lists']['notRequired']
+        company,reportTime,reportType,code = self._get_time_type_by_name(fileName)
+        notRequiredLists = set()
+        for tableName in failedTable:
+            #if notRequired["公司名称"] != NULLSTR:
+                #公司名称为空时,表示notRequired列表对公司名称不做要求
+            if tableName in notRequired.keys():
+                if reportTime in notRequired[tableName]["报告时间"] and reportType in notRequired[tableName]["报告类型"]:
+                    notRequiredLists.add(tableName)
+        if len(notRequiredLists) > 0:
+            self.logger.info("it is not needed to repair %s\t tables:%s"%(fileName, notRequiredLists))
+            failedTable = failedTable.difference(notRequiredLists)
+        return failedTable
+
+
     def _check_repair_lists(self,company,reportTime,reportType,failedTable):
         assert company != NULLSTR and reportTime != NULLSTR and reportType != NULLSTR and isinstance(failedTable,set) \
             , "Parameter: company(%s) reportTime(%s) reportType(%s) must not be NULL and failedTable(%s) must be set!" % (
@@ -688,9 +707,9 @@ class InterpreterAccounting(InterpreterBase):
                     #return isRepairListsInvalid, tableList, sourceFile
                 #    self.logger.warning("%s failed to find %s in interpreterBase.repair_lists %s"%(self.gConfig['sourcefile'],failedTable,tableList))
         except Exception as e:
-            print(e)
-            self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json!'
-                              %(company,reportTime,reportType,failedTable))
+            #print(e)
+            self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json: %s!'
+                              %(company,reportTime,reportType,failedTable,str(e)))
         return isRepairListsInvalid,tableList,sourceFile
 
 
@@ -760,7 +779,10 @@ class InterpreterAccounting(InterpreterBase):
 
     def _check_table_file(self,company, reportType, reportTime,tableFile):
         companyCheck,timeCheck,typeCheck,codeCheck = self._get_time_type_by_name(tableFile)
-        isOK = (companyCheck == company and timeCheck == reportTime and typeCheck == reportType)
+        fileDefault = self.gJsonBase['repair_lists']['fileDefault']
+        # 对于某些表确实没有的,可采用 通用数据: 适合所有年报数据.xlxs填充
+        isOK = (companyCheck == company and timeCheck == reportTime and typeCheck == reportType) \
+               or (tableFile == fileDefault)
         return isOK
 
 

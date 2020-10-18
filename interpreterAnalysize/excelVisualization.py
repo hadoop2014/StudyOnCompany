@@ -226,13 +226,14 @@ class ExcelVisualization(InterpreterBase):
         maxrow = sheet.max_row
         maxwidth = self.dictTables[tableName]['maxwidth']
         minwidth = self.dictTables[tableName]['minwidth']
+        marginwidth = self.dictTables[tableName]['marginwidth']
         startrow = self.dictTables[tableName]['startrow']
         widthAdjust = 0
         col = sheet[col_letter]
         #跳过标题行
         for i in range(startrow + 1,maxrow):
             if len(str(col[i].value)) > widthAdjust:
-                widthAdjust = len(str(col[i].value))
+                widthAdjust = len(str(col[i].value)) + marginwidth
         widthAdjust = min(widthAdjust,maxwidth)
         widthAdjust = max(widthAdjust,minwidth)
         return widthAdjust

@@ -627,7 +627,7 @@ class DocParserSql(DocParserBase):
 
 
     def _discard_unnecessary_row(self,dataFrame,tableName):
-        maxHeaders = self.dictTables[tableName]['maxHeaders'] + 1
+        maxHeaders = self.dictTables[tableName]['maxHeaders']
         fieldFromHeader = self.dictTables[tableName]['fieldFromHeader']
         if fieldFromHeader == NULLSTR:
             #对于合并所有者权益变动表,无形资产情况,分季度主要财务数据等表,不需要对多余的行进行裁剪
