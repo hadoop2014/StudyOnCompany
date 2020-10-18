@@ -17,11 +17,11 @@ class MyTestCase(unittest.TestCase):
 
     def run_interpreter_yacc(self):
         interpreterAccounting = InterpreterAssemble().interpreter_assemble('accounting')
-        interpreterAccounting.initialize()
+        interpreterAccounting.initialize(dictParameter={'sourcefile':interpreterAccounting.gConfig['sourcefile']})
         #interpreterAccounting.docParser._set_dataset(list([0,1,2,3,4,8,44,83,84,85]))
         #interpreterAccounting.docParser._set_dataset(list([0, 5,9,19,20,37,38,65,84,89]))
         #interpreterAccounting.docParser._set_dataset(list([0,1,3,6,7,8,9,13,24,53,73,97,127]))
-        interpreterAccounting.docParser._set_dataset(list([0,41,42]))
+        interpreterAccounting.docParser._set_dataset(list([0,5,6,7,41,42]))
         interpreterAccounting.docParser.remove_checkpoint_files(list([interpreterAccounting.gConfig['sourcefile']]))
         interpreterAccounting.doWork(debug=True,tracking=False)
 

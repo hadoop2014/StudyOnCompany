@@ -108,8 +108,8 @@ class InterpreterAccounting(InterpreterBase):
             # TABLE optional TIME DISCARD TIME解决康龙化成：2019年年度报告中主要会计数据的表头不规范, 两个TIME直接插入一个DISCARD
             # TABLE optional HEADER HEADER 专门用于解决杰瑞股份2016,2017,2018,2019年年度报告中现金流量表补充资料,无形资产情况搜索不到的情况.
             tableName = self._get_tablename_alias(str.strip(p[1]))
-            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             #interpretPrefix必须用\n做连接,lexer需要用到\n
+            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
             self.logger.info("fetchtable %s -> %s :%s page %d!" % (p[1],tableName,interpretPrefix.replace('\n',' '),self.currentPageNumber))
             if len(self.names[tableName]['page_numbers']) != 0:
                 # 处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景,实际通过语法规则,已经规避了该问题
@@ -119,11 +119,10 @@ class InterpreterAccounting(InterpreterBase):
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
-            #unit = self.names['unit']
-            #currency = self.names['currency']
-            #company = self.names['company']
-            self.names['公司名称'] = self.names['company']
+            if self.names['公司名称'] == NULLSTR:
+                self.names['公司名称'] = self.names['company']
             self.names['货币单位'] = self._unit_transfer(self.names['unit'])
+            self.names['unit'] = NULLSTR
             self.names['货币名称'] = self.names['currency']
             #if self.names['公司地址'] == NULLSTR:
             #    self.names['公司地址'] = self.names['address']
@@ -148,10 +147,6 @@ class InterpreterAccounting(InterpreterBase):
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
-            #unit = NULLSTR
-            #currency = self.names['currency']
-            #tableBegin = False
-            #self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency)
             self._process_fetch_table(tableName, tableBegin=False, interpretPrefix=interpretPrefix)#, unit, currency)
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
 
@@ -290,10 +285,6 @@ class InterpreterAccounting(InterpreterBase):
                     self.names.update({'报告时间':years})
                 if self.names['报告类型'] == NULLSTR and slice.type == 'REPORT':
                     self.names.update({'报告类型':self._get_report_alias(slice.value)})
-                #if self.names['公司地址'] == NULLSTR and slice.type == 'LOCATION':
-                #    self.names.update({'公司地址': slice.value})
-            #self.logger.info('fetchtitle %s %s %s%s page %d'
-            #        % (self.names['公司地址'],self.names['公司名称'],self.names['报告时间'],self.names['报告类型'],self.currentPageNumber))
             prefix = ' '.join([str(slice) for slice in p if slice is not None])
             self.logger.debug('fetchtitle %s page %d '%(prefix,self.currentPageNumber))
             p[0] = prefix
@@ -513,7 +504,7 @@ class InterpreterAccounting(InterpreterBase):
         if self.docParser.is_file_in_checkpoint(fileName):
             self.logger.info('the file %s is already in checkpointfile,no need to process!'%fileName)
             return
-        self.logger.info("\n\n%s parse is starting!\n\n" % (fileName))
+        self.logger.info("%s parse is starting!\n" % (fileName))
         self._fill_time_type_by_name(self.gConfig['sourcefile'])
         self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
         #初始化process_info,否则计算出来的结果不正确
@@ -529,19 +520,28 @@ class InterpreterAccounting(InterpreterBase):
                          ,str(self.names['货币单位']),self.names["注册地址"]]))
         failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
+            repairedTable = self._process_repair_table(failedTable)
+            failedTableAgain = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
             self.logger.info('success to process %s\tprocess_info:' % sourceFile + str(self.sqlParser.process_info))
-            self.logger.info("all table is success fetched %s!\n"%(sourceFile))
-            self.docParser.save_checkpoint(fileName)
-            resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time),'failedTable': failedTable})
+            if len(repairedTable) > 0:
+                forceRepairTableFailed = repairedTable & failedTableAgain
+                if len(forceRepairTableFailed) == 0:
+                    self.logger.info('success to force repair %s\t tables:%s' % (sourceFile, repairedTable))
+                else:
+                    self.logger.info('failed to force repair %s\t tables:%s' % (sourceFile, repairedTable))
+            if len(failedTableAgain) > 0:
+                self.logger.info('remain failed to process %s\t tables:%s!' %(sourceFile,failedTable))
+            else:
+                self.logger.info("all table is success processed %s!\n" % (sourceFile))
+                self.docParser.save_checkpoint(fileName)
+            resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time),'failedTable': failedTableAgain})
         else:
             self.logger.info('failed to fetch %s\t tables:%s!\n' % (sourceFile, failedTable))
-            self.logger.info('now start to repair the fetch failed tables!\n')
+            #self.logger.info('now start to repair the fetch failed tables!\n')
             #通过repair_list对表进行恢复,返回可能回恢复的列表
             repairedTable = self._process_repair_table(failedTable)
             #再次获取failedTable,表示在进行表恢复操作后,仍然失败的表
             failedTableAgain = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
-            #去掉尝试修复而没有修复的表
-            #repairedTable = repairedTable.difference(failedTableAgain)
             self.logger.info('success to fetch %s\t process_info:' % sourceFile + str(self.sqlParser.process_info))
             self.logger.info('failed to fetch %s\t tables:%s!' % (sourceFile, failedTable))
             if len(repairedTable) > 0:
@@ -558,8 +558,7 @@ class InterpreterAccounting(InterpreterBase):
                         self.logger.info('success to force repair %s\t tables:%s' % (sourceFile, forceRepairTable))
                     else:
                         self.logger.info('failed to force repair %s\t tables:%s' % (sourceFile, forceRepairTable))
-                #self.logger.info('success to repair %s\t tables:%s'%(sourceFile ,repairedTable))
-            failedTable = self._remove_not_required(failedTableAgain,sourceFile)#.difference(repairedTable)
+            failedTable = self._remove_not_required(failedTableAgain,sourceFile)
             if len(failedTable) > 0:
                 self.logger.info('remain failed to process %s\t tables:%s!' %(sourceFile,failedTable))
             else:
@@ -574,31 +573,13 @@ class InterpreterAccounting(InterpreterBase):
 
     def _process_fetch_table(self, tableName, tableBegin, interpretPrefix) :#, unit=NULLSTR, currency=NULLSTR, company=NULLSTR):
         assert tableName is not None and tableName != NULLSTR, 'tableName must not be None'
-        #self.names[tableName].update({'tableName': tableName, 'unit': unit, 'currency': currency
-        #                             ,'company':company
-        #                             ,'tableBegin': tableBegin
-        #                             ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
         self.names[tableName].update({'tableName': tableName,'tableBegin': tableBegin
                                      ,'公司简称':self.names['公司简称'],'报告时间': self.names['报告时间'],'报告类型': self.names['报告类型']
                                      ,'page_numbers': self.names[tableName]['page_numbers'] + list([self.currentPageNumber])})
-        #self.names['货币单位'] = self._unit_transfer(unit)
         if self.names[tableName]['tableEnd'] == False:
             self.docParser._merge_table(self.names[tableName], interpretPrefix)
             if self.names[tableName]['tableEnd'] == True:
                 self._parse_table(tableName)
-                '''
-                if self.names["公司地址"] == NULLSTR:
-                    self.names["公司地址"] = self.names["注册地址"]
-                self.names[tableName].update({'公司代码': self.names['公司代码'], '公司简称': self.names['公司简称']
-                                                 , '公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
-                                                 , '报告类型': self.names['报告类型']
-                                                 , '公司地址': self.names['公司地址']
-                                                 , '行业分类': self.names['行业分类']
-                                                 , '货币单位': self.names['货币单位']})
-                self.excelParser.writeToStore(self.names[tableName])
-                self.sqlParser.writeToStore(self.names[tableName])
-                '''
-        #self.logger.info('\nprefix: %s:'%interpretPrefix.replace('\n','\t') + str(self.names[tableName]))
 
 
     def _process_critical_table(self,tableName = '关键数据表'):
@@ -606,37 +587,17 @@ class InterpreterAccounting(InterpreterBase):
         table = self._construct_table(tableName)
         self.names[tableName].update({'tableName': tableName,'table':table, 'tableBegin': True,"tableEnd":True})
         self._parse_table(tableName)
-        '''
-        if self.names["公司地址"] == NULLSTR:
-            self.names["公司地址"] = self.names["注册地址"]
-        self.names[tableName].update({'公司代码': self.names['公司代码'], '公司简称': self.names['公司简称']
-                                     ,'公司名称': self.names['公司名称'], '报告时间': self.names['报告时间']
-                                     ,'报告类型': self.names['报告类型']
-                                     ,'公司地址': self.names['公司地址']
-                                     ,'行业分类': self.names['行业分类']
-                                     ,'货币单位': self.names['货币单位']})
-        #self.names[tableName].update({"table":table})
-        #self.names[tableName].update({"tableName":tableName})
-        #self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
-        self.excelParser.writeToStore(self.names[tableName])
-        self.sqlParser.writeToStore(self.names[tableName])
-        '''
 
 
     def _process_repair_table(self,failedTable):
-        assert isinstance(failedTable,set) and len(failedTable) > 0, "failedTable must be a set and not be NULL"
-        #isRepaired = False
+        assert isinstance(failedTable,set), "failedTable must be a set and not be NULL"
         company,reportTime,reportType = self.names['公司简称'],self.names['报告时间'],self.names['报告类型']
         isRepairListsInvalid, tableList, sourceFile = self._check_repair_lists(company,reportTime,reportType,failedTable)
-        #self.names[tableName].update({"table": table})
         repairedTable = set()
         if isRepairListsInvalid == False:
             return repairedTable
-        #for tableName in sorted(failedTable):
         for tableName in sorted(tableList):
-            self.logger.debug('\n')
-            self.logger.debug('now start to repair %s'%tableName)
-            #table = self._repair_table(company,reportTime,reportType, tableName)
+            self.logger.info('now start to repair %s'%tableName)
             table = self._repair_table(sourceFile, tableName)
             if len(table) > 0:
                 self.names[tableName].update({'tableName': tableName, 'table': table, 'tableBegin': True, "tableEnd": True})
@@ -666,8 +627,6 @@ class InterpreterAccounting(InterpreterBase):
         company,reportTime,reportType,code = self._get_time_type_by_name(fileName)
         notRequiredLists = set()
         for tableName in failedTable:
-            #if notRequired["公司名称"] != NULLSTR:
-                #公司名称为空时,表示notRequired列表对公司名称不做要求
             if tableName in notRequired.keys():
                 if reportTime in notRequired[tableName]["报告时间"] and reportType in notRequired[tableName]["报告类型"]:
                     notRequiredLists.add(tableName)
@@ -704,11 +663,8 @@ class InterpreterAccounting(InterpreterBase):
                     isRepairListsInvalid = True
                 else:
                     self.logger.info('%s failed to load data from %s' % (self.gConfig['sourcefile'], sourceFile))
-                    #return isRepairListsInvalid, tableList, sourceFile
-                #    self.logger.warning("%s failed to find %s in interpreterBase.repair_lists %s"%(self.gConfig['sourcefile'],failedTable,tableList))
         except Exception as e:
-            #print(e)
-            self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json: %s!'
+            self.logger.debug('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json: %s!'
                               %(company,reportTime,reportType,failedTable,str(e)))
         return isRepairListsInvalid,tableList,sourceFile
 
@@ -718,64 +674,18 @@ class InterpreterAccounting(InterpreterBase):
             ,"Parameter: sourceFile(%s) tableName(%s) must not be NULL!" % (sourceFile, tableName)
         table = list()
         try:
-            #if isinstance(tableList, list) and tableName in tableList and tableFile != NULLSTR:
-            #    sourceFile = os.path.join(filePath, tableFile)
-            #    if os.path.exists(sourceFile):
             dataFrame = pd.read_excel(sourceFile, sheet_name=tableName, header=None, dtype=str)
             dataFrame.fillna(NULLSTR, inplace=True)
-            # table = np.array(dataFrame).tolist()
             table = dataFrame.values.tolist()
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
-            #    else:
-            #        self.logger.info('%s failed to load data from %s' % (self.gConfig['sourcefile'], sourceFile))
-            #else:
-            #    self.logger.warning("%s failed to find %s in interpreterBase.repair_lists %s" % (
-            #    self.gConfig['sourcefile'], tableName, tableList))
         except XLRDError as e:
             print(e)
             self.logger.info('failed to find %s in %s' % (tableName, sourceFile))
         except Exception as e:
             print(e)
             self.logger.error('some error occured when repair %s %s'%(os.path.split(sourceFile)[-1],tableName))
-        #    self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json!'
-        #                     % (company, reportTime, reportType, tableName))
         return table
 
-
-    '''
-    def _repair_table(self,company,reportTime,reportType,tableName):
-        assert company != NULLSTR and reportTime != NULLSTR and reportType != NULLSTR and tableName != NULLSTR \
-              ,"Parameter: company(%s) reportTime(%s) reportType(%s) tableName(%s) must not be NULL!"%(company,reportTime,reportType,tableName)
-        repair_lists = self.gJsonBase['repair_lists']
-        table = list()
-        sourceFile = NULLSTR
-        try:
-            tableList = repair_lists[company][reportType][reportTime]['tableList']
-            tableFile = repair_lists[company][reportType][reportTime]['tableFile']
-            assert self._check_table_file(company,reportType,reportTime,tableFile) \
-                   ,"file: %s is wrong ,it is not match %s %s %s"%(tableFile,company,reportTime,reportType)
-            filePath = repair_lists['filePath']
-            if isinstance(tableList,list) and tableName in tableList and tableFile != NULLSTR:
-                sourceFile = os.path.join(filePath,tableFile)
-                if os.path.exists(sourceFile):
-                    dataFrame = pd.read_excel(sourceFile,sheet_name=tableName,header=None,dtype=str)
-                    dataFrame.fillna(NULLSTR,inplace=True)
-                    #table = np.array(dataFrame).tolist()
-                    table = dataFrame.values.tolist()
-                    table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table]
-                else:
-                    self.logger.info('%s failed to load data from %s'%(self.gConfig['sourcefile'],sourceFile))
-            else:
-                self.logger.warning("%s failed to find %s in interpreterBase.repair_lists %s"%(self.gConfig['sourcefile'],tableName,tableList))
-        except XLRDError as e:
-            print(e)
-            self.logger.info('failed to find %s in %s'%(tableName,sourceFile))
-        except Exception as e:
-            print(e)
-            self.logger.info('failed to fetch config %s %s %s %s in repair_lists of interpreterBase.json!'
-                              %(company,reportTime,reportType,tableName))
-        return table
-    '''
 
     def _check_table_file(self,company, reportType, reportTime,tableFile):
         companyCheck,timeCheck,typeCheck,codeCheck = self._get_time_type_by_name(tableFile)
@@ -796,10 +706,6 @@ class InterpreterAccounting(InterpreterBase):
 
 
     def _fill_time_type_by_name(self, filename):
-        #time = self._standardize('\\d+年',filename)
-        #type = self._standardize('|'.join(self.gJsonBase['报告类型']),filename)
-        #company = self._standardize(self.gJsonInterpreter['DISCARD'],filename)
-        #code = self._standardize('（\\d+）',filename)
         company,time,type,code = self._get_time_type_by_name(filename)
         if self.names['报告时间'] == NULLSTR and time is not NaN:
             self.names["报告时间"] = time
@@ -909,8 +815,6 @@ class InterpreterAccounting(InterpreterBase):
         if dictParameter is not None:
             self.docParser._load_data(dictParameter['sourcefile'])
             self.gConfig.update(dictParameter)
-        else:
-            self.docParser._load_data()
 
 
 def create_object(gConfig,memberModuleDict):
