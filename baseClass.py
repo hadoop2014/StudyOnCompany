@@ -210,7 +210,7 @@ class BaseClass():
         try:
             conn.execute(sql)
             conn.commit()
-            self.logger.info('success to execute sql(脚本执行成功):\n%s' % sql)
+            self.logger.debug('success to execute sql(脚本执行成功):\n%s' % sql)
         except Exception as e:
             # 回滚
             conn.rollback()

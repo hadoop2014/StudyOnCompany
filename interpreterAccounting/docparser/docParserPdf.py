@@ -116,10 +116,12 @@ class DocParserPdf(DocParserBase):
         if len(page_numbers) == 1 and isTableStart == False and processedTable == NULLSTR:
             #这种情况下表明解释器在搜索时出现了误判,需要重置搜索条件,解决三诺生物2019年年报第60,61页出现了错误的合并资产负责表,真正的在第100页.
             #这种情况下还需要判断processedTable是否有效,如果有效,说明已经搜索到了,此时忽略isTableStart
-            self.logger.warning('failed to fetchtable %s witch is invalid,prefix : %s page %d!'
+            self.logger.warning('failed to fetchtable %s witch has invalid data,prefix : %s page %d!'
                                 %(tableName,self.interpretPrefix.replace('\n',' '),page_numbers[0]))
             dictTable.update({'tableBegin': False})
             dictTable.update({'tableEnd': False})
+            #解决尚荣医疗：2018年年度报告,合并所有者权益变动表在第二页搜索不到时,不再连续往下搜索,p106,107
+            dictTable.update({'page_numbers':list()})
             self.interpretPrefix = NULLSTR
             return dictTable
         if isinstance(savedTable, list):

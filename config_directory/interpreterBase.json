@@ -140,8 +140,8 @@
 
 
   "repair_lists": {
-    "#filePath": "working_directory/interpreterAccounting/docparser/docParserPdf/",
-    "filePath": "program_directory/interpreterAccounting/",
+    "filePath": "working_directory/interpreterAccounting/docparser/docParserPdf/",
+    "#filePath": "program_directory/interpreterAccounting/",
     "fileDefault": "通用数据：适用所有年度报告.xlsx",
     "notRequired": {
       "分季度主要财务数据": {

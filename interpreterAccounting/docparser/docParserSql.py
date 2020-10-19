@@ -159,6 +159,9 @@ class DocParserSql(DocParserBase):
         self.dataTable = dictTable
         table = dictTable['table']
         tableName = dictTable['tableName']
+        if len(table) == 0:
+            self.logger.error('failed to process %s, the table is empty'%tableName)
+            return
 
         #if dictTable['tableEnd'] == True:
         self.process_info.update({tableName:{'processtime':time.time()}})
@@ -184,8 +187,8 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_header_standardize(dataframe,tableName)
 
         #如果dataframe之有一行数据，说明从docParserPdf推送过来的数据是不正确的：只有表头，没有任何有效数据。
-        if dataframe.shape[0] <= 1:
-            self.logger.error("failed to process %s, the table has only on row:%s"%(tableName,dataframe.values))
+        if dataframe.shape[0] <= 1 or dataframe.shape[1] <= 1:
+            self.logger.error("failed to process %s, the table has no data:%s,shape %s"%(tableName,dataframe.values,dataframe.shape))
             self.process_info.pop(tableName)
             return
 
@@ -515,12 +518,17 @@ class DocParserSql(DocParserBase):
             try:
                 if isinstance(value,str):
                     value = value.replace('\n', NULLSTR).replace(' ', NULLSTR).replace(NONESTR,NULLSTR)\
-                        .replace('/',NULLSTR).replace('）',NULLSTR).replace('（',NULLSTR)
+                        .replace('/',NULLSTR)
+                    #海天味业2015年报:1)现金流量表补充资料, (减少以“ ( ) ”号填列) 2)合并所有者权益变动表,(减少以“ ( ) ”号填列)
+                    value = re.sub(r'（([\d.,]+)）','-\g<1>',value)
+                    value = value.replace('）',NULLSTR).replace('（',NULLSTR)
                     #解决迪安诊断2018年财报主要会计数据中,把最后一行拆为"归属于上市公司股东的净资产（元"和"）"
                     #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充
                     value = re.sub('.*-$',NULLSTR,value)
                     #尚荣医疗2017年年报,现金流量表补充资料中的无效值用 '一'填充
                     value = re.sub('^一$',NULLSTR,value)
+                    # 尚荣医疗2018年年报,现金流量表补充资料中的无效值用 '一'填充
+                    value = re.sub('^—$', NULLSTR, value)
             except Exception as e:
                 print(e)
             return value
@@ -638,6 +646,7 @@ class DocParserSql(DocParserBase):
                 #对于超出最大头长度的行进行拆解,解决华侨城A 2018年包中,合并资产负债表 有三列数据,其中最后一列数据是不需要的
                 dataFrame.iloc[maxHeaders:maxRows] = NaN
                 dataFrame = dataFrame.dropna(axis=0).copy()
+                self.logger.warning("%s has %d row,only %s is needed!"%(tableName,maxRows,maxHeaders))
         return dataFrame
 
 

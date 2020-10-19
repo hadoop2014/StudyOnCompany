@@ -109,7 +109,7 @@ class InterpreterAccounting(InterpreterBase):
             # TABLE optional HEADER HEADER 专门用于解决杰瑞股份2016,2017,2018,2019年年度报告中现金流量表补充资料,无形资产情况搜索不到的情况.
             tableName = self._get_tablename_alias(str.strip(p[1]))
             #interpretPrefix必须用\n做连接,lexer需要用到\n
-            interpretPrefix = '\n'.join([slice for slice in p if slice is not None]) + '\n'
+            interpretPrefix = '\n'.join([slice.strip() for slice in p if slice is not None]) + '\n'
             self.logger.info("fetchtable %s -> %s :%s page %d!" % (p[1],tableName,interpretPrefix.replace('\n',' '),self.currentPageNumber))
             if len(self.names[tableName]['page_numbers']) != 0:
                 # 处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景,实际通过语法规则,已经规避了该问题
@@ -142,8 +142,8 @@ class InterpreterAccounting(InterpreterBase):
             #TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
             #TABLE optional COMPANY tail已经被TABLE optional unit tail取代
             tableName = self._get_tablename_alias(str.strip(p[1]))
-            interpretPrefix = '\n'.join([str(slice) for slice in p[:-1] if slice is not None]) + '\n'
-            self.logger.info("fetchtable warning(reach tail) %s -> %s : %s page %d" % (p[1], tableName, interpretPrefix.replace('\n',''), self.currentPageNumber))
+            interpretPrefix = '\n'.join([str(slice).strip() for slice in p[:-1] if slice is not None]) + '\n'
+            self.logger.info("fetchtable warning(reach tail) %s -> %s : %s page %d" % (p[1], tableName, interpretPrefix.replace('\n',' '), self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
@@ -180,6 +180,8 @@ class InterpreterAccounting(InterpreterBase):
             #TABLE optional '(' LABEL ')'解决海天味业2016年年报 出现" 近三年主要会计数据和财务指标(一) 主要会计数据",第一个TABLE '近三年主要会计数据和财务指标'是误判
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
             self.logger.warning("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
+            #针对上一页fetchtable reatch tail时,下一页搜索到错误的TABLE,不再继续往下搜索
+            self.docParser.interpretPrefix = NULLSTR
             p[0] = p[1] + p[2]
 
 
@@ -441,10 +443,11 @@ class InterpreterAccounting(InterpreterBase):
                     | CURRENCY DISCARD UNIT
                     | '（' UNIT '）'
                     | '(' DISCARD CURRENCY UNIT ')'
-                    | '（' DISCARD CURRENCY UNIT '）' '''
+                    | '(' CURRENCY UNIT ')'
+                    | '（' DISCARD CURRENCY UNIT '）'  '''
             #  '（' DISCARD CURRENCY UNIT '）' 解决尚荣医疗 2019年报中出现 （除特别注明外，金额单位均为人民币）
             # CURRENCY DISCARD UNIT解决华侨城A2019年报P123,合并股东权益变动表的搜索不到问题
-            # '(' DISCARD CURRENCY UNIT ')'解决海天味业2016年年报中出现 (金额单位：人民币元)
+            # '(' DISCARD CURRENCY UNIT ')' 或  '(' CURRENCY UNIT ')' 解决海天味业2016年年报中出现 (金额单位：人民币元)
             for slice in p.slice:
                 if slice.type == 'UNIT':
                     unit = slice.value.split(':')[-1].split('：')[-1]
