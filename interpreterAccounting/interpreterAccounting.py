@@ -147,7 +147,8 @@ class InterpreterAccounting(InterpreterBase):
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
                 self.docParser.interpretPrefix = NULLSTR
                 return
-            self._process_fetch_table(tableName, tableBegin=False, interpretPrefix=interpretPrefix)#, unit, currency)
+            self.docParser.interpretPrefix = interpretPrefix
+            #self._process_fetch_table(tableName, tableBegin=False, interpretPrefix=interpretPrefix)#, unit, currency)
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
 
 
