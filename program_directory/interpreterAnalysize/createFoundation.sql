@@ -77,7 +77,7 @@ select
     a.公司名称,
     a.公司地址,
     a.行业分类,
-    a.在职员工的数量合计,
+    case when a.在职员工的数量合计 != '' then a.在职员工的数量合计 else a.当期领取薪酬员工总人数 end as 在职员工的数量合计,
     f.支付给职工及为职工支付的现金,
     c.应付职工薪酬 as 应付职工薪酬（期末余额）,
     c.应付职工薪酬（期初余额）,
@@ -159,7 +159,7 @@ from
             then round(replace(研发投入金额,',','') - replace(本期费用化研发投入,',',''),2) else replace(本期资本化研发投入,',','') end
             as 本期资本化研发投入修正
     from 关键数据表 x
-    where x.在职员工的数量合计 != '' and x.报告类型 = '年度报告'
+    where (x.在职员工的数量合计 != '' or x.当期领取薪酬员工总人数 != '') and x.报告类型 = '年度报告'
 )a
 left join
 (
@@ -177,7 +177,7 @@ left join
         case when x.归属于上市公司股东的净资产 is not NULL
             then
                 case when x.货币单位 > 1 then x.货币单位 * replace(x.归属于上市公司股东的净资产,',','') else replace(x.归属于上市公司股东的净资产,',','') end
-            else replace(z.所有者权益（或股东权益）合计,',','') end as 归属于上市公司股东的净资产,
+            else replace(z.归属于母公司所有者权益（或股东权益）合计,',','') end as 归属于上市公司股东的净资产,
         case when x.总资产 is not NULL
             then
                 case when x.货币单位 > 1 then x.货币单位 * replace(x.总资产,',','') else replace(x.总资产,',','')  end
@@ -208,7 +208,7 @@ left join
 (
     select x.*,
         y.应付职工薪酬 as 应付职工薪酬（期初余额）,
-        replace(y.所有者权益（或股东权益）合计,',','') as 归属于上市公司股东的净资产（上期）,
+        replace(y.归属于母公司所有者权益（或股东权益）合计,',','') as 归属于上市公司股东的净资产（上期）,
         replace(y.负债和所有者权益（或股东权益）总计,',','') as 总资产（上期）
     from 合并资产负债表 x
     left join 合并资产负债表 y

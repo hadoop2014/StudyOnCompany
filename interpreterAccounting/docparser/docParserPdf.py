@@ -174,15 +174,18 @@ class DocParserPdf(DocParserBase):
                 if isTableStart and isTableEnd:
                     processedTable = table
                     break
-            elif isTableEnd == True :
-                    processedTable = table
-                    break
             else:
-                #正对华侨城A 2018年年报, 合并资产负债表 的 中间表出现在某一页,但是被拆成了两个表,需要被重新组合成一张新的表
-                if processedTable == NULLSTR:
+                if isTableEnd == True:
                     processedTable = table
+                    if isTableStart == False:
+                        #解决（002812）恩捷股份：2018年年度报告.PDF,主要会计数据分成两样,第二页出现一张统一控制下企业合并,和主要会计数据表字段完全一样,导致误判
+                        break
                 else:
-                    processedTable.extend(table)
+                    #正对华侨城A 2018年年报, 合并资产负债表 的 中间表出现在某一页,但是被拆成了两个表,需要被重新组合成一张新的表
+                    if processedTable == NULLSTR:
+                        processedTable = table
+                    else:
+                        processedTable.extend(table)
                 self.logger.warning('%s 的中间页出现的表被拆成多份,在此对表进行合并,just for debug!'%tableName)
         return processedTable,isTableEnd,isTableStart
 

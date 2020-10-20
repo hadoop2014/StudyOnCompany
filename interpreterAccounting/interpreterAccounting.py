@@ -427,6 +427,8 @@ class InterpreterAccounting(InterpreterBase):
         def p_company(p):
             '''company : COMPANY
                        | LOCATION COMPANY'''
+            #解决恩捷股份：2019年年度报告中公司名误判为'天津'的问题,因为LOCATION并不是每次都有,所以要初始化掉
+            self.names['address'] = NULLSTR
             for slice in p.slice:
                 if slice.type == 'COMPANY':
                     self.names['company'] = self._eliminate_duplicates(slice.value)
@@ -448,6 +450,7 @@ class InterpreterAccounting(InterpreterBase):
             #  '（' DISCARD CURRENCY UNIT '）' 解决尚荣医疗 2019年报中出现 （除特别注明外，金额单位均为人民币）
             # CURRENCY DISCARD UNIT解决华侨城A2019年报P123,合并股东权益变动表的搜索不到问题
             # '(' DISCARD CURRENCY UNIT ')' 或  '(' CURRENCY UNIT ')' 解决海天味业2016年年报中出现 (金额单位：人民币元)
+            self.names['currency'] = NULLSTR  #currency不是每一次都有,所以必须初始化掉
             for slice in p.slice:
                 if slice.type == 'UNIT':
                     unit = slice.value.split(':')[-1].split('：')[-1]

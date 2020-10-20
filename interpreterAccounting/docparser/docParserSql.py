@@ -314,7 +314,7 @@ class DocParserSql(DocParserBase):
         #isRowAllInvalid = (dataFrame.iloc[0] == NULLSTR).all()
         #康泰生物：2016年年度报告.PDF合并所有者权益变动表第一行全部为None
         #isRowAllInvalid = self._is_row_all_blank(dataFrame.iloc[0]) or self._is_row_all_none(dataFrame.iloc[0])
-        if self._is_row_all_invalid(dataFrame.iloc[0]):
+        while self._is_row_all_invalid(dataFrame.iloc[0]):
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
             dataFrame.iloc[0] = NaN
@@ -717,12 +717,15 @@ class DocParserSql(DocParserBase):
     def _is_first_field_in_row(self, row_or_field, tableName):
         #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
         #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
+        isFirstFieldInRow = False
         if row_or_field is None or row_or_field is NaN:
-            return False
+            return isFirstFieldInRow
         if isinstance(row_or_field, list):
             firstField = row_or_field[0]
         else:
             firstField = row_or_field
+        if firstField == NULLSTR or firstField == NONESTR:
+            return isFirstFieldInRow
         fieldFirst = self.dictTables[tableName]["fieldFirst"]
         #解决部分主要会计数据表中,前面几个字段拼成一起的情况
         fieldFirst = '^' + fieldFirst + '$'
