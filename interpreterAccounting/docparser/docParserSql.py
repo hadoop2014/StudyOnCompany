@@ -26,13 +26,19 @@ class DocParserSql(DocParserBase):
     def _construct_lexers(self):
         dictLexer = dict()
         for tableName in self.dictTables.keys():
-            dictTokens = self._get_dict_tokens(tableName)
-            lexer = self._get_lexer(dictTokens, tableName)
-            dictLexer.update({tableName: {'lexer': lexer, "dictToken": dictTokens}})
-            self.logger.info('success to create lexer for %s!' % tableName)
+            #构建field lexer
+            dictTokens = self._get_dict_tokens(tableName,tokenName='field')
+            lexer = self._get_lexer(dictTokens)
+            dictLexer.update({tableName: {'lexerField': lexer, "dictTokenField": dictTokens}})
+            self.logger.info('success to create field lexer for %s!' % tableName)
+            #构建header lexer
+            dictTokens = self._get_dict_tokens(tableName,tokenName='header')
+            lexer = self._get_lexer(dictTokens)
+            dictLexer[tableName].update({'lexerHeader': lexer, "dictTokenHeader": dictTokens})
+            self.logger.info('success to create field lexer for %s!' % tableName)
         return dictLexer
 
-    def _get_lexer(self, dictTokens, tableName):
+    def _get_lexer(self, dictTokens):
         # Tokens
         # 采用动态变量名
         tokens = list(dictTokens.keys())
@@ -58,36 +64,42 @@ class DocParserSql(DocParserBase):
         lexer = lex.lex(outputdir=self.working_directory)
         return lexer
 
-    def _get_dict_tokens(self, tableName):
+
+    def _get_dict_tokens(self, tableName,tokenName='field'):
         # 对所有的表字段进行标准化
-        standardFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'], tableName)
+        #standardFields = self._get_standardized_field(self.dictTables[tableName][tokenName + 'Name'], tableName)
+        standardFields = self._get_standardized_keyword(self.dictTables[tableName][tokenName + 'Name']
+                                                        , self.dictTables[tableName][tokenName + 'Standardize'])
         if len(standardFields) != len(set(standardFields)):
-            self.logger.warning("the fields of %s has duplicated:%s!" % (tableName, ' '.join(standardFields)))
+            self.logger.warning("the (fields/headers) of %s has duplicated:%s!" % (tableName, ' '.join(standardFields)))
         # 去掉标准化字段后的重复字段
         standardFields = list(set(standardFields))
         # 建立token和标准化字段之间的索引表
-        fieldsIndex = dict([('FIELD' + str(index), field) for index, field in enumerate(standardFields)])
+        fieldsIndex = dict([(tokenName.upper() + str(index), field) for index, field in enumerate(standardFields)])
         # 对字段别名表进行标准化,并去重
         dictAlias = {}
-        for key, value in self.dictTables[tableName]['fieldAlias'].items():
-            keyStandard = self._get_standardized_field(key, tableName)
-            valueStandard = self._get_standardized_field(value, tableName)
+        for key, value in self.dictTables[tableName][tokenName+'Alias'].items():
+            #keyStandard = self._get_standardized_field(key, tableName)
+            #valueStandard = self._get_standardized_field(value, tableName)
+            keyStandard = self._get_standardized_keyword(key, self.dictTables[tableName][tokenName+'Standardize'])
+            valueStandard = self._get_standardized_keyword(value, self.dictTables[tableName][tokenName+'Standardize'])
             if keyStandard != valueStandard:
                 dictAlias.update({keyStandard: valueStandard})
             else:
                 self.logger.warning("%s has same field after standardize in fieldAlias:%s %s" % (tableName, key, value))
         # 判断fieldAlias中经过标准化后是否有重复字段,如果存在,则配置是不合适的
-        if len(self.dictTables[tableName]['fieldAlias'].keys()) != len(dictAlias.keys()):
+        if len(self.dictTables[tableName][tokenName+'Alias'].keys()) != len(dictAlias.keys()):
             self.logger.warning('It is same field after standard in fieldAlias of %s:%s'
-                                % (tableName, ' '.join(self.dictTables[tableName]['fieldAlias'].keys())))
+                                % (tableName, ' '.join(self.dictTables[tableName][tokenName+'Alias'].keys())))
         # 判断fieldAlias中是否存在fieldName中不存在的字段,如果存在,则配置上存在错误.
         fieldDiff = set(dictAlias.values()).difference(set(standardFields))
         if len(fieldDiff) > 0:
             if NaN in fieldDiff:
-                self.logger.error('error in fieldAlias of %s, NaN is exists' % tableName)
+                self.logger.warning('error in (fieldAlias/headerAlias) of %s, NaN is exists' % tableName)
             else:
-                self.logger.error(
-                    "error in fieldAlias of %s,field not exists : %s" % (tableName, ' '.join(list(fieldDiff))))
+                self.logger.warning(
+                    "error in (fieldAlias/headerAlias) of %s,(field/header) not exists : %s"
+                    % (tableName, ' '.join(list(fieldDiff))))
         # 在dictAlias中去掉fieldName中不存在的字段
         dictAlias = dict([(key, value) for key, value in dictAlias.items() if value not in fieldDiff])
         # 对fieldAlias和fieldName进行合并
@@ -99,33 +111,38 @@ class DocParserSql(DocParserBase):
 
         # 最后把VIRTUALFIELD加上
         # dictTokens.update({'VIRTUALFIELD':self.gJsonInterpreter['VIRTUALFIELD']})
-        discardField = self.dictTables[tableName]['fieldDiscard']
-        standardDiscardFields = self._get_standardized_field(discardField, tableName)
+        discardField = self.dictTables[tableName][tokenName+'Discard']
+        #standardDiscardFields = self._get_standardized_field(discardField, tableName)
+        standardDiscardFields = self._get_standardized_keyword(discardField, self.dictTables[tableName][tokenName+'Standardize'])
         if len(standardDiscardFields) > len(set(standardDiscardFields)):
             # 如果fieldDiscard中在标准化后存在重复字段,则去重
             self.logger.warning(
                 '%s has duplicated discardField after standardize:%s!' % (tableName, ' '.join(standardDiscardFields)))
             standardDiscardFields = list(set(standardDiscardFields))
-        virtualField = self.gJsonInterpreter['VIRTUALFIELD']
-        fieldsIndex.update({'VIRTUALFIELD': virtualField})
+        virtualField = self.gJsonInterpreter['VIRTUAL'+tokenName.upper()]
+        fieldsIndex.update({'VIRTUAL'+tokenName.upper(): virtualField})
         # 增加一个默认值
         standardDiscardFields = standardDiscardFields + [virtualField]
         # 判断标准化后的fieldDiscard和Merged后的Key值是否还有重复,有则去掉
         fieldJoint = set(standardDiscardFields) & set(dictMerged.keys())
         if len(fieldJoint) > 0:
             if NaN in fieldJoint:
-                self.logger.error('%s fieldDiscard has NaN field' % tableName)
+                self.logger.warning('%s (fieldDiscard/headerDiscard) has NaN field' % tableName)
             else:
-                self.logger.error(
-                    "%s has dupicated fieldDiscard with fieldName:%s!" % (tableName, ' '.join(list(fieldJoint))))
+                self.logger.warning(
+                    "%s has dupicated (fieldDiscard/headerDiscard) with (fieldName/headerName):%s!" % (tableName, ' '.join(list(fieldJoint))))
             standardDiscardFields = list(set(standardDiscardFields).difference(fieldJoint))
         for value in standardDiscardFields:
             if value is not NaN:
                 dictMerged.setdefault(virtualField, []).append(value)
 
         # 构造dictTokens,token搜索的正则表达式即字段名的前面加上patternPrefix,后面加上patternSuffix
-        patternPrefix = self.dictTables[tableName]['patternPrefix']
-        patternSuffix = self.dictTables[tableName]['patternSuffix']
+        if tokenName == 'field':
+            patternPrefix = self.dictTables[tableName]['patternPrefix']
+            patternSuffix = self.dictTables[tableName]['patternSuffix']
+        else:
+            patternPrefix = NULLSTR
+            patternSuffix = NULLSTR
         dictTokens = dict()
         for token, field in fieldsIndex.items():
             # 生成pattern时要逆序排列,确保长的字符串在前面
@@ -305,7 +322,7 @@ class DocParserSql(DocParserBase):
     def _process_header_merge_simple(self, dataFrame, tableName):
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
         mergedRow = None
-        firstHeader = self.dictTables[tableName]['header'][0]
+        #firstHeader = self.dictTables[tableName]['header'][0]
         lastIndex = 0
         # 增加blankFrame来驱动最后一个field的合并
         blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
@@ -405,8 +422,8 @@ class DocParserSql(DocParserBase):
         dataFrame.iloc[:,0] = dataFrame.iloc[:,0].apply(self._replace_fieldname)
         #row = row.apply(lambda value: value.replace('-', '－').replace('(', '（').replace(')', '）').replace('.', '．'))
         mergedColumn = reduce(self._merge, dataFrame.iloc[:, 0].tolist())
-        lexer = self.dictLexers[tableName]['lexer']
-        dictToken = self.dictLexers[tableName]['dictToken']
+        lexer = self.dictLexers[tableName]['lexerField']
+        dictToken = self.dictLexers[tableName]['dictTokenField']
         lexer.input(mergedColumn)
         dictFieldPos = dict({0:{"lexpos":0,'value':NULLSTR,'type':NULLSTR}})
         for index,tok in enumerate(lexer):

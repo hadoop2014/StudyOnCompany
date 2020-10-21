@@ -8,6 +8,7 @@
 from interpreterAccounting.docparser.docParserBaseClass import *
 import pdfplumber
 import csv
+import itertools
 from functools import reduce
 
 
@@ -151,6 +152,7 @@ class DocParserPdf(DocParserBase):
         if len(tables) == 1:
             #（000652）泰达股份：2019年年度报告.PDF P40页出现了错误的普通股现金分红情况表的语句,这个时候不能够把带有值的processedTable返回
             if len(page_numbers) == 1 and isTableStart == False:
+                self.logger.warning('failed to fetch %s whitch has invalid data:%s'%(tableName,processedTable))
                 processedTable = NULLSTR
             return processedTable, isTableEnd,isTableStart
         processedTable = NULLSTR
@@ -176,6 +178,9 @@ class DocParserPdf(DocParserBase):
                     break
                 elif isTableStart:
                     processedTable = table
+                else:
+                    #在第一页,没有搜索到表字段头的情况下搜索到了表尾,则是非法的: 荣盛发展2017年报P63 普通股现金分红情况表 出现了这种情况
+                    isTableEnd = False
             else:
                 if isTableEnd == True:
                     processedTable = table
@@ -213,8 +218,10 @@ class DocParserPdf(DocParserBase):
         isTableStart,isTableStartFirst,isTableStartSecond = False,False,False
         mergedFields = reduce(self._merge, fieldList)
         mergedFieldsSecond = reduce(self._merge, secondFieldList)
-        headerFirst = self.dictTables[tableName]["header"][0]
-        headerSecond = self.dictTables[tableName]["header"][1]
+        #headerFirst = self.dictTables[tableName]["header"][0]
+        #headerSecond = self.dictTables[tableName]["header"][1]
+        headerFirst = self.dictTables[tableName]["headerFirst"]
+        headerSecond = self.dictTables[tableName]["headerSecond"]
         fieldFirst = self.dictTables[tableName]['fieldFirst']
         assert fieldFirst != NULLSTR and headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
         #headerFirst,headerSecond,fieldFirst已经在_fields_replace_punctuate中把英文标点替换成中文了
@@ -224,7 +231,9 @@ class DocParserPdf(DocParserBase):
         #考虑两种情况,表头的第一个字段为空,则直接以fieldFirst来匹配,如果不为空,则以表头第一个字段 + fieldFirst 来匹配
         #patternHeaderFirst = '|'.join(['^' + field for field in fieldFirst.split('|')]
         #                            +['^' + headerFirst + field for field in fieldFirst.split('|')])
-        patternHeaderFirst = '|'.join(['^' + headerFirst + field for field in fieldFirst.split('|')])
+        #patternHeaderFirst = '|'.join(['^' + headerFirst + field for field in fieldFirst.split('|')])
+        patternHeaderFirst = '|'.join(['^' + header + field for (header,field)
+                                       in itertools.product(headerFirst.split('|'),fieldFirst.split('|'))])
         patternHeaderSecond = '|'.join(['^' + field for field in headerSecond.split('|')])
         if isinstance(mergedFields, str) and isinstance(patternHeaderFirst, str) :
             #mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)

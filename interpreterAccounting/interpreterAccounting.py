@@ -740,7 +740,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
     def _construct_table(self,tableNmae):
-        headers = self.dictTables[tableNmae]['header']
+        headers = self.dictTables[tableNmae]['headerName']
         fields = self.dictTables[tableNmae]['fieldName']
         assert isinstance(headers,list) and isinstance(fields,list)\
             ,"headers (%s) and fields(%s) must be list"%(str(headers),str(fields))

@@ -24,6 +24,7 @@ class DocParserBase(InterpreterBase):
         self.taskResult = os.path.join(self.gConfig['working_directory'],self.gConfig['taskResult'.lower()])
         #self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
 
+
     def _get_standardized_header(self,headerList,tableName):
         assert headerList is not None, 'sourceRow(%s) must not be None' % headerList
         fieldStandardize = self.dictTables[tableName]['headerStandardize']
@@ -33,13 +34,15 @@ class DocParserBase(InterpreterBase):
             standardizedFields = self._standardize(fieldStandardize, headerList)
         return standardizedFields
 
+
     def _is_header_in_row(self,row,tableName):
         isHeaderInRow = False
         if isinstance(row,list) == False:
             return isHeaderInRow
         elif len(row) <= 1:
             return isHeaderInRow
-        firstHeader = self.dictTables[tableName]['header'][0].split('|')
+        #firstHeader = self.dictTables[tableName]['header'][0].split('|')
+        firstHeader = self.dictTables[tableName]['headerFirst'].split('|')
         firstHeaderInRow = row[0]
         if firstHeader != NULLSTR and firstHeaderInRow in firstHeader:
             #解决中顺洁柔2019年报中,标题行出现"项目, None, None, None, None, None, None, None, None"的场景
@@ -55,6 +58,7 @@ class DocParserBase(InterpreterBase):
         isHeaderInRow = self._is_field_matched(headerStandardize, mergedRow)
         return isHeaderInRow
 
+
     def _is_field_matched(self,pattern,field):
         isFieldMatched = False
         if isinstance(pattern, str) and isinstance(field, str):
@@ -64,6 +68,7 @@ class DocParserBase(InterpreterBase):
                     isFieldMatched = True
         return isFieldMatched
 
+
     def _get_class_name(self, gConfig):
         parser_name = re.findall('DocParser(.*)', self.__class__.__name__).pop().lower()
         assert parser_name in gConfig['docformatlist'], \
@@ -71,8 +76,10 @@ class DocParserBase(InterpreterBase):
             (gConfig['docformatlist'], parser_name, self.__class__.__name__)
         return parser_name
 
+
     def saveCheckpoint(self):
         pass
+
 
     def getSaveFile(self):
         if self.model_savefile == NULLSTR:
@@ -84,11 +91,13 @@ class DocParserBase(InterpreterBase):
                 # 文件不存在
         return self.model_savefile
 
+
     def removeSaveFile(self):
         if self.model_savefile is not None:
             filename = os.path.join(os.getcwd(), self.model_savefile)
             if os.path.exists(filename):
                 os.remove(filename)
+
 
     def debug_info(self, info=None):
         if self.debugIsOn == False:
@@ -96,8 +105,10 @@ class DocParserBase(InterpreterBase):
         pass
         return
 
+
     def debug(self, layer, name=NULLSTR):
         pass
+
 
     def clear_logging_directory(self,logging_directory):
         assert logging_directory == self.logging_directory ,\
@@ -112,6 +123,7 @@ class DocParserBase(InterpreterBase):
                     os.remove(full_file)
                 except:
                    print('%s is not be removed'%full_file)
+
 
     # 装饰器，用于在unittest模式下，只返回一个数据，快速迭代
     @staticmethod
@@ -128,9 +140,11 @@ class DocParserBase(InterpreterBase):
                 return getdata(self,batch_size)
         return wapper
 
+
     @getdataForUnittest.__get__(object)
     def getTrainData(self,batch_size):
         return
+
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:

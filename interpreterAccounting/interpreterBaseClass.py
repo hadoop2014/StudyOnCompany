@@ -54,7 +54,7 @@ class InterpreterBase(BaseClass):
 
     def _fields_replace_punctuate(self,dictTables):
         for tableName in dictTables.keys():
-            dictTables[tableName].update({'header':list(map(self._replace_fieldname,self.dictTables[tableName]['header']))})
+            dictTables[tableName].update({'headerName':list(map(self._replace_fieldname,self.dictTables[tableName]['headerName']))})
             dictTables[tableName].update({'fieldName':list(map(self._replace_fieldname,self.dictTables[tableName]['fieldName']))})
             dictTables[tableName].update({'headerDiscard': list(map(self._replace_fieldname, self.dictTables[tableName]['headerDiscard']))})
             dictTables[tableName].update({'fieldDiscard': list(map(self._replace_fieldname, self.dictTables[tableName]['fieldDiscard']))})
@@ -65,9 +65,9 @@ class InterpreterBase(BaseClass):
                                        ,list(map(self._replace_fieldname,self.dictTables[tableName]['fieldAlias'].values()))))})
             dictTables[tableName].update(
                 {'maxFieldLen':reduce(max,list(map(len,dictTables[tableName]['fieldName'])))})
-            #dictTables[tableName].update({'maxHeaderNum':len(dictTables[tableName]['header'])})
+            #dictTables[tableName].update({'maxHeaderNum':len(dictTables[tableName]['headerName'])})
         self.logger.warning("函数_fields_replace_punctuate把interpreterAccounting.json中配置的所有表的字段名中的英文标点替换为中文的,"
-                            + "但是字段'header','fieldFirst','fieldLast'中采用了正则表达式,这要求正则表达式中不要出现'('')''-''.'等字符!")
+                            + "但是字段'headerName','fieldFirst','fieldLast'中采用了正则表达式,这要求正则表达式中不要出现'('')''-''.'等字符!")
         return dictTables
 
 
@@ -79,6 +79,16 @@ class InterpreterBase(BaseClass):
         else:
             standardizedFields = self._standardize(fieldStandardize,fieldList)
         return standardizedFields
+
+
+    def _get_standardized_keyword(self,keywordList,standardPattern):
+        assert keywordList is not None,'sourceRow(%s) must not be None'%keywordList
+        #fieldStandardize = self.dictTables[tableName]['fieldStandardize']
+        if isinstance(keywordList,list):
+            standardizedKeywords = [self._standardize(standardPattern,keyword) for keyword in keywordList]
+        else:
+            standardizedKeywords = self._standardize(standardPattern,keywordList)
+        return standardizedKeywords
 
 
     def _get_report_alias(self, report):
