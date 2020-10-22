@@ -226,9 +226,9 @@ class DocParserPdf(DocParserBase):
         #assert fieldFirst != NULLSTR and headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
         assert headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
         #headerFirst,headerSecond,fieldFirst已经在_fields_replace_punctuate中把英文标点替换成中文了
-        #headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
-        #headerSecond = headerSecond.replace('(', '（').replace(')', '）')
-        #fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
+        headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
+        headerSecond = headerSecond.replace('(', '（').replace(')', '）')
+        fieldFirst = fieldFirst.replace('(', '（').replace(')', '）')
         #考虑两种情况,表头的第一个字段为空,则直接以fieldFirst来匹配,如果不为空,则以表头第一个字段 + fieldFirst 来匹配
         #patternHeaderFirst = '|'.join(['^' + field for field in fieldFirst.split('|')]
         #                            +['^' + headerFirst + field for field in fieldFirst.split('|')])
@@ -237,8 +237,8 @@ class DocParserPdf(DocParserBase):
                                        in itertools.product(headerFirst.split('|'),fieldFirst.split('|'))])
         patternHeaderSecond = '|'.join(['^' + field for field in headerSecond.split('|')])
         if isinstance(mergedFields, str) and isinstance(patternHeaderFirst, str) :
-            #mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
-            mergedFields = self._replace_fieldname(mergedFields)
+            mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
+            #mergedFields = self._replace_fieldname(mergedFields)
             matched = re.search(patternHeaderFirst, mergedFields)
             if matched is not None:
                 isTableStartFirst = True
@@ -267,11 +267,11 @@ class DocParserPdf(DocParserBase):
         mergedFields = reduce(self._merge, fieldList)
         fieldLast = self.dictTables[tableName]["fieldLast"]
         #fieldLast 在self._fields_replace_punctuate中已经被替换过了
-        #fieldLast = fieldLast.replace('(','（').replace(')','）')  #在正则表达式中,'()'是元符号,需要替换成中文符号
+        fieldLast = fieldLast.replace('(','（').replace(')','）')  #在正则表达式中,'()'是元符号,需要替换成中文符号
         fieldLast = '|'.join([field + '$' for field in fieldLast.split('|')])
         if isinstance(mergedFields,str) and isinstance(fieldLast,str) and fieldLast != NULLSTR:
-            #mergedFields = mergedFields.replace('(','（').replace(')','）').replace(' ',NULLSTR)
-            mergedFields = self._replace_fieldname(mergedFields)
+            mergedFields = mergedFields.replace('(','（').replace(')','）').replace(' ',NULLSTR)
+            #mergedFields = self._replace_fieldname(mergedFields)
             matched = re.search(fieldLast,mergedFields)
             if matched is not None:
                 isTableEnd = True

@@ -194,6 +194,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional NUMERO
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
+                        | optional NAME
                         | NUMERIC
                         | empty '''
             # optional : discard 去掉，减少语法冲突
@@ -640,6 +641,8 @@ class InterpreterAccounting(InterpreterBase):
         for tableName in failedTable:
             if tableName in notRequired.keys():
                 if reportTime in notRequired[tableName]["报告时间"] and reportType in notRequired[tableName]["报告类型"]:
+                    notRequiredLists.add(tableName)
+                if company in notRequired[tableName]['公司简称']:
                     notRequiredLists.add(tableName)
         if len(notRequiredLists) > 0:
             self.logger.info("it is not needed to repair %s\t tables:%s"%(fileName, notRequiredLists))

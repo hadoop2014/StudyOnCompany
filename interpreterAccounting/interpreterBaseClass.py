@@ -59,8 +59,8 @@ class InterpreterBase(BaseClass):
             dictTables[tableName].update({'fieldName':list(map(self._replace_fieldname,self.dictTables[tableName]['fieldName']))})
             dictTables[tableName].update({'headerDiscard': list(map(self._replace_fieldname, self.dictTables[tableName]['headerDiscard']))})
             dictTables[tableName].update({'fieldDiscard': list(map(self._replace_fieldname, self.dictTables[tableName]['fieldDiscard']))})
-            dictTables[tableName].update({'fieldFirst': self._replace_fieldname(self.dictTables[tableName]['fieldFirst'])})
-            dictTables[tableName].update({'fieldLast': self._replace_fieldname(self.dictTables[tableName]['fieldLast'])})
+            #dictTables[tableName].update({'fieldFirst': self._replace_fieldname(self.dictTables[tableName]['fieldFirst'])})
+            #dictTables[tableName].update({'fieldLast': self._replace_fieldname(self.dictTables[tableName]['fieldLast'])})
             dictTables[tableName].update(
                 {'fieldAlias':dict(zip(list(map(self._replace_fieldname, self.dictTables[tableName]['fieldAlias'].keys()))
                                        ,list(map(self._replace_fieldname,self.dictTables[tableName]['fieldAlias'].values()))))})
@@ -116,15 +116,20 @@ class InterpreterBase(BaseClass):
         #所有英文标点替换成中文标点,避免和正则表达式中的保留字冲突
         field = field.replace('(','（').replace(')','）').replace(' ',NULLSTR)
         field = field.replace(':','：').replace('-','－').replace('—','－')
-        field = field.replace('.','．')
         #―‖为鱼跃医疗2016年年报中出现的不规范字符,等同于““
         field = field.replace('―','“').replace('‖','“')
+        #主营业务分行业情况 中用到了.,不能直接替换,要采用re.sub替换
+        field = field.replace('.','．')
+        #field = re.sub('(^\\d).','\g<1>．',field)
+        #field = re.sub('(^[一二三四五六七八九〇]).','\g<1>、',field)
+        #解决海螺水泥2014年报中,所有的处置,购置 误写为 购臵,处臵
+        field = re.sub('(处|购)臵','\g<1>置',field)
         #解决华侨城A 2018年年报无形资产情况表中出现 '1、将净利润调节为经营活动现金流量',替换成 '1．将净利润调节为经营活动现金流量'
         field = re.sub('(^\\d)(、)','\g<1>．',field)
         #解决海天味业2015年年报中,出现''2 现金及现金等价物净变动情况''
         field = re.sub('(^\\d)(?=[\\u4E00-\\u9FA5])', '\g<1>．', field)
         #解决尚荣医疗2019年年报中,无形资产情况表中出现' 一．二．',全部替换为' 一、 二、'
-        field = re.sub('(^[一二三四五六七八九])(．)','\g<1>、',field)
+        field = re.sub('(^[一二三四五六七八九〇])．','\g<1>、',field)
         # 解决尚荣医疗2019年年报中,无形资产情况表中出现“一” 情况
         field = re.sub('“一”(号填列)','“－”\g<1>',field)
         return field
