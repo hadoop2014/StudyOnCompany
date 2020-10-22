@@ -223,7 +223,8 @@ class DocParserPdf(DocParserBase):
         headerFirst = self.dictTables[tableName]["headerFirst"]
         headerSecond = self.dictTables[tableName]["headerSecond"]
         fieldFirst = self.dictTables[tableName]['fieldFirst']
-        assert fieldFirst != NULLSTR and headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
+        #assert fieldFirst != NULLSTR and headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
+        assert headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
         #headerFirst,headerSecond,fieldFirst已经在_fields_replace_punctuate中把英文标点替换成中文了
         #headerFirst = headerFirst.replace('(', '（').replace(')', '）')  # 在正则表达式中,'()'是元符号,需要替换成中文符号
         #headerSecond = headerSecond.replace('(', '（').replace(')', '）')

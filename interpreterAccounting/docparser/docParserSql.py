@@ -77,13 +77,18 @@ class DocParserSql(DocParserBase):
         # 建立token和标准化字段之间的索引表
         fieldsIndex = dict([(tokenName.upper() + str(index), field) for index, field in enumerate(standardFields)])
         # 对字段别名表进行标准化,并去重
+        passMatching = self.gJsonInterpreter['PASSMATCHING']
         dictAlias = {}
         for key, value in self.dictTables[tableName][tokenName+'Alias'].items():
             #keyStandard = self._get_standardized_field(key, tableName)
             #valueStandard = self._get_standardized_field(value, tableName)
             keyStandard = self._get_standardized_keyword(key, self.dictTables[tableName][tokenName+'Standardize'])
             valueStandard = self._get_standardized_keyword(value, self.dictTables[tableName][tokenName+'Standardize'])
-            if keyStandard != valueStandard:
+            if valueStandard == passMatching:
+                #把PASSMATCHING加入到dictTocken中
+                fieldsIndex.update({'PASMATCHING': passMatching})
+                dictAlias.update({key: passMatching})
+            elif keyStandard != valueStandard:
                 dictAlias.update({keyStandard: valueStandard})
             else:
                 self.logger.warning("%s has same field after standardize in fieldAlias:%s %s" % (tableName, key, value))
@@ -93,12 +98,14 @@ class DocParserSql(DocParserBase):
                                 % (tableName, ' '.join(self.dictTables[tableName][tokenName+'Alias'].keys())))
         # 判断fieldAlias中是否存在fieldName中不存在的字段,如果存在,则配置上存在错误.
         fieldDiff = set(dictAlias.values()).difference(set(standardFields))
+        #对passMatching特殊处理,允许其在dictAlias中存在,但不包括在header中
+        fieldDiff = fieldDiff.difference(set(list([passMatching])))
         if len(fieldDiff) > 0:
             if NaN in fieldDiff:
-                self.logger.warning('error in (fieldAlias/headerAlias) of %s, NaN is exists' % tableName)
+                self.logger.warning('warning in (fieldAlias/headerAlias) of %s, NaN is exists' % tableName)
             else:
                 self.logger.warning(
-                    "error in (fieldAlias/headerAlias) of %s,(field/header) not exists : %s"
+                    "warning in (fieldAlias/headerAlias) of %s,(field/header) not exists : %s"
                     % (tableName, ' '.join(list(fieldDiff))))
         # 在dictAlias中去掉fieldName中不存在的字段
         dictAlias = dict([(key, value) for key, value in dictAlias.items() if value not in fieldDiff])
@@ -188,14 +195,17 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_value_pretreat(dataframe,tableName)
 
         #针对合并所有者权益表的前三列空表头进行合并,对转置表进行预转置,使得其处理和其他表一致
-        dataframe = self._process_header_merge_simple(dataframe, tableName)
+        dataframe = self._process_header_merge_pretreat(dataframe, tableName)
 
         #把跨多个单元格的表字段名合并成一个
-        dataframe = self._process_field_merge_simple(dataframe,tableName)
+        dataframe = self._process_field_merge_simple(dataframe,tokenName='field',tableName=tableName)
         #dataframe = self._process_field_merge_simple_expired(dataframe, tableName)
 
         #去掉空字段及无用字段
         dataframe = self._process_field_discard(dataframe, tableName)
+
+        #对表进行转置,然后把跨多行的表头字段进行合并
+        dataframe = self._process_header_merge_simple(dataframe,tableName)
 
         #去掉无用的表头;同时对水平表进行转置,把字段名由index转为column
         dataframe = self._process_header_discard(dataframe, tableName)
@@ -284,6 +294,8 @@ class DocParserSql(DocParserBase):
                     value = re.sub('^）\\s*',NULLSTR,value)
                     value = re.sub('^同比增加',NULLSTR,value)#解决冀东水泥：2017年年度报告.PDF主要会计数据中的一列数据中出现'同比增加',导致_precess_header_merge_simple误判
                     value = re.sub('注$', NULLSTR, value)#解决康泰生物2018年年报中普通股现金分红情况表中出现中文字符'注',导致_process_merge_header_simple出问题
+                    value = re.sub('^增加', NULLSTR, value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
+                    value = re.sub('^减少', NULLSTR, value)
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
@@ -319,7 +331,7 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
 
-    def _process_header_merge_simple(self, dataFrame, tableName):
+    def _process_header_merge_pretreat(self, dataFrame, tableName):
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
         mergedRow = None
         #firstHeader = self.dictTables[tableName]['header'][0]
@@ -337,7 +349,7 @@ class DocParserSql(DocParserBase):
             dataFrame.iloc[0] = NaN
             dataFrame = dataFrame.dropna()
         for index, field in enumerate(dataFrame.iloc[:, 0]):
-            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
+            #isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
             isHeaderInMergedRow = self._is_header_in_row(mergedRow,tableName)
             isRowAllInvalid = self._is_row_all_invalid_exclude_blank(dataFrame.iloc[index])
@@ -349,7 +361,9 @@ class DocParserSql(DocParserBase):
                             dataFrame.iloc[lastIndex] = mergedRow
                             dataFrame.iloc[lastIndex + 1:index] = NaN
                         mergedRow = None
-                    elif isHorizontalTable == True :
+                    else:
+                        mergedRow = None
+                    '''elif isHorizontalTable == True :
                         if isRowNotAnyNone == True:
                             if self._is_first_field_in_row(mergedRow, tableName):
                                 if index > lastIndex + 1:
@@ -365,7 +379,7 @@ class DocParserSql(DocParserBase):
                                 mergedRow = None
                                 self.logger.warning('%s 出现某一列全部解析为None情况,just for debug!'%tableName)
                     else:
-                        mergedRow = None
+                        mergedRow = None'''
                 else:
                     if isHeaderInMergedRow == False:
                         #解决再升科技2018年年报,合并所有者权益变动表在每个分页中插入了表头
@@ -393,9 +407,11 @@ class DocParserSql(DocParserBase):
             #indexDiscardField = dataFrame.iloc[:, 0].isin(self._get_invalid_field())
             #dataFrame.loc[indexDiscardField] = NaN
             #解决（300326）凯利泰：2018年年度报告.PDF，普通股现金分红请表，除了第一行解析正常为“”
+            '''
+            #这段代码被_process_header_merge_simple取代
             indexDiscardField = [not self._is_first_field_in_row(x,tableName) for x in dataFrame.iloc[:,0]]
             indexDiscardField[0] = False
-            dataFrame.loc[indexDiscardField] = NaN
+            dataFrame.loc[indexDiscardField] = NaN'''
             dataFrame = dataFrame.dropna(axis=0)
             #把第一列做成索引
             dataFrame.set_index(0,inplace=True)
@@ -408,7 +424,7 @@ class DocParserSql(DocParserBase):
 
 
     @loginfo()
-    def _process_field_merge_simple(self,dataFrame:DataFrame,tableName):
+    def _process_field_merge_simple(self,dataFrame:DataFrame,tokenName,tableName):
         # 解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
         # 解决贝达药业2018年年报无形资产情况表解析不正确
         # 解决大立科技2018年财报中主要会计数据解析不准确的问题,原因是总资产(元)前面接了一个空字段,空字段的行需要合并到下一行中
@@ -422,13 +438,13 @@ class DocParserSql(DocParserBase):
         dataFrame.iloc[:,0] = dataFrame.iloc[:,0].apply(self._replace_fieldname)
         #row = row.apply(lambda value: value.replace('-', '－').replace('(', '（').replace(')', '）').replace('.', '．'))
         mergedColumn = reduce(self._merge, dataFrame.iloc[:, 0].tolist())
-        lexer = self.dictLexers[tableName]['lexerField']
-        dictToken = self.dictLexers[tableName]['dictTokenField']
+        lexer = self.dictLexers[tableName]['lexer'+tokenName.title()]
+        dictToken = self.dictLexers[tableName]['dictToken'+tokenName.title()]
         lexer.input(mergedColumn)
         dictFieldPos = dict({0:{"lexpos":0,'value':NULLSTR,'type':NULLSTR}})
         for index,tok in enumerate(lexer):
             dictFieldPos.update({index:{'lexpos':tok.lexpos,'value':tok.value,'type':tok.type}})
-            self.logger.info('the lexer matched the field %d %s %s %s\t%s'%(index,tok.lexpos,tok.value,tok.type,dictToken[tok.type]))
+            self.logger.info('%s the %s lexer matched the field:%d %s %s %s\t%s'%(tableName,tokenName,index,tok.lexpos,tok.value,tok.type,dictToken[tok.type]))
 
         countPos = len(dictFieldPos.keys())
         if countPos <= 1:
@@ -455,7 +471,7 @@ class DocParserSql(DocParserBase):
             if fieldPos == lexPos:
                 if fieldPos > lexPos and posIndex < countPos:
                     #如果fieldPos 比 lexPos大,说明lex没有匹配到字段开头,则存在错误
-                    self.logger.error("failed to match the whole field %s %s match %s"%(tableName,dictFieldPos[posIndex]['value'],field))
+                    self.logger.error("failed to match the whole (field/header) %s %s match %s"%(tableName,dictFieldPos[posIndex]['value'],field))
                 #说明在该位置搜索到了字段
                 if self._is_valid(field):
                     if index > lastIndex + 1 and mergedRow is not None:
@@ -491,6 +507,21 @@ class DocParserSql(DocParserBase):
                 lastIndex = index
             else:
                 mergedRow = self._get_merged_row(dataFrame.iloc[index].tolist(), mergedRow, isFieldJoin=True)
+        return dataFrame
+
+
+    def _process_header_merge_simple(self,dataFrame:DataFrame, tableName):
+        isHorizontalTable = self.dictTables[tableName]['horizontalTable']
+        if isHorizontalTable == False:
+            #对于非转置表,在_process_header_merge_pretreat中实际对header字段做了合并,除非对字段做标准化,否则暂时不需要再次进行合并
+            #return dataFrame
+            pass
+        dataFrame.set_index(dataFrame.columns[0],inplace=True)
+        dataframe = dataFrame.T.reset_index()
+        self._process_field_merge_simple(dataframe,tokenName="header",tableName=tableName)
+        dataFrame = dataframe.T.reset_index().T
+        dataFrame.set_index(dataFrame.columns[0],inplace=True)
+        dataFrame = dataFrame.T.copy()
         return dataFrame
 
 
