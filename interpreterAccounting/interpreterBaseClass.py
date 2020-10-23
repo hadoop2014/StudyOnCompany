@@ -51,24 +51,65 @@ class InterpreterBase(BaseClass):
         self.tableKeyword = self.gJsonInterpreter['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
         self.dictTables = self._fields_replace_punctuate(self.dictTables)
+        self.dictTables = self._fields_standardized(self.dictTables)
+
+
+    def _fields_standardized(self,dictTables):
+        for tableName in dictTables.keys():
+            for tokenName in ['field','header']:
+                standardFields = self._get_standardized_keyword(dictTables[tableName][tokenName + 'Name']
+                                                                ,dictTables[tableName][tokenName + 'Standardize'])
+                dictTables[tableName].update({tokenName + 'Name':standardFields})
+                discardFields = self._get_standardized_keyword(dictTables[tableName][tokenName + 'Discard']
+                                                               ,dictTables[tableName][tokenName + 'Standardize'])
+                dictTables[tableName].update({tokenName + 'Discard':discardFields})
+                passMatching = self.gJsonInterpreter['PASSMATCHING']
+                dictAlias = {}
+                for key, value in dictTables[tableName][tokenName + 'Alias'].items():
+                    keyStandard = self._get_standardized_keyword(key,dictTables[tableName][tokenName + 'Standardize'])
+                    valueStandard = self._get_standardized_keyword(value, dictTables[tableName][tokenName + 'Standardize'])
+                    if valueStandard == passMatching:
+                        # 把PASSMATCHING加入到dictTocken中
+                        dictAlias.update({key: passMatching})
+                    elif keyStandard != valueStandard:
+                        dictAlias.update({keyStandard: valueStandard})
+                    else:
+                        self.logger.warning("%s has same field after standardize in fieldAlias:%s %s" % (tableName, key, value))
+                if len(dictTables[tableName][tokenName + 'Alias'].keys()) != len(dictAlias.keys()):
+                    self.logger.warning('It is same field after standard in fieldAlias of %s:%s'
+                                        % (tableName, ' '.join(dictTables[tableName][tokenName + 'Alias'].keys())))
+                dictTables[tableName].update({tokenName + 'Alias':dictAlias})
+        return dictTables
 
 
     def _fields_replace_punctuate(self,dictTables):
+        #对header,field中的英文标点符号进行替换
+        passMatching = self.gJsonInterpreter['PASSMATCHING']
+
         for tableName in dictTables.keys():
-            dictTables[tableName].update({'headerName':list(map(self._replace_fieldname,self.dictTables[tableName]['headerName']))})
-            dictTables[tableName].update({'fieldName':list(map(self._replace_fieldname,self.dictTables[tableName]['fieldName']))})
-            dictTables[tableName].update({'headerDiscard': list(map(self._replace_fieldname, self.dictTables[tableName]['headerDiscard']))})
-            dictTables[tableName].update({'fieldDiscard': list(map(self._replace_fieldname, self.dictTables[tableName]['fieldDiscard']))})
-            #dictTables[tableName].update({'fieldFirst': self._replace_fieldname(self.dictTables[tableName]['fieldFirst'])})
-            #dictTables[tableName].update({'fieldLast': self._replace_fieldname(self.dictTables[tableName]['fieldLast'])})
-            dictTables[tableName].update(
-                {'fieldAlias':dict(zip(list(map(self._replace_fieldname, self.dictTables[tableName]['fieldAlias'].keys()))
-                                       ,list(map(self._replace_fieldname,self.dictTables[tableName]['fieldAlias'].values()))))})
+            for tokenName in ['field','header']:
+                dictTables[tableName].update({tokenName + 'Name':list(map(self._replace_fieldname,dictTables[tableName][tokenName + 'Name']))})
+                #dictTables[tableName].update({'fieldName':list(map(self._replace_fieldname,dictTables[tableName]['fieldName']))})
+                dictTables[tableName].update({tokenName + 'Discard': list(map(self._replace_fieldname, dictTables[tableName][tokenName + 'Discard']))})
+                #dictTables[tableName].update({'fieldDiscard': list(map(self._replace_fieldname, dictTables[tableName]['fieldDiscard']))})
+                #dictTables[tableName].update({'fieldFirst': self._replace_fieldname(self.dictTables[tableName]['fieldFirst'])})
+                #dictTables[tableName].update({'fieldLast': self._replace_fieldname(self.dictTables[tableName]['fieldLast'])})
+                #headerAlias中有正则表达式,不能直接替换
+                dictAlias = dict()
+                for key,value in dictTables[tableName][tokenName+'Alias'].items():
+                    if value != passMatching:
+                        dictAlias.update({self._replace_fieldname(key):self._replace_fieldname(value)})
+                    else:
+                        #PASSMATCHING用于正则表达式,不能做符号替换
+                        dictAlias.update({key:value})
+                dictTables[tableName].update({tokenName+'Alias':dictAlias})
+                #dictTables[tableName].update(
+                #    {tokenName + 'Alias':dict(zip(list(map(self._replace_fieldname, dictTables[tableName][tokenName +'Alias'].keys()))
+                #                       ,list(map(self._replace_fieldname,dictTables[tableName][tokenName + 'Alias'].values()))))})
             dictTables[tableName].update(
                 {'maxFieldLen':reduce(max,list(map(len,dictTables[tableName]['fieldName'])))})
-            #dictTables[tableName].update({'maxHeaderNum':len(dictTables[tableName]['headerName'])})
         self.logger.warning("函数_fields_replace_punctuate把interpreterAccounting.json中配置的所有表的字段名中的英文标点替换为中文的,"
-                            + "但是字段'headerName','fieldFirst','fieldLast'中采用了正则表达式,这要求正则表达式中不要出现'('')''-''.'等字符!")
+                            + "而'headerFirst','headerSecond'中采用了正则表达式,这要求正则表达式中不要出现'('')''-''.'等字符!")
         return dictTables
 
 
@@ -133,6 +174,7 @@ class InterpreterBase(BaseClass):
         # 解决尚荣医疗2019年年报中,无形资产情况表中出现“一” 情况
         field = re.sub('“一”(号填列)','“－”\g<1>',field)
         return field
+
 
     def _replace_value(self,value):
         value = value.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
