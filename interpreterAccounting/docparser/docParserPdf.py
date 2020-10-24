@@ -248,9 +248,14 @@ class DocParserPdf(DocParserBase):
             matched = re.search(patternHeaderSecond, mergedFieldsSecond)
             if matched is not None:
                 isTableStartSecond = True
-        if tableName == '无形资产情况':
+        if tableName == '无形资产情况' :
             #解决杰瑞股份2018年年报无形资产情况,同一个页面出现了另外一张表,两张表的第一列完全相同,所以需要判断第二列结果才行
             #星源材质2019年年报中无形资产情况出现在页尾,且只有一行表头: 项目 土地使用权 专利权 非专利技术 软件及其他 合计. 这个时候isTableStartFirst失效
+            #isTableStart = isTableStartFirst and isTableStartSecond
+            isTableStart = isTableStartSecond
+        elif tableName == '主营业务分行业经营情况':
+            #解决宝来特2014年报,主营业务分行业经营情况表所在的页,出现两张第一列完全相同的表
+            #解决九安医疗2014年财报,主营业务分行业经营情况 出现在页尾,且只有一行: 营业收入 营业成本 毛利率营业收入比上年同期增减营业成本比上年同期增减毛利率比上年同期
             #isTableStart = isTableStartFirst and isTableStartSecond
             isTableStart = isTableStartSecond
         else:

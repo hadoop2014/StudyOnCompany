@@ -314,7 +314,10 @@ class DocParserSql(DocParserBase):
                     value = re.sub('^增加', NULLSTR, value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
                     value = re.sub('^减少', NULLSTR, value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
                     value = re.sub('^下降', NULLSTR, value)  # 解决海螺水泥2014年报中主营业物质的数据中出现,'下降'
-                    value = re.sub('(^[一二三四五六七八九十〇]{1,2})、', NULLSTR, value)
+                    value = re.sub('^储$', NULLSTR, value) #解决尚荣医疗2014年报,合并所有者权益变动表,、上年年末余额 这一行中出现 "储","备
+                    value = re.sub('^备-$',NULLSTR, value)
+                    value = re.sub('(^[一二三四五六七八九十〇]{1,2})、', NULLSTR, value) #替换掉 headerStandardize中的(?![一二三四五六七八九十〇])
+                    #value = re.sub('^（%）$',NULLSTR,value) #解决高德红外2014年报中 主营业务分行业经营情况表中,出现（%）
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
@@ -794,7 +797,7 @@ class DocParserSql(DocParserBase):
             column0 = dataFrame.columns.values[0]
             standardizedColumns0 = self._get_standardized_keyword(column0,self.dictTables[tableName][tokenName + 'Standardize'])
             aliasedColumns0 = self._get_aliased_fields(standardizedColumns0, tokenName, tableName)
-            if aliasedColumns0 != NaN:
+            if aliasedColumns0 is not NaN:
                 dataFrame.columns.values[0] = aliasedColumns0
         #统一命名之后,再次进行标准化
         #dataFrame = self._process_field_standardize(dataFrame, tableName)

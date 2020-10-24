@@ -247,20 +247,26 @@ class InterpreterAccounting(InterpreterBase):
                          | CRITICAL '-'
                          | CRITICAL empty
                          | CRITICAL LOCATION
-                         | CRITICAL COMPANY'''
+                         | CRITICAL COMPANY
+                         | CRITICAL '（' DISCARD '）' term'''
+            #CRITICAL '（' DISCARD '）' term''' 解决（002675）东诚药业：2014年年度报告.PDF,出现: 公司员工总数（合并口径） 774 人
             critical = self._get_critical_alias(p[1])
+            value = NULLSTR
             if self.names[critical] == NULLSTR :
-                self.names.update({critical:p[2]})
-                if critical == '公司地址':
-                    if p[2] != NULLSTR:
-                        self.names.update({critical:self._eliminate_duplicates(p[2])})
-                    else:
-                        self.names.update({critical:self.names['注册地址']})
-                elif critical == '公司名称' and p[2] != NULLSTR :
-                    self.names.update({critical:self._eliminate_duplicates(p[2])})
-                elif critical == '注册地址' and p[2] != NULLSTR:
-                    self.names.update({critical: self._eliminate_duplicates(p[2])})
-            self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
+                for slice in p.slice:
+                    if slice.type == 'term' or slice.type == 'LOCATION' or slice.type == 'COMPANY':
+                        value = slice.value
+                        self.names.update({critical:value})
+                        if critical == '公司地址':
+                            if p[2] != NULLSTR:
+                                self.names.update({critical:self._eliminate_duplicates(value)})
+                            else:
+                                self.names.update({critical:self.names['注册地址']})
+                        elif critical == '公司名称' and value != NULLSTR :
+                            self.names.update({critical:self._eliminate_duplicates(value)})
+                        elif critical == '注册地址' and value != NULLSTR:
+                            self.names.update({critical: self._eliminate_duplicates(value)})
+            self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,value,self.currentPageNumber))
 
 
         def p_fetchdata_wrong(p):
@@ -640,9 +646,13 @@ class InterpreterAccounting(InterpreterBase):
         notRequiredLists = set()
         for tableName in failedTable:
             if tableName in notRequired.keys():
-                if reportTime in notRequired[tableName]["报告时间"] and reportType in notRequired[tableName]["报告类型"]:
+                if not notRequired[tableName]['公司简称'] \
+                    and reportTime in notRequired[tableName]["报告时间"] \
+                    and reportType in notRequired[tableName]["报告类型"] :
                     notRequiredLists.add(tableName)
-                if company in notRequired[tableName]['公司简称']:
+                if company in notRequired[tableName]['公司简称'] \
+                    and reportTime in notRequired[tableName]["报告时间"] \
+                    and reportType in notRequired[tableName]["报告类型"]:
                     notRequiredLists.add(tableName)
         if len(notRequiredLists) > 0:
             self.logger.info("it is not needed to repair %s\t tables:%s"%(fileName, notRequiredLists))
