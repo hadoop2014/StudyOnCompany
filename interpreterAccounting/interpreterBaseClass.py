@@ -64,6 +64,7 @@ class InterpreterBase(BaseClass):
                                                                ,dictTables[tableName][tokenName + 'Standardize'])
                 dictTables[tableName].update({tokenName + 'Discard':discardFields})
                 virtualPassMatching = self.gJsonInterpreter['VIRTUALPASSMATCHING']
+                virtualStoping = self.gJsonInterpreter['VIRTUALSTOPING']
                 dictAlias = {}
                 for key, value in dictTables[tableName][tokenName + 'Alias'].items():
                     keyStandard = self._get_standardized_keyword(key,dictTables[tableName][tokenName + 'Standardize'])
@@ -71,6 +72,8 @@ class InterpreterBase(BaseClass):
                     if valueStandard == virtualPassMatching:
                         # 把PASSMATCHING加入到dictTocken中
                         dictAlias.update({key: virtualPassMatching})
+                    elif valueStandard == virtualStoping:
+                        dictAlias.update({key: virtualStoping})
                     elif keyStandard != valueStandard:
                         dictAlias.update({keyStandard: valueStandard})
                     else:

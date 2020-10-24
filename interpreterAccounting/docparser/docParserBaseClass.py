@@ -44,7 +44,8 @@ class DocParserBase(InterpreterBase):
         #firstHeader = self.dictTables[tableName]['header'][0].split('|')
         firstHeader = self.dictTables[tableName]['headerFirst'].split('|')
         firstHeaderInRow = row[0]
-        if firstHeader != NULLSTR and firstHeaderInRow in firstHeader:
+        #if firstHeader != NULLSTR and firstHeaderInRow in firstHeader:
+        if firstHeaderInRow != NULLSTR and firstHeaderInRow in firstHeader:
             #解决中顺洁柔2019年报中,标题行出现"项目, None, None, None, None, None, None, None, None"的场景
             isHeaderInRow = True
             return isHeaderInRow

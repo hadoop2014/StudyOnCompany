@@ -149,7 +149,7 @@ class DocParserSql(DocParserBase):
             if NaN in fieldJoint:
                 self.logger.warning('%s (fieldDiscard/headerDiscard) has NaN field' % tableName)
             else:
-                self.logger.warning(
+                self.logger.debug(
                     "%s has dupicated (fieldDiscard/headerDiscard) with (fieldName/headerName):%s!" % (tableName, ' '.join(list(fieldJoint))))
             standardDiscardFields = list(set(standardDiscardFields).difference(fieldJoint))
         for value in standardDiscardFields:
@@ -623,7 +623,7 @@ class DocParserSql(DocParserBase):
             if commonFiled == "报告时间":
                 assert dictTable[commonFiled] != NULLSTR,'dictTable[%s] must not be null!'%commonFiled
                 #公共字段为报告时间时,需要特殊处理
-                if fieldFromHeader != "":
+                if len(fieldFromHeader) != 0:
                     #针对分季度财务指标,指标都是同一年的,但是分了四个季度
                     value =  [commonFiled,*[str(int(dictTable[commonFiled].split('年')[0])) + '年'
                                        for i in range(len(dataFrame.iloc[:,0])-1)]]
@@ -641,7 +641,7 @@ class DocParserSql(DocParserBase):
             dataFrame.insert(index,column=countColumns,value=value)
             countColumns += 1
             index += 1
-        dataFrame = self._process_field_from_header(dataFrame,fieldFromHeader,index,countColumns)
+        dataFrame = self._process_field_from_header(dataFrame,fieldFromHeader,index,countColumns,tableName)
         return dataFrame
 
 
@@ -669,12 +669,43 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
 
-    def _process_field_from_header(self,dataFrame,fieldFromHeader,index,countColumns):
+    def _process_field_from_header(self,dataFrame,fieldFromHeader,index,countColumns,tableName):
+        assert isinstance(fieldFromHeader,list),"parameter fieldFromHeader must be a list!"
+        isHorizontalTable = self.dictTables[tableName]['horizontalTable']
         #在公共字段后插入由表头转换来的字段
-        if fieldFromHeader != NULLSTR:
-            value = dataFrame.index.values
-            value[0] = fieldFromHeader
-            dataFrame.insert(index,column=countColumns,value=value)
+        if len(fieldFromHeader) != 0:
+            values = dataFrame.index.values.tolist()
+            if isHorizontalTable == True:
+                #isHorizontalTable=True,fieldFromHeader有效的情况下,只有主营业务分行业经营情况表,需要做特殊处理
+                insertValues = list([NULLSTR]*len(values))
+                dictFieldPoses = dict([(values.index(field),field) for field in fieldFromHeader if field in values])
+                fieldPoses = sorted(list(dictFieldPoses.keys()))
+                if len(fieldPoses) >= 1:
+                    for posIndex,fieldPos in enumerate(fieldPoses[1:]):
+                        insertValues[fieldPoses[posIndex]:fieldPos] = values[fieldPoses[posIndex]:fieldPos]
+                        insertValues[0] = dictFieldPoses[fieldPoses[posIndex]]
+                        if fieldPoses[posIndex] != 0:
+                            insertValues[fieldPoses[posIndex]] = NaN
+                        dataFrame.insert(index, column=countColumns, value=insertValues)
+                        insertValues = list([NULLSTR] * len(values))
+                        index = index + 1
+                        countColumns = countColumns + 1
+                    #最后一个字段的处理
+                    insertValues[fieldPoses[-1]:] = values[fieldPoses[-1]:]
+                    insertValues[0] = dictFieldPoses[fieldPoses[-1]]
+                    if fieldPoses[-1] != 0:
+                        insertValues[fieldPoses[-1]] = NaN
+                    dataFrame.insert(index, column=countColumns, value=insertValues)
+                    dataFrame = dataFrame.dropna(axis=0).copy()
+                    if len(fieldPoses) == len(fieldFromHeader):
+                        self.logger.info('%s: success to process all field from header,%s all in %s' % (tableName, fieldFromHeader, values))
+                    else:
+                        self.logger.warning('%s: success to process %d field from header,but %s not all in %s' % (len(fieldPoses),tableName, fieldFromHeader, values))
+                else:
+                    self.logger.error('%s: failed to process field from header,%s not in %s'%(tableName,fieldFromHeader,values))
+            else:
+                values[0] = fieldFromHeader[0]
+                dataFrame.insert(index,column=countColumns,value=values)
         return dataFrame
 
 
@@ -757,6 +788,13 @@ class DocParserSql(DocParserBase):
         dataFrame.iloc[:,0] = standardizedFields
         aliasedFields = self._get_aliased_fields(dataFrame.iloc[:,0].tolist(),tokenName, tableName)
         dataFrame.iloc[:,0] = aliasedFields
+        if tokenName == 'header':
+            # 对columns[0]做特殊处理
+            column0 = dataFrame.columns.values[0]
+            standardizedColumns0 = self._get_standardized_keyword(column0,self.dictTables[tableName][tokenName + 'Standardize'])
+            aliasedColumns0 = self._get_aliased_fields(standardizedColumns0, tokenName, tableName)
+            if aliasedColumns0 != NaN:
+                dataFrame.columns.values[0] = aliasedColumns0
         #统一命名之后,再次进行标准化
         #dataFrame = self._process_field_standardize(dataFrame, tableName)
         dataFrame = dataFrame.dropna(axis = 0).copy()
@@ -803,7 +841,7 @@ class DocParserSql(DocParserBase):
         dataFrame.set_index(dataFrame.columns[0],inplace=True)
         maxHeaders = self.dictTables[tableName]['maxHeaders']
         fieldFromHeader = self.dictTables[tableName]['fieldFromHeader']
-        if fieldFromHeader == NULLSTR:
+        if len(fieldFromHeader) == 0:
             #对于合并所有者权益变动表,无形资产情况,分季度主要财务数据等表,不需要对多余的行进行裁剪
             maxRows = len(dataFrame.index.values)
             if maxRows > maxHeaders:
@@ -843,11 +881,15 @@ class DocParserSql(DocParserBase):
 
 
     def _get_aliased_fields(self, fieldList,tokenName, tableName):
+        assert fieldList is not None, 'sourceRow(%s) must not be None' % fieldList
         aliasedFields = fieldList
         fieldAlias = self.dictTables[tableName][tokenName + 'Alias']
         fieldAliasKeys = list(self.dictTables[tableName][tokenName + 'Alias'].keys())
         if len(fieldAliasKeys) > 0:
-            aliasedFields = [self._alias(field, fieldAlias) for field in fieldList]
+            if isinstance(fieldList,list):
+                aliasedFields = [self._alias(field, fieldAlias) for field in fieldList]
+            else:
+                aliasedFields = self._alias(fieldList,fieldAlias)
         return aliasedFields
 
 
@@ -1051,8 +1093,9 @@ class DocParserSql(DocParserBase):
                     sql = sql + "[%s] %s\n\t\t\t\t\t," % (commonFiled, type)
                 #由表头转换生产的字段
                 fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
-                if fieldFromHeader != "":
-                    sql = sql + "[%s] VARCHAR(20)\n\t\t\t\t\t,"%fieldFromHeader
+                if len(fieldFromHeader) != 0:
+                    for field in fieldFromHeader:
+                        sql = sql + "[%s] VARCHAR(20)\n\t\t\t\t\t,"%field
                 sql = sql[:-1]  # 去掉最后一个逗号
                 #创建新表
                 #standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'],tableName)

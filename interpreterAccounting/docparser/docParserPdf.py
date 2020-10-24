@@ -195,7 +195,7 @@ class DocParserPdf(DocParserBase):
                         processedTable = table
                     else:
                         processedTable.extend(table)
-                    self.logger.warning('%s 的中间页出现的表被拆成多份,在此对表进行合并,just for debug!'%tableName)
+                        self.logger.warning('%s 的中间页出现的表被拆成多份,在此对表进行合并,just for debug!'%tableName)
         return processedTable,isTableEnd,isTableStart
 
 
