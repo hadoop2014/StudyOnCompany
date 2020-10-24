@@ -63,14 +63,14 @@ class InterpreterBase(BaseClass):
                 discardFields = self._get_standardized_keyword(dictTables[tableName][tokenName + 'Discard']
                                                                ,dictTables[tableName][tokenName + 'Standardize'])
                 dictTables[tableName].update({tokenName + 'Discard':discardFields})
-                passMatching = self.gJsonInterpreter['PASSMATCHING']
+                virtualPassMatching = self.gJsonInterpreter['VIRTUALPASSMATCHING']
                 dictAlias = {}
                 for key, value in dictTables[tableName][tokenName + 'Alias'].items():
                     keyStandard = self._get_standardized_keyword(key,dictTables[tableName][tokenName + 'Standardize'])
                     valueStandard = self._get_standardized_keyword(value, dictTables[tableName][tokenName + 'Standardize'])
-                    if valueStandard == passMatching:
+                    if valueStandard == virtualPassMatching:
                         # 把PASSMATCHING加入到dictTocken中
-                        dictAlias.update({key: passMatching})
+                        dictAlias.update({key: virtualPassMatching})
                     elif keyStandard != valueStandard:
                         dictAlias.update({keyStandard: valueStandard})
                     else:
@@ -84,7 +84,7 @@ class InterpreterBase(BaseClass):
 
     def _fields_replace_punctuate(self,dictTables):
         #对header,field中的英文标点符号进行替换
-        passMatching = self.gJsonInterpreter['PASSMATCHING']
+        virtualPassMatching = self.gJsonInterpreter['VIRTUALPASSMATCHING']
 
         for tableName in dictTables.keys():
             for tokenName in ['field','header']:
@@ -97,7 +97,7 @@ class InterpreterBase(BaseClass):
                 #headerAlias中有正则表达式,不能直接替换
                 dictAlias = dict()
                 for key,value in dictTables[tableName][tokenName+'Alias'].items():
-                    if value != passMatching:
+                    if value != virtualPassMatching:
                         dictAlias.update({self._replace_fieldname(key):self._replace_fieldname(value)})
                     else:
                         #PASSMATCHING用于正则表达式,不能做符号替换
@@ -164,7 +164,7 @@ class InterpreterBase(BaseClass):
         #field = re.sub('(^\\d).','\g<1>．',field)
         #field = re.sub('(^[一二三四五六七八九〇]).','\g<1>、',field)
         #解决海螺水泥2014年报中,所有的处置,购置 误写为 购臵,处臵
-        field = re.sub('(处|购)臵','\g<1>置',field)
+        field = re.sub('([处购])臵','\g<1>置',field)
         #解决华侨城A 2018年年报无形资产情况表中出现 '1、将净利润调节为经营活动现金流量',替换成 '1．将净利润调节为经营活动现金流量'
         field = re.sub('(^\\d)(、)','\g<1>．',field)
         #解决海天味业2015年年报中,出现''2 现金及现金等价物净变动情况''
