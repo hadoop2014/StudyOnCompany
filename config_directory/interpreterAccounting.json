@@ -210,7 +210,7 @@
 
 
   "主营业务分行业经营情况": {
-    "headerName": ["分行业","主营业务分行业情况","分产品","主营业务分产品情况","分地区","主营业务分地区情况","小计","合计"
+    "headerName": ["分行业","主营业务分行业情况","分产品","主营业务分产品情况","分地区","主营业务分地区情况","小计","医药行业小计","合计"
                   ,"食品制造业","医药工业","医药商业","日用品、化妆品工业","工业","商业","其他业务","房地产业"],
     "fieldName": ["营业收入","营业成本", "毛利率","营业收入比上年增减","营业成本比上年增减","毛利率比上年增减"],
     "horizontalTable": true,
@@ -224,7 +224,6 @@
       "日用品、化妆品": "日用品、化妆品工业",
       "食品销售": "食品制造业",
       "食品": "食品制造业",
-      "医药行业小计": "小计",
       "分产品\\s*": "虚拟字段仅用于指示终止字段合并",
       "主营业务分产品情况分产品\\s*": "虚拟字段仅用于指示终止字段合并"
     },
@@ -319,7 +318,7 @@
     },
     "headerPatternPrefix": "",
     "headerPatternSuffix": "",
-    "headerStandardize": "(?![一二三四五六七八九十〇])[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
+    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
     "headerFirst": "项目",
     "headerSecond": "附注|期末余额",
     "fieldFromHeader": [],
@@ -378,13 +377,13 @@
     "horizontalTable": false,
     "headerDiscard": ["附注","注释","公司"],
     "headerAlias": {
-      "\\d+\\s*年[度]*": "虚拟字段仅用于识别正则表达式",
+      "\\d+\\s*年[度]*(\\s*\\d+\\s*月\\s*\\d+\\s*日)*": "虚拟字段仅用于识别正则表达式",
       "本期发生额": "本期金额",
       "上期发生额": "上期金额"
     },
     "headerPatternPrefix": "",
     "headerPatternSuffix": "",
-    "headerStandardize": "(?![一二三四五六七八九十〇])[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
+    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
     "headerFirst": "项目",
     "headerSecond": "附注|\\d+年|本期发生额",
     "fieldFromHeader": [],
@@ -453,13 +452,13 @@
     "horizontalTable": false,
     "headerDiscard": ["附注","注释","公司"],
     "headerAlias": {
-      "\\d+\\s*年[度]*": "虚拟字段仅用于识别正则表达式",
+      "\\d+\\s*年[度]*(\\s*\\d+\\s*月\\s*\\d+\\s*日)*": "虚拟字段仅用于识别正则表达式",
       "本期发生额": "本期金额",
       "上期发生额": "上期金额"
     },
     "headerPatternPrefix": "",
     "headerPatternSuffix": "",
-    "headerStandardize": "(?![一二三四五六七八九十〇])[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
+    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
     "headerFirst": "项目",
     "headerSecond": "附注|本期发生额",
     "fieldFromHeader": [],
@@ -529,7 +528,7 @@
     },
     "headerPatternPrefix": "",
     "headerPatternSuffix": "",
-    "headerStandardize": "((加|减)：)*(?![一二三四五六七八九十〇])[\\u4E00-\\u9FA5]{1,}(（或股本）)*",
+    "headerStandardize": "((加|减)：)*[\\u4E00-\\u9FA5]{1,}(（或股本）)*",
     "headerFirst": "项目",
     "headerSecond": "实收资本(或股本)|本期归属于母公司所有者权益股本|\\d+年度|本期|本年数归属于母公司股东权益股本|附注",
     "fieldFromHeader": ["项目"],
@@ -588,7 +587,7 @@
     },
     "headerPatternPrefix": "",
     "headerPatternSuffix": "",
-    "headerStandardize": "(?![一二三四五六七八九十〇])[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
+    "headerStandardize": "[\\u4E00-\\u9FA5]{1,}|\\d+\\s*年",
     "headerFirst": "补充资料|项目",
     "headerSecond": "本期金额|本年金额",
     "fieldFromHeader": [],

@@ -314,6 +314,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('^增加', NULLSTR, value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
                     value = re.sub('^减少', NULLSTR, value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
                     value = re.sub('^下降', NULLSTR, value)  # 解决海螺水泥2014年报中主营业物质的数据中出现,'下降'
+                    value = re.sub('(^[一二三四五六七八九十〇]{1,2})、', NULLSTR, value)
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
@@ -700,7 +701,7 @@ class DocParserSql(DocParserBase):
                     if len(fieldPoses) == len(fieldFromHeader):
                         self.logger.info('%s: success to process all field from header,%s all in %s' % (tableName, fieldFromHeader, values))
                     else:
-                        self.logger.warning('%s: success to process %d field from header,but %s not all in %s' % (len(fieldPoses),tableName, fieldFromHeader, values))
+                        self.logger.warning('%s: success to process %d field from header,but %s not all in %s' % (tableName,len(fieldPoses), fieldFromHeader, values))
                 else:
                     self.logger.error('%s: failed to process field from header,%s not in %s'%(tableName,fieldFromHeader,values))
             else:
