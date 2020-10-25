@@ -194,9 +194,11 @@ class InterpreterAccounting(InterpreterBase):
                         | optional NUMERO
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
+                        | optional '（' TIME '）'
                         | optional NAME
                         | NUMERIC
                         | empty '''
+            # optional '（' TIME '）'解决三诺生物2014年报中出现 : 合并资产负债表 编制单位：三诺生物传感股份有限公司（2014 年 12 月 31 日） 单位：元
             # optional : discard 去掉，减少语法冲突
             # optional fetchtitle 被optioanl COMPANY time取代
             # optional CURRENCY 解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表,现金流量表补充资料等情况
@@ -247,26 +249,20 @@ class InterpreterAccounting(InterpreterBase):
                          | CRITICAL '-'
                          | CRITICAL empty
                          | CRITICAL LOCATION
-                         | CRITICAL COMPANY
-                         | CRITICAL '（' DISCARD '）' term'''
-            #CRITICAL '（' DISCARD '）' term''' 解决（002675）东诚药业：2014年年度报告.PDF,出现: 公司员工总数（合并口径） 774 人
+                         | CRITICAL COMPANY'''
             critical = self._get_critical_alias(p[1])
-            value = NULLSTR
             if self.names[critical] == NULLSTR :
-                for slice in p.slice:
-                    if slice.type == 'term' or slice.type == 'LOCATION' or slice.type == 'COMPANY':
-                        value = slice.value
-                        self.names.update({critical:value})
-                        if critical == '公司地址':
-                            if p[2] != NULLSTR:
-                                self.names.update({critical:self._eliminate_duplicates(value)})
-                            else:
-                                self.names.update({critical:self.names['注册地址']})
-                        elif critical == '公司名称' and value != NULLSTR :
-                            self.names.update({critical:self._eliminate_duplicates(value)})
-                        elif critical == '注册地址' and value != NULLSTR:
-                            self.names.update({critical: self._eliminate_duplicates(value)})
-            self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,value,self.currentPageNumber))
+                self.names.update({critical:p[2]})
+                if critical == '公司地址':
+                    if p[2] != NULLSTR:
+                        self.names.update({critical:self._eliminate_duplicates(p[2])})
+                    else:
+                        self.names.update({critical:self.names['注册地址']})
+                elif critical == '公司名称' and p[2] != NULLSTR :
+                    self.names.update({critical:self._eliminate_duplicates(p[2])})
+                elif critical == '注册地址' and p[2] != NULLSTR:
+                    self.names.update({critical: self._eliminate_duplicates(p[2])})
+            self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
 
 
         def p_fetchdata_wrong(p):
@@ -371,6 +367,7 @@ class InterpreterAccounting(InterpreterBase):
                        | NAME
                        | PUNCTUATION
                        | WEBSITE
+                       | EMAIL
                        | UNIT
                        | discard
                        | NUMERIC

@@ -303,10 +303,11 @@ class DocParserSql(DocParserBase):
             if isinstance(value,str):
                 if value != NONESTR and value != NULLSTR:
                     value = re.sub('不适用$',NULLSTR,value)
-                    value = re.sub('^附注',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"
+                    value = re.sub('^附\\s*注',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"
                     value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
                     value = re.sub('^上升',NULLSTR,value)#解决京新药业2017年年报,主要会计数据的一列数据中出现"上升 0.49个百分点"
                     value = re.sub('个百分点$',NULLSTR,value)#解决京新药业2017年年报,海螺水泥2018年年报主要会计数据的一列数据中出现"上升 0.49个百分点"
+                    value = re.sub('个百分$', NULLSTR, value)  # 解决新城控股2015年年报,主营业务分行业经营情况一行数据在末尾"减少 4.38 个百分"
                     value = re.sub('^注释',NULLSTR,value)#解决灰顶科技2019年年报中,合并资产负债表,合并利润表中的字段出现'注释'
                     value = re.sub('^）\\s*',NULLSTR,value)
                     value = re.sub('^同比增加',NULLSTR,value)#解决冀东水泥：2017年年度报告.PDF主要会计数据中的一列数据中出现'同比增加',导致_precess_header_merge_simple误判
@@ -316,7 +317,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('^下降', NULLSTR, value)  # 解决海螺水泥2014年报中主营业物质的数据中出现,'下降'
                     value = re.sub('^储$', NULLSTR, value) #解决尚荣医疗2014年报,合并所有者权益变动表,、上年年末余额 这一行中出现 "储","备
                     value = re.sub('^备-$',NULLSTR, value)
-                    value = re.sub('(^[一二三四五六七八九十〇]{1,2})、', NULLSTR, value) #替换掉 headerStandardize中的(?![一二三四五六七八九十〇])
+                    value = re.sub('(^\\s*[一二三四五六七八九十〇、]{1,3})(?=[^\\u4E00-\\u9FA5])', NULLSTR, value) #新城控股合并利润表中出现附注,数据中出现四(38)及一、四(38)
                     #value = re.sub('^（%）$',NULLSTR,value) #解决高德红外2014年报中 主营业务分行业经营情况表中,出现（%）
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
@@ -597,10 +598,12 @@ class DocParserSql(DocParserBase):
 
 
     def _process_header_merge_simple(self,dataFrame:DataFrame, tableName):
-        firstColumn = dataFrame.columns.values[0]
-        dataFrame.set_index(firstColumn,inplace=True)
+        #必须采用这种方式set_index,如果采用set_index(dataFrame.columns[0])方式,当columns[0]=NULLSTR时,转换出来的结果是错误的.
+        dataFrame.set_index(dataFrame.iloc[:,0],inplace=True)
+        dataFrame = dataFrame.drop(dataFrame.columns[0],axis=1)
+        # 转置的时候第一个header会丢失,必须通过coluns.name方式找回来
+        dataFrame.columns.name = dataFrame.index.name
         dataFrame = dataFrame.T.reset_index()
-        dataFrame.columns.values[0] = firstColumn
 
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']
         if isHorizontalTable == False:
