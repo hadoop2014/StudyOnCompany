@@ -193,7 +193,10 @@ class DocParserSql(DocParserBase):
         table = dictTable['table']
         tableName = dictTable['tableName']
         if len(table) == 0:
-            self.logger.error('failed to process %s, the table is empty'%tableName)
+            self.logger.error('failed to process %s, the table row is empty'%tableName)
+            return
+        elif len(table[0]) <= 1:
+            self.logger.error('failed to process %s, the table column is empty'%tableName)
             return
 
         #if dictTable['tableEnd'] == True:
@@ -205,6 +208,13 @@ class DocParserSql(DocParserBase):
 
         #针对合并所有者权益表的前三列空表头进行合并,对转置表进行预转置,使得其处理和其他表一致
         dataframe = self._process_header_merge_pretreat(dataframe, tableName)
+
+        # 如果dataframe之有一行数据，说明从docParserPdf推送过来的数据是不正确的：只有表头，没有任何有效数据。
+        if dataframe.shape[0] <= 1 or dataframe.shape[1] <= 1:
+            self.logger.error("failed to process %s at start, the table has no data:%s,shape %s" % (
+                tableName, dataframe.values, dataframe.shape))
+            self.process_info.pop(tableName)
+            return
 
         #把跨多个单元格的表字段名合并成一个
         dataframe = self._process_field_merge_simple(dataframe,'field',tableName)
@@ -348,11 +358,13 @@ class DocParserSql(DocParserBase):
         # 增加blankFrame来驱动最后一个field的合并
         blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
         dataFrame = dataFrame.append(blankFrame)
-        while self._is_row_all_invalid(dataFrame.iloc[0]):
+        while dataFrame.shape[0] > 0 and self._is_row_all_invalid(dataFrame.iloc[0]):
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
             dataFrame.iloc[0] = NaN
             dataFrame = dataFrame.dropna()
+        if dataFrame.shape[0] == 0:
+            return dataFrame
         for index, field in enumerate(dataFrame.iloc[:, 0]):
             #isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
@@ -603,6 +615,9 @@ class DocParserSql(DocParserBase):
         dataFrame = dataFrame.drop(dataFrame.columns[0],axis=1)
         # 转置的时候第一个header会丢失,必须通过coluns.name方式找回来
         dataFrame.columns.name = dataFrame.index.name
+        if tableName == '主营业务分行业经营情况':
+            self.logger.info("%s 分行业,分产品,分区域列表如下,just for debug:\n%s"
+                             %(tableName,"\n".join([dataFrame.columns.name] + dataFrame.columns.tolist())))
         dataFrame = dataFrame.T.reset_index()
 
         isHorizontalTable = self.dictTables[tableName]['horizontalTable']

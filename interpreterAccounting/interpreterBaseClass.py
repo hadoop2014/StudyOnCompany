@@ -59,9 +59,11 @@ class InterpreterBase(BaseClass):
             for tokenName in ['field','header']:
                 standardFields = self._get_standardized_keyword(dictTables[tableName][tokenName + 'Name']
                                                                 ,dictTables[tableName][tokenName + 'Standardize'])
+                standardFields = [field for field in standardFields if field is not NaN]
                 dictTables[tableName].update({tokenName + 'Name':standardFields})
                 discardFields = self._get_standardized_keyword(dictTables[tableName][tokenName + 'Discard']
                                                                ,dictTables[tableName][tokenName + 'Standardize'])
+                discardFields = [field for field in discardFields if field is not NaN]
                 dictTables[tableName].update({tokenName + 'Discard':discardFields})
                 virtualPassMatching = self.gJsonInterpreter['VIRTUALPASSMATCHING']
                 virtualStoping = self.gJsonInterpreter['VIRTUALSTOPING']
@@ -69,6 +71,8 @@ class InterpreterBase(BaseClass):
                 for key, value in dictTables[tableName][tokenName + 'Alias'].items():
                     keyStandard = self._get_standardized_keyword(key,dictTables[tableName][tokenName + 'Standardize'])
                     valueStandard = self._get_standardized_keyword(value, dictTables[tableName][tokenName + 'Standardize'])
+                    if keyStandard is NaN or valueStandard is NaN:
+                        continue
                     if valueStandard == virtualPassMatching:
                         # 把PASSMATCHING加入到dictTocken中
                         dictAlias.update({key: virtualPassMatching})

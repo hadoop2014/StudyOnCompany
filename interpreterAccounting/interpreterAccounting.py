@@ -99,7 +99,9 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchtable : TABLE optional time optional unit finis
                           | TABLE optional unit finis
                           | TABLE optional time optional TIME
-                          | TABLE optional HEADER HEADER'''
+                          | TABLE optional HEADER HEADER
+                          | TABLE optional HEADER optional unit '''
+            # TABLE optional HEADER optional unit可解决海螺水泥2014年合并所有者权益变动表的搜索,以及海螺水泥2019年年报主营业务分行业情况 中的单位(unit)
             # TABLE optional time optional CURRENCY UNIT finis解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
             # TABLE optional UNIT CURRENCY finis第二个语法针对的是主要会计数据
             # TABLE optional UNIT CURRENCY NUMERO HEADER解决万东医疗2019年年报普通股现金分红情况表搜索不到问题,被TABLE optional UNIT finis 取代
@@ -190,7 +192,6 @@ class InterpreterAccounting(InterpreterBase):
             '''optional : optional discard
                         | optional COMPANY
                         | optional LOCATION
-                        | optional HEADER
                         | optional NUMERO
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
@@ -198,6 +199,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional NAME
                         | NUMERIC
                         | empty '''
+            # optional HEADER可解决海螺水泥2014年合并所有者权限变动表的搜索问题,但是采用TABLE optional HEADER optional unit
             # optional '（' TIME '）'解决三诺生物2014年报中出现 : 合并资产负债表 编制单位：三诺生物传感股份有限公司（2014 年 12 月 31 日） 单位：元
             # optional : discard 去掉，减少语法冲突
             # optional fetchtitle 被optioanl COMPANY time取代
