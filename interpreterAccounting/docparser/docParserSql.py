@@ -327,7 +327,9 @@ class DocParserSql(DocParserBase):
                     value = re.sub('^下降', NULLSTR, value)  # 解决海螺水泥2014年报中主营业物质的数据中出现,'下降'
                     value = re.sub('^储$', NULLSTR, value) #解决尚荣医疗2014年报,合并所有者权益变动表,、上年年末余额 这一行中出现 "储","备
                     value = re.sub('^备-$',NULLSTR, value)
-                    value = re.sub('(^\\s*[一二三四五六七八九十〇、]{1,3})(?=[^\\u4E00-\\u9FA5])', NULLSTR, value) #新城控股合并利润表中出现附注,数据中出现四(38)及一、四(38)
+                    value = re.sub('^无$', NULLSTR, value) #解决海康威视2015年报,普通股现金分红情况表 最后一列出现 '无'
+                    #value = re.sub('^\\s*\\([一二三四五六七八九十〇]{1,2}\\)',NULLSTR,value) #解决海康威视2019-2014年报合并资产负债表等 中的辅助中出现 :  (五)2
+                    value = re.sub('(^\\s*[(]*[一二三四五六七八九十〇、]{1,3})[)]*(?=[^\\u4E00-\\u9FA5])', NULLSTR, value) #新城控股合并利润表中出现附注,数据中出现四(38)及一、四(38).  海康威视2019-2014年报合并资产负债表等 中的辅助中出现 :  (五)2
                     #value = re.sub('^（%）$',NULLSTR,value) #解决高德红外2014年报中 主营业务分行业经营情况表中,出现（%）
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:

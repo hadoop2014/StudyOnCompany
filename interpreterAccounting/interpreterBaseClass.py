@@ -168,6 +168,7 @@ class InterpreterBase(BaseClass):
         field = field.replace('―','“').replace('‖','“')
         #主营业务分行业情况 中用到了.,不能直接替换,要采用re.sub替换
         field = field.replace('.','．')
+        field = field.replace('，','、') #解决海康威视2016年合并现金流量表中出现: 处置固定资产，无形资产和其他长期资产收回的现金净额
         #field = re.sub('(^\\d).','\g<1>．',field)
         #field = re.sub('(^[一二三四五六七八九〇]).','\g<1>、',field)
         #解决海螺水泥2014年报中,所有的处置,购置 误写为 购臵,处臵
@@ -182,6 +183,7 @@ class InterpreterBase(BaseClass):
         field = re.sub('(^[一二三四五六七八九〇])．','\g<1>、',field)
         # 解决尚荣医疗2019年年报中,无形资产情况表中出现“一” 情况
         field = re.sub('“一”(号填列)','“－”\g<1>',field)
+        #field = re.sub('\\[注\\]$',NULLSTR,field) #解决海康威视2014年报,主要会计数据最后一个字段出现 归属于上市公司股东的净资产（元）[注]
         return field
 
 
