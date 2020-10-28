@@ -226,6 +226,9 @@ class DocParserSql(DocParserBase):
         #同一张表的相同字段在不同财务报表中名字不同, 需要统一为相同名称, 统一后再去重
         dataframe = self._process_field_alias(dataframe,'field', tableName)
 
+        #处理重复字段
+        dataframe = self._process_field_duplicate(dataframe,'field',tableName)
+
         #对表进行转置,然后把跨多行的表头字段进行合并
         dataframe = self._process_header_merge_simple(dataframe,tableName)
 
@@ -235,7 +238,10 @@ class DocParserSql(DocParserBase):
         # 同一张表的相同表头在不同财务报表中名字不同, 需要统一为相同名称, 统一后再去重
         dataframe = self._process_header_alias(dataframe, tableName)
         #把表头进行标准化
-        #dataframe = self._process_header_standardize(dataframe,tableName)
+
+        # 把表头的重复字段进行区分, 去掉非法的字段,需要处理 header为 xxxx年的情况才能启用
+        # 功能测试通过,但暂不做处理,便于从入库后数据中更易发现问题
+        #dataframe = self._process_header_duplicate(dataframe,tableName)
 
         #去掉不必要的行数据,比如合并资产负债表有三行数据,最后一行往往是上期数据的修正,是不必要的
         dataframe = self._process_row_tailor(dataframe, tableName)
@@ -250,7 +256,7 @@ class DocParserSql(DocParserBase):
         #dataframe = self._process_field_alias(dataframe,tableName)
 
         #处理重复字段
-        dataframe = self._process_field_duplicate(dataframe,tableName)
+        #dataframe = self._process_field_duplicate(dataframe,tableName)
 
         #dataframe前面插入公共字段
         dataframe = self._process_field_common(dataframe, dictTable, countTotalFields,tableName)
@@ -733,15 +739,15 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
 
-    def _process_field_duplicate(self,dataFrame,tableName):
+    def _process_field_duplicate(self,dataFrame,tokenName,tableName):
         # 重复字段处理,放在字段标准化之后
-        duplicatedFields = self._get_duplicated_field(dataFrame.iloc[0].tolist())
+        duplicatedFields = self._get_duplicated_field(dataFrame.iloc[:,0].tolist())
 
         #standardizedFields = self._get_standardized_field(self.dictTables[tableName]['fieldName'], tableName)
-        standardizedFields = self.dictTables[tableName]['fieldName']
+        standardizedFields = self.dictTables[tableName][tokenName + 'Name']
         duplicatedFieldsStandard = self._get_duplicated_field(standardizedFields)
 
-        dataFrame.iloc[0] = duplicatedFields
+        dataFrame.iloc[:,0] = duplicatedFields
         duplicatedFieldsResult = []
         for field in duplicatedFields:
             if field in duplicatedFieldsStandard:
@@ -749,11 +755,21 @@ class DocParserSql(DocParserBase):
             else:
                 self.logger.warning('failed to add field: %s is not exist in %s'%(field,tableName))
                 #删除该字段
-                indexDiscardField = dataFrame.iloc[0].isin([field])
+                indexDiscardField = dataFrame.iloc[:,0].isin([field])
                 discardColumns = indexDiscardField[indexDiscardField == True].index.tolist()
-                #dataFrame.T.loc[indexDiscardField] = NaN
-                dataFrame[discardColumns] = NaN
-                dataFrame = dataFrame.dropna(axis=1).copy()
+                #dataFrame[discardColumns] = NaN
+                #dataFrame = dataFrame.dropna(axis=1).copy()
+                dataFrame.loc[discardColumns] = NaN
+                dataFrame = dataFrame.dropna(axis=0).copy()
+        return dataFrame
+
+
+    def _process_header_duplicate(self, dataFrame, tableName):
+        fieldFromHeader = self.dictTables[tableName]['fieldFromHeader']
+        if len(fieldFromHeader) > 0 and tableName != '主营业务分行业经营情况':
+            # 仅仅对header要作为数据库入库字段的才进行处理,fieldFromHeader表示要把表头转成field 并写入数据库,这种情况需要去重处理,同时去掉非法字段
+            # 主营业务分行业经营情况 不纳入考虑,原因是只对 分行业 的header进行了标准化,分产品,分地区没有做标准化,但是也还是要写道数据库中
+            dataFrame = self._process_field_duplicate(dataFrame,'header',tableName)
         return dataFrame
 
 
