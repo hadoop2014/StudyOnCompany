@@ -100,7 +100,9 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional unit finis
                           | TABLE optional time optional TIME
                           | TABLE optional HEADER HEADER
-                          | TABLE optional HEADER optional unit '''
+                          | TABLE optional HEADER optional unit
+                          | TABLE optional HEADER TIME TIME'''
+            # TABLE optional HEADER TIME解决（300595）欧普康视：2019年年度报告.PDF,主要会计数据搜索是遇到: 主要会计数据和财务指标  项目 2019 年 2018 年 本年比上年增减 2017
             # TABLE optional HEADER optional unit可解决海螺水泥2014年合并所有者权益变动表的搜索,以及海螺水泥2019年年报主营业务分行业情况 中的单位(unit)
             # TABLE optional time optional CURRENCY UNIT finis解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
             # TABLE optional UNIT CURRENCY finis第二个语法针对的是主要会计数据
@@ -138,11 +140,13 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchtable : TABLE optional unit tail
                           | TABLE optional time optional unit tail
                           | TABLE optional tail
-                          | TABLE optional time tail '''
-            #处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
-            #TABLE optional COMPANY NUMERIC解决大立科技2018年年报合并资产负债表出现在页尾的情况.
-            #TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
-            #TABLE optional COMPANY tail已经被TABLE optional unit tail取代
+                          | TABLE optional time tail
+                          | TABLE optional HEADER optional unit tail'''
+            # TABLE optional HEADER optional unit tail解决中石科技2017年报 合并资产负债表刚好出现在页尾的场景. 如下: 合并所有者权益变动表 本期金额 单位：元 79
+            # 处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
+            # TABLE optional COMPANY NUMERIC解决大立科技2018年年报合并资产负债表出现在页尾的情况.
+            # TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
+            # TABLE optional COMPANY tail已经被TABLE optional unit tail取代
             tableName = self._get_tablename_alias(str.strip(p[1]))
             interpretPrefix = '\n'.join([str(slice).strip() for slice in p[:-1] if slice is not None]) + '\n'
             self.logger.info("fetchtable warning(reach tail) %s -> %s : %s page %d" % (p[1], tableName, interpretPrefix.replace('\n',' '), self.currentPageNumber))
@@ -167,20 +171,20 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional time optional  NUMERIC
                           | TABLE optional error '''
             # TABLE optional error  解决尚荣医疗2016年 P90页,合并资产负债表搜索错误 ,而导致连续多页搜索错误
-            #TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
+            # TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
             # TABLE optional '(' NAME ')' 和optional  '(' NAME ')'冲突
             # TABLE '(' discard ')' 可用
-            #TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
-            #TABLE optional NUMERIC DISCARD解决青松股份2016年年报第10页出现无形资产情况表的误判
-            #去掉 TABLE '(' DISCARD ')'
-            #去掉TABLE optional TIME discard NUMERIC,该语句是干扰项
-            #去掉了语法TABLE term,该语法和TABLE optional NUMERIC冲突
-            #去掉合并资产负债表项目
-            #去掉TABLE PUNCTUATION减少语法冲突
-            #去掉TABLE parenthese,识别海螺水泥2018年年报分季度主要财务时,发生冲突
-            #TABLE optional time optional  NUMERIC可以过滤掉三诺生物2019年年报第60页出现了合并资产负责表,但不是所需要的,真正的表在第100页
-            #TABLE optional NUMERO DISCARD 需要去掉,会导致三诺生物2018年年报 合并资产负债表搜索失败
-            #TABLE optional '(' LABEL ')'解决海天味业2016年年报 出现" 近三年主要会计数据和财务指标(一) 主要会计数据",第一个TABLE '近三年主要会计数据和财务指标'是误判
+            # TABLE optional NUMERIC '-' 在原语法末尾增加'-',原因是解决杰瑞股份2018年年报中第60页出现合并现金流量表无影响。....2018-067号公告,导致原语法TABLE optional NUMERIC误判
+            # TABLE optional NUMERIC DISCARD解决青松股份2016年年报第10页出现无形资产情况表的误判
+            # 去掉 TABLE '(' DISCARD ')'
+            # 去掉TABLE optional TIME discard NUMERIC,该语句是干扰项
+            # 去掉了语法TABLE term,该语法和TABLE optional NUMERIC冲突
+            # 去掉合并资产负债表项目
+            # 去掉TABLE PUNCTUATION减少语法冲突
+            # 去掉TABLE parenthese,识别海螺水泥2018年年报分季度主要财务时,发生冲突
+            # TABLE optional time optional  NUMERIC可以过滤掉三诺生物2019年年报第60页出现了合并资产负责表,但不是所需要的,真正的表在第100页
+            # TABLE optional NUMERO DISCARD 需要去掉,会导致三诺生物2018年年报 合并资产负债表搜索失败
+            # TABLE optional '(' LABEL ')'解决海天味业2016年年报 出现" 近三年主要会计数据和财务指标(一) 主要会计数据",第一个TABLE '近三年主要会计数据和财务指标'是误判
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
             self.logger.warning("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             #针对上一页fetchtable reatch tail时,下一页搜索到错误的TABLE,不再继续往下搜索
@@ -204,16 +208,16 @@ class InterpreterAccounting(InterpreterBase):
             # optional : discard 去掉，减少语法冲突
             # optional fetchtitle 被optioanl COMPANY time取代
             # optional CURRENCY 解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表,现金流量表补充资料等情况
-            #第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
-            #第3条规则optional '(' NAME ')' 解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
-            #fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
-            #DISCARD PUNCTUATION DISCARD DISCARD和t_ignore_COMMENT = "《.*》"一起解决亿纬锂能2018年财报中搜索无形资产情况时误判为到达页尾
-            #DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
-            #DISCARD LOCATION COMPANY解决海天味业2019年财报中出现合并资产负债表 2019 年 12 月 31 日  编制单位: 佛山市海天调味食品股份有限公司 单位:元 币种:人民币
-            #optional TIME REPORT解决隆基股份2017年财报,合并资产利润表达到页尾,而下一页开头出现"2017年年度报告"
-            #DISCARD DISCARD DISCARD解决理邦仪器：2019年年度报告的主要会计数据识别不到的问题
-            #20200923,去掉DISCARD optional,optional fetchtitle DISCARD,fetchtitle DISCARD DISCARD DISCARD DISCARD,fetchtitle DISCARD,'(' NAME ')' optional,DISCARD DISCARD DISCARD
-            #optional NUMERO用于解决三诺生物2018年年报中,多个表TABLE后插入数字
+            # 第2条规则optional fetchtitle DISCARD解决大立科技：2018年年度报告,合并资产负债表出现在表尾,而第二页开头为"浙江大立科技股份有限公司 2018 年年度报告全文"的场景
+            # 第3条规则optional '(' NAME ')' 解决海螺水泥2018年年度报告,现金流量补充资料,紧接一行(a) 将净利润调节为经营活动现金流量 金额单位：人民币元.
+            # fetchtitle DISCARD DISCARD DISCARD DISCARD解决上峰水泥2019年年报主要会计数据在末尾的问题
+            # DISCARD PUNCTUATION DISCARD DISCARD和t_ignore_COMMENT = "《.*》"一起解决亿纬锂能2018年财报中搜索无形资产情况时误判为到达页尾
+            # DISCARD DISCARD解决贝达药业2016年财报主要会计数据无法搜索到的问题
+            # DISCARD LOCATION COMPANY解决海天味业2019年财报中出现合并资产负债表 2019 年 12 月 31 日  编制单位: 佛山市海天调味食品股份有限公司 单位:元 币种:人民币
+            # optional TIME REPORT解决隆基股份2017年财报,合并资产利润表达到页尾,而下一页开头出现"2017年年度报告"
+            # DISCARD DISCARD DISCARD解决理邦仪器：2019年年度报告的主要会计数据识别不到的问题
+            # 20200923,去掉DISCARD optional,optional fetchtitle DISCARD,fetchtitle DISCARD DISCARD DISCARD DISCARD,fetchtitle DISCARD,'(' NAME ')' optional,DISCARD DISCARD DISCARD
+            # optional NUMERO用于解决三诺生物2018年年报中,多个表TABLE后插入数字
             for slice in p.slice:
                 if slice.type == 'COMPANY':
                     self.names['company'] = self._eliminate_duplicates(slice.value)
@@ -236,7 +240,7 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_fetchdata_referencetriple(p):
             '''fetchdata : REFERENCE NUMERIC NUMERIC REFERENCE DISCARD DISCARD'''
-            #解决华新水泥2018年报中,股票简称不能识别的问题
+            # 解决华新水泥2018年报中,股票简称不能识别的问题
             if self.names[self._get_reference_alias(p[1])] == NULLSTR :
                 self.names.update({self._get_reference_alias(p[1]):p[2]})
             if self.names[self._get_reference_alias(p[4])] == NULLSTR:
@@ -282,8 +286,8 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchtitle : TIME REPORT
                           | company TIME REPORT
                           | company selectable TIME REPORT'''
-            #TIME REPORT COMPANY没有必要，用TIME REPORT生效即可，COMPANY可以通过CRITICAL COMPANY获取
-            #COMPANY selectable TIME REPORT 解决海螺水泥2018年报第1页title的识别问题
+            # TIME REPORT COMPANY没有必要，用TIME REPORT生效即可，COMPANY可以通过CRITICAL COMPANY获取
+            # COMPANY selectable TIME REPORT 解决海螺水泥2018年报第1页title的识别问题
             for slice in p.slice:
                 if slice.type == 'company':
                     if self.names['公司名称'] == NULLSTR :
@@ -310,14 +314,14 @@ class InterpreterAccounting(InterpreterBase):
                          | company selectable DISCARD
                          | company
                          | TIME '''
-            # | company selectable TAIL  fetchtitlewrong TAIL
+            # company selectable TAIL  fetchtitlewrong TAIL
             # company DISCARD 去掉
             # company PUNCTUATION 去掉
             # company NAME DISCARD 去掉
-            #去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
-            #去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
-            #TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在skipword中增加REPORT
-            #去掉fetchdata : COMPANY error,和fetchtitle : COMPANY error冲突
+            # 去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
+            # 去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
+            # TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在skipword中增加REPORT
+            # 去掉fetchdata : COMPANY error,和fetchtitle : COMPANY error冲突
             p[0] = p[1]
 
 
@@ -325,8 +329,8 @@ class InterpreterAccounting(InterpreterBase):
             '''selectable : selectable parenthese
                           | selectable NAME
                           | NAME '''
-            #解决海螺水泥2018年报第1页title的识别问题
-            #解决康龙化成2019年年报第1页title的识别问题
+            # 解决海螺水泥2018年报第1页title的识别问题
+            # 解决康龙化成2019年年报第1页title的识别问题
             p[0] = p[1]
 
 
@@ -336,7 +340,7 @@ class InterpreterAccounting(InterpreterBase):
                         | '（' content '）'
                         | '（' content ')'
                         | '（' '）' '''
-            #专门用于处理括号里的内容
+            # 专门用于处理括号里的内容
             p[0] = p[2]
 
 
@@ -396,10 +400,10 @@ class InterpreterAccounting(InterpreterBase):
                            | fetchtablewrong
                            | fetchdatawrong
                            | fetchtitlewrong'''
-            #TABLE discard parenthese  该语句和TABLE optional ( UNIT ) finis语句冲突
-            #所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
-            #TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
-            #TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
+            # TABLE discard parenthese  该语句和TABLE optional ( UNIT ) finis语句冲突
+            # 所有语法开头的关键字,其非法的语法都可以放到该语句下,可答复减少reduce/shift冲突
+            # TIME 是title语句的其实关键字,其他的如TABLE是fetchtable的关键字 ....
+            # TABLE parenthese 解决现金流量表补充资料出现如下场景: 现金流量补充资料   (1)现金流量补充资料   单位： 元
             p[0] = p[1]
 
 
@@ -419,9 +423,9 @@ class InterpreterAccounting(InterpreterBase):
                        | '-'
                        | '%'
                        | '％' '''
-            #                       | skipword TAIL
+            # skipword TAIL
             # skipword NUMERIC
-            #           | skipword '%'
+            # skipword '%'
             p[0] = p[1]
 
 
@@ -434,7 +438,7 @@ class InterpreterAccounting(InterpreterBase):
         def p_company(p):
             '''company : COMPANY
                        | LOCATION COMPANY'''
-            #解决恩捷股份：2019年年度报告中公司名误判为'天津'的问题,因为LOCATION并不是每次都有,所以要初始化掉
+            # 解决恩捷股份：2019年年度报告中公司名误判为'天津'的问题,因为LOCATION并不是每次都有,所以要初始化掉
             self.names['address'] = NULLSTR
             for slice in p.slice:
                 if slice.type == 'COMPANY':
@@ -454,7 +458,7 @@ class InterpreterAccounting(InterpreterBase):
                     | '(' DISCARD CURRENCY UNIT ')'
                     | '(' CURRENCY UNIT ')'
                     | '（' DISCARD CURRENCY UNIT '）'  '''
-            #  '（' DISCARD CURRENCY UNIT '）' 解决尚荣医疗 2019年报中出现 （除特别注明外，金额单位均为人民币）
+            # '（' DISCARD CURRENCY UNIT '）' 解决尚荣医疗 2019年报中出现 （除特别注明外，金额单位均为人民币）
             # CURRENCY DISCARD UNIT解决华侨城A2019年报P123,合并股东权益变动表的搜索不到问题
             # '(' DISCARD CURRENCY UNIT ')' 或  '(' CURRENCY UNIT ')' 解决海天味业2016年年报中出现 (金额单位：人民币元)
             self.names['currency'] = NULLSTR  #currency不是每一次都有,所以必须初始化掉

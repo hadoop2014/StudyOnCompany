@@ -33,7 +33,7 @@ class DocParserPdf(DocParserBase):
     def _get_text(self,page=None):
         #interpretPrefix用于处理比如合并资产负债表分布在多个page页面的情况
         #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
-        if self._index == 1 :
+        if self._index == 1:
             #解决贵州茅台年报中,贵州茅台酒股份有限公司2018 年年度报告,被解析成"贵州茅台酒股份有限公司 年年度报告 2018
             pageText = page.extract_text(y_tolerance=4)
             #pageText = page.extract_text()
@@ -57,6 +57,9 @@ class DocParserPdf(DocParserBase):
 
 
     def _get_tables(self,dictTable):
+        if self._index == 0 or self._length == 0:
+            # 当从interpreterAccountingUnitTest函数进入时,没有实际的pdf供解析,直接返回
+            return
         page = self.__getitem__(self._index-1)
         table_settings = self._get_table_settings(dictTable)
         self._debug_extract_tables(page,table_settings)
@@ -79,6 +82,24 @@ class DocParserPdf(DocParserBase):
             else:
                 value = str(value)
             return value
+        DEFAULT_TABLE_SETTINGS = {
+            "vertical_strategy": "lines",
+            "horizontal_strategy": "lines",
+            "explicit_vertical_lines": [],
+            "explicit_horizontal_lines": [],
+            "snap_tolerance": DEFAULT_SNAP_TOLERANCE,
+            "join_tolerance": DEFAULT_JOIN_TOLERANCE,
+            "edge_min_length": 3,
+            "min_words_vertical": DEFAULT_MIN_WORDS_VERTICAL,
+            "min_words_horizontal": DEFAULT_MIN_WORDS_HORIZONTAL,
+            "keep_blank_chars": False,
+            "text_tolerance": 3,
+            "text_x_tolerance": None,
+            "text_y_tolerance": None,
+            "intersection_tolerance": 3,
+            "intersection_x_tolerance": None,
+            "intersection_y_tolerance": None,
+        }
         '''
         table_settings = self._get_special_settings(dictTable)
         return table_settings
