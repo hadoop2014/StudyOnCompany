@@ -364,8 +364,8 @@ class DocParserSql(DocParserBase):
         mergedRow = None
         lastIndex = 0
         # 增加blankFrame来驱动最后一个field的合并
-        blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
-        dataFrame = dataFrame.append(blankFrame)
+        #blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
+        #dataFrame = dataFrame.append(blankFrame)
         while dataFrame.shape[0] > 0 and self._is_row_all_invalid(dataFrame.iloc[0]):
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
@@ -374,7 +374,7 @@ class DocParserSql(DocParserBase):
         if dataFrame.shape[0] == 0:
             return dataFrame
         for index, field in enumerate(dataFrame.iloc[:, 0]):
-            #isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
+            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
             isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
             isHeaderInMergedRow = self._is_header_in_row(mergedRow,tableName)
             isRowAllInvalid = self._is_row_all_invalid_exclude_blank(dataFrame.iloc[index])
@@ -386,6 +386,12 @@ class DocParserSql(DocParserBase):
                             dataFrame.iloc[lastIndex] = mergedRow
                             dataFrame.iloc[lastIndex + 1:index] = NaN
                         mergedRow = None
+                    elif tableName == '主营业务分行业经营情况':
+                        if isRowNotAnyNone == True:
+                            if index > lastIndex + 1:
+                                dataFrame.iloc[lastIndex] = mergedRow
+                                dataFrame.iloc[lastIndex + 1:index] = NaN
+                            mergedRow = None
                     else:
                         mergedRow = None
                     #elif isHorizontalTable == True :
@@ -409,7 +415,14 @@ class DocParserSql(DocParserBase):
                     if isHeaderInMergedRow == False:
                         #解决再升科技2018年年报,合并所有者权益变动表在每个分页中插入了表头
                         # 解决大立科技：2018年年度报告,有一行", , , ,调整前,调整后, , , , ",满足isRowNotAnyNone==True条件,但是需要继续合并
+                        #if tableName == '主营业务分行业经营情况':
+                        #    if index > lastIndex + 1:
+                        #        dataFrame.iloc[lastIndex] = mergedRow
+                        #        dataFrame.iloc[lastIndex + 1:index] = NaN
+                        #    mergedRow = None
+                        #else:
                         mergedRow = None
+
             if mergedRow is None:
                 mergedRow = dataFrame.iloc[index].tolist()
                 lastIndex = index
