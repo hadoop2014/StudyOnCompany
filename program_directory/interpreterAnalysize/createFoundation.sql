@@ -113,7 +113,16 @@ select
     end as 研发费用,
     case when a.本期资本化研发投入修正 != '' then a.本期资本化研发投入修正 else 0 end as 资本化研发投入,
     case when g.资产减值准备 != '' then g.资产减值准备 else 0 end as 资产减值准备 ,
-    g.固定资产折旧、油气资产折耗、生产性生物资产折旧 ,
+    case when g.固定资产折旧、油气资产折耗、生产性生物资产折旧 is not NULL and g.固定资产折旧、油气资产折耗、生产性生物资产折旧 != ''
+    then
+        case when g.使用权资产摊销 is not NULL and g.使用权资产摊销 != ''
+        then replace(g.固定资产折旧、油气资产折耗、生产性生物资产折旧,',','') + replace(g.使用权资产摊销,',','')
+        else replace(g.固定资产折旧、油气资产折耗、生产性生物资产折旧,',','')  end
+    else
+        case when g.使用权资产摊销 is not NULL and g.使用权资产摊销 != ''
+        then replace(g.使用权资产摊销,',','')
+        else 0 end
+    end as 固定资产折旧、油气资产折耗、生产性生物资产折旧,
     g.无形资产摊销 ,
     ifnull(g.长期待摊费用摊销,0) as 长期待摊费用摊销,
     --"无形资产-内部研发","所得税税率",

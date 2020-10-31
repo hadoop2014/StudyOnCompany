@@ -269,6 +269,9 @@ class DocParserPdf(DocParserBase):
             #解决九安医疗2014年财报,主营业务分行业经营情况 出现在页尾,且只有一行: 营业收入 营业成本 毛利率营业收入比上年同期增减营业成本比上年同期增减毛利率比上年同期
             #isTableStart = isTableStartFirst and isTableStartSecond
             isTableStart = isTableStartSecond
+        #elif tableName == '主要会计数据':
+            #解决安琪酵母2014年年报中同一页中还有 主要会计数据 和主要财务指标,结果误读了主要财务指标
+        #    isTableStart = isTableStartFirst
         else:
             isTableStart = isTableStartFirst or isTableStartSecond
         return isTableStart
