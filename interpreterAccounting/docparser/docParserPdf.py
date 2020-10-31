@@ -18,7 +18,6 @@ class DocParserPdf(DocParserBase):
         self._interpretPrefix = NULLSTR
         self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        #self._load_data()
 
 
     def _load_data(self,sourceFile=None):
@@ -36,7 +35,6 @@ class DocParserPdf(DocParserBase):
         if self._index == 1:
             #解决贵州茅台年报中,贵州茅台酒股份有限公司2018 年年度报告,被解析成"贵州茅台酒股份有限公司 年年度报告 2018
             pageText = page.extract_text(y_tolerance=4)
-            #pageText = page.extract_text()
         else:
             pageText = page.extract_text()
         if pageText is not None:
@@ -188,10 +186,7 @@ class DocParserPdf(DocParserBase):
             #headerList = table[0]
             #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.
             isTableEnd = self._is_table_end(tableName, fieldList)
-            #isTableStart = self._is_table_start(tableName,fieldList,headerList)
             isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
-            #if isTableStart == True:
-            #    processedTable = table
             if len(page_numbers) == 1:
                 #len(page_numers) == 1表示本表所在的第一页,需要明确判断出isTabletart = True 才能使得isTableEnd生效
                 if isTableStart and isTableEnd:
@@ -239,8 +234,6 @@ class DocParserPdf(DocParserBase):
         isTableStart,isTableStartFirst,isTableStartSecond = False,False,False
         mergedFields = reduce(self._merge, fieldList)
         mergedFieldsSecond = reduce(self._merge, secondFieldList)
-        #headerFirst = self.dictTables[tableName]["header"][0]
-        #headerSecond = self.dictTables[tableName]["header"][1]
         headerFirst = self.dictTables[tableName]["headerFirst"]
         headerSecond = self.dictTables[tableName]["headerSecond"]
         fieldFirst = self.dictTables[tableName]['fieldFirst']
@@ -251,9 +244,6 @@ class DocParserPdf(DocParserBase):
         headerSecond = headerSecond.replace('(', '（').replace(')', '）').replace('[','（').replace(']','）')
         fieldFirst = fieldFirst.replace('(', '（').replace(')', '）').replace('[','（').replace(']','）')
         #考虑两种情况,表头的第一个字段为空,则直接以fieldFirst来匹配,如果不为空,则以表头第一个字段 + fieldFirst 来匹配
-        #patternHeaderFirst = '|'.join(['^' + field for field in fieldFirst.split('|')]
-        #                            +['^' + headerFirst + field for field in fieldFirst.split('|')])
-        #patternHeaderFirst = '|'.join(['^' + headerFirst + field for field in fieldFirst.split('|')])
         patternHeaderFirst = '|'.join(['^' + header + field for (header,field)
                                        in itertools.product(headerFirst.split('|'),fieldFirst.split('|'))])
         patternHeaderSecond = '|'.join(['^' + field for field in headerSecond.split('|')])
@@ -298,7 +288,6 @@ class DocParserPdf(DocParserBase):
         fieldLast = '|'.join([field + '$' for field in fieldLast.split('|')])
         if isinstance(mergedFields,str) and isinstance(fieldLast,str) and fieldLast != NULLSTR:
             mergedFields = mergedFields.replace('(','（').replace(')','）').replace('[','（').replace(']','）').replace(' ',NULLSTR).rstrip()
-            #mergedFields = self._replace_fieldname(mergedFields)
             matched = re.search(fieldLast,mergedFields)
             if matched is not None:
                 isTableEnd = True
@@ -340,8 +329,6 @@ class DocParserPdf(DocParserBase):
             checkpointfile.seek(0)
             checkpointfile.truncate()
             checkpointfile.writelines(lines)
-            #checkpointfile.close()
-        #self.logger.info("Success to save checkpoint %s to file %s"%(content,self.checkpointfilename))
 
 
     def get_checkpoint(self):

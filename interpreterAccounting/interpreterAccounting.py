@@ -45,7 +45,7 @@ class InterpreterAccounting(InterpreterBase):
             t.type = self._get_token_type(local_name, t.value, typeList, defaultType='NUMERIC')
             return t
 
-        #t_ignore = " \t\n"
+
         t_ignore = self.ignores
         #解决亿纬锂能2018年财报中,'无形资产情况'和'单位: 元'之间,插入了《.... 5 .....》中间带有数字,导致误判为搜索到页尾
         t_ignore_COMMENT = "《.*》"
@@ -60,11 +60,8 @@ class InterpreterAccounting(InterpreterBase):
             print("Illegal character '%s'" % t.value[0])
             t.lexer.skip(1)
 
-
-
         # Build the lexer
         self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
-
 
         # dictionary of names_global
         self.names = {}
@@ -91,7 +88,7 @@ class InterpreterAccounting(InterpreterBase):
                           | parenthese
                           | skipword
                           '''
-            #去掉| tail  | parenthese TAIL
+            # 去掉 tail  | parenthese TAIL
             p[0] = p[1]
 
 
@@ -128,10 +125,6 @@ class InterpreterAccounting(InterpreterBase):
             self.names['货币单位'] = self._unit_transfer(self.names['unit'])
             self.names['unit'] = NULLSTR
             self.names['货币名称'] = self.names['currency']
-            #if self.names['公司地址'] == NULLSTR:
-            #    self.names['公司地址'] = self.names['address']
-            #tableBegin = True
-            #self._process_fetch_table(tableName,tableBegin,interpretPrefix,unit,currency,company)
             self._process_fetch_table(tableName, tableBegin=True, interpretPrefix=interpretPrefix)
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
 
@@ -154,7 +147,6 @@ class InterpreterAccounting(InterpreterBase):
                 self.docParser.interpretPrefix = NULLSTR
                 return
             self.docParser.interpretPrefix = interpretPrefix
-            #self._process_fetch_table(tableName, tableBegin=False, interpretPrefix=interpretPrefix)#, unit, currency)
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
 
 
@@ -491,7 +483,6 @@ class InterpreterAccounting(InterpreterBase):
                      | HEADER
                      | empty '''
             p[0] = '\n'.join([str(slice) for slice in p if slice is not None])
-            #self.logger.info('finis： %s'%p[0])
 
 
         def p_tail(p):
@@ -499,7 +490,6 @@ class InterpreterAccounting(InterpreterBase):
                     | NUMERO NUMERO TAIL'''
             # tail : TAIL 解决华侨城A 2016年, 无形资产情况出现在页尾,但是没有页码
             tail = ' '.join([str(slice) for slice in p if slice is not None])
-            #self.logger.info('fetchtail %s page %d'%(tail,self.currentPageNumber))
             p[0] = p[1]
 
 
@@ -558,7 +548,6 @@ class InterpreterAccounting(InterpreterBase):
             resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time),'failedTable': failedTableAgain})
         else:
             self.logger.info('failed to fetch %s\t tables:%s!\n' % (sourceFile, failedTable))
-            #self.logger.info('now start to repair the fetch failed tables!\n')
             #通过repair_list对表进行恢复,返回可能回恢复的列表
             repairedTable = self._process_repair_table(failedTable)
             #再次获取failedTable,表示在进行表恢复操作后,仍然失败的表
