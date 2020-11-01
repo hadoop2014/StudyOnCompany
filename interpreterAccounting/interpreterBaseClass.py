@@ -6,6 +6,7 @@
 # @Note    : 用于从财务报表中提取财务数据
 from functools import reduce
 from baseClass import *
+import itertools
 
 
 #数据读写处理的基类
@@ -52,6 +53,16 @@ class InterpreterBase(BaseClass):
         self.dictKeyword = self._get_keyword(self.tableKeyword)
         self.dictTables = self._fields_replace_punctuate(self.dictTables)
         self.dictTables = self._fields_standardized(self.dictTables)
+        self.dictReportType = self._get_report_type_tables(self.dictTables)
+
+
+    def _get_report_type_tables(self,dictTables):
+        dictReportType = dict()
+        for tableName in dictTables.keys():
+            dictTemp =  dict(list(zip(dictTables[tableName]['reportType'], [tableName] * len(dictTables[tableName]['reportType']))))
+            for reportType, valueList in dictTemp.items():
+                dictReportType.setdefault(reportType, []).append(valueList)
+        return dictReportType
 
 
     def _fields_standardized(self,dictTables):
@@ -113,6 +124,7 @@ class InterpreterBase(BaseClass):
                 #dictTables[tableName].update(
                 #    {tokenName + 'Alias':dict(zip(list(map(self._replace_fieldname, dictTables[tableName][tokenName +'Alias'].keys()))
                 #                       ,list(map(self._replace_fieldname,dictTables[tableName][tokenName + 'Alias'].values()))))})
+                # 计算 年度报告,半年度报告,第一季度报告,第三季度报告 需要解析多少张表
             dictTables[tableName].update(
                 {'maxFieldLen':reduce(max,list(map(len,dictTables[tableName]['fieldName'])))})
         self.logger.warning("函数_fields_replace_punctuate把interpreterAccounting.json中配置的所有表的字段名中的英文标点替换为中文的,"

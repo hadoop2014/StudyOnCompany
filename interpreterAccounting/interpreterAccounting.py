@@ -135,6 +135,7 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional tail
                           | TABLE optional time tail
                           | TABLE optional HEADER optional unit tail'''
+            # TABLE optional unit DISCARD tail 解决通策医疗2017年报 主营业务分行业经营情况出现在业尾,即: 主营业务分行业、分产品、分地区情况 单位:元币种:人民币 主营业务分行业情况 16/175
             # TABLE optional HEADER optional unit tail解决中石科技2017年报 合并资产负债表刚好出现在页尾的场景. 如下: 合并所有者权益变动表 本期金额 单位：元 79
             # 处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
             # TABLE optional COMPANY NUMERIC解决大立科技2018年年报合并资产负债表出现在页尾的情况.
@@ -529,10 +530,14 @@ class InterpreterAccounting(InterpreterBase):
         self.logger.info('%s\tcritical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                          ,str(self.names['公司代码']),self.names['公司简称'],self.names['公司地址']
                          ,str(self.names['货币单位']),self.names["注册地址"]]))
-        failedTable = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
+        if self.names['报告类型'] in self.dictReportType.keys():
+            tableNames = self.dictReportType[self.names['报告类型']]
+        else:
+            self.logger.error('Failed to fetch tableNames from %s:%s'%(self.names['报告类型'],self.dictReportType))
+        failedTable = set(tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
             repairedTable = self._process_repair_table(failedTable)
-            failedTableAgain = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
+            failedTableAgain = set(tableNames).difference(set(self.sqlParser.process_info.keys()))
             self.logger.info('success to process %s\tprocess_info:' % sourceFile + str(self.sqlParser.process_info))
             if len(repairedTable) > 0:
                 forceRepairTableFailed = repairedTable & failedTableAgain
@@ -551,7 +556,7 @@ class InterpreterAccounting(InterpreterBase):
             #通过repair_list对表进行恢复,返回可能回恢复的列表
             repairedTable = self._process_repair_table(failedTable)
             #再次获取failedTable,表示在进行表恢复操作后,仍然失败的表
-            failedTableAgain = set(self.tableNames).difference(set(self.sqlParser.process_info.keys()))
+            failedTableAgain = set(tableNames).difference(set(self.sqlParser.process_info.keys()))
             self.logger.info('success to fetch %s\t process_info:' % sourceFile + str(self.sqlParser.process_info))
             self.logger.info('failed to fetch %s\t tables:%s!' % (sourceFile, failedTable))
             if len(repairedTable) > 0:
@@ -840,8 +845,9 @@ class InterpreterAccounting(InterpreterBase):
         for cirtical in self.criticals:
             self.names.update({self._get_critical_alias(cirtical):NULLSTR})
         if dictParameter is not None:
-            self.docParser._load_data(dictParameter['sourcefile'])
+            # 此语句会更新source_directory,必须放在_load_data前面
             self.gConfig.update(dictParameter)
+            self.docParser._load_data(dictParameter['sourcefile'])
 
 
 def create_object(gConfig,memberModuleDict):

@@ -183,6 +183,7 @@ class InterpreterNature(InterpreterBase):
         for sourcefile in sourcefiles:
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})
+            dictParameter.update({'source_directory':os.path.split(self._get_path_by_name(sourcefile))[-1]})
             dictParameter.update(self.names_global)
             taskResult = self._process_single_parse(dictParameter)
             taskResults.append(str(taskResult))

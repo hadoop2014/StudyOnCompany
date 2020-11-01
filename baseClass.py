@@ -106,13 +106,6 @@ class BaseClass():
 
 
     def _get_path_by_type(self,type):
-        #typeTranser = {
-        #    "年度报告": "年报",
-        #    "半年度报告": "半年报",
-        #    "第一季度报告": "季报",
-        #    "第三季度报告": "季报"
-        #}
-        #types = ['年度报告','半年度报告','第一季度报告','第三季度报告']
         reportTypes = self.gJsonBase['报告类型']
         assert type in reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,reportTypes)
         path = os.path.join(self.data_directory,type)
