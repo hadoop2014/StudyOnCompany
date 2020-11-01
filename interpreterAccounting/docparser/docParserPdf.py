@@ -385,9 +385,6 @@ class DocParserPdf(DocParserBase):
             if not os.path.exists(self.checkpointfilename):
                 fw = open(self.checkpointfilename,'w',newline='',encoding='utf-8')
                 fw.close()
-            #self.checkpointfile = open(self.checkpointfilename, 'w', newline='', encoding='utf-8')
-            #self.checkpointwriter = csv.writer(self.checkpointfile)
-            #self.checkpointreader = csv.reader(self.checkpointfile)
         else:
             if os.path.exists(self.checkpointfilename):
                 os.remove(self.checkpointfilename)

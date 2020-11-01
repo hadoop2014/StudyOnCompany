@@ -37,7 +37,11 @@ class BaseClass():
         #self.EOF = gConfig['EOF'.lower()]
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
+        self.reportAlias = self.gJsonBase['reportAlias']
+        #self._get_interpreter_keyword()
 
+    #def _get_interpreter_keyword(self):
+    #    self.reportAlias = self.gJsonBase['reportAlias']
 
     def __iter__(self):
         return self
@@ -119,6 +123,7 @@ class BaseClass():
 
     def _get_path_by_name(self,name):
         type = self._get_type_by_name(name)
+        type = self._get_report_alias(type)
         path = self._get_path_by_type(type)
         return path
 
@@ -175,6 +180,20 @@ class BaseClass():
         if dictTable is None:
             dictTable = list()
         return dictTable
+
+
+    def _get_report_alias(self, report):
+        aliasedReport = self._alias(report, self.reportAlias)
+        return aliasedReport
+
+
+    def _alias(self, name, dictAlias):
+        alias = name
+        aliasKeys = dictAlias.keys()
+        if len(aliasKeys) > 0:
+            if name in aliasKeys:
+                alias = dictAlias[name]
+        return alias
 
 
     def _write_table(self,tableName,table):

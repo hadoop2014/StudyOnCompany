@@ -5,7 +5,10 @@
 # @File    : interpreterCrawl.py
 # @Note    : 用接近自然语言的解释器处理各类事务,用于处理财务数据爬取,财务数据提取,财务数据分析.
 from ply import lex,yacc
+import copy
+import itertools
 from interpreterNature.interpreterBaseClass import *
+
 
 class InterpreterNature(InterpreterBase):
     def __init__(self,gConfig,interpreterDict):
@@ -26,8 +29,6 @@ class InterpreterNature(InterpreterBase):
             local_name['t_'+token] = self.dictTokens[token]
         self.logger.info('\n'+str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
-
-        #t_ignore = " \t\n"
         t_ignore = self.ignores
         t_ignore_COMMENT = r'#.*'
 
@@ -89,6 +90,8 @@ class InterpreterNature(InterpreterBase):
 
         def p_expression_config(p):
             '''expression : CONFIG '{' configuration '}' '''
+            #把names_global进行更新
+            self.names_global.update(self._get_merged_names_global(self.names_global))
             p[0] = p[1] +'{ ' + p[3] +' }'
 
 
@@ -100,17 +103,23 @@ class InterpreterNature(InterpreterBase):
         def p_configuration_value(p):
             '''configuration : PARAMETER ':' NUMERIC
                              | PARAMETER ':' time
-                             | PARAMETER ':' value'''
-            if p.slice[3].type == 'NUMERIC':
-                self.names_global.update({p[1]:list([p[3]])})
-            elif p.slice[3].type == 'time':
-                self.names_global.update({p[1]:self.names_local['timelist']})
-            elif p.slice[3].type == 'value':
-                if isinstance(self.names_global[p[1]],list):
-                    self.names_global.update({p[1]:self.names_global[p[1]] + self.names_local['valuelist']})
-                else:
-                    self.names_global.update({p[1]:self.names_local['valuelist']})
-            self._parameter_check(p[1], self.names_global[p[1]])
+                             | PARAMETER ':' value
+                             | CATEGORY ':' value'''
+            if p.slice[1].type == 'PARAMETER':
+                if p.slice[3].type == 'NUMERIC':
+                    self.names_global.update({p[1]:list([p[3]])})
+                elif p.slice[3].type == 'time':
+                    self.names_global.update({p[1]:self.names_local['timelist']})
+                elif p.slice[3].type == 'value':
+                    if isinstance(self.names_global[p[1]],list):
+                        self.names_global.update({p[1]:self.names_global[p[1]] + self.names_local['valuelist']})
+                    else:
+                        self.names_global.update({p[1]:self.names_local['valuelist']})
+                self._parameter_check(p[1], self.names_global[p[1]])
+            elif p.slice[1].type == 'CATEGORY':
+                key = self.gJsonInterpreter['CATEGORY']
+                self.names_global[key].update({p[1]:self.names_local['valuelist']})
+                self._parameter_check(key, self.names_global[key][p[1]])
             self.logger.info("fetch config %s : %s"%(p[1],p[3]))
             p[0] = p[1] + ':' + p[3]
 
@@ -165,6 +174,8 @@ class InterpreterNature(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
             return
+        # 把行业分类中的公司和公司简称中的公司进行合并
+        self.gConfig.update(self.names_global)
         taskResults = list()
         sourcefiles = self._get_needed_files(scale,isForced)
         sourcefiles = list(sourcefiles)
@@ -172,6 +183,7 @@ class InterpreterNature(InterpreterBase):
         for sourcefile in sourcefiles:
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})
+            dictParameter.update(self.names_global)
             taskResult = self._process_single_parse(dictParameter)
             taskResults.append(str(taskResult))
         self.logger.info('运行结果汇总如下:\n\t\t\t\t'+'\n\t\t\t\t'.join(taskResults))
@@ -214,6 +226,17 @@ class InterpreterNature(InterpreterBase):
         self.gConfig.update({'报告时间': self.names_global['报告时间'][1:]})
         self.interpreterCrawl.initialize(self.gConfig)
         self.interpreterCrawl.doWork(command)
+
+
+    def _get_merged_names_global(self,names_global):
+        # 把行业分类中的公司简称全部合并
+        gConfig = copy.deepcopy(names_global)
+        for categry,company in gConfig['行业分类'].items():
+            gConfig.setdefault('公司简称', []).extend(company)
+        #把行业分类的dict进行转置
+        dictCategory = dict(itertools.chain.from_iterable([list(zip(valueList,[key]*len(valueList))) for key,valueList in gConfig['行业分类'].items()]))
+        gConfig.update({"行业分类":dictCategory})
+        return gConfig
 
 
     def _get_needed_files(self,scale,isForced = False):
@@ -293,17 +316,24 @@ class InterpreterNature(InterpreterBase):
     def _parameter_check(self,key,values):
         assert isinstance(values,list),"values(%s) is not a list"%values
         isCheckOk = False
+        categorys = self.gJsonInterpreter['行业分类']
+        if key == '行业分类':
+            for category in self.names_global[key].keys():
+                isCheckOk =  category in categorys.keys()
+                assert isCheckOk, "行业(%s) is invalid,it must in 行业分类 %s" % (category, categorys)
         parametercheck = self.gJsonInterpreter['parametercheck']
         for value in values:
             if key in parametercheck.keys():
-                isCheckOk = self._is_matched(parametercheck[key],value)
+                #isCheckOk = self._is_matched(parametercheck[key],value)
+                isCheckOk = self._standardize(parametercheck[key],value) == value
             assert isCheckOk,"Value(%s) is invalid,it must match pattern %s"%(value,parametercheck[key])
 
 
     def initialize(self):
-        self.names_global['公司简称'] = NULLSTR
+        self.names_global['公司简称'] = []
         self.names_global['报告时间'] = NULLSTR
         self.names_global['报告类型'] = NULLSTR
+        self.names_global['行业分类'] = {}
         self.names_local['timelist'] = NULLSTR
         self.names_local['valuelist'] = NULLSTR
 

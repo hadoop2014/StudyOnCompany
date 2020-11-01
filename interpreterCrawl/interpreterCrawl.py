@@ -6,13 +6,14 @@
 # @Note    : 用接近自然语言的解释器处理爬虫事务,用于处理财务数据爬取
 
 from ply import lex,yacc
-import time
 from interpreterCrawl.interpreterBaseClass import *
 
 class InterpreterCrawl(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterCrawl, self).__init__(gConfig)
         self.crawlFinance = memberModuleDict['crawlfinance']
+        self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
+        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.interpretDefine()
 
 
@@ -26,11 +27,9 @@ class InterpreterCrawl(InterpreterBase):
             local_name['t_'+token] = self.dictTokens[token]
         self.logger.info('\n'+str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
-
         #t_ignore = " \t\n"
         t_ignore = self.ignores
         t_ignore_COMMENT = r'#.*'
-
 
 
         def t_newline(t):
@@ -102,7 +101,6 @@ class InterpreterCrawl(InterpreterBase):
                          and self._is_matched('|'.join(self.names['报告类型']),sourcefile) \
                          and self._is_matched('|'.join(self.names['报告时间']),sourcefile)
         return isFileSelected
-
 
 
     def _is_file_name_valid(self,fileName):

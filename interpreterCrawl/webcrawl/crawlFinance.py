@@ -6,6 +6,9 @@
 # @Note    : 用于从互联网上爬取财务报表
 import random
 import requests
+import math
+import csv
+import pandas as pd
 
 from interpreterCrawl.webcrawl.crawlBaseClass import *
 
@@ -13,6 +16,10 @@ from interpreterCrawl.webcrawl.crawlBaseClass import *
 class CrawlFinance(CrawlBase):
     def __init__(self,gConfig):
         super(CrawlFinance, self).__init__(gConfig)
+        self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
+        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
+        self.checkpoint = None
+        self.checkpointWriter = None
 
 
     def crawl_finance_data(self,website,scale):
@@ -28,7 +35,11 @@ class CrawlFinance(CrawlBase):
 
         standardPaths = self._process_path_standardize(downloadPaths, website)
 
-        self._process_download(standardPaths, website)
+        resultPaths = self._process_download(standardPaths, website)
+
+        self.save_checkpoint(resultPaths)
+
+        self.close_checkpoint()
 
 
     def _process_fetch_download_path(self,website):
@@ -42,46 +53,62 @@ class CrawlFinance(CrawlBase):
         assert isinstance(companys,list),"Company(%s) is not valid,it must be a list!"%companys
         RESPONSE_TIMEOUT = self.dictWebsites[website]['RESPONSE_TIMEOUT']
         exception = self.dictWebsites[website]['exception']
+        pageSize = query['pageSize']
         for company in companys:
             query['searchkey'] = company
             query['stock'] = ""
             if company in exception.keys():
                 query['stock'] = ','.join([exception[company]['stock'],exception[company]['secid']])
                 query['searchkey'] = exception[company]['searchkey']
-            #query = {'pageNum': page,  # 页码
-            #         'pageSize': 30,
-            #         'tabName': 'fulltext',
-            #         'column': 'szse',  # 深交所
-            #         'stock': '603027,9900024904',  #
-            #         'searchkey': '',  # 千禾味业
-            #         'secid': '',
-            #         'plate': 'sz;sh',
-            #         'category': 'category_ndbg_szsh;',  # 年度报告
-            #         'trade': '',
-            #         'seDate': '2020-01-01~2020-04-26',  # 时间区间
-            #         "isHLtitle": 'true'
-            #         }
-            time.sleep(random.random() * self.dictWebsites[website]['WAIT_TIME'])
+                #query = {'pageNum': page,  # 页码
+                #         'pageSize': 30,
+                #         'tabName': 'fulltext',
+                #         'column': 'szse',  # 深交所
+                #         'stock': '603027,9900024904',  #
+                #         'searchkey': '',  # 千禾味业
+                #         'secid': '',
+                #         'plate': 'sz;sh',
+                #         'category': 'category_ndbg_szsh;',  # 年度报告
+                #         'trade': '',
+                #         'seDate': '2020-01-01~2020-04-26',  # 时间区间
+                #         "isHLtitle": 'true'
+                #         }
             headers['User-Agent'] = random.choice(self.dictWebsites[website]["user_agent"])  # 定义User_Agent
             try:
                 query_response = self._get_response(query_path,headers=headers,data=query,RESPONSE_TIMEOUT=RESPONSE_TIMEOUT)
+                time.sleep(random.random() * self.dictWebsites[website]['WAIT_TIME'])
                 recordNum = query_response["totalRecordNum"]
                 download = query_response['announcements']
-                downloadList =  downloadList + download
-                self.logger.info('the record num of query response of %s is %d!'%(company,recordNum))
+                if recordNum > pageSize:
+                     endPage = int(math.ceil(recordNum / pageSize))
+                     for pageNum in range(1,endPage):
+                         query['pageNum'] = pageNum + 1
+                         query_response = self._get_response(query_path, headers=headers, data=query,
+                                                             RESPONSE_TIMEOUT=RESPONSE_TIMEOUT)
+                         time.sleep(random.random() * self.dictWebsites[website]['WAIT_TIME'])
+                         recordNum = query_response["totalRecordNum"]
+                         download = download +  query_response['announcements']
+                downloadList = downloadList + download
+                if len(download)  == recordNum:
+                    self.logger.info('success to fetch the record num of query response of %s is %d!'%(company,recordNum))
+                else:
+                    self.logger.warning('failed to fetch total record num of %s : total(%d),fetched(%d)'%(company,recordNum,len(download)))
             except Exception as e:
                 self.logger.warning('failed to fetch %s where %s!'%(company,str(e)))
         return downloadList
 
 
     def _process_download(self, urllists, website):
-        dictWebsites = self.dictWebsites[website]
+        resultPaths = []
+        reportType = NULLSTR
+        publishingTime = NULLSTR
         for filename,url in urllists.items():
             try:
-                #type = self._get_type_by_name(filename)
-                #path = self._get_path_by_type(type)
                 path = self._get_path_by_name(filename)
                 filePath = os.path.join(path,filename)
+                publishingTime = self._get_publishing_time(url)
+                reportType = os.path.split(path)[-1]
+                resultPaths.append([filename, reportType, publishingTime, url])
                 if os.path.exists(filePath):
                     self.logger.info("File %s is already exists!" % filename)
                     continue
@@ -91,7 +118,10 @@ class CrawlFinance(CrawlBase):
                 file.close()
                 self.logger.info("Sucess to fetch %s ,write to file %s!"%(url,filename))
             except Exception as e:
-                self.logger.error("Failed to fetch %s!"%url)
+                #如果下载不成功,则去掉该记录
+                resultPaths.remove([filename, reportType, publishingTime, url])
+                self.logger.error("Failed to fetch %s,file %s!"%(url,filename))
+        return resultPaths
 
 
     def _process_path_standardize(self, downloadPaths, website):
@@ -100,7 +130,8 @@ class CrawlFinance(CrawlBase):
         standardPaths = dict()
         for path in downloadPaths:
             urlPath = download_path + path["adjunctUrl"]
-            filename = '（' + path["secCode"] + '）' + self._secname_transfer(path['secName']) + '：' + path['announcementTitle'] + '.PDF'
+            filename = '（' + path["secCode"] + '）' + self._secname_transfer(path['secName']) + '：' \
+                       + self._title_transfer(path['announcementTitle']) + '.PDF'
             if '*' in filename:
                 filename = filename.replace('*', '')
             if self._is_file_needed(filename,website):
@@ -108,8 +139,23 @@ class CrawlFinance(CrawlBase):
         return standardPaths
 
 
+    def _get_publishing_time(self,url):
+        #获取年报的发布时间
+        assert url != NULLSTR,"url must not be NULL!"
+        publishingTime = NULLSTR
+        pattern = self.gJsonInterpreter['TIME']
+        matched = self._standardize(pattern, url)
+        if matched is not None:
+            pulishingTime = matched
+        else:
+            self.logger.warning('failed to fetch pulishing time of url(%s)'%url)
+        return pulishingTime
+
+
     def _is_file_needed(self,fileName,website):
         isFileNeeded = True
+        if fileName == NULLSTR:
+            isFileNeeded = False
         nameDiscard = self.dictWebsites[website]['nameDiscard']
         if nameDiscard != NULLSTR:
             pattern = '|'.join(nameDiscard)
@@ -130,6 +176,17 @@ class CrawlFinance(CrawlBase):
         if namelist.status_code == requests.codes.ok and namelist.text != '':
             query_response = namelist.json()
         return query_response
+
+
+    def _title_transfer(self,title):
+        timereport = NULLSTR
+        pattern = self.gJsonInterpreter['TIME']+self.gJsonInterpreter['VALUE']
+        matched = self._standardize(pattern,title)
+        if matched is not None:
+            timereport = matched
+        else:
+            self.logger.error('title(%s) is error!'%title)
+        return timereport
 
 
     def _secname_transfer(self, secName):
@@ -158,6 +215,33 @@ class CrawlFinance(CrawlBase):
         return seData
 
 
+    def save_checkpoint(self, content):
+        assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
+        content = self._remove_duplicate(content)
+        self.checkpoint.seek(0)
+        self.checkpoint.truncate()
+        self.checkpointWriter.writerows(content)
+        #读取checkpoint内容,去掉重复记录,重新排序,写入文件
+
+
+    def close_checkpoint(self):
+        self.checkpoint.close()
+
+
+    def _remove_duplicate(self,content):
+        assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
+        resultContent = content
+        if len(content) == 0:
+            return resultContent
+        checkpointHeader = self.gJsonInterpreter['checkpointHeader']
+        dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader)
+        dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader))
+        dataFrame = dataFrame.drop_duplicates()
+        dataFrame = dataFrame.sort_values(by=["文件名","报告类型"],ascending=False)
+        resultContent = dataFrame.values.tolist()
+        return resultContent
+
+
     def initialize(self,dictParameter = None):
         if dictParameter is not None:
             self.gConfig.update(dictParameter)
@@ -166,6 +250,15 @@ class CrawlFinance(CrawlBase):
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
         self.clear_logging_directory(self.logging_directory)
+        if self.checkpointIsOn:
+            if not os.path.exists(self.checkpointfilename):
+                fw = open(self.checkpointfilename,'w',newline='',encoding='utf-8')
+                fw.close()
+            self.checkpoint = open(self.checkpointfilename, 'r+', newline='', encoding='utf-8')
+            self.checkpointWriter = csv.writer(self.checkpoint)
+        else:
+            if os.path.exists(self.checkpointfilename):
+                os.remove(self.checkpointfilename)
 
 
 def create_object(gConfig):

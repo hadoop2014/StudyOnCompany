@@ -12,6 +12,7 @@ from baseClass import *
 class InterpreterAssemble(BaseClass):
     def __init__(self):
         gConfig = getConfig.get_config()
+        gConfig.update({"gJsonBase".lower():getConfig.get_config_json_base()})
         super(InterpreterAssemble, self).__init__(gConfig)
         self.check_book = getConfig.get_check_book()
 

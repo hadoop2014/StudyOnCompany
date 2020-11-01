@@ -5,6 +5,8 @@
   "SCALE" : "全量|批量|单次",
   "CRAWL": "爬取",
   "WEBSITE": "巨潮资讯网",
+  "#TIME": "该定义不用于token,仅仅用于crawlFinance.的_get_publishing_time函数和_title_transfer函数",
+  "TIME": "\\d{4}[年]*([-]\\d{2}[-]\\d{2})*",
   "#VALUE": "该定义不用于token,仅仅用于crawlFinance.py中的_secname_transfer函数",
   "VALUE": "[\\u4E00-\\u9FA5|A-Z|Ａ-Ｚ]+",
 
@@ -12,8 +14,9 @@
   "literals": ["(",")","（","）","-","%","％"],
 
   "ignores": "\t ",
-      "#Accept-Language": "zh-CN,zh;q=0.9",
-             "#Accept": "*/*",
+
+  "checkpointHeader": ["文件名","报告类型","发布时间","网址"],
+
   "巨潮资讯网": {
     "query_path": "http://www.cninfo.com.cn/new/hisAnnouncement/query",
     "download_path": "http://static.cninfo.com.cn/",
@@ -47,8 +50,8 @@
     "category": {
       "年度报告": "category_ndbg_szsh",
       "半年度报告": "category_bndbg_szsh",
-      "一季度报告": "category_yjdbg_szsh",
-      "三季度报告": "category_sjdbg_szsh"
+      "第一季度报告": "category_yjdbg_szsh",
+      "第三季度报告": "category_sjdbg_szsh"
     },
     "user_agent": ["Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 2.0.50727; Media Center PC 6.0)",
      "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 1.0.3705; .NET CLR 1.1.4322)",
@@ -59,7 +62,7 @@
      "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9) Gecko/20080705 Firefox/3.0 Kapiko/3.0",
      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"],
     "nameStandardize": "(（\\d+）)*[\\u4E00-\\u9FA5|：]+\\d+[\\u4E00-\\u9FA5]+(（[\\u4E00-\\u9FA5]+）)*",
-    "nameDiscard": ["摘要","取消","英文"],
+    "nameDiscard": ["摘要","取消","英文","正文"],
     "RESPONSE_TIMEOUT": 10,
     "WAIT_TIME": 6,
     "exception": {
@@ -158,9 +161,6 @@
         "secid": "gssz0000069",
         "searchkey": ""
       }
-
     }
   }
-
-
 }

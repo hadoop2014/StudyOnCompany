@@ -49,6 +49,7 @@ class InterpreterBase(BaseClass):
         self.websites = [website for website in self.gJsonInterpreter['WEBSITE'].split('|')]
         self.dictWebsites = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
                            keyword in self.websites}
+        #self.reportAlias = self.gJsonInterpreter['reportAlias']
 
 
     def _get_keyword(self,tableKeyword):

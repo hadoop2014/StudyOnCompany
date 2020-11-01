@@ -39,7 +39,7 @@ class InterpreterBase(BaseClass):
         self.criticalAlias = self.gJsonInterpreter['criticalAlias']
         self.criticals = self.gJsonInterpreter['CRITICAL'].split('|')
         self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
-        self.reportAlias = self.gJsonInterpreter['reportAlias']
+        #self.reportAlias = self.gJsonInterpreter['reportAlias']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
         self.tableAlias = self.gJsonInterpreter['tableAlias']
         #tableNames标准化,去掉正则表达式中的$^
@@ -140,11 +140,6 @@ class InterpreterBase(BaseClass):
         return standardizedKeywords
 
 
-    def _get_report_alias(self, report):
-        aliasedReport = self._alias(report, self.reportAlias)
-        return aliasedReport
-
-
     def _get_reference_alias(self,refernece):
         aliasedRefernece = self._alias(refernece, self.referenceAlias)
         return aliasedRefernece
@@ -191,15 +186,6 @@ class InterpreterBase(BaseClass):
         value = value.replace('(', '（').replace(')', '）').replace(' ', NULLSTR)
         #数值中-,.号是有意义的不能随便替换
         return value
-
-
-    def _alias(self, name, dictAlias):
-        alias = name
-        aliasKeys = dictAlias.keys()
-        if len(aliasKeys) > 0:
-            if name in aliasKeys:
-                alias = dictAlias[name]
-        return alias
 
 
     def _deduplicate(self, field1, field2):

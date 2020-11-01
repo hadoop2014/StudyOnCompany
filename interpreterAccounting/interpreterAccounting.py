@@ -732,8 +732,18 @@ class InterpreterAccounting(InterpreterBase):
         if self.names['公司代码'] ==NULLSTR and code is not NaN:
             code = code.replace('（',NULLSTR).replace('）',NULLSTR)
             self.names['公司代码'] = code
+        if self.names['行业分类'] == NULLSTR:
+            self.names["行业分类"] = self._get_category(company)
         self.logger.info('fetch data from filename:%s %s %s %s'
                          %(self.names["公司代码"],self.names["公司简称"],self.names["报告时间"],self.names["报告类型"]))
+
+
+    def _get_category(self,company):
+        category = NULLSTR
+        dictCatogery = self.gConfig['行业分类']
+        if company in dictCatogery.keys():
+            category = dictCatogery[company]
+        return category
 
 
     def _get_time_type_by_name(self,filename):
@@ -816,7 +826,8 @@ class InterpreterAccounting(InterpreterBase):
         for tableName in self.tableNames:
             self.names.update({tableName:{'tableName':NULLSTR
                                           ,'公司名称':NULLSTR,'公司代码':NULLSTR,'公司简称':NULLSTR
-                                          ,'报告时间':NULLSTR,'报告类型':NULLSTR,"公司地址":NULLSTR,'行业分类':NULLSTR
+                                          ,'报告时间':NULLSTR,'报告类型':NULLSTR,"公司地址":NULLSTR
+                                          ,'行业分类':NULLSTR
                                           ,'货币单位': 1 #货币单位默认为1
                                           ,'货币名称': NULLSTR
                                           ,"注册地址": NULLSTR
