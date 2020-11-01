@@ -134,7 +134,7 @@ class CrawlFinance(CrawlBase):
             filename = '（' + path["secCode"] + '）' + self._secname_transfer(path['secName']) + '：' \
                        + self._title_transfer(path['announcementTitle']) + '.PDF'
             if '*' in filename:
-                filename = filename.replace('*', '')
+                filename = filename.replace('*', NULLSTR)
             if self._is_file_needed(filename,website):
                 standardPaths.update({filename:urlPath})
         return standardPaths
@@ -181,7 +181,7 @@ class CrawlFinance(CrawlBase):
 
     def _title_transfer(self,title):
         timereport = NULLSTR
-        pattern = self.gJsonInterpreter['TIME']+self.gJsonInterpreter['VALUE']
+        pattern = self.gJsonInterpreter['TIME']+self.gJsonInterpreter['VALUE']+ '(（[\\u4E00-\\u9FA5]+）)*'
         matched = self._standardize(pattern,title)
         if matched is not None:
             timereport = matched
@@ -238,7 +238,7 @@ class CrawlFinance(CrawlBase):
         dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader)
         dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader))
         dataFrame = dataFrame.drop_duplicates()
-        dataFrame = dataFrame.sort_values(by=["文件名","报告类型"],ascending=False)
+        dataFrame = dataFrame.sort_values(by=["报告类型","文件名"],ascending=False)
         resultContent = dataFrame.values.tolist()
         return resultContent
 

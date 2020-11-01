@@ -185,7 +185,9 @@
     "horizontalTable": false,
     "headerDiscard": ["本期比上年同期增减","本年比上年增减","调整前","本报告期比上年同期增减","本期末比上年同期末增减","重述前"],
     "headerAlias": {
-      "\\d+\\s*年": "虚拟字段仅用于识别正则表达式"
+      "\\d+\\s*年": "虚拟字段仅用于识别正则表达式",
+      "本报告期": "本期金额",
+      "上年同期": "上期金额"
     },
     "headerPatternPrefix": "",
     "headerPatternSuffix": "(（[%％]）)*",
