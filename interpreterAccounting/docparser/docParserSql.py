@@ -224,7 +224,8 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_value_standardize(dataframe,tableName)
 
         #把dataframe写入sqlite3数据库
-        self._write_to_sqlite3(dataframe,tableName)
+        targetTableName = self._get_tablename_by_type(self.gConfig['source_directory'],tableName)
+        self._write_to_sqlite3(dataframe,targetTableName)
         self.process_info[tableName].update({'processtime':time.time() - self.process_info[tableName]['processtime']})
 
 
@@ -820,14 +821,22 @@ class DocParserSql(DocParserBase):
 
 
     def _create_tables(self):
+        for reportType in self.reportTypes:
+            tableNames = self.dictReportType[reportType]
+            tablePrefix = self._get_table_prefix(reportType)
+            self._create_tables_by_type(tablePrefix,tableNames)
+
+
+    def _create_tables_by_type(self, tablePrefix,tableNames):
         #用于向Sqlite3数据库中创建新表
         conn = self._get_connect()
         cursor = conn.cursor()
         allTables = self._fetch_all_tables(cursor)
         allTables = list(map(lambda x:x[0],allTables))
-        for tableName in self.tableNames:
-            if tableName not in allTables:
-                sql = " CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t" % tableName
+        for tableName in tableNames:
+            targetTableName = tablePrefix + tableName
+            if targetTableName not in allTables:
+                sql = " CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t" % targetTableName
                 for commonFiled, type in self.commonFileds.items():
                     sql = sql + "[%s] %s\n\t\t\t\t\t," % (commonFiled, type)
                 #由表头转换生产的字段
@@ -846,25 +855,25 @@ class DocParserSql(DocParserBase):
                 try:
                     conn.execute(sql)
                     conn.commit()
-                    print('创建数据库表%s成功' % (tableName))
+                    print('创建数据库表%s成功' % (targetTableName))
                 except Exception as e:
                     # 回滚
                     conn.rollback()
-                    print(e,' 创建数据库表%s失败' % tableName)
+                    print(e,' 创建数据库表%s失败' % targetTableName)
 
                 #创建索引
-                sql = "CREATE INDEX IF NOT EXISTS [%s索引] on [%s] (\n\t\t\t\t\t"%(tableName,tableName)
+                sql = "CREATE INDEX IF NOT EXISTS [%s索引] on [%s] (\n\t\t\t\t\t"%(targetTableName,targetTableName)
                 sql = sql + ", ".join(str(field) for field,value in self.commonFileds.items()
                                      if value.find('NOT NULL') >= 0)
                 sql = sql + '\n\t\t\t\t\t)'
                 try:
                     conn.execute(sql)
                     conn.commit()
-                    print('创建数据库%s索引成功' % (tableName))
+                    print('创建数据库%s索引成功' % (targetTableName))
                 except Exception as e:
                     # 回滚
                     conn.rollback()
-                    print(e,' 创建数据库%s索引失败' % tableName)
+                    print(e,' 创建数据库%s索引失败' % targetTableName)
         cursor.close()
         conn.close()
 

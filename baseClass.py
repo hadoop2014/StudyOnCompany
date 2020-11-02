@@ -28,20 +28,17 @@ class BaseClass():
         self.program_directory = gConfig['program_directory']
         self.working_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
         self.data_directory = gConfig['data_directory']
-        #self.logging_directory = os.path.join(self.gConfig['logging_directory'], self._get_module_path())
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._data = list()
         self._index = 0
         self._length = len(self._data)
         #不同的类继承BaseClass时,logger采用不同的名字
-        #self.EOF = gConfig['EOF'.lower()]
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
         self.reportAlias = self.gJsonBase['reportAlias']
-        #self._get_interpreter_keyword()
+        self.reportTypes =  self.gJsonBase['报告类型']
+        #self.tablePrefixs =  list(set([self._get_table_prefix(reportType) for reportType in self.reportTypes]))
 
-    #def _get_interpreter_keyword(self):
-    #    self.reportAlias = self.gJsonBase['reportAlias']
 
     def __iter__(self):
         return self
@@ -79,6 +76,23 @@ class BaseClass():
                     isFileNameValid = True
         return isFileNameValid
 
+
+    def _get_tablename_by_type(self,reportType,tableName):
+        # 根据报告类型转换成相应的表名,如第一季度报告,合并资产负债表 转成 季报合并资产负债表
+        assert reportType != NULLSTR, "reportType must not be NULL!"
+        tablePrefix = self._get_table_prefix(reportType)
+        return tablePrefix + tableName
+
+
+    def _get_table_prefix(self,reportType):
+        assert reportType != NULLSTR,"reportType must not be NULL!"
+        tablePrefix = NULLSTR
+        dictTablePrefix = self.gJsonBase['tablePrefix']
+        if reportType in dictTablePrefix.keys():
+            tablePrefix = dictTablePrefix[reportType]
+        else:
+            self.logger.error('reportType(%s) is invalid,it must one of %s'%(reportType,dictTablePrefix.keys()))
+        return tablePrefix
 
 
     def _get_token_type(self, local_name,value,typeLict,defaultType):

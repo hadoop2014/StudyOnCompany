@@ -250,7 +250,7 @@
     "fieldStandardize": "",
     "maxPages": 2,
     "maxHeaders": 5,
-    "reportType": ["年度报告","半年度报告"]
+    "reportType": ["年度报告"]
   },
 
 
@@ -402,7 +402,7 @@
     "fieldStandardize": "[\\u4E00-\\u9FA5]{1,}(（[\\u4E00-\\u9FA5]+）|\\d+)?(?(1)([\\u4E00-\\u9FA5]*))",
     "maxPages": 2,
     "maxHeaders": 4,
-    "reportType": ["年度报告","半年度报告"]
+    "reportType": ["年度报告"]
   },
 
 

@@ -844,9 +844,11 @@ class InterpreterAccounting(InterpreterBase):
             self.names.update({'货币名称': NULLSTR})
         for cirtical in self.criticals:
             self.names.update({self._get_critical_alias(cirtical):NULLSTR})
+        self.gConfig.update({'行业分类':dict()})
         if dictParameter is not None:
             # 此语句会更新source_directory,必须放在_load_data前面
             self.gConfig.update(dictParameter)
+            self.gConfig.update({'source_directory':os.path.split(self._get_path_by_name(dictParameter['sourcefile']))[-1]})
             self.docParser._load_data(dictParameter['sourcefile'])
 
 
