@@ -24,7 +24,7 @@
   "#DISCARD": "注意,这里采用的是按规则长度的倒排序,discard要保持低长度,才能排在最后面,其他的规则才能优先执行",
   "DISCARD": "[\\u4E00-\\u9FA5]+( A|A)?",
   "LABEL" : "[一二三四五六七八九十〇]{1,2}(?=[^\\u4E00-\\u9FA5])",
-  "TAIL": "[页]*TAILMustBeLongerThenNAME",
+  "TAIL": "[页-]*TAILMustBeLongerThenNAME",
   "#NUMERO": "定义NUMERO此处不起作用，真正起作用的是interpreterAccounting中的ｔ_NUMERO函数",
   "NUMERO": "^\\d{1,3}$",
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
@@ -346,7 +346,7 @@
     "headerSecond": "营业收入",
     "fieldFromHeader": ["分行业","分产品","分地区"],
     "fieldFirst": "",
-    "fieldLast": "分产品.+|分地区.*|酱醋调味品.*|酵母及深加工产品行业.*" ,
+    "fieldLast": "分产品.+|分地区.*|酱醋调味品.*|酵母及深加工产品行业.*|航空及相关服务收入.*|柔性扁平电缆" ,
     "fieldAlias": {
       "营业收入比上年同期增减": "营业收入比上年增减",
       "营业成本比上年同期增减": "营业成本比上年增减",
@@ -379,8 +379,8 @@
     "headerFirst": "分红年度|年度",
     "headerSecond": "现金分红金额|每10股",
     "fieldFromHeader": [],
-    "fieldFirst": "\\d{4}\\s*年",
-    "fieldLast": "\\d+年|\\d+年半年度|\\d+年中期",
+    "fieldFirst": "\\d{4}\\s*年|\\d{4}",
+    "fieldLast": "\\d+年|\\d+年半年度|\\d+年中期|\\d{4}",
     "fieldDiscard": ["每10股送红股数","每10股转增数","每10股派息数（元）","年度资本公积金转增股本情况","每股派发现金红利"
                     ,"以现金方式要约回购股份资金计入现金分红的金额","以现金方式要约回购股份资金计入现金分红的比例"],
     "fieldAlias": {
