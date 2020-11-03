@@ -35,8 +35,8 @@ class BaseClass():
         #不同的类继承BaseClass时,logger采用不同的名字
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
-        self.reportAlias = self.gJsonBase['reportAlias']
-        self.reportTypes =  self.gJsonBase['报告类型']
+        self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
+        self.reportTypes =  self.gJsonBase['reportType']
         #self.tablePrefixs =  list(set([self._get_table_prefix(reportType) for reportType in self.reportTypes]))
 
 
@@ -67,8 +67,8 @@ class BaseClass():
     def _is_file_name_valid(self,fileName):
         assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
         isFileNameValid = False
-        reportTypes = self.gJsonBase['报告类型']
-        pattern = '|'.join(reportTypes)
+        #reportTypes = self.gJsonBase['报告类型']
+        pattern = '|'.join(self.reportTypes)
         if isinstance(pattern, str) and isinstance(fileName, str):
             if pattern != NULLSTR:
                 matched = re.search(pattern, fileName)
@@ -77,14 +77,7 @@ class BaseClass():
         return isFileNameValid
 
 
-    def _get_tablename_by_type(self,reportType,tableName):
-        # 根据报告类型转换成相应的表名,如第一季度报告,合并资产负债表 转成 季报合并资产负债表
-        assert reportType != NULLSTR, "reportType must not be NULL!"
-        tablePrefix = self._get_table_prefix(reportType)
-        return tablePrefix + tableName
-
-
-    def _get_table_prefix(self,reportType):
+    def _get_tableprefix_by_report_type(self, reportType):
         assert reportType != NULLSTR,"reportType must not be NULL!"
         tablePrefix = NULLSTR
         dictTablePrefix = self.gJsonBase['tablePrefix']
@@ -109,35 +102,42 @@ class BaseClass():
         return type
 
 
-    def _get_type_by_name(self,name):
+    def _get_tablename_by_report_type(self, reportType, tableName):
+        # 根据报告类型转换成相应的表名,如第一季度报告,合并资产负债表 转成 季报合并资产负债表
+        assert reportType != NULLSTR, "reportType must not be NULL!"
+        tablePrefix = self._get_tableprefix_by_report_type(reportType)
+        return tablePrefix + tableName
+
+
+    def _get_report_type_by_filename(self, name):
         assert self._is_matched('\\d+年',name),"name(%s) is invalid"%name
         type = name
         pattern = "\\d+年([\\u4E00-\\u9FA5]+)"
         matched = re.findall(pattern,name)
         if matched is not None:
             type = matched.pop()
-        return type
+        reportType = self._alias(type, self.reportTypeAlias)
+        return reportType
 
 
-    def _get_path_by_type(self,type):
-        reportTypes = self.gJsonBase['报告类型']
-        assert type in reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,reportTypes)
+    def _get_path_by_report_type(self, type):
+        #reportTypes = self.gJsonBase['报告类型']
+        assert type in self.reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,self.reportTypes)
         path = os.path.join(self.data_directory,type)
         if not os.path.exists(path):
             os.mkdir(path)
         return path
 
 
-    def _get_path_by_name(self,name):
-        type = self._get_type_by_name(name)
-        type = self._get_report_alias(type)
-        path = self._get_path_by_type(type)
+    def _get_path_by_filename(self, filename):
+        type = self._get_report_type_by_filename(filename)
+        #type = self._get_report_type_alias(type)
+        path = self._get_path_by_report_type(type)
         return path
 
 
     def _get_text(self,page):
         return page
-
 
 
     def _standardize(self,fieldStandardize,field):
@@ -188,11 +188,11 @@ class BaseClass():
             dictTable = list()
         return dictTable
 
-
-    def _get_report_alias(self, report):
-        aliasedReport = self._alias(report, self.reportAlias)
-        return aliasedReport
-
+    '''
+    def _get_report_type_alias(self, reportType):
+        aliasedReportType = self._alias(reportType, self.reportTypeAlias)
+        return aliasedReportType
+    '''
 
     def _alias(self, name, dictAlias):
         alias = name

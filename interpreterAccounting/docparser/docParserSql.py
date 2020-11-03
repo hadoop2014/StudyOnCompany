@@ -224,7 +224,9 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_value_standardize(dataframe,tableName)
 
         #把dataframe写入sqlite3数据库
-        targetTableName = self._get_tablename_by_type(self.gConfig['source_directory'],tableName)
+        reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
+        #reportType = self._get_report_type_alias(reportType)
+        targetTableName = self._get_tablename_by_report_type(reportType, tableName)
         self._write_to_sqlite3(dataframe,targetTableName)
         self.process_info[tableName].update({'processtime':time.time() - self.process_info[tableName]['processtime']})
 
@@ -823,7 +825,7 @@ class DocParserSql(DocParserBase):
     def _create_tables(self):
         for reportType in self.reportTypes:
             tableNames = self.dictReportType[reportType]
-            tablePrefix = self._get_table_prefix(reportType)
+            tablePrefix = self._get_tableprefix_by_report_type(reportType)
             self._create_tables_by_type(tablePrefix,tableNames)
 
 

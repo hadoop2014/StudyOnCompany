@@ -56,7 +56,17 @@ class InterpreterBase(BaseClass):
         self.dictReportType = self._get_report_type_tables(self.dictTables)
 
 
+    def _get_table_field(self,tableName):
+        # 把标准化后的fieldName 及 fieldAlias中的key字段,融合成 tablefield,用于从财报中提取所需要的字段.
+        assert tableName in self.dictTables.keys,'%s is not in dictTable.keys() which is %s'%(tableName,self.dictTables.keys)
+        fieldName = self.dictTables[tableName]['fieldName']
+        dictAlias = self.dictTables[tableName]['fieldAlias']
+        tableField = fieldName + [fieldName for fieldName,aliasName in dictAlias.items() if not aliasName.startswith('虚拟字段')]
+        return tableField
+
+
     def _get_report_type_tables(self,dictTables):
+        # 根据每张表中 'reportType'的配置,生成每中报告类型(reportType)中包含了多少张 表(tableName)
         dictReportType = dict()
         for tableName in dictTables.keys():
             dictTemp =  dict(list(zip(dictTables[tableName]['reportType'], [tableName] * len(dictTables[tableName]['reportType']))))

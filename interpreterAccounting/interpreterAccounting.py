@@ -29,6 +29,8 @@ class InterpreterAccounting(InterpreterBase):
         local_name = locals()
         for token in self.tokens:
             local_name['t_'+token] = self.dictTokens[token]
+        #对TABLEFIELD进行特殊处理,用于从第三季度报告中提取主要会计数据的字段
+        #local_name['t_' + 'TABLEFIELD'] = '|'.join(['^' + field for field in self._get_table_field(self.dictTokens['TABLEFIELD'])])
         self.logger.info('\n'+str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
 
@@ -291,7 +293,7 @@ class InterpreterAccounting(InterpreterBase):
                     years = self._time_transfer(slice.value)
                     self.names.update({'报告时间':years})
                 if self.names['报告类型'] == NULLSTR and slice.type == 'REPORT':
-                    self.names.update({'报告类型':self._get_report_alias(slice.value)})
+                    self.names.update({'报告类型':self._get_report_type_alias(slice.value)})
             prefix = ' '.join([str(slice) for slice in p if slice is not None])
             self.logger.debug('fetchtitle %s page %d '%(prefix,self.currentPageNumber))
             p[0] = prefix
@@ -753,7 +755,7 @@ class InterpreterAccounting(InterpreterBase):
 
     def _get_time_type_by_name(self,filename):
         time = self._standardize('\\d+年',filename)
-        type = self._standardize('|'.join(self.gJsonBase['报告类型']),filename)
+        type = self._standardize('|'.join(self.gJsonBase['reportType']),filename)
         company = self._standardize(self.gJsonInterpreter['DISCARD'],filename)
         code = self._standardize('（\\d+）',filename)
         return company,time,type,code
@@ -848,7 +850,8 @@ class InterpreterAccounting(InterpreterBase):
         if dictParameter is not None:
             # 此语句会更新source_directory,必须放在_load_data前面
             self.gConfig.update(dictParameter)
-            self.gConfig.update({'source_directory':os.path.split(self._get_path_by_name(dictParameter['sourcefile']))[-1]})
+            #self.gConfig.update({'source_directory':os.path.split(self._get_path_by_name(dictParameter['sourcefile']))[-1]})
+            self.gConfig.update({'source_directory': self._get_report_type_by_filename(dictParameter['sourcefile'])})
             self.docParser._load_data(dictParameter['sourcefile'])
 
 

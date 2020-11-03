@@ -249,19 +249,16 @@ class InterpreterNature(InterpreterBase):
                 sourcefiles = os.listdir(source_directory)
             else:
                 for type  in self.names_global['报告类型']:
-                    source_directory = self._get_path_by_type(type)
+                    source_directory = self._get_path_by_report_type(type)
                     sourcefiles = sourcefiles + os.listdir(source_directory)
             sourcefilesValid = [sourcefile for sourcefile in sourcefiles if self._is_file_name_valid(sourcefile)]
             sourcefilesInvalid = set(sourcefiles).difference(set(sourcefilesValid))
             if len(sourcefilesInvalid) > 0:
                 for sourcefile in sourcefilesInvalid:
                      self.logger.warning('These file is can not be parse:%s'%sourcefile)
-
             if scale == '批量':
                 sourcefilesValid = [sourcefile  for sourcefile in sourcefilesValid if self._is_file_selected(sourcefile)]
-
             sourcefilesValid = self._remove_duplicate_files(sourcefilesValid)
-
         if isForced == False:
             checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
             if isinstance(checkpoint,list) and len(checkpoint) > 0:

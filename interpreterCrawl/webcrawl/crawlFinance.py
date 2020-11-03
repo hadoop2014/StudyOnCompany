@@ -104,7 +104,7 @@ class CrawlFinance(CrawlBase):
         publishingTime = NULLSTR
         for filename,url in urllists.items():
             try:
-                path = self._get_path_by_name(filename)
+                path = self._get_path_by_filename(filename)
                 #source_directory = os.path.join(self.source_directory,path)
                 filePath = os.path.join(path,filename)
                 publishingTime = self._get_publishing_time(url)
