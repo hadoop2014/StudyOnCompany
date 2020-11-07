@@ -87,11 +87,16 @@ class InterpreterAnalysize(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_create_table!')
             return
-        sql_file = self.dictTables[tableName]['create']
-        sql_file = os.path.join(self.program_directory,sql_file)
-        create_sql = self._get_file_context(sql_file)
-        isSuccess = self._sql_executer_script(create_sql)
-        assert isSuccess,"failed to execute sql"
+        for reportType in self.gConfig['报告类型']:
+            sql_file = self.dictTables[tableName]['create']
+            tablePrefix = self._get_tableprefix_by_report_type(reportType)
+            sql_file = os.path.join(self.program_directory,tablePrefix,sql_file)
+            if not os.path.exists(sql_file):
+                self.logger.error('create script is not exist,you must create it first :%s!'%sql_file)
+                continue
+            create_sql = self._get_file_context(sql_file)
+            isSuccess = self._sql_executer_script(create_sql)
+            assert isSuccess,"failed to execute sql"
 
 
     def _process_visualize_table(self,tableName,scale):

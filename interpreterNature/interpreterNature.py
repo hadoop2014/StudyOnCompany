@@ -4,6 +4,7 @@
 # @Author  : wu.hao
 # @File    : interpreterCrawl.py
 # @Note    : 用接近自然语言的解释器处理各类事务,用于处理财务数据爬取,财务数据提取,财务数据分析.
+from collections import Counter
 from ply import lex,yacc
 import copy
 import itertools
@@ -29,13 +30,44 @@ class InterpreterNature(InterpreterBase):
             local_name['t_'+token] = self.dictTokens[token]
         self.logger.info('\n'+str({key:value for key,value in local_name.items() if key.split('_')[-1] in tokens}).replace("',","'\n"))
 
+        # 如下代码实现多行注释
+        states = (
+            ('multiLineComment', 'exclusive'),
+        )
+
+        t_multiLineComment_ignore =  r':'
+
+        def t_multiLineComment(t):
+            r'/\*'
+            t.lexer.begin('multiLineComment')
+
+        def t_multiLineComment_end(t):
+            r'\*/'
+            t.lexer.begin('INITIAL')
+
+        def t_multiLineComment_newline(t):
+            r'\n'
+            pass
+
+        # catch (and ignore) anything that isn't end-of-comment
+        def t_multiLineComment_content(t):
+            r'[^/\*]+'
+            pass
+
+        def t_multiLineComment_error(t):
+            self.logger.info("Illegal character '%s'" % t.value[0])
+            t.lexer.skip(1)
+        # 多行注释代码结束
+
         t_ignore = self.ignores
         t_ignore_COMMENT = r'#.*'
 
 
         def t_VALUE(t):
             r'[\u4E00-\u9FA5|A-Z]+'
-            typeList = [key for key in local_name.keys() if key.startswith('t_') and key not in ['t_VALUE','t_ignore','t_ignore_COMMENT','t_newline','t_error']]
+            typeList = [key for key in local_name.keys() if key.startswith('t_')
+                        and not key.startswith('t_multiLineComment')
+                        and key not in ['t_VALUE','t_ignore','t_ignore_COMMENT','t_newline','t_error']]
             t.type = self._get_token_type(local_name, t.value,typeList,defaultType='VALUE')
             return t
 
@@ -202,7 +234,10 @@ class InterpreterNature(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
-        pass
+        assert self.names_global['报告时间'] != NULLSTR and self.names_global['报告类型'] != NULLSTR \
+            , "报告时间,报告类型为空,必须在参数配置中明确配置!"
+        self.gConfig.update(self.names_global)
+        self.interpreterAnalysize.initialize(self.gConfig)
         self.interpreterAnalysize.doWork(command)
 
 
@@ -210,7 +245,8 @@ class InterpreterNature(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
-        pass
+        assert self.names_global['报告时间'] != NULLSTR and self.names_global['报告类型'] != NULLSTR\
+            ,"报告时间,报告类型为空,必须在参数配置中明确配置!"
         self.gConfig.update(self.names_global)
         self.interpreterAnalysize.initialize(self.gConfig)
         self.interpreterAnalysize.doWork(command)
@@ -220,7 +256,8 @@ class InterpreterNature(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
-        pass
+        assert self.names_global['报告时间'] != NULLSTR and self.names_global['报告类型'] != NULLSTR\
+            ,"报告时间,报告类型为空,必须在参数配置中明确配置!"
         self.gConfig.update(self.names_global)
         # 爬取时在时间上少设置1年,因为2020年的时间本来就会爬取2019年的数据
         self.gConfig.update({'报告时间': self.names_global['报告时间'][1:]})
@@ -233,6 +270,9 @@ class InterpreterNature(InterpreterBase):
         gConfig = copy.deepcopy(names_global)
         for categry,company in gConfig['行业分类'].items():
             gConfig.setdefault('公司简称', []).extend(company)
+        if len(gConfig['公司简称']) != len(set(gConfig['公司简称'])):
+            dictDuplicate = dict(Counter(gConfig['公司简称']))
+            self.logger.warning('以下公司名称在参数配置中重复了:%s'%([key for key,value in dictDuplicate.items() if value > 1]))
         #把行业分类的dict进行转置
         dictCategory = dict(itertools.chain.from_iterable([list(zip(valueList,[key]*len(valueList))) for key,valueList in gConfig['行业分类'].items()]))
         gConfig.update({"行业分类":dictCategory})
@@ -323,7 +363,7 @@ class InterpreterNature(InterpreterBase):
             if key in parametercheck.keys():
                 #isCheckOk = self._is_matched(parametercheck[key],value)
                 isCheckOk = self._standardize(parametercheck[key],value) == value
-            assert isCheckOk,"Value(%s) is invalid,it must match pattern %s"%(value,parametercheck[key])
+            assert isCheckOk,"Value(%s) is invalid,it must in list %s"%(value,parametercheck[key].split('|'))
 
 
     def initialize(self):
