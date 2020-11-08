@@ -112,7 +112,7 @@ select
         case when e.研发费用 is not NULL and e.研发费用 != '' then replace(e.研发费用,',','') else 0 end
     end as 研发费用,
     case when a.本期资本化研发投入修正 != '' then a.本期资本化研发投入修正 else 0 end as 资本化研发投入,
-    case when g.资产减值准备 != '' then g.资产减值准备 else 0 end as 资产减值准备 ,
+    case when g.资产减值准备 != '' then replace(g.资产减值准备,',','') else 0 end as 资产减值准备 ,
     case when g.固定资产折旧、油气资产折耗、生产性生物资产折旧 is not NULL and g.固定资产折旧、油气资产折耗、生产性生物资产折旧 != ''
     then
         case when g.使用权资产摊销 is not NULL and g.使用权资产摊销 != ''
@@ -123,8 +123,8 @@ select
         then replace(g.使用权资产摊销,',','')
         else 0 end
     end as 固定资产折旧、油气资产折耗、生产性生物资产折旧,
-    g.无形资产摊销 ,
-    ifnull(g.长期待摊费用摊销,0) as 长期待摊费用摊销,
+    case when g.无形资产摊销 is not NULL then replace(g.无形资产摊销,',','') else 0 end as 无形资产摊销,
+    case when g.长期待摊费用摊销 is not NULL then replace(g.长期待摊费用摊销,',','') else 0 end as 长期待摊费用摊销,
     --"无形资产-内部研发","所得税税率",
     b.期末总股本,
     replace(c.固定资产,',','') as 固定资产,
@@ -228,10 +228,14 @@ left join
 left join
 (
     select x.报告时间,x.公司代码,x.报告类型,
-        case when x.货币单位 > 1 then x.货币单位 * replace(x.现金分红金额（含税）,',','') else replace(x.现金分红金额（含税）,',','') end
-            as 现金分红金额（含税）,
-        round(replace(x.现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率,'%','')/100.0,4)
-            as 现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率
+        case when x.现金分红金额（含税） != ''
+        then
+            case when x.货币单位 > 1 then x.货币单位 * replace(x.现金分红金额（含税）,',','') else replace(x.现金分红金额（含税）,',','') end
+        else 0 end as 现金分红金额（含税）,
+        case when x.现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率 != ''
+        then
+            round(replace(x.现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率,'%','')/100.0,4)
+        else 0 end as 现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率
     from 年报普通股现金分红情况表 x
 )d
 left join 年报合并利润表 e

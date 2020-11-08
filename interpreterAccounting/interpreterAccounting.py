@@ -646,14 +646,14 @@ class InterpreterAccounting(InterpreterBase):
         notRequiredLists = set()
         for tableName in failedTable:
             if tableName in notRequired.keys():
-                if not notRequired[tableName]['公司简称'] \
-                    and reportTime in notRequired[tableName]["报告时间"] \
-                    and reportType in notRequired[tableName]["报告类型"] :
-                    notRequiredLists.add(tableName)
-                if company in notRequired[tableName]['公司简称'] \
-                    and reportTime in notRequired[tableName]["报告时间"] \
-                    and reportType in notRequired[tableName]["报告类型"]:
-                    notRequiredLists.add(tableName)
+                if '公司简称' in notRequired[tableName].keys():
+                    if reportTime in notRequired[tableName]["报告时间"] \
+                        and reportType in notRequired[tableName]["报告类型"] :
+                        notRequiredLists.add(tableName)
+                elif company in notRequired[tableName].keys():
+                    if reportTime in notRequired[tableName][company]['报告时间'] \
+                        and reportType in notRequired[tableName][company]['报告类型']:
+                        notRequiredLists.add(tableName)
         if len(notRequiredLists) > 0:
             self.logger.info("it is not needed to repair %s\t tables:%s"%(fileName, notRequiredLists))
             failedTable = failedTable.difference(notRequiredLists)

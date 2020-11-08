@@ -135,8 +135,13 @@ class InterpreterBase(BaseClass):
                 #    {tokenName + 'Alias':dict(zip(list(map(self._replace_fieldname, dictTables[tableName][tokenName +'Alias'].keys()))
                 #                       ,list(map(self._replace_fieldname,dictTables[tableName][tokenName + 'Alias'].values()))))})
                 # 计算 年度报告,半年度报告,第一季度报告,第三季度报告 需要解析多少张表
-            dictTables[tableName].update(
-                {'maxFieldLen':reduce(max,list(map(len,dictTables[tableName]['fieldName'])))})
+                dictTables[tableName].update(
+                    {'max'+tokenName.title()+'Len':reduce(max,list(map(len,dictTables[tableName][tokenName + 'Name'])))})
+            horizontalTable = self.dictTables[tableName]['horizontalTable']
+            if horizontalTable:
+                #正对水平表,maxFieldLen和maxHeaderLen需要互换
+                dictTables[tableName]['maxHeaderLen'],dictTables[tableName]['maxFieldLen'] \
+                    = dictTables[tableName]['maxFieldLen'] ,dictTables[tableName]['maxHeaderLen']
         self.logger.warning("函数_fields_replace_punctuate把interpreterAccounting.json中配置的所有表的字段名中的英文标点替换为中文的,"
                             + "而'headerFirst','headerSecond'中采用了正则表达式,这要求正则表达式中不要出现'('')''-''.'等字符!")
         return dictTables

@@ -9,6 +9,7 @@ from interpreterAccounting.docparser.docParserBaseClass import *
 import pdfplumber
 import csv
 import itertools
+import pandas as pd
 from functools import reduce
 
 
@@ -161,13 +162,17 @@ class DocParserPdf(DocParserBase):
             return processedTable,isTableEnd,isTableStart
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         processedTable = self._discard_last_row(processedTable,tableName)
-        fieldList = [row[0] for row in processedTable]
-        #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
-        isTableStart = False
-        if len(processedTable[0]) > 1:
-            secondFieldList = [row[1] for row in processedTable]
-            isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
-        isTableEnd = self._is_table_end(tableName,fieldList)
+        if len(processedTable) > 0:
+            # 博通集成2019年年报, P93 ,搜到一张不需要的合并资产负债表,其中存在另外一张表只有一行, _discard_last_row处理后变成了空表
+            #processedTable = NULLSTR
+            #return processedTable, isTableEnd, isTableStart
+            fieldList = [row[0] for row in processedTable]
+            #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
+            isTableStart = False
+            if len(processedTable[0]) > 1:
+                secondFieldList = [row[1] for row in processedTable]
+                isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
+            isTableEnd = self._is_table_end(tableName,fieldList)
         if len(tables) == 1:
             #（000652）泰达股份：2019年年度报告.PDF P40页出现了错误的普通股现金分红情况表的语句,这个时候不能够把带有值的processedTable返回
             if len(page_numbers) == 1 and isTableStart == False:
@@ -178,7 +183,8 @@ class DocParserPdf(DocParserBase):
         for index,table in enumerate(tables):
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table ]
             table = self._discard_last_row(table,tableName)
-            if len(table[0]) <= 1:
+            if len(table) == 0 or len(table[0]) <= 1:
+                # 博通集成2019年年报, P93 ,搜到一张不需要的合并资产负债表,其中存在另外一张表只有一行, _discard_last_row处理后变成了空表
                 #海螺水泥2015年年报，合并现金流量表数据解析错误，只有2列，第二列是附注，没有任何有效数据
                 continue
             fieldList = [row[0] for row in table]
