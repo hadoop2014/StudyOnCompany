@@ -64,6 +64,13 @@ class DocParserBase(InterpreterBase):
         return isFieldMatched
 
 
+    def _is_row_all_invalid(self,row):
+        mergedField = reduce(self._merge,row)
+        #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
+        isRowAllInvalid = not self._is_valid(mergedField)
+        return isRowAllInvalid
+
+
     def _get_class_name(self, gConfig):
         parser_name = re.findall('DocParser(.*)', self.__class__.__name__).pop().lower()
         assert parser_name in gConfig['docformatlist'], \

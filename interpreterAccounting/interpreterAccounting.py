@@ -59,7 +59,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def t_error(t):
-            print("Illegal character '%s'" % t.value[0])
+            self.logger.info("Illegal character '%s'" % t.value[0])
             t.lexer.skip(1)
 
         # Build the lexer
@@ -756,7 +756,8 @@ class InterpreterAccounting(InterpreterBase):
 
     def _get_time_type_by_name(self,filename):
         time = self._standardize('\\d+年',filename)
-        type = self._standardize('|'.join(self.gJsonBase['reportType']),filename)
+        #type = self._standardize('|'.join(self.gJsonBase['reportType']),filename)
+        type = self._get_report_type_by_filename(filename)
         company = self._standardize(self.gJsonInterpreter['DISCARD'],filename)
         code = self._standardize('（\\d+）',filename)
         return company,time,type,code

@@ -199,6 +199,7 @@ class CrawlFinance(CrawlBase):
             company = ''.join(matched)
         #全角字符转换成半角字符，比如把 华侨城Ａ 转换成 华侨城A
         company = self._strQ2B(company)
+        company = self._get_company_alias(company)
         return company
 
 

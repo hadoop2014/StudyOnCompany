@@ -37,6 +37,7 @@ class BaseClass():
         self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
         self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
         self.reportTypes =  self.gJsonBase['reportType']
+        self.companyAlias = self.gJsonBase['companyAlias']
         #self.tablePrefixs =  list(set([self._get_table_prefix(reportType) for reportType in self.reportTypes]))
 
 
@@ -116,7 +117,8 @@ class BaseClass():
         matched = re.findall(pattern,name)
         if matched is not None:
             type = matched.pop()
-        reportType = self._alias(type, self.reportTypeAlias)
+        #reportType = self._alias(type, self.reportTypeAlias)
+        reportType = self._get_report_type_alias(type)
         return reportType
 
 
@@ -188,11 +190,16 @@ class BaseClass():
             dictTable = list()
         return dictTable
 
-    '''
+
     def _get_report_type_alias(self, reportType):
         aliasedReportType = self._alias(reportType, self.reportTypeAlias)
         return aliasedReportType
-    '''
+
+
+    def _get_company_alias(self,company):
+        aliasedCompany = self._alias(company,self.companyAlias)
+        return aliasedCompany
+
 
     def _alias(self, name, dictAlias):
         alias = name

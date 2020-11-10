@@ -329,11 +329,12 @@ class DocParserSql(DocParserBase):
         # 增加blankFrame来驱动最后一个field的合并
         #blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
         #dataFrame = dataFrame.append(blankFrame)
-        while dataFrame.shape[0] > 0 and self._is_row_all_invalid(dataFrame.iloc[0]):
+        while dataFrame.shape[0] > 0 and self._is_row_all_invalid(dataFrame.iloc[0].tolist()):
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
             dataFrame.iloc[0] = NaN
             dataFrame = dataFrame.dropna()
+        dataFrame = self._major_accounting_data_tailor(dataFrame,tableName)
         if dataFrame.shape[0] == 0:
             return dataFrame
         for index, field in enumerate(dataFrame.iloc[:, 0]):
@@ -678,17 +679,67 @@ class DocParserSql(DocParserBase):
         #转化成需要的dataFrame
         dataFrame = dataFrame.T.reset_index().T
         dataFrame.set_index(dataFrame.columns[0],inplace=True)
-        maxHeaders = self.dictTables[tableName]['maxHeaders']
+        #maxHeaders = self.dictTables[tableName]['maxHeaders']
+        maxHeaders = self._get_max_headers(tableName)
         fieldFromHeader = self.dictTables[tableName]['fieldFromHeader']
         if len(fieldFromHeader) == 0:
             #对于合并所有者权益变动表,无形资产情况,分季度主要财务数据等表,不需要对多余的行进行裁剪
             maxRows = len(dataFrame.index.values)
             if maxRows > maxHeaders:
-                #对于超出最大头长度的行进行拆解,解决华侨城A 2018年包中,合并资产负债表 有三列数据,其中最后一列数据是不需要的
-                dataFrame.iloc[maxHeaders:maxRows] = NaN
-                dataFrame = dataFrame.dropna(axis=0).copy()
-                self.logger.warning("%s has %d row,only %s is needed!"%(tableName,maxRows,maxHeaders))
+                if self._is_third_quarter_accounting_data(tableName):
+                    #对于第三季度报告的主要会计数据,只保留最后一行,去掉第一行数据
+                    self.logger.warning(
+                        "%s has %d row,only %s is needed,row %s had discarded!" % (tableName, maxRows, maxHeaders
+                                                                                   ,dataFrame.index[-2]))
+                    dataFrame.iloc[ - 2] = NaN
+                    dataFrame = dataFrame.dropna(axis = 0).copy()
+                else:
+                    #对于超出最大头长度的行进行拆解,解决华侨城A 2018年包中,合并资产负债表 有三列数据,其中最后一列数据是不需要的
+                    self.logger.warning(
+                        "%s has %d row,only %s is needed,last row %s had discarded!"%(tableName,maxRows,maxHeaders
+                                                                                      ,dataFrame.index[-1]))
+                    dataFrame.iloc[maxHeaders:maxRows] = NaN
+                    dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
+
+
+    def _get_max_headers(self,tableName):
+        maxHeaders = self.dictTables[tableName]['maxHeaders']
+        fieldFromHeader = self.dictTables[tableName]['fieldFromHeader']
+        if len(fieldFromHeader) != 0 :
+            #对于从表头用于字段的表,如分季度主要财务数据,无形资产情况,合并所有者权益变动表, maxHeaders原样返回
+            return maxHeaders
+        reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
+        if reportType != '年度报告':
+            # 对于第一季度报告,第三季度报告,半年读报告,设置maxHeaders = 2,即只保留一行数据, 即当年数据,往年数据则去掉,因为第二行数据各财报的定义不一致
+            maxHeaders = 2
+        return maxHeaders
+
+
+    def _major_accounting_data_tailor(self,dataFrame,tableName):
+        #针对第三季度报告中的主要会计数据进行裁剪,去掉第二个标题头之前的所有行数据,因为这几行数据不规范
+        if dataFrame.shape[0] == 0:
+            return dataFrame
+        isSecondHeaderRowNext = False
+        if self._is_third_quarter_accounting_data(tableName):
+            for index,field in enumerate(dataFrame.iloc[:,0]):
+                isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(), tableName)
+                isRowAllInvalid = self._is_row_all_invalid_exclude_blank(dataFrame.iloc[index])
+                if isRowAllInvalid == False:
+                    if isHeaderInRow == False:
+                        isSecondHeaderRowNext = True
+                    elif isSecondHeaderRowNext == True:
+                        break
+                dataFrame.iloc[index] = NaN
+        dataFrame = dataFrame.dropna(axis=0).copy()
+        return dataFrame
+
+
+    def _is_third_quarter_accounting_data(self,tableName):
+        #如果是第三季度报告,主要会计数据,则返回Ture,这个数据需要特殊处理
+        reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
+        isThirdQuarterAccountingData = (reportType == '第三季度报告' and tableName == '主要会计数据')
+        return isThirdQuarterAccountingData
 
 
     def _rowDiscard(self, row, tableName):
@@ -768,13 +819,6 @@ class DocParserSql(DocParserBase):
         if (row == NULLSTR).all():
             #如果是空行,返回False,空行有特殊用途,一般加到最后一行来驱动前一个字段的合并
             return isRowAllInvalid
-        mergedField = reduce(self._merge,row.tolist())
-        #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
-        isRowAllInvalid = not self._is_valid(mergedField)
-        return isRowAllInvalid
-
-
-    def _is_row_all_invalid(self,row:DataFrame):
         mergedField = reduce(self._merge,row.tolist())
         #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
         isRowAllInvalid = not self._is_valid(mergedField)

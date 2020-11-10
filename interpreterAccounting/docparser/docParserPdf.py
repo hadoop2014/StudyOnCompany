@@ -112,12 +112,15 @@ class DocParserPdf(DocParserBase):
         join_tolerance = self.gJsonBase['table_settings'][keyName]["join_tolerance"]
         if dictTable['公司简称'] != NULLSTR:
             keyName = dictTable['公司简称']
+            reportType = dictTable['报告类型']
             if keyName in self.gJsonBase['table_settings'].keys():
-                if dictTable['报告时间'] in self.gJsonBase['table_settings'][keyName]['报告时间'] \
-                    and dictTable['报告类型'] == self.gJsonBase['table_settings'][keyName]['报告类型']:
-                    snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
-                    if "join_tolerance" in self.gJsonBase['table_settings'][keyName].keys():
-                        join_tolerance = self.gJsonBase['table_settings'][keyName]["join_tolerance"]
+                #if dictTable['报告时间'] in self.gJsonBase['table_settings'][keyName]['报告时间'] \
+                #    and dictTable['报告类型'] == self.gJsonBase['table_settings'][keyName]['报告类型']:
+                if reportType in self.gJsonBase['table_settings'][keyName].keys():
+                    if dictTable['报告时间'] in self.gJsonBase['table_settings'][keyName][reportType]:
+                        snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
+                        if "join_tolerance" in self.gJsonBase['table_settings'][keyName].keys():
+                            join_tolerance = self.gJsonBase['table_settings'][keyName]["join_tolerance"]
         table_settings.update({"snap_tolerance":snap_tolerance})
         table_settings.update({"join_tolerance":join_tolerance})
         return table_settings
@@ -188,6 +191,8 @@ class DocParserPdf(DocParserBase):
                 #海螺水泥2015年年报，合并现金流量表数据解析错误，只有2列，第二列是附注，没有任何有效数据
                 continue
             fieldList = [row[0] for row in table]
+            if self._is_row_all_invalid(fieldList):
+                self.logger.warning('the first row of tables is all invalid:%s'%table)
             secondFieldList = [row[1] for row in table]
             #headerList = table[0]
             #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.

@@ -1,5 +1,5 @@
-drop table if exists 年报财务分析基础表;
-create table if not exists 年报财务分析基础表 (
+drop table if exists 年度财务分析基础表;
+create table if not exists 年度财务分析基础表 (
     --ID INTEGER PRIMARY KEY AUTOINCREMENT,
     报告时间 DATE NOT NULL,
     公司代码 INTEGER NOT NULL,
@@ -68,7 +68,7 @@ create table if not exists 年报财务分析基础表 (
     五、现金及现金等价物净增加额 REAL
 );
 
-insert into 年报财务分析基础表
+insert into 年度财务分析基础表
 select
     a.报告时间,
     a.公司代码,
@@ -167,7 +167,7 @@ from
         case when 本期资本化研发投入 = '' and 研发投入金额 != '' and 本期费用化研发投入 != ''
             then round(replace(研发投入金额,',','') - replace(本期费用化研发投入,',',''),2) else replace(本期资本化研发投入,',','') end
             as 本期资本化研发投入修正
-    from 年报关键数据表 x
+    from 年度关键数据表 x
     where (x.在职员工的数量合计 != '' or x.当期领取薪酬员工总人数 != '') and x.报告类型 = '年度报告'
 )a
 left join
@@ -207,9 +207,9 @@ left join
             as 归属于上市公司股东的净资产（上期）,
         case when y.货币单位 > 1 then y.货币单位 * replace(y.总资产,',','') else replace(y.总资产,',','') end
             as 总资产（上期）
-    from 年报主要会计数据 x
-    left join 年报主要会计数据 y
-    left join 年报合并资产负债表 z
+    from 年度主要会计数据 x
+    left join 年度主要会计数据 y
+    left join 年度合并资产负债表 z
     where (x.报告时间 - y.报告时间 = 1 and x.报告类型 = y.报告类型 and x.公司代码 = y.公司代码)
         and (x.报告时间 = z.报告时间 and x.公司代码 = z.公司代码 and x.报告类型 = z.报告类型)
 )b
@@ -219,8 +219,8 @@ left join
         y.应付职工薪酬 as 应付职工薪酬（期初余额）,
         replace(y.归属于母公司所有者权益（或股东权益）合计,',','') as 归属于上市公司股东的净资产（上期）,
         replace(y.负债和所有者权益（或股东权益）总计,',','') as 总资产（上期）
-    from 年报合并资产负债表 x
-    left join 年报合并资产负债表 y
+    from 年度合并资产负债表 x
+    left join 年度合并资产负债表 y
     where x.报告时间 - y.报告时间 = 1
         and x.报告类型 = y.报告类型
         and x.公司代码 = y.公司代码
@@ -236,12 +236,12 @@ left join
         then
             round(replace(x.现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率,'%','')/100.0,4)
         else 0 end as 现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率
-    from 年报普通股现金分红情况表 x
+    from 年度普通股现金分红情况表 x
 )d
-left join 年报合并利润表 e
-left join 年报合并现金流量表 f
-left join 年报现金流量表补充资料 g
-left join 年报无形资产情况 h
+left join 年度合并利润表 e
+left join 年度合并现金流量表 f
+left join 年度现金流量表补充资料 g
+left join 年度无形资产情况 h
 where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报告类型 = b.报告类型)
     and (a.报告时间 = c.报告时间 and a.公司代码 = c.公司代码 and a.报告类型 = c.报告类型)
     and (a.报告时间 = d.报告时间 and a.公司代码 = d.公司代码 and a.报告类型 = d.报告类型)
@@ -252,17 +252,17 @@ where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a
     and (a.报告时间 != '' and a.公司代码 != '' and a.报告类型 != '')
 order by a.报告时间,a.公司代码,a.报告类型;
 
-CREATE INDEX IF NOT EXISTS [年报财务分析基础表索引] on [年报财务分析基础表] (
+CREATE INDEX IF NOT EXISTS [年度财务分析基础表索引] on [年度财务分析基础表] (
     报告时间,
     公司代码,
     报告类型
 );
 
 select *
-from 年报财务分析基础表 a
+from 年度财务分析基础表 a
 order by a.公司代码, a.报告时间 desc,a.报告类型;
 
 select *
-from 年报财务分析基础表
+from 年度财务分析基础表
 where 公司简称 = '海螺水泥'
 
