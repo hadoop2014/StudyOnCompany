@@ -170,11 +170,12 @@ class DocParserPdf(DocParserBase):
             #processedTable = NULLSTR
             #return processedTable, isTableEnd, isTableStart
             fieldList = [row[0] for row in processedTable]
+            headerList = processedTable[0]
             #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
             isTableStart = False
             if len(processedTable[0]) > 1:
                 secondFieldList = [row[1] for row in processedTable]
-                isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
+                isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList,headerList)
             isTableEnd = self._is_table_end(tableName,fieldList)
         if len(tables) == 1:
             #（000652）泰达股份：2019年年度报告.PDF P40页出现了错误的普通股现金分红情况表的语句,这个时候不能够把带有值的processedTable返回
@@ -194,10 +195,10 @@ class DocParserPdf(DocParserBase):
             if self._is_row_all_invalid(fieldList):
                 self.logger.warning('the first row of tables is all invalid:%s'%table)
             secondFieldList = [row[1] for row in table]
-            #headerList = table[0]
+            headerList = table[0]
             #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.
             isTableEnd = self._is_table_end(tableName, fieldList)
-            isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList)
+            isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList,headerList)
             if len(page_numbers) == 1:
                 #len(page_numers) == 1表示本表所在的第一页,需要明确判断出isTabletart = True 才能使得isTableEnd生效
                 if isTableStart and isTableEnd:
@@ -235,16 +236,17 @@ class DocParserPdf(DocParserBase):
         return  table
 
 
-    def _is_table_start_simple(self,tableName,fieldList,secondFieldList):
+    def _is_table_start_simple(self,tableName,fieldList,secondFieldList,headerList):
         # 解决隆基股份2018年年度报告的无形资产情况,同一页中出现多张表也有相同的表头的第一字段'项目'
         # 针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
         # 解决海螺水泥2018年年报中,主要会计数据的表头为'项 目'和规范的表头'主要会计数据'不一致,采用方法使得该表头失效
         # 解决通策医疗2019年年报中无形资产情况表所在的页中,存在另外一个表头 "项目名称",会导致用"^项目"去匹配时出现误判
         assert isinstance(fieldList, list) and isinstance(secondFieldList, list), \
             "fieldList and headerList must be list,but now get %s %s" % (type(fieldList), type(secondFieldList))
-        isTableStart,isTableStartFirst,isTableStartSecond = False,False,False
+        isTableStart,isTableStartFirst,isTableStartSecond,isTableStartTree = False,False,False,False
         mergedFields = reduce(self._merge, fieldList)
         mergedFieldsSecond = reduce(self._merge, secondFieldList)
+        mergedHeaders = reduce(self._merge, headerList)
         headerFirst = self.dictTables[tableName]["headerFirst"]
         headerSecond = self.dictTables[tableName]["headerSecond"]
         fieldFirst = self.dictTables[tableName]['fieldFirst']
@@ -258,6 +260,8 @@ class DocParserPdf(DocParserBase):
         patternHeaderFirst = '|'.join(['^' + header + field for (header,field)
                                        in itertools.product(headerFirst.split('|'),fieldFirst.split('|'))])
         patternHeaderSecond = '|'.join(['^' + field for field in headerSecond.split('|')])
+        patternHeaders = '|'.join(['^' + header + headerNext for (header,headerNext)
+                                   in itertools.product(headerFirst.split('|'),headerSecond.split('|'))])
         if isinstance(mergedFields, str) and isinstance(patternHeaderFirst, str) :
             mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace('[','（').replace(']','）').replace(' ', NULLSTR)
             #mergedFields = self._replace_fieldname(mergedFields)
@@ -270,6 +274,13 @@ class DocParserPdf(DocParserBase):
             matched = re.search(patternHeaderSecond, mergedFieldsSecond)
             if matched is not None:
                 isTableStartSecond = True
+        if isinstance(mergedHeaders,str) and isinstance(patternHeaders,str):
+            #解决华东医药2015年年报,主营业务分行业经营情况, 第一行的第一列,第二列字段全部为空的场景
+            mergedHeaders = mergedHeaders.replace('(', '（').replace(')', '）').replace('(', '（').replace(')', '）').replace('[','（').replace(']','）').replace(' ', NULLSTR)
+            matched = re.search(patternHeaders,mergedHeaders)
+            if matched is not None:
+                isTableStartTree = True
+
         if tableName == '无形资产情况' :
             #解决杰瑞股份2018年年报无形资产情况,同一个页面出现了另外一张表,两张表的第一列完全相同,所以需要判断第二列结果才行
             #星源材质2019年年报中无形资产情况出现在页尾,且只有一行表头: 项目 土地使用权 专利权 非专利技术 软件及其他 合计. 这个时候isTableStartFirst失效
@@ -279,7 +290,7 @@ class DocParserPdf(DocParserBase):
             #解决宝来特2014年报,主营业务分行业经营情况表所在的页,出现两张第一列完全相同的表
             #解决九安医疗2014年财报,主营业务分行业经营情况 出现在页尾,且只有一行: 营业收入 营业成本 毛利率营业收入比上年同期增减营业成本比上年同期增减毛利率比上年同期
             #isTableStart = isTableStartFirst and isTableStartSecond
-            isTableStart = isTableStartSecond
+            isTableStart = isTableStartSecond or isTableStartTree
         #elif tableName == '主要会计数据':
             #解决安琪酵母2014年年报中同一页中还有 主要会计数据 和主要财务指标,结果误读了主要财务指标
         #    isTableStart = isTableStartFirst

@@ -536,6 +536,7 @@ class InterpreterAccounting(InterpreterBase):
         if self.names['报告类型'] in self.dictReportType.keys():
             tableNames = self.dictReportType[self.names['报告类型']]
         else:
+            tableNames = self.tableNames
             self.logger.error('Failed to fetch tableNames from %s:%s'%(self.names['报告类型'],self.dictReportType))
         failedTable = set(tableNames).difference(set(self.sqlParser.process_info.keys()))
         if len(failedTable) == 0:
