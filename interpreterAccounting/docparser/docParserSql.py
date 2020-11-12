@@ -374,6 +374,9 @@ class DocParserSql(DocParserBase):
 
         if isHorizontalTable == True:
             # 解决（300326）凯利泰：2018年年度报告.PDF，普通股现金分红请表，除了第一行解析正常为“”
+            if len(fieldFromHeader) == 0:
+                #针对恒瑞医药2014年报,普通股现金分红情况表,起分红年度为:2014,2013,2012,需要补充为2014年,2013年,2012年
+                dataFrame.iloc[:,0] = dataFrame.iloc[:,0].apply(self._fill_year_standardize)
             dataFrame = dataFrame.dropna(axis=0)
             #把第一列做成索引
             dataFrame.set_index(0,inplace=True)
@@ -449,7 +452,11 @@ class DocParserSql(DocParserBase):
                         # 把前期合并的行赋值到dataframe的上一行
                         dataFrame.iloc[lastIndex] = mergedRow
                         dataFrame.iloc[lastIndex + 1:index] = NaN
-                    mergedRow = None
+                    if mergedRow is not None and mergedRow[0] == NULLSTR:
+                        # 解决华东医疗2015年年报,主营业务分行业经营情况表,主营业务收入在第二行,前面一行的第一个字段为空字段'',需要和第二行进行合并
+                        pass
+                    else:
+                        mergedRow = None
                     #开始搜寻下一个字段
                     posIndex = posIndex + 1
                 else:
@@ -701,6 +708,14 @@ class DocParserSql(DocParserBase):
                     dataFrame.iloc[maxHeaders:maxRows] = NaN
                     dataFrame = dataFrame.dropna(axis=0).copy()
         return dataFrame
+
+
+    def _fill_year_standardize(self,year):
+        if isinstance(year,str) == True:
+           if re.search('\\d{4}',year) is not None:
+               if re.search('年',year) is None:
+                   year = year + '年'
+        return year
 
 
     def _get_max_headers(self,tableName):
