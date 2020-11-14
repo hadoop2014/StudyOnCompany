@@ -46,6 +46,7 @@ class MyTestCase(unittest.TestCase):
         input = input + ' 江苏连云港市'
         input = input + ' 页TAILMustBeLongerThenNAME'
         input = input + ' 主营业务分行业、分产品、分地区情况\n'
+        input = input + '\n审计类型：未经审计'
         self.interpreter.lexer.input(input)
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(-,'-',1,1)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'1,370,249,543.00',1,2)")
@@ -119,6 +120,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(LOCATION,'江苏连云港市',3,520)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(TAIL,'页TAILMustBeLongerThenNAME',3,527)")
         self.assertEqual(self.interpreter.lexer.token().__str__(), "LexToken(TABLE,'主营业务分行业、分产品、分地区情况\\n',3,553)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(), "LexToken(AUDITTYPE,'审计类型：未经审计',4,572)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"None")
 
     def run_interpreter_yacc(self):

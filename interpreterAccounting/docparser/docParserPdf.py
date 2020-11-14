@@ -161,7 +161,8 @@ class DocParserPdf(DocParserBase):
     def _process_table(self,page_numbers,tables,tableName):
         processedTable,isTableEnd,isTableStart = NULLSTR , False,False
         assert isinstance(page_numbers,list) and len(page_numbers) > 0,"page_number(%s) must not be NULL"%page_numbers
-        if len(tables) == 0:
+        if tables is None or len(tables) == 0:
+            #tables = None是从interpreterAccountingUnittest.py调用时出现的情景
             return processedTable,isTableEnd,isTableStart
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         processedTable = self._discard_last_row(processedTable,tableName)
@@ -262,6 +263,7 @@ class DocParserPdf(DocParserBase):
         patternHeaderSecond = '|'.join(['^' + field for field in headerSecond.split('|')])
         patternHeaders = '|'.join(['^' + header + headerNext for (header,headerNext)
                                    in itertools.product(headerFirst.split('|'),headerSecond.split('|'))])
+        #patternHeaders = '|'.join(['^' + header for header in headerFirst.split('|')])
         if isinstance(mergedFields, str) and isinstance(patternHeaderFirst, str) :
             mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace('[','（').replace(']','）').replace(' ', NULLSTR)
             #mergedFields = self._replace_fieldname(mergedFields)
@@ -275,7 +277,8 @@ class DocParserPdf(DocParserBase):
             if matched is not None:
                 isTableStartSecond = True
         if isinstance(mergedHeaders,str) and isinstance(patternHeaders,str):
-            #解决华东医药2015年年报,主营业务分行业经营情况, 第一行的第一列,第二列字段全部为空的场景
+            #解决华东医药2015年年报,主营业务分行业经营情况, 第一行的第一列,第二列字段全部为空的场景,采用repair_list修复,不再采用这个
+            #解决鲁商发展2016年报,主营业务分行业经营情况, 出现在页尾,且只有一行, 主营业务分行业情况,采用repair_list修复,不再采用这个
             mergedHeaders = mergedHeaders.replace('(', '（').replace(')', '）').replace('(', '（').replace(')', '）').replace('[','（').replace(']','）').replace(' ', NULLSTR)
             matched = re.search(patternHeaders,mergedHeaders)
             if matched is not None:

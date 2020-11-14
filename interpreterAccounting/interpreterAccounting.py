@@ -413,6 +413,7 @@ class InterpreterAccounting(InterpreterBase):
                        | HEADER
                        | UNIT
                        | CURRENCY
+                       | AUDITTYPE
                        | NUMERIC
                        | PUNCTUATION
                        | LABEL
@@ -453,7 +454,9 @@ class InterpreterAccounting(InterpreterBase):
                     | '（' UNIT '）'
                     | '(' DISCARD CURRENCY UNIT ')'
                     | '(' CURRENCY UNIT ')'
-                    | '（' DISCARD CURRENCY UNIT '）' '''
+                    | '（' DISCARD CURRENCY UNIT '）'
+                    | UNIT CURRENCY AUDITTYPE'''
+            #  UNIT CURRENCY AUDITTYPE解决鲁商发展：2015年第三季度报告 出现 单位：元 币种:人民币 审计类型：未经审计
             # '（' DISCARD CURRENCY UNIT '）' 解决尚荣医疗 2019年报中出现 （除特别注明外，金额单位均为人民币）
             # CURRENCY DISCARD UNIT解决华侨城A2019年报P123,合并股东权益变动表的搜索不到问题
             # '(' DISCARD CURRENCY UNIT ')' 或  '(' CURRENCY UNIT ')' 解决海天味业2016年年报中出现 (金额单位：人民币元)

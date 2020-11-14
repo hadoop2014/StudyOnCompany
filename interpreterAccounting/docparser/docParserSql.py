@@ -698,7 +698,10 @@ class DocParserSql(DocParserBase):
                     self.logger.warning(
                         "%s has %d row,only %s is needed,row %s had discarded!" % (tableName, maxRows, maxHeaders
                                                                                    ,dataFrame.index[-2]))
-                    dataFrame.iloc[ - 2] = NaN
+                    if '上期金额' in dataFrame.index.values:
+                        dataFrame.loc['上期金额'] = NaN
+                    else:
+                        dataFrame.iloc[ - 2] = NaN
                     dataFrame = dataFrame.dropna(axis = 0).copy()
                 else:
                     #对于超出最大头长度的行进行拆解,解决华侨城A 2018年包中,合并资产负债表 有三列数据,其中最后一列数据是不需要的
