@@ -246,7 +246,7 @@ class DocParserPdf(DocParserBase):
             table = table[:-1]
         return  table
 
-
+    #@pysnooper.snoop()
     def _is_table_start_simple(self,tableName,fieldList,secondFieldList,headerList):
         # 解决隆基股份2018年年度报告的无形资产情况,同一页中出现多张表也有相同的表头的第一字段'项目'
         # 针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中

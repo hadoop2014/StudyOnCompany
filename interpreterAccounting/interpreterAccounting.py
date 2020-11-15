@@ -201,10 +201,12 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
                         | optional '（' TIME '）'
+                        | optional '（' TIME DISCARD '）'
                         | optional NAME
                         | optional '-'
                         | NUMERIC
                         | empty '''
+            # optional '（' TIME DISCARD '）'解决沪电股份：2014年报出现,合并现金流量表 （2014 年 12 月 31 日止年度） 单位：人民
             # optional '-' 解决爱朋医疗2014年 主营业务分行业经营情况 出现在页尾的情况: 以上的行业、产品或地区情况 √ 适用 □ 不适用 - 31-
             # optional HEADER可解决海螺水泥2014年合并所有者权限变动表的搜索问题,但是采用TABLE optional HEADER optional unit
             # optional '（' TIME '）'解决三诺生物2014年报中出现 : 合并资产负债表 编制单位：三诺生物传感股份有限公司（2014 年 12 月 31 日） 单位：元
@@ -385,6 +387,7 @@ class InterpreterAccounting(InterpreterBase):
                        | CURRENCY
                        | HEADER
                        | LABEL
+                       | AUDITTYPE
                        | '%'
                        | '％'
                        | '-'
@@ -497,14 +500,17 @@ class InterpreterAccounting(InterpreterBase):
             '''finis : NUMERO
                      | NUMERO HEADER
                      | HEADER
+                     | SPECIALWORD
                      | empty '''
             p[0] = '\n'.join([str(slice) for slice in p if slice is not None])
 
 
         def p_tail(p):
             '''tail : NUMERO TAIL
-                    | NUMERO NUMERO TAIL '''
-             # tail : TAIL 解决华侨城A 2016年, 无形资产情况出现在页尾,但是没有页码
+                    | NUMERO NUMERO TAIL
+                    | SPECIALWORD NUMERO NUMERO TAIL'''
+            # SPECIALWORD NUMERO NUMERO TAIL 解决苏博特：2018年年度,主营业务分行业经营情况出现在页尾,且只有一行表头: 主营业务分行业情况
+            # tail : TAIL 解决华侨城A 2016年, 无形资产情况出现在页尾,但是没有页码
             tail = ' '.join([str(slice) for slice in p if slice is not None])
             p[0] = p[1]
 
@@ -844,6 +850,7 @@ class InterpreterAccounting(InterpreterBase):
         return unitStandardize
 
 
+    @pysnooper.snoop()
     def initialize(self,dictParameter=None):
         for tableName in self.tableNames:
             self.names.update({tableName:{'tableName':NULLSTR
