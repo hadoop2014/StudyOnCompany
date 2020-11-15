@@ -98,9 +98,14 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchtable : TABLE optional time optional unit finis
                           | TABLE optional unit finis
                           | TABLE optional time optional TIME
-                          | TABLE optional HEADER HEADER
-                          | TABLE optional HEADER optional unit
+                          | TABLE optional time optional HEADER unit
+                          | TABLE optional HEADER optional HEADER
+                          | TABLE optional HEADER optional unit finis
+                          | TABLE optional HEADER optional time unit
                           | TABLE optional HEADER TIME TIME'''
+            # TABLE optional time optional HEADER unit 解决凯利泰：2016年 合并所有者权益变动表出现在页尾的情况
+            # TABLE optional HEADER optional HEADER解决鱼跃医疗：2014年年度 主营业务分行业经营情况,搜索不到问题
+            # TABLE optional HEADER optional time unit解决长春高新2018年报合并所有者权益变动表出现在页尾的场景
             # TABLE optional HEADER TIME解决（300595）欧普康视：2019年年度报告.PDF,主要会计数据搜索是遇到: 主要会计数据和财务指标  项目 2019 年 2018 年 本年比上年增减 2017
             # TABLE optional HEADER optional unit可解决海螺水泥2014年合并所有者权益变动表的搜索,以及海螺水泥2019年年报主营业务分行业情况 中的单位(unit)
             # TABLE optional time optional CURRENCY UNIT finis解决海螺水泥2018年年报无法识别合并资产负债表,合并利润表等情况
@@ -136,7 +141,9 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional time optional unit tail
                           | TABLE optional tail
                           | TABLE optional time tail
-                          | TABLE optional HEADER optional unit tail'''
+                          | TABLE optional HEADER optional unit tail
+                          | TABLE optional HEADER optional tail'''
+            # TABLE optional HEADER optional tail 解决长春高新2018年报,合并所有者权益变动表出现在页尾
             # TABLE optional unit DISCARD tail 解决通策医疗2017年报 主营业务分行业经营情况出现在业尾,即: 主营业务分行业、分产品、分地区情况 单位:元币种:人民币 主营业务分行业情况 16/175
             # TABLE optional HEADER optional unit tail解决中石科技2017年报 合并资产负债表刚好出现在页尾的场景. 如下: 合并所有者权益变动表 本期金额 单位：元 79
             # 处理在页尾搜索到fetch的情况,NUMERIC为页尾标号,设置tableBegin = False,则_merge_table中会直接返回,直接搜索下一页
@@ -455,7 +462,9 @@ class InterpreterAccounting(InterpreterBase):
                     | '(' DISCARD CURRENCY UNIT ')'
                     | '(' CURRENCY UNIT ')'
                     | '（' DISCARD CURRENCY UNIT '）'
-                    | UNIT CURRENCY AUDITTYPE'''
+                    | UNIT CURRENCY AUDITTYPE
+                    | UNIT CURRENCY '）' '''
+            # UNIT CURRENCY '）'解决生益科技2019年报 合并所有权益变动表,P90页碰到了 '）专项储备'.
             #  UNIT CURRENCY AUDITTYPE解决鲁商发展：2015年第三季度报告 出现 单位：元 币种:人民币 审计类型：未经审计
             # '（' DISCARD CURRENCY UNIT '）' 解决尚荣医疗 2019年报中出现 （除特别注明外，金额单位均为人民币）
             # CURRENCY DISCARD UNIT解决华侨城A2019年报P123,合并股东权益变动表的搜索不到问题

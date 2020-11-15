@@ -111,11 +111,12 @@ class BaseClass():
 
 
     def _get_report_type_by_filename(self, name):
-        assert self._is_matched('\\d+年',name),"name(%s) is invalid"%name
+        #assert,因为repair_table会传进来一个文件 通用数据：适用所有年度报告.xlsx 不符合标准文件名
+        #assert self._is_matched('\\d+年',name),"name(%s) is invalid"%name
         type = name
         pattern = "\\d+年([\\u4E00-\\u9FA5]+)"
         matched = re.findall(pattern,name)
-        if matched is not None:
+        if matched is not None and len(matched) > 0:
             type = matched.pop()
         #reportType = self._alias(type, self.reportTypeAlias)
         reportType = self._get_report_type_alias(type)
