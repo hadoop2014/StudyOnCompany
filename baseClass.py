@@ -238,10 +238,9 @@ class BaseClass():
         #用于获取数据库连接
         return sqlite.connect(self.database)
 
-
+    @pysnooper.snoop()
     def _sql_executer(self,sql):
         conn = self._get_connect()
-        #cursor = conn.cursor()
         try:
             conn.execute(sql)
             conn.commit()
@@ -250,7 +249,6 @@ class BaseClass():
             # 回滚
             conn.rollback()
             self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
-        #cursor.close()
         conn.close()
 
 

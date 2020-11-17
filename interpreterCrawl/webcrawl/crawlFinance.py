@@ -9,7 +9,6 @@ import requests
 import math
 import csv
 import pandas as pd
-
 from interpreterCrawl.webcrawl.crawlBaseClass import *
 
 
@@ -147,10 +146,10 @@ class CrawlFinance(CrawlBase):
         pattern = self.gJsonInterpreter['TIME']
         matched = self._standardize(pattern, url)
         if matched is not None:
-            pulishingTime = matched
+            publishingTime = matched
         else:
             self.logger.warning('failed to fetch pulishing time of url(%s)'%url)
-        return pulishingTime
+        return publishingTime
 
 
     def _is_file_needed(self,fileName,website):

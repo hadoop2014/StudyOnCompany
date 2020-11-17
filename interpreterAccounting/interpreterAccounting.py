@@ -666,13 +666,17 @@ class InterpreterAccounting(InterpreterBase):
         for tableName in failedTable:
             if tableName in notRequired.keys():
                 if '公司简称' in notRequired[tableName].keys():
-                    if reportTime in notRequired[tableName]["报告时间"] \
-                        and reportType in notRequired[tableName]["报告类型"] :
-                        notRequiredLists.add(tableName)
+                    if reportType in notRequired[tableName]['公司简称'].keys():
+                        if reportTime in notRequired[tableName]['公司简称'][reportType]:
+                    #if reportTime in notRequired[tableName]["报告时间"] \
+                    #    and reportType in notRequired[tableName]["报告类型"] :
+                            notRequiredLists.add(tableName)
                 elif company in notRequired[tableName].keys():
-                    if reportTime in notRequired[tableName][company]['报告时间'] \
-                        and reportType in notRequired[tableName][company]['报告类型']:
-                        notRequiredLists.add(tableName)
+                    if reportType in notRequired[tableName][company].keys():
+                        if reportTime in notRequired[tableName][company][reportType]:
+                    #if reportTime in notRequired[tableName][company]['报告时间'] \
+                    #    and reportType in notRequired[tableName][company]['报告类型']:
+                            notRequiredLists.add(tableName)
         if len(notRequiredLists) > 0:
             self.logger.info("it is not needed to repair %s\t tables:%s"%(fileName, notRequiredLists))
             failedTable = failedTable.difference(notRequiredLists)
@@ -850,7 +854,7 @@ class InterpreterAccounting(InterpreterBase):
         return unitStandardize
 
 
-    @pysnooper.snoop()
+    #@pysnooper.snoop()
     def initialize(self,dictParameter=None):
         for tableName in self.tableNames:
             self.names.update({tableName:{'tableName':NULLSTR
