@@ -42,7 +42,8 @@
     "config_json": "config_directory/interpreterCrawl.json",
     "program_directory": "program_directory/interpreterCrawl/",
     "member_modules": {
-      "crawlfinance":"interpreterCrawl.webcrawl.crawlFinance"
+      "crawlfinance":"interpreterCrawl.webcrawl.crawlFinance",
+      "crawlstock": "interpreterCrawl.webcrawl.crawlStock"
     }
   },
   "nature": {

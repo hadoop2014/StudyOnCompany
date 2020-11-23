@@ -24,6 +24,7 @@ class CrawlBase(InterpreterBase):
         self.taskResult = os.path.join(self.gConfig['working_directory'], self.gConfig['taskResult'.lower()])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
 
+
     def _get_class_name(self, gConfig):
         parser_name = re.findall('Crawl(.*)', self.__class__.__name__).pop().lower()
         #assert parser_name in gConfig['docformatlist'], \
@@ -31,8 +32,10 @@ class CrawlBase(InterpreterBase):
         #    (gConfig['docformatlist'], parser_name, self.__class__.__name__)
         return parser_name
 
+
     def saveCheckpoint(self):
         pass
+
 
     def getSaveFile(self):
         if self.model_savefile == NULLSTR:
@@ -44,11 +47,13 @@ class CrawlBase(InterpreterBase):
                 # 文件不存在
         return self.model_savefile
 
+
     def removeSaveFile(self):
         if self.model_savefile is not None:
             filename = os.path.join(os.getcwd(), self.model_savefile)
             if os.path.exists(filename):
                 os.remove(filename)
+
 
     def debug_info(self, info=None):
         if self.debugIsOn == False:
@@ -56,8 +61,10 @@ class CrawlBase(InterpreterBase):
         pass
         return
 
+
     def debug(self, layer, name=NULLSTR):
         pass
+
 
     def clear_logging_directory(self, logging_directory):
         assert logging_directory == self.logging_directory, \
@@ -72,6 +79,7 @@ class CrawlBase(InterpreterBase):
                     os.remove(full_file)
                 except:
                     print('%s is not be removed' % full_file)
+
 
     def initialize(self):
         if os.path.exists(self.logging_directory) == False:

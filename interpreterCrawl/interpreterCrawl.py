@@ -12,6 +12,7 @@ class InterpreterCrawl(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterCrawl, self).__init__(gConfig)
         self.crawlFinance = memberModuleDict['crawlfinance']
+        self.crawlStock = memberModuleDict['crawlstock']
         self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.interpretDefine()
@@ -89,8 +90,12 @@ class InterpreterCrawl(InterpreterBase):
 
     def _process_crawl_from_website(self,website,scale):
         assert website != NULLSTR,"website(%s) is invalid"%website
-        self.crawlFinance.initialize(self.gConfig)
-        self.crawlFinance.crawl_finance_data(website,scale)
+        if website == '巨潮资讯网':
+            self.crawlFinance.initialize(self.gConfig)
+            self.crawlFinance.crawl_finance_data(website,scale)
+        elif website == '股城网' or website == '东方财富网':
+            self.crawlStock.initialize(self.gConfig)
+            self.crawlStock.crawl_stock_data(website,scale)
 
 
     def _is_file_selcted(self,sourcefile):

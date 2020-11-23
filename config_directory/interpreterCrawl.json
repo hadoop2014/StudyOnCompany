@@ -4,11 +4,13 @@
 
   "SCALE" : "全量|批量|单次",
   "CRAWL": "爬取",
-  "WEBSITE": "巨潮资讯网",
+  "WEBSITE": "巨潮资讯网|股城网|东方财富网",
   "#TIME": "该定义不用于token,仅仅用于crawlFinance.的_get_publishing_time函数和_title_transfer函数",
   "TIME": "\\d{4}[年]*([-]\\d{2}[-]\\d{2})*",
   "#VALUE": "该定义不用于token,仅仅用于crawlFinance.py中的_secname_transfer函数",
   "VALUE": "[\\u4E00-\\u9FA5|A-Z|Ａ-Ｚ]+",
+  "#TABLE": "该定义不用于token,用于建表",
+  "TABLE": "股票交易数据",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
@@ -16,6 +18,23 @@
   "ignores": "\t ",
 
   "checkpointHeader": ["文件名","报告类型","发布时间","网址"],
+
+
+  "#公共字段表": "在所有的股票数据表前都会增加这几个字段",
+  "公共表字段定义": {
+    "ID": "INTEGER PRIMARY KEY AUTOINCREMENT",
+    "报告时间": "DATE NOT NULL",
+    "公司代码": "INTEGER NOT NULL",
+    "公司简称": "CHAR(10)",
+    "行业分类": "CHAR(10)"
+  },
+
+  "股票交易数据": {
+    "fileName": "stocktradingdata.csv",
+    "headerName": ["股票代码", "股票名称", "最高", "最低", "今开", "昨收", "涨停", "跌停", "换手率", "振幅", "成交量", "成交额"
+                  ,"内盘", "外盘", "量比", "涨跌幅", "市盈率（动态）", "市净率", "流通市值", "总市值"]
+  },
+
 
   "巨潮资讯网": {
     "query_path": "http://www.cninfo.com.cn/new/hisAnnouncement/query",
@@ -177,5 +196,107 @@
         "searchkey": ""
       }
     }
+  },
+
+
+  "东方财富网": {
+    "query_path": "http://quote.eastmoney.com/stocklist.html",
+    "download_path": "http://quotes.money.163.com/service/chddata.html",
+    "headers": {
+      "Accept": "application/json, text/javascript, */*; q=0.01",
+
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "Accept-Encoding": "gzip, deflate",
+
+      "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7,zh-HK;q=0.6,zh-TW;q=0.5",
+      "Host": "www.cninfo.com.cn",
+      "Origin": "http://www.cninfo.com.cn",
+      "Referer": "http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search&lastPage=index",
+      "X-Requested-With": "XMLHttpRequest"
+    },
+    "#plate": "sz;sh;szcy;shkcp;szzx",
+    "query": {
+      "pageNum": 1,
+      "pageSize": 30,
+      "tabName": "fulltext",
+      "column": "szse",
+      "stock": "",
+      "searchkey": "",
+      "secid": "",
+      "plate": "",
+      "category": "category_ndbg_szsh",
+      "trade": "",
+      "seDate": "2000-01-01~2020-09-20",
+      "isHLtitle": "true"
+    },
+    "category": {
+      "年度报告": "category_ndbg_szsh",
+      "半年度报告": "category_bndbg_szsh",
+      "第一季度报告": "category_yjdbg_szsh",
+      "第三季度报告": "category_sjdbg_szsh"
+    },
+    "user_agent": ["Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 2.0.50727; Media Center PC 6.0)",
+     "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 1.0.3705; .NET CLR 1.1.4322)",
+     "Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 5.2; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2; .NET CLR 3.0.04506.30)",
+     "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN) AppleWebKit/523.15 (KHTML, like Gecko, Safari/419.3) Arora/0.3 (Change: 287 c9dfb30)",
+     "Mozilla/5.0 (X11; U; Linux; en-US) AppleWebKit/527+ (KHTML, like Gecko, Safari/419.3) Arora/0.6",
+     "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.2pre) Gecko/20070215 K-Ninja/2.1.1",
+     "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9) Gecko/20080705 Firefox/3.0 Kapiko/3.0",
+     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"],
+    "nameStandardize": "(（\\d+）)*[\\u4E00-\\u9FA5|：]+\\d+[\\u4E00-\\u9FA5]+(（[\\u4E00-\\u9FA5]+）)*",
+    "nameDiscard": ["摘要","取消","英文","正文","公告"],
+    "RESPONSE_TIMEOUT": 10,
+    "WAIT_TIME": 6
+  },
+
+
+  "股城网": {
+    "query_path": "https://hq.gucheng.com/gpdmylb.html",
+    "download_path": "https://hq.gucheng.com/",
+    "headers": {
+      "Accept": "application/json, text/javascript, */*; q=0.01",
+
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "Accept-Encoding": "gzip, deflate",
+
+      "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7,zh-HK;q=0.6,zh-TW;q=0.5",
+      "Host": "www.cninfo.com.cn",
+      "Origin": "http://www.cninfo.com.cn",
+      "Referer": "http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search&lastPage=index",
+      "X-Requested-With": "XMLHttpRequest"
+    },
+    "#plate": "sz;sh;szcy;shkcp;szzx",
+    "query": {
+      "pageNum": 1,
+      "pageSize": 30,
+      "tabName": "fulltext",
+      "column": "szse",
+      "stock": "",
+      "searchkey": "",
+      "secid": "",
+      "plate": "",
+      "category": "category_ndbg_szsh",
+      "trade": "",
+      "seDate": "2000-01-01~2020-09-20",
+      "isHLtitle": "true"
+    },
+    "category": {
+      "年度报告": "category_ndbg_szsh",
+      "半年度报告": "category_bndbg_szsh",
+      "第一季度报告": "category_yjdbg_szsh",
+      "第三季度报告": "category_sjdbg_szsh"
+    },
+    "user_agent": ["Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 2.0.50727; Media Center PC 6.0)",
+     "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET CLR 1.0.3705; .NET CLR 1.1.4322)",
+     "Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 5.2; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2; .NET CLR 3.0.04506.30)",
+     "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN) AppleWebKit/523.15 (KHTML, like Gecko, Safari/419.3) Arora/0.3 (Change: 287 c9dfb30)",
+     "Mozilla/5.0 (X11; U; Linux; en-US) AppleWebKit/527+ (KHTML, like Gecko, Safari/419.3) Arora/0.6",
+     "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.2pre) Gecko/20070215 K-Ninja/2.1.1",
+     "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9) Gecko/20080705 Firefox/3.0 Kapiko/3.0",
+     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"],
+    "nameStandardize": "(（\\d+）)*[\\u4E00-\\u9FA5|：]+\\d+[\\u4E00-\\u9FA5]+(（[\\u4E00-\\u9FA5]+）)*",
+    "nameDiscard": ["摘要","取消","英文","正文","公告"],
+    "RESPONSE_TIMEOUT": 10,
+    "WAIT_TIME": 6
   }
 }

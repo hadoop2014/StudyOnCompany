@@ -117,6 +117,8 @@ class InterpreterNature(InterpreterBase):
         def p_expression_crawl(p):
             '''expression : SCALE CRAWL WEBSITE'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            website = p[3]
+            assert website in self.websites,"website(%s) must be in %s" % self.websites
             self._process_crawl_finance(command)
 
 

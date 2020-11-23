@@ -55,6 +55,7 @@ class InterpreterBase(BaseClass):
         self.tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|')]
         self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
                            keyword in self.tableNames}
+        self.websites = self.gJsonInterpreter['WEBSITE'].split('|')
 
 
     def _get_keyword(self,tableKeyword):
