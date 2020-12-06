@@ -33,7 +33,8 @@
     "config_json": "config_directory/interpreterAnalysize.json",
     "program_directory": "program_directory/interpreterAnalysize/",
     "member_modules": {
-      "datavisualization":"interpreterAnalysize.excelVisualization"
+      "dataVisualization":"interpreterAnalysize.excelVisualization",
+      "companyEvaluate": "interpreterAnalysize.companyEvaluate"
     }
   },
   "crawl": {

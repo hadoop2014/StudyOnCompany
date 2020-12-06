@@ -24,6 +24,110 @@
     "鲁商置业": "鲁商发展"
   },
 
+  "TABLE": "股票交易数据|财报发布信息",
+
+  "#公共字段表": "在所有的股票数据前都会增加这几个字段",
+  "公共表字段定义": {
+    "ID": "INTEGER PRIMARY KEY AUTOINCREMENT ",
+    "报告时间": "DATE",
+    "公司代码": "INTEGER NOT NULL",
+    "公司简称": "CHAR(10)"
+  },
+
+  "股票交易数据": {
+    "#headerName": ["最高", "最低", "今开", "昨收", "涨停", "跌停", "换手率", "振幅", "成交量", "成交额"
+                  ,"内盘", "外盘", "量比", "涨跌幅", "市盈率（动态）", "市净率", "流通市值", "总市值"],
+    "fieldName": ["收盘价","最高价","最低价","开盘价","前收盘","涨跌额","涨跌幅","换手率","成交量","成交金额","总市值","流通市值"],
+    "fieldAlias": {
+      "收盘价": "TCLOSE",
+      "最高价": "HIGH",
+      "最低价": "LOW",
+      "开盘价": "TOPEN",
+      "前收盘": "LCLOSE",
+      "涨跌额": "CHG",
+      "涨跌幅": "PCHG",
+      "换手率": "TURNOVER",
+      "成交量": "VOTURNOVER",
+      "成交金额": "VATURNOVER",
+      "总市值": "TCAP",
+      "流通市值": "MCAP"
+    },
+    "fieldType": {},
+    "fieldFromHeader": [],
+    "order": ["报告时间"]
+  },
+
+  "财报发布信息": {
+    "fieldName": ["报告类型","发布时间","文件名","网址"],
+    "fieldAlias": {},
+    "fieldType": {
+      "报告类型": "CHAR(10)",
+      "文件名": "CHAR(100)",
+      "网址": "CHAR(100)"
+    },
+    "fieldFromHeader": [],
+    "order": ["文件名"]
+  },
+
+  "stockcodeHeader": ["公司名称","公司代码"],
+
+  "stockcode": {
+    "迈为股份": "300751",
+    "帝科股份": "300842",
+    "卓胜微": "300782",
+    "公牛集团": "603195",
+    "密尔克卫": "603713",
+    "小熊电器": "002959",
+    "奥美医疗": "002950",
+    "三友医疗": "688085",
+    "赛诺生物": "OC836907",
+    "圣湘生物": "688289",
+    "鲁商发展": "600223",
+    "金域医学": "603882",
+    "美吉姆": "002621",
+    "汇顶科技": "603160",
+    "康希诺": "688185",
+    "西麦食品": "002956",
+    "甘李药业": "603087",
+    "天味食品": "603317",
+    "万泰生物": "603392",
+    "永新光学": "603297",
+    "丸美股份": "603983",
+    "华业香料": "300886",
+    "长阳科技": "688299",
+    "良品铺子": "603719",
+    "博通集成": "603068",
+    "昊海生科": "688366",
+    "康龙化成": "300759",
+    "双林生物": "00403",
+    "南微医学": "688029",
+    "伟思医疗": "688580",
+    "爱美客": "300896",
+    "爱朋医疗": "300753",
+    "玉禾田": "300815",
+    "赛轮轮胎": "601058",
+    "迈瑞医疗": "300760",
+    "创业慧康": "300451",
+    "三只松鼠": "300783",
+    "华熙生物": "688363",
+    "恩捷股份": "002812"
+  },
+
+  "stockcodeType": {
+    "000": "深市A股",
+    "001": "深市A股",
+    "002": "深市中小板",
+    "200": "深市B股",
+    "300": "深市创业板",
+    "080": "深市配股",
+    "600": "沪市A股",
+    "601": "沪市A股",
+    "603": "沪市A股",
+    "900": "沪市B股",
+    "730": "沪市新股",
+    "700": "沪市配股"
+  },
+
 
   "table_settings": {
     "默认值": {
@@ -203,6 +307,10 @@
     "沪电股份": {
       "年度报告": ["2014年","2015年"],
       "snap_tolerance": 5.28
+    },
+    "迈为股份": {
+      "年度报告": ["2019年"],
+      "snap_tolerance": 5.28
     }
   },
 
@@ -252,6 +360,9 @@
         },
         "合盛硅业": {
           "半年度报告": ["2018年","2019年","2020年"]
+        },
+        "阳光电源": {
+          "年度报告": ["2018年"]
         }
       }
     },
@@ -698,6 +809,93 @@
       "公司简称": "中兴通讯",
       "公司代码": 63,
       "公司地址": "深圳市"
+    }
+  },
+
+  "模型公共参数": {
+    "environment": {
+      "mode": "train",
+      "framework": "mxnet",
+      "dataset": "pikachu",
+      "cpu_num": 0,
+      "#used for max to keep checkpoint": "",
+      "max_to_keep" : 2,
+      "#used for max queue of tensorboard logging:default value = 10": "",
+      "max_queue" : 10,
+      "#用于paddle的logger.image(tag='input',num_samples=num_samples])": "",
+      "num_samples" : 10,
+      "#用于plt.show()后，在pltsleeptime(单位s)后自动关闭图形": "",
+      "pltsleeptime" : 1
+    },
+    "dataset": {
+      "mnist": {
+        "channels" : 1,
+        "dim_x" : 28,
+        "dim_y" : 28,
+        "classnum" : 10
+      },
+      "cifar10": {
+        "channels" : 3,
+        "dim_x" : 32,
+        "dim_y" : 32,
+        "classnum" : 10
+      },
+      "fashionmnist":{
+        "channels" : 1,
+        "dim_x" : 28,
+        "dim_y" : 28,
+        "classnum" : 10
+      },
+      "hotdog": {
+        "#hotdog图片为不规则的，其dim_x,dim_y仅为参考值": "",
+        "channels" : 3,
+        "dim_x" : 224,
+        "dim_y" : 224,
+        "classnum" : 2
+      },
+      "lyric":{
+        "dim": 1
+      },
+      "pikachu": {
+        "channels" : 3,
+        "dim_x" : 512,
+        "dim_y" : 512,
+        "classnum" : 1
+      }
+    },
+    "trainer": {
+      "train_num_epoch" : 200,
+      "#该值epoch_per_print默认为1合适，如果不为1,最终plotLossAcc函数中train_loss和test_loss对不齐": "",
+      "epoch_per_print":  1,
+      "epochs_per_checkpoint" : 200,
+      "debug_per_steps" : 1000,
+      "batch_size" : 64,
+      "learning_rate" : 0.005,
+      "learning_rate_decay_factor" : 0.9,
+      "decay_steps" : 2000,
+      "test_percent" : 1.0
+    },
+    "optimizer": {
+      "momentum" : 0.9,
+      "lr_mult" : 10
+    },
+    "initializer": {
+      "init_sigma": 0.01,
+      "init_bias": 0.0
+    },
+    "net": {
+      "keep": 1.0
+    },
+    "checklist": {
+      "modelist" : ["train","pretrain"],
+      "tasknamelist" : ["regression","lenet","alexnet","vgg","capsnet","resnet","nin","rnn","ssd"],
+      "optimizerlist" : ["sgd","adam","rmsprop","adagrad","adadelta","momentum"],
+      "datasetlist" : ["mnist","fashionmnist","cifar10","houseprice","lyric","hotdog","pikachu"],
+      "frameworklist" : ["mxnet","tensorflow","paddle","pytorch","keras"],
+      "activationlist" : ["sigmoid","relu","tanh"],
+      "initializerlist" : ["normal","xavier","kaiming","constant","uniform"],
+      "ctxlist" : ["gpu","cpu"],
+      "celllist" : ["rnn","gru","lstm"]
     }
   }
 }

@@ -7,44 +7,104 @@
 
 import requests
 from bs4 import BeautifulSoup
-import urllib
-import re
-import re  # 引入正则表达式库，便于后续提取股票代码
+import urllib.request
 #import xlwt  # 引入xlwt库，对Excel进行操作。
-import time  # 引入time库，计算爬虫总共花费的时间。
-import random
-import math
 import csv
-import pandas as pd
+import random
 from interpreterCrawl.webcrawl.crawlBaseClass import *
 
 
 class CrawlStock(CrawlBase):
     def __init__(self,gConfig):
         super(CrawlStock, self).__init__(gConfig)
-        self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
-        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        self.checkpoint = None
-        self.checkpointWriter = None
+        #self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
+        #self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
+        #self.checkpoint = None
+        #self.checkpointWriter = None
 
 
     def crawl_stock_data(self,website,scale):
         assert website in self.dictWebsites.keys(),"website(%s) is not in valid set(%s)"%(website,self.dictWebsites.keys())
-        resultPaths = NULLSTR
+        stockList = []
+        resultPaths = []
         if scale == '批量':
             assert ('公司简称' in self.gConfig.keys() and self.gConfig['公司简称'] != NULLSTR) \
                    and ('报告时间' in self.gConfig.keys() and self.gConfig['报告时间'] != NULLSTR) \
                    and ('报告类型' in self.gConfig.keys() and self.gConfig['报告类型'] != NULLSTR) \
                 , "parameter 公司简称(%s) 报告时间(%s) 报告类型(%s) is not valid parameter" \
                   % (self.gConfig['公司简称'], self.gConfig['报告时间'], self.gConfig['报告类型'])
+            stockList = self._get_stock_list(self.gConfig['公司简称'])
+            resultPaths = self._process_fetch_stock_data(stockList, website)
+            resultPaths = self._process_save_to_sqlite3(resultPaths, website, encoding='gbk')
+            #self.save_checkpoint(resultPaths, website)
+            #self.close_checkpoint()
         elif scale == '全量':
-            resultPaths = self._process_stock_list(website)
-            self._process_fetch_stock_info(resultPaths,website)
+            stockList = self._process_stock_list(website)
+            self._save_stock_list(stockList)
 
-        self.save_checkpoint(resultPaths)
+        #resultPaths = self._process_fetch_stock_data(stockList, website)
+        #resultPaths = self._process_save_to_sqlite3(resultPaths, website, encoding='gbk')
+        self.save_checkpoint(resultPaths, website)
         self.close_checkpoint()
 
 
+    def _process_save_to_sqlite3(self,fileList, website, encoding = 'utf-8'):
+        assert isinstance(fileList, list),"fileList must be a list!"
+        tableName = self.dictWebsites[website]['tableName']
+        assert tableName in self.tables, "tableName(%s) must be in table list(%s)"% (tableName, self.tables)
+        successPaths = []
+        for fileName in fileList:
+            fullfileName = os.path.join(self.working_directory, fileName[0])
+            if not os.path.exists(fullfileName):
+                self.logger.info('file %s is not exist!'% fullfileName)
+                continue
+            dataFrame = pd.read_csv(fullfileName, encoding = encoding)
+            dataFrame.columns = self._get_merged_columns(tableName)
+            self._write_to_sqlite3(dataFrame,tableName)
+            successPaths.append(fileName)
+            self.logger.info("success to write to sqlite3 from file %s"% fullfileName)
+        return successPaths
+
+
+    def _process_fetch_stock_data(self, stockList, website):
+        stockInfoURL = self.dictWebsites[website]['download_path']
+        tableName = self.dictWebsites[website]['tableName']
+        fieldNameEn = self.dictTables[tableName]['fieldAlias'].values()
+        endTime = time.strftime('%Y%m%d')
+        resultPaths = []
+        for company, code in stockList:
+            url = stockInfoURL \
+                  + '?code=0' + code \
+                  + '&end=' + endTime \
+                  + '&fields=' + ';'.join(fieldNameEn)
+            fileName = "（" + code + "）" + company + '.csv'
+            fullfileName = os.path.join(self.working_directory, fileName)
+            try:
+                if os.path.exists(fullfileName):
+                    os.remove(fullfileName)
+                #headers['User-Agent'] = random.choice(self.dictWebsites[website]["user_agent"])
+                urllib.request.urlretrieve(url, fullfileName)
+                resultPaths.append([fileName, company, code, endTime])
+            except Exception as e:
+                print(e)
+                self.logger.error('failed to fetch stock(%s %s) trading data from %s '% (code, company, url))
+        companyDiffer = set([company for company,_ in stockList]).difference([company for _,company,_,_ in resultPaths])
+        if len(companyDiffer) > 0:
+            self.logger.info("failed to fetch stock data : %s"% companyDiffer)
+        return resultPaths
+
+
+    def _save_stock_list(self,stockList):
+        assert isinstance(stockList, list),"parameter stockList(%s) must be a list!"% stockList
+        if os.path.exists(self.stockcodefile):
+            os.remove(self.stockcodefile)
+        stockcodefile = open(self.stockcodefile, 'w', newline= '', encoding= 'utf-8')
+        stockcodefileWriter = csv.writer(stockcodefile)
+        stockcodefileWriter.writerows(stockList)
+        stockcodefile.close()
+        self.logger.info('sucess to write stock code into file %s'% self.stockcodefile)
+
+    '''
     def _process_fetch_stock_info(self,resultPaths, website):
         assert isinstance(resultPaths,list),"resultPaths must be list!"
         stockInfoURL = self.dictWebsites[website]['download_path']
@@ -87,31 +147,52 @@ class CrawlStock(CrawlBase):
                 count = count + 1
                 self.logger.info("\r爬取失败，当前进度: {:.2f}%".format(count * 100 / len(resultPaths)), end="")
                 continue
-
+    '''
 
     def _process_stock_list(self,website):
         # 获取股票代码列表
         stockURL = self.dictWebsites[website]['query_path']
         stockList = []
-        if website == "股城网":
-            html = self._getHTMLText(stockURL, "GB2312")
+        if website == "网易财经":
+            #html = self._getHTMLText(stockURL, "GB2312")
+            html = self._getHTMLText(stockURL)
             soup = BeautifulSoup(html, 'html.parser')
             a = soup.find_all('a')  # 得到一个列表
             for i in a:
                 try:
                     href = i.attrs['href']  # 股票代码都存放在href标签中
-                    stockList.append(re.findall(r"[S][HZ]\d{6}", href)[0])
+                    matched = re.findall(r"[S][HZ]\d{6}", href)
+                    if len(matched) > 0:
+                        if i.span is not None:
+                            # 对于上证指数, 深证成指按如下处理
+                            content = i.span.content[0]
+                            code, company = self._content_transfer(content)
+                            code = matched[0]
+                        else:
+                            content = i.contents[0]
+                            code, company = self._content_transfer(content)
+                        if code is not NaN:
+                            # 针对TMT50指数, 在这里去掉
+                            stockList.append([company, code])
                 except:
                     continue
-        elif website == "东方财富网":
-            html = self._getHtml(website,code='utf-8')
-            code = self._get_stack_code(html)
+        #elif website == "东方财富网":
+        #    html = self._getHtml(website,code='utf-8')
+        #    code = self._get_stack_code(html)
             # 获取所有股票代码（以6开头的，应该是沪市数据）集合
             #CodeList = []
-            for item in code:
-                if item[0] == '6':
-                    stockList.append(item)
+        #    for item in code:
+        #        if item[0] == '6':
+        #            stockList.append(item)
+        self.logger.info('success to fetch stock code from %s' % stockURL)
         return stockList
+
+
+    def _content_transfer(self, content):
+        assert content != NULLSTR and isinstance(content, str), "content must not be NULL!"
+        content = content.replace(' ',NULLSTR).replace('(',"（").replace(')',"）")
+        company, code = self._get_company_code_by_content(content)
+        return code, company
 
 
     def _getHTMLText(self,url, code="utf-8"):  # 获取HTML文本
@@ -120,26 +201,29 @@ class CrawlStock(CrawlBase):
             r.raise_for_status()
             r.encoding = code
             return r.text
-        except:
-            return ""
+        except Exception as e:
+            print(e)
+            return NULLSTR
 
 
+    '''
     def _getHtml(self,website,code='gbk'):
         # 爬虫抓取网页函数,东方财富网
         url = self.dictWebsites[website]["query_path"]
         html = urllib.request.urlopen(url).read()
         html = html.decode(code)
         return html
-
-
+    '''
+    '''
     def _get_stack_code(self,html):
         # 抓取网页股票代码函数,东方财富网
         s = r'<li><a target="_blank" href="http://quote.eastmoney.com/\S\S(.*?).html">'
         pat = re.compile(s)
         code = pat.findall(html)
         return code
+    '''
 
-
+    '''
     def save_checkpoint(self, content):
         assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
         content = self._remove_duplicate(content)
@@ -165,7 +249,7 @@ class CrawlStock(CrawlBase):
         dataFrame = dataFrame.sort_values(by=["报告类型","文件名"],ascending=False)
         resultContent = dataFrame.values.tolist()
         return resultContent
-
+    '''
 
     def initialize(self,dictParameter = None):
         if dictParameter is not None:

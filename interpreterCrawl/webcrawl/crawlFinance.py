@@ -8,17 +8,16 @@ import random
 import requests
 import math
 import csv
-import pandas as pd
 from interpreterCrawl.webcrawl.crawlBaseClass import *
 
 
 class CrawlFinance(CrawlBase):
     def __init__(self,gConfig):
         super(CrawlFinance, self).__init__(gConfig)
-        self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
-        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        self.checkpoint = None
-        self.checkpointWriter = None
+        #self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
+        #self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
+        #self.checkpoint = None
+        #self.checkpointWriter = None
 
 
     def crawl_finance_data(self,website,scale):
@@ -36,9 +35,49 @@ class CrawlFinance(CrawlBase):
 
         resultPaths = self._process_download(standardPaths, website)
 
-        self.save_checkpoint(resultPaths)
+        self._process_save_to_sqlite3(resultPaths, website)
+
+        self.save_checkpoint(resultPaths, website)
 
         self.close_checkpoint()
+
+
+    def _process_save_to_sqlite3(self,fileList, website, encoding = 'utf-8'):
+        assert isinstance(fileList,list),"fileList must be a list!"
+        tableName = self.dictWebsites[website]['tableName']
+        assert tableName in self.tables, "tableName(%s) must be in table list(%s)!"% (tableName, self.tables)
+        if len(fileList) > 0:
+            dataFrame = pd.DataFrame(fileList)
+            dataFrame.columns = self._get_merged_columns(tableName)
+            self._write_to_sqlite3(dataFrame, tableName)
+
+
+    def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
+        conn = self._get_connect()
+        #dataFrame = dataFrame.T
+        #sql_df = dataFrame.set_index(dataFrame.columns[0],inplace=False).T
+        sql_df = dataFrame
+        # 对于财报发布信息, 必须用报告时间, 报告类型作为过滤关键字
+        specialKeys = ['发布时间', '报告类型']
+        isRecordExist = self._is_record_exist(conn, tableName, sql_df, specialKeys=specialKeys)
+        if isRecordExist:
+            condition = self._get_condition(sql_df)
+            sql = ''
+            sql = sql + 'delete from {}'.format(tableName)
+            sql = sql + '\n where ' + condition
+            self._sql_executer(sql)
+            self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
+                                                                        ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
+            sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+            conn.commit()
+            self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
+                                                                        ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
+        else:
+            sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
+            conn.commit()
+            self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
+                                                                            ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
+        conn.close()
 
 
     def _process_fetch_download_path(self,website):
@@ -101,6 +140,7 @@ class CrawlFinance(CrawlBase):
         resultPaths = []
         reportType = NULLSTR
         publishingTime = NULLSTR
+        time, code, company = NULLSTR, NULLSTR, NULLSTR
         for filename,url in urllists.items():
             try:
                 path = self._get_path_by_filename(filename)
@@ -108,7 +148,8 @@ class CrawlFinance(CrawlBase):
                 filePath = os.path.join(path,filename)
                 publishingTime = self._get_publishing_time(url)
                 reportType = os.path.split(path)[-1]
-                resultPaths.append([filename, reportType, publishingTime, url])
+                company, time, type, code = self._get_time_type_company_code_by_name(filename)
+                resultPaths.append([time, code, company, reportType, publishingTime, filename, url])
                 if os.path.exists(filePath):
                     self.logger.info("File %s is already exists!" % filename)
                     continue
@@ -119,7 +160,7 @@ class CrawlFinance(CrawlBase):
                 self.logger.info("Sucess to fetch %s ,write to file %s!"%(url,filename))
             except Exception as e:
                 #如果下载不成功,则去掉该记录
-                resultPaths.remove([filename, reportType, publishingTime, url])
+                resultPaths.remove([time, code, company, reportType, publishingTime, filename, url])
                 self.logger.error("Failed to fetch %s,file %s!"%(url,filename))
         return resultPaths
 
@@ -216,6 +257,7 @@ class CrawlFinance(CrawlBase):
         return seData
 
 
+    '''
     def save_checkpoint(self, content):
         assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
         content = self._remove_duplicate(content)
@@ -241,6 +283,7 @@ class CrawlFinance(CrawlBase):
         dataFrame = dataFrame.sort_values(by=["报告类型","文件名"],ascending=False)
         resultContent = dataFrame.values.tolist()
         return resultContent
+    '''
 
 
     def initialize(self,dictParameter = None):

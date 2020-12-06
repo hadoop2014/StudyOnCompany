@@ -48,7 +48,7 @@ class InterpreterBase(BaseClass):
                            for tableName in self.gJsonInterpreter['TABLE'].split('|')]
         self.tableNames = list(set([self._get_tablename_alias(tableName) for tableName in self.tableNames]))
         self.dictTables = {keyword: value for keyword,value in self.gJsonInterpreter.items() if keyword in self.tableNames}
-        self.commonFileds = self.gJsonInterpreter['公共表字段定义']
+        self.commonFields = self.gJsonInterpreter['公共表字段定义']
         self.tableKeyword = self.gJsonInterpreter['TABLE']
         self.dictKeyword = self._get_keyword(self.tableKeyword)
         self.dictTables = self._fields_replace_punctuate(self.dictTables)

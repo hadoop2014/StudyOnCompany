@@ -1,12 +1,13 @@
 {
-  "#tokens": ["创建",   "表",   "展示",     "处理规模"],
-  "tokens":  ["CREATE","TABLE","VISUALIZE","SCALE"],
+  "#tokens": ["创建",   "表",   "展示",     "处理规模","模型", "训练"],
+  "tokens":  ["CREATE","TABLE","VISUALIZE","SCALE","MODEL","TRAIN"],
 
   "SCALE" : "全量|批量|单次",
   "CREATE": "创建",
   "VISUALIZE": "展示",
-  "TABLE": "财务分析基础表|财务分析综合表|股票价值估算表|股票价格分析表",
-
+  "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表",
+  "TRAIN": "训练",
+  "MODEL": "公司价格预测模型",
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
 
@@ -84,7 +85,7 @@
     "maxheight": 15,
     "maxwidth": 20,
     "minwidth": 8,
-    "marginwidth": 3,
+    "marginwidth": 5,
     "pattern_emphasize": "人均|率",
     "percentage_exclude": ["员工人均工资（万）","人均营业额（万）","人均净利润（万）","经营活动产生的现金流量净额占净利润的比率"
                           ,"预收总额和应收总额的比率","预收款项和应收账款的比率","流动比率","速动比率","现金及现金等价物余额占短期借债的比率"
@@ -337,10 +338,75 @@
       }
     }
   },
-  "股票价值估算表": {
+
+  "公司价格分析表": {
+    "fieldName": ["报告时间","公司简称","公司代码"],
+    "fieldDiscard": [],
+    "create": "createPriceAnalysize.sql",
+    "visualize": "",
+    "order": [],
+    "startrow": 0,
+    "font_settings": {
+      "name":"宋体",
+      "size":"11",
+      "italic":false,
+      "color":"BLUE",
+      "bold":false,
+      "underline":"doubleAccounting"
+    }
+  },
+
+  "公司价值分析表": {
 
   },
-  "股票价格分析表": {
 
+  "公司价格预测模型": {
+    "environment": {
+      "mode": "train",
+      "ctx": "cpu",
+      "framework": "pytorch",
+      "dataset": "mnist",
+      "model": "rnn",
+      "optimizer": "rmsprop",
+      "initializer": "xavier",
+      "activation": "sigmoid"
+    },
+    "dataset": {
+
+    },
+    "trainer": {
+
+    },
+    "optimizer": {
+
+    },
+    "initializer": {
+
+    },
+    "net": {
+      "resize": 0,
+      "input_dim_x" : 28,
+      "input_dim_y" : 28,
+      "input_channels" : 1,
+      "conv1_channels" : 6,
+      "conv1_kernel_size" : 5,
+      "conv1_strides" : 1,
+      "conv1_padding" : 0,
+      "pool1_size" : 2,
+      "pool1_strides" : 2,
+      "pool1_padding" : 0,
+      "conv2_channels" : 16,
+      "conv2_kernel_size" : 5,
+      "conv2_striders" : 1,
+      "conv2_padding" : 0,
+      "pool2_size" : 2,
+      "pool2_strides" : 2,
+      "pool2_padding" : 0,
+      "dense1_hiddens" : 120,
+      "dense2_hiddens" : 84,
+      "dense3_hiddens" : 10,
+      "class_num" : 10
+    }
   }
+
 }

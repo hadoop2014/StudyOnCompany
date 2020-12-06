@@ -41,6 +41,7 @@ class InterpreterBase(BaseClass):
 
 
     def _get_interpreter_keyword(self):
+        super(InterpreterBase,self)._get_interpreter_keyword()
         #编译器,文件解析器共同使用的关键字
         self.tokens = self.gJsonInterpreter['tokens']
         self.literals = self.gJsonInterpreter['literals']
@@ -50,9 +51,9 @@ class InterpreterBase(BaseClass):
         self.websites = self.gJsonInterpreter['WEBSITE'].split('|')
         self.dictWebsites = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
                            keyword in self.websites}
-        self.tables = self.gJsonInterpreter['TABLE'].split('|')
-        self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
-                           keyword in self.tables}
+        #self.tables = self.gJsonInterpreter['TABLE'].split('|')
+        #self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
+        #                   keyword in self.tables}
 
 
     def _get_keyword(self,tableKeyword):

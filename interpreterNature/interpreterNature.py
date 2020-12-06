@@ -105,12 +105,17 @@ class InterpreterNature(InterpreterBase):
         def p_expression_create_table(p):
             '''expression : CREATE TABLE'''
             command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
+            tableName = p[2]
+            assert tableName in self.tableNames, 'tableName(%s) is invalid, which must be in %s!'%(tableName, self.tableNames)
             self._process_create_table(command)
 
 
         def p_expression_visualize(p):
             '''expression : SCALE VISUALIZE TABLE'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            tableName = p[3]
+            assert tableName in self.tableNames, 'tableName(%s) is invalid, which must be in %s!' % (
+            tableName, self.tableNames)
             self._process_visualize_table(command)
 
 
@@ -118,8 +123,16 @@ class InterpreterNature(InterpreterBase):
             '''expression : SCALE CRAWL WEBSITE'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
             website = p[3]
-            assert website in self.websites,"website(%s) must be in %s" % self.websites
+            assert website in self.websites,"website(%s) is invalid, which must be in %s" % (website, self.websites)
             self._process_crawl_finance(command)
+
+
+        def p_expression_train_model(p):
+            '''expression : TRAIN MODEL'''
+            command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            model = p[2]
+            assert model in self.models, "model(%s) is invalid, which must be in %s" % (model, self.models)
+            self._process_train_model(command)
 
 
         def p_expression_config(p):
@@ -249,6 +262,15 @@ class InterpreterNature(InterpreterBase):
             return
         assert self.names_global['报告时间'] != NULLSTR and self.names_global['报告类型'] != NULLSTR\
             ,"报告时间,报告类型为空,必须在参数配置中明确配置!"
+        self.gConfig.update(self.names_global)
+        self.interpreterAnalysize.initialize(self.gConfig)
+        self.interpreterAnalysize.doWork(command)
+
+
+    def _process_train_model(self, command):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
+            return
         self.gConfig.update(self.names_global)
         self.interpreterAnalysize.initialize(self.gConfig)
         self.interpreterAnalysize.doWork(command)

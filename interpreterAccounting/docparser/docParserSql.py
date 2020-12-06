@@ -474,7 +474,6 @@ class DocParserSql(DocParserBase):
                         # 开始搜寻下一个字段
                         posIndex = posIndex + 1
 
-
             #更新字段位置和lex位置
             if posIndex < countPos:
                 lexPos = dictFieldPos[posIndex]['lexpos']
@@ -517,7 +516,7 @@ class DocParserSql(DocParserBase):
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
         countColumns = len(dataFrame.columns) + countFieldDiscard
         index = 0
-        for (commonFiled, _) in self.commonFileds.items():
+        for (commonFiled, _) in self.commonFields.items():
             if commonFiled == "ID":
                 #跳过ID字段,该字段为数据库自增字段
                 continue
@@ -850,6 +849,7 @@ class DocParserSql(DocParserBase):
         return (row != NONESTR).all()
 
 
+    '''
     def _is_record_exist(self, conn, tableName, dataFrame:DataFrame):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
         #对于Sqlit3,字符串表示为'string' ,而不是"string".
@@ -860,10 +860,11 @@ class DocParserSql(DocParserBase):
         if len(result) > 0:
             isRecordExist = (result[0][0] > 0)
         return isRecordExist
+    '''
 
-
+    '''
     def _get_condition(self,dataFrame):
-        primaryKey = [key for key, value in self.commonFileds.items() if value.find('NOT NULL') >= 0]
+        primaryKey = [key for key, value in self.commonFields.items() if value.find('NOT NULL') >= 0]
         # 对于Sqlit3,字符串表示为'string' ,而不是"string".
         joined = list()
         for key in primaryKey:
@@ -871,13 +872,14 @@ class DocParserSql(DocParserBase):
             joined = joined + list([current])
         condition = ' and '.join(joined)
         return condition
+    '''
 
 
     def _get_connect(self):
         #用于获取数据库连接
         return sqlite.connect(self.database)
 
-
+    '''
     def _fetch_all_tables(self, cursor):
         #获取数据库中所有的表,用于判断待新建的表是否已经存在
         try:
@@ -885,7 +887,7 @@ class DocParserSql(DocParserBase):
         except Exception as e:
             print(e)
         return cursor.fetchall()
-
+    '''
 
     def _create_tables(self):
         for reportType in self.reportTypes:
@@ -904,7 +906,7 @@ class DocParserSql(DocParserBase):
             targetTableName = tablePrefix + tableName
             if targetTableName not in allTables:
                 sql = " CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t" % targetTableName
-                for commonFiled, type in self.commonFileds.items():
+                for commonFiled, type in self.commonFields.items():
                     sql = sql + "[%s] %s\n\t\t\t\t\t," % (commonFiled, type)
                 #由表头转换生产的字段
                 fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
@@ -930,7 +932,7 @@ class DocParserSql(DocParserBase):
 
                 #创建索引
                 sql = "CREATE INDEX IF NOT EXISTS [%s索引] on [%s] (\n\t\t\t\t\t"%(targetTableName,targetTableName)
-                sql = sql + ", ".join(str(field) for field,value in self.commonFileds.items()
+                sql = sql + ", ".join(str(field) for field,value in self.commonFields.items()
                                      if value.find('NOT NULL') >= 0)
                 sql = sql + '\n\t\t\t\t\t)'
                 try:

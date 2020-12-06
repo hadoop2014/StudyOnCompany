@@ -1,8 +1,8 @@
 {
   "#tokens": ["批量运行","执行",   "数据解析","表",    "创建",   "展示",     "参数配置", "参数名称",  "参数值", "数值"
-             ,"报告时间","爬取",   "网站",    "行业分类"],
+             ,"报告时间","爬取",   "网站",    "行业分类","模型" ,"训练"],
   "tokens":  ["SCALE", "EXECUTE","PARSE",  "TABLE", "CREATE","VISUALIZE","CONFIG", "PARAMETER","VALUE", "NUMERIC"
-             ,"TIME",  "CRAWL",  "WEBSITE","CATEGORY"],
+             ,"TIME",  "CRAWL",  "WEBSITE","CATEGORY","MODEL","TRAIN"],
 
   "SCALE": "全量|批量|单次",
   "EXECUTE": "运行|强制运行",
@@ -10,10 +10,12 @@
   "CREATE": "创建",
   "VISUALIZE": "展示",
   "CONFIG": "参数配置",
-  "TABLE": "财务分析基础表|财务分析综合表|股票价值估算表|股票价格分析表",
+  "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表",
+  "TRAIN": "训练",
+  "MODEL": "公司价格预测模型",
   "PARAMETER": "报告时间|报告类型|公司简称|行业分类",
   "CRAWL": "爬取",
-  "WEBSITE": "巨潮资讯网|股城网|东方财富网",
+  "WEBSITE": "巨潮资讯网|网易财经|股城网",
   "CATEGORY": "行业分类",
   "#REPORT": "第一季度报告|第一季度报告全文|半年度报告|中期报告|第三季度报告|第三季度报告全文|年度报告",
   "#VALUE": "该配置实际不起作用,而是由interpreterNature.py中的t_VALUE函数起作用",

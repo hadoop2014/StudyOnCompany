@@ -258,11 +258,4 @@ CREATE INDEX IF NOT EXISTS [年度财务分析基础表索引] on [年度财务�
     报告类型
 );
 
-select *
-from 年度财务分析基础表 a
-order by a.公司代码, a.报告时间 desc,a.报告类型;
-
-select *
-from 年度财务分析基础表
-where 公司简称 = '海螺水泥'
 

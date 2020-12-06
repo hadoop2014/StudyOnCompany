@@ -12,6 +12,8 @@ import os
 import re
 import sqlite3 as sqlite
 import pysnooper
+from pandas import DataFrame
+import pandas as pd
 #数据读写处理的基类
 
 NULLSTR = ''
@@ -29,6 +31,7 @@ class BaseClass():
         self.program_directory = gConfig['program_directory']
         self.working_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
         self.data_directory = gConfig['data_directory']
+        self.stockcodefile = os.path.join(self.data_directory,self.gConfig['stockcodefile'])
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._data = list()
         self._index = 0
@@ -39,7 +42,7 @@ class BaseClass():
         self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
         self.reportTypes =  self.gJsonBase['reportType']
         self.companyAlias = self.gJsonBase['companyAlias']
-        #self.tablePrefixs =  list(set([self._get_table_prefix(reportType) for reportType in self.reportTypes]))
+        self._get_interpreter_keyword()
 
 
     def __iter__(self):
@@ -57,6 +60,13 @@ class BaseClass():
 
     def __getitem__(self, item):
         return self._data[item]
+
+
+    def _get_interpreter_keyword(self):
+        # 编译器,文件解析器共同使用的关键字
+        self.tables = self.gJsonBase['TABLE'].split('|')
+        self.commonFields = self.gJsonBase['公共表字段定义']
+        self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tables}
 
 
     def _set_dataset(self,index=None):
@@ -102,6 +112,20 @@ class BaseClass():
                 type = key.split('_')[-1]
                 break
         return type
+
+    def _get_time_type_company_code_by_name(self,filename):
+        time = self._standardize('\\d+年',filename)
+        type = self._get_report_type_by_filename(filename)
+        company,code = self._get_company_code_by_content(filename)
+        return company,time,type,code
+
+
+    def _get_company_code_by_content(self,content):
+        code = self._standardize('（\\d+）',content)
+        if code is not NaN:
+            code = code.replace('（',NULLSTR).replace('）',NULLSTR)
+        company = self._standardize("[*A-Z]*[\\u4E00-\\u9FA5]+[A-Z0-9]*",content)
+        return company,code
 
 
     def _get_tablename_by_report_type(self, reportType, tableName):
@@ -261,6 +285,40 @@ class BaseClass():
         return isMatched
 
 
+    def _fetch_all_tables(self, cursor):
+        #获取数据库中所有的表,用于判断待新建的表是否已经存在
+        try:
+            cursor.execute("select name from sqlite_master where type='table' order by name")
+        except Exception as e:
+            print(e)
+        return cursor.fetchall()
+
+
+    def _is_record_exist(self, conn, tableName, dataFrame:DataFrame,specialKeys = None):
+        #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
+        #对于Sqlit3,字符串表示为'string' ,而不是"string".
+        condition = self._get_condition(dataFrame,specialKeys)
+        sql = 'select count(*) from {} where '.format(tableName) + condition
+        result = conn.execute(sql).fetchall()
+        isRecordExist = False
+        if len(result) > 0:
+            isRecordExist = (result[0][0] > 0)
+        return isRecordExist
+
+
+    def _get_condition(self,dataFrame,specialKeys = None):
+        primaryKey = [key for key, value in self.commonFields.items() if value.find('NOT NULL') >= 0]
+        if specialKeys is not None and isinstance(specialKeys,list):
+            primaryKey = primaryKey + specialKeys
+        # 对于Sqlit3,字符串表示为'string' ,而不是"string".
+        joined = list()
+        for key in primaryKey:
+            current = '(' + ' or '.join(['{} = \'{}\''.format(key,value) for value in set(dataFrame[key].tolist())]) + ')'
+            joined = joined + list([current])
+        condition = ' and '.join(joined)
+        return condition
+
+
     def _sql_executer_script(self,sql):
         isSuccess = False
         conn = self._get_connect()
@@ -289,6 +347,28 @@ class BaseClass():
         finally:
             file_object.close()
         return file_context
+
+
+    def _get_stock_list(self, companyList):
+        assert isinstance(companyList,list),"Parameter content(%s) must be a list"%companyList
+        stockList = []
+        stockcodeSpecial = [[company,code] for  company,code in self.gJsonBase['stockcode'].items()]
+        if len(companyList) == 0:
+            return stockList
+        stockcodeHeader = self.gJsonBase['stockcodeHeader']
+        if os.path.exists(self.stockcodefile):
+            dataFrame = pd.read_csv(self.stockcodefile,names=stockcodeHeader,dtype=str)
+            dataFrame.append(pd.DataFrame(stockcodeSpecial,columns=stockcodeHeader))
+        else:
+            dataFrame = pd.DataFrame(stockcodeSpecial,columns=stockcodeHeader)
+        dataFrame = dataFrame.drop_duplicates()
+        indexNeeded = dataFrame[stockcodeHeader[0]].isin(companyList)
+        dataFrame = dataFrame[indexNeeded]
+        stockList = dataFrame.values.tolist()
+        companyDiffer = set(companyList).difference(set([company for company,_ in stockList]))
+        if len(companyDiffer) > 0:
+            self.logger.error("failed to get these stock list:%s"%companyDiffer)
+        return stockList
 
 
     @property

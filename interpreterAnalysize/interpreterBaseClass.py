@@ -5,9 +5,8 @@
 # @File    : interpreterAccounting.py
 # @Note    : 用于从财务报表中提取财务数据
 
-import re
-import os
 from baseClass import *
+from modelBaseClass import *
 
 #数据读写处理的基类
 class InterpreterBase(BaseClass):
@@ -38,6 +37,31 @@ class InterpreterBase(BaseClass):
         self.tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|')]
         self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
                            keyword in self.tableNames}
+        self.models = self.gJsonInterpreter['MODEL'].split('|')
+        self.dictModels = self._get_models_parameters(self.models)
+
+
+    def _get_models_parameters(self,models):
+        # 把interpreterBase.json中的模型公共参数 和 interpreterAnalysize.json中的模型专用配置参数合并到一起
+        assert isinstance(models,list) and len(models) > 0,"models(%s) must be a list and not be NULL!"% models
+        dictModels = {}
+        dictModel = {}
+        for key, value in self.gJsonBase['模型公共参数'].items():
+            # 把模型公共参数进行展开, 放到一个dict中
+            if isinstance(value, dict):
+                dictModel.update(value)
+            else:
+                dictModel.update({key: value})
+        for model in models:
+            for key, value in self.gJsonInterpreter[model].items():
+                if isinstance(value, dict):
+                    dictModel.update(value)
+                else:
+                    dictModel.update({key : value})
+            dictModels.update({model : dictModel})
+
+        return dictModels
+
 
 
     def interpretDefine(self):
@@ -47,4 +71,7 @@ class InterpreterBase(BaseClass):
 
     def initialize(self):
         #初始化一个解释器语言
-        pass
+        if os.path.exists(self.logging_directory) == False:
+            os.makedirs(self.logging_directory)
+        if os.path.exists(self.working_directory) == False:
+            os.makedirs(self.working_directory)

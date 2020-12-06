@@ -5,8 +5,6 @@
 # @File    : interpreterAccounting.py
 # @Note    : 用于从财务报表中提取财务数据
 
-import re
-import os
 from baseClass import *
 
 #数据读写处理的基类
@@ -56,6 +54,7 @@ class InterpreterBase(BaseClass):
         self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
                            keyword in self.tableNames}
         self.websites = self.gJsonInterpreter['WEBSITE'].split('|')
+        self.models = self.gJsonInterpreter['MODEL'].split('|')
 
 
     def _get_keyword(self,tableKeyword):

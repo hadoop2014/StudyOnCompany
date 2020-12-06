@@ -93,7 +93,7 @@ class InterpreterCrawl(InterpreterBase):
         if website == '巨潮资讯网':
             self.crawlFinance.initialize(self.gConfig)
             self.crawlFinance.crawl_finance_data(website,scale)
-        elif website == '股城网' or website == '东方财富网':
+        elif website == '网易财经' or website == '股城网':
             self.crawlStock.initialize(self.gConfig)
             self.crawlStock.crawl_stock_data(website,scale)
 

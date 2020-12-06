@@ -4,7 +4,6 @@
 # @Author  : wu.hao
 # @File    : interpreterAssemble.py
 # @Note    : 根据checkbook.json中的配置装载模块
-import os
 from datafetch import getConfig
 from baseClass import *
 

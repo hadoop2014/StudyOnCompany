@@ -12,7 +12,9 @@ from ply import lex,yacc
 class InterpreterAnalysize(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterAnalysize, self).__init__(gConfig)
-        self.dataVisualization = memberModuleDict['datavisualization']
+        self.dataVisualization = memberModuleDict['dataVisualization']
+        self.companyEvaluate = memberModuleDict['companyEvaluate']
+        #self.modelPropose = memberModuleDict['modelPropose']
         self.interpretDefine()
 
 
@@ -64,6 +66,12 @@ class InterpreterAnalysize(InterpreterBase):
             tableName = p[3]
             scale = p[1]
             self._process_visualize_table(tableName,scale)
+
+
+        def p_expression_train_model(p):
+            '''expression : TRAIN MODEL'''
+            modelName = p[2]
+            self._process_train_model(modelName)
 
 
         def p_error(p):
@@ -122,10 +130,18 @@ class InterpreterAnalysize(InterpreterBase):
         self.dataVisualization.read_and_visualize(visualize_file,tableName)
 
 
+    def _process_train_model(self,modelName):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
+            return
+        self.logger.info("Reatch the interpreterAnalysize just for debug : train %s" % modelName)
+
+    '''
     def _process_generate_table(self):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_generate_table!')
             return
+   '''
 
 
     def initialize(self,dictParameter=None):

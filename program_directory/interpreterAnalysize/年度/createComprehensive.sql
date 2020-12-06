@@ -242,4 +242,4 @@ CREATE INDEX IF NOT EXISTS [年度财务分析综合表索引] on [年度财务�
     报告类型
 );
 
-select * from 财务分析综合表;
+

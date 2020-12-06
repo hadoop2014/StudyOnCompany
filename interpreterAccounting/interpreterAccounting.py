@@ -487,7 +487,7 @@ class InterpreterAccounting(InterpreterBase):
         def p_time(p):
             '''time : TIME
                     | TIME REPORT'''
-            #仅用于fetchtable
+            # 仅用于fetchtable
             p[0] = p[1]
 
         def p_term(p):
@@ -540,7 +540,7 @@ class InterpreterAccounting(InterpreterBase):
         self.logger.info("%s parse is starting!\n" % (fileName))
         self._fill_time_type_by_name(self.gConfig['sourcefile'])
         self.excelParser.initialize(dict({'sourcefile': self.gConfig['sourcefile']}))
-        #初始化process_info,否则计算出来的结果不正确
+        # 初始化process_info,否则计算出来的结果不正确
         self.sqlParser.process_info = {}
         for data in self.docParser:
             self.currentPageNumber = self.docParser.index
@@ -661,7 +661,8 @@ class InterpreterAccounting(InterpreterBase):
         assert isinstance(failedTable,set) and fileName != NULLSTR\
             ,"parameter failedTable(%s) must be a list and fileName(%s) must not be NULL!"%(failedTable,fileName)
         notRequired = self.gJsonBase['repair_lists']['notRequired']
-        company,reportTime,reportType,code = self._get_time_type_by_name(fileName)
+        #company,reportTime,reportType,code = self._get_time_type_by_name(fileName)
+        company, reportTime, reportType, code = self._get_time_type_company_code_by_name(fileName)
         notRequiredLists = set()
         for tableName in failedTable:
             if tableName in notRequired.keys():
@@ -735,7 +736,8 @@ class InterpreterAccounting(InterpreterBase):
 
 
     def _check_table_file(self,company, reportType, reportTime,tableFile):
-        companyCheck,timeCheck,typeCheck,codeCheck = self._get_time_type_by_name(tableFile)
+        #companyCheck,timeCheck,typeCheck,codeCheck = self._get_time_type_by_name(tableFile)
+        companyCheck, timeCheck, typeCheck, codeCheck = self._get_time_type_company_code_by_name(tableFile)
         fileDefault = self.gJsonBase['repair_lists']['fileDefault']
         # 对于某些表确实没有的,可采用 通用数据: 适合所有年报数据.xlxs填充
         isOK = (companyCheck == company and timeCheck == reportTime and typeCheck == reportType) \
@@ -753,7 +755,8 @@ class InterpreterAccounting(InterpreterBase):
 
 
     def _fill_time_type_by_name(self, filename):
-        company,time,type,code = self._get_time_type_by_name(filename)
+        #company,time,type,code = self._get_time_type_by_name(filename)
+        company, time, type, code = self._get_time_type_company_code_by_name(filename)
         if self.names['报告时间'] == NULLSTR and time is not NaN:
             self.names["报告时间"] = time
         if self.names['报告类型'] == NULLSTR and type is not NaN:
@@ -761,7 +764,7 @@ class InterpreterAccounting(InterpreterBase):
         if self.names['公司简称'] ==NULLSTR and company is not NaN:
             self.names['公司简称'] = company
         if self.names['公司代码'] ==NULLSTR and code is not NaN:
-            code = code.replace('（',NULLSTR).replace('）',NULLSTR)
+            #code = code.replace('（',NULLSTR).replace('）',NULLSTR)
             self.names['公司代码'] = code
         if self.names['行业分类'] == NULLSTR:
             self.names["行业分类"] = self._get_category(company)
@@ -777,6 +780,7 @@ class InterpreterAccounting(InterpreterBase):
         return category
 
 
+    '''
     def _get_time_type_by_name(self,filename):
         time = self._standardize('\\d+年',filename)
         #type = self._standardize('|'.join(self.gJsonBase['reportType']),filename)
@@ -784,6 +788,7 @@ class InterpreterAccounting(InterpreterBase):
         company = self._standardize(self.gJsonInterpreter['DISCARD'],filename)
         code = self._standardize('（\\d+）',filename)
         return company,time,type,code
+    '''
 
 
     def _construct_table(self,tableNmae):
@@ -867,7 +872,7 @@ class InterpreterAccounting(InterpreterBase):
                                           ,'table':NULLSTR,'tableBegin':False,'tableEnd':False
                                           ,"page_numbers":list()}})
         self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR,'address':NULLSTR})
-        for commonField,_ in self.commonFileds.items():
+        for commonField,_ in self.commonFields.items():
             self.names.update({commonField:NULLSTR})
             self.names.update({'货币名称': NULLSTR})
         for cirtical in self.criticals:
