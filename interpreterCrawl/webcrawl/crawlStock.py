@@ -25,7 +25,7 @@ class CrawlStock(CrawlBase):
 
     def crawl_stock_data(self,website,scale):
         assert website in self.dictWebsites.keys(),"website(%s) is not in valid set(%s)"%(website,self.dictWebsites.keys())
-        stockList = []
+        #stockList = []
         resultPaths = []
         if scale == '批量':
             assert ('公司简称' in self.gConfig.keys() and self.gConfig['公司简称'] != NULLSTR) \
@@ -33,15 +33,17 @@ class CrawlStock(CrawlBase):
                    and ('报告类型' in self.gConfig.keys() and self.gConfig['报告类型'] != NULLSTR) \
                 , "parameter 公司简称(%s) 报告时间(%s) 报告类型(%s) is not valid parameter" \
                   % (self.gConfig['公司简称'], self.gConfig['报告时间'], self.gConfig['报告类型'])
+            #stockList = self._process_stock_list(website)
+            #self._save_stock_list(stockList)
             stockList = self._get_stock_list(self.gConfig['公司简称'])
+            # 把指数数据同时也下载了
+            indexList = self._get_index_list(self.indexes)
+            stockList = stockList + indexList
             resultPaths = self._process_fetch_stock_data(stockList, website)
             resultPaths = self._process_save_to_sqlite3(resultPaths, website, encoding='gbk')
-            #self.save_checkpoint(resultPaths, website)
-            #self.close_checkpoint()
         elif scale == '全量':
             stockList = self._process_stock_list(website)
             self._save_stock_list(stockList)
-
         #resultPaths = self._process_fetch_stock_data(stockList, website)
         #resultPaths = self._process_save_to_sqlite3(resultPaths, website, encoding='gbk')
         self.save_checkpoint(resultPaths, website)
@@ -60,9 +62,12 @@ class CrawlStock(CrawlBase):
                 continue
             dataFrame = pd.read_csv(fullfileName, encoding = encoding)
             dataFrame.columns = self._get_merged_columns(tableName)
-            self._write_to_sqlite3(dataFrame,tableName)
-            successPaths.append(fileName)
-            self.logger.info("success to write to sqlite3 from file %s"% fullfileName)
+            if not dataFrame.empty:
+                self._write_to_sqlite3(dataFrame,tableName)
+                successPaths.append(fileName)
+            else:
+                self.logger.info('failed to write to sqlite3,the file is empty: %s'% fileName)
+            #self.logger.info("success to write to sqlite3 from file %s"% fullfileName)
         return successPaths
 
 
@@ -72,9 +77,13 @@ class CrawlStock(CrawlBase):
         fieldNameEn = self.dictTables[tableName]['fieldAlias'].values()
         endTime = time.strftime('%Y%m%d')
         resultPaths = []
-        for company, code in stockList:
+        stockList = self._get_deduplicate_stock(stockList,endTime)
+        for company, code, type in stockList:
+            codeTransfer = self._code_transfer(code, type)
+            if codeTransfer == NULLSTR:
+                continue
             url = stockInfoURL \
-                  + '?code=0' + code \
+                  + '?code=' + codeTransfer \
                   + '&end=' + endTime \
                   + '&fields=' + ';'.join(fieldNameEn)
             fileName = "（" + code + "）" + company + '.csv'
@@ -84,20 +93,70 @@ class CrawlStock(CrawlBase):
                     os.remove(fullfileName)
                 #headers['User-Agent'] = random.choice(self.dictWebsites[website]["user_agent"])
                 urllib.request.urlretrieve(url, fullfileName)
-                resultPaths.append([fileName, company, code, endTime])
+                resultPaths.append([fileName, company, str(code), endTime])
+                time.sleep(random.random() * self.dictWebsites[website]['WAIT_TIME'])
+                self.logger.info('success to fetch stock (%s)%s trading data!'% (code, company))
             except Exception as e:
                 print(e)
-                self.logger.error('failed to fetch stock(%s %s) trading data from %s '% (code, company, url))
-        companyDiffer = set([company for company,_ in stockList]).difference([company for _,company,_,_ in resultPaths])
+                self.logger.error('failed to fetch stock (%s)%s trading data from %s!'% (code, company, url))
+        companyDiffer = set([company for company,_,_ in stockList]).difference([company for _,company,_,_ in resultPaths])
         if len(companyDiffer) > 0:
             self.logger.info("failed to fetch stock data : %s"% companyDiffer)
         return resultPaths
+
+
+    def _get_index_list(self,indexes):
+        assert isinstance(indexes,list),"indexes(%s) must be a list!" % indexes
+        indexList = []
+        for index in indexes:
+            if index in self.gJsonBase['stockindex'].keys():
+                code = self.gJsonBase['stockindex'][index]
+                indexList.append([index, code, "指数"])
+        return indexList
+
+
+    def _get_deduplicate_stock(self,stockList,endTime):
+        # 从stockList中去掉checkpoint中已经记录的部分,这部分已经入了数据库,不再需要下载了, 因为交易数据按天更新,所以要考虑endTime
+        checkpoint = self.get_checkpoint()
+        checkpointList = [','.join(lines.split(',')[1:]) for lines in checkpoint]
+        stockDiffer = set([','.join([stock[0],stock[1],endTime]) for stock in stockList]).difference(set(checkpointList))
+        stockListResult = []
+        for stock in stockList:
+            for remainStock in stockDiffer:
+                if stock[0] == remainStock.split(',')[0] and remainStock.split(',')[-1] == endTime:
+                    # 只有公司名字 和 截止时间都相等的,才加入stockListResult
+                    stockListResult.append(stock)
+        return stockListResult
+
+
+    def _code_transfer(self,code, type):
+        codeTransfer = NULLSTR
+        if code == NULLSTR or type == NULLSTR:
+            return codeTransfer
+        if type == '公司':
+            if list(code)[0] == '6':
+                # 所有6打头的股票代码都是沪市的,前面加 0,其他股票代码,前面加 1
+                codeTransfer = '0' + str(code)
+            else:
+                codeTransfer = '1' + str(code)
+        elif type == '指数':
+            if list(code)[0] == '0':
+                # 对于上证指数, 以 0 开头
+                codeTransfer = '0' + str(code)
+            else:
+                # 对于深市指出, 以 1 开头
+                codeTransfer = '1' + str(code)
+        else:
+            # 如果是国债,则直接返回空
+            pass
+        return codeTransfer
 
 
     def _save_stock_list(self,stockList):
         assert isinstance(stockList, list),"parameter stockList(%s) must be a list!"% stockList
         if os.path.exists(self.stockcodefile):
             os.remove(self.stockcodefile)
+        stockList = sorted(stockList,key=lambda x: x[2] + x[1])
         stockcodefile = open(self.stockcodefile, 'w', newline= '', encoding= 'utf-8')
         stockcodefileWriter = csv.writer(stockcodefile)
         stockcodefileWriter.writerows(stockList)
@@ -163,17 +222,19 @@ class CrawlStock(CrawlBase):
                     href = i.attrs['href']  # 股票代码都存放在href标签中
                     matched = re.findall(r"[S][HZ]\d{6}", href)
                     if len(matched) > 0:
-                        if i.span is not None:
+                        #if i.span is not None:
                             # 对于上证指数, 深证成指按如下处理
-                            content = i.span.content[0]
-                            code, company = self._content_transfer(content)
-                            code = matched[0]
-                        else:
-                            content = i.contents[0]
-                            code, company = self._content_transfer(content)
-                        if code is not NaN:
+                        #    content = i.span.contents[0]
+                        #    code, company, type = self._content_transfer(content)
+                        #    code = matched[0]
+                            #type = '指数'
+                        #else:
+                        content = i.contents[0]
+                        code, company, type = self._content_transfer(content)
+                            #type = '公司'
+                        if code is not NaN and company is not NaN:
                             # 针对TMT50指数, 在这里去掉
-                            stockList.append([company, code])
+                            stockList.append([company, code, type])
                 except:
                     continue
         #elif website == "东方财富网":
@@ -190,9 +251,16 @@ class CrawlStock(CrawlBase):
 
     def _content_transfer(self, content):
         assert content != NULLSTR and isinstance(content, str), "content must not be NULL!"
+        type = '公司'
         content = content.replace(' ',NULLSTR).replace('(',"（").replace(')',"）")
         company, code = self._get_company_code_by_content(content)
-        return code, company
+        if company in self.gJsonBase['stockindex'].keys():
+            type = '指数'
+        else:
+            matched = re.search('国债\\d*',company)
+            if matched is not None:
+                type = '国债'
+        return code, company, type
 
 
     def _getHTMLText(self,url, code="utf-8"):  # 获取HTML文本

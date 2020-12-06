@@ -11,6 +11,8 @@
   "VALUE": "[\\u4E00-\\u9FA5|A-Z|Ａ-Ｚ]+",
   "#TABLE": "该定义不用于token,用于建表",
   "TABLE": "股票交易数据",
+  "#INDEX": "该保留字不用于lexer,仅用于下载所需要的指数",
+  "INDEX": "上证指数|深证成指|创业板指|沪深300",
 
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
@@ -40,6 +42,7 @@
     "tableName": "财报发布信息",
     "checkpointHeader": ["报告时间","公司代码","公司简称","报告类型","发布时间","文件名","网址"],
     "order": ["公司简称","发布时间"],
+    "drop_duplicate": "文件名",
     "query_path": "http://www.cninfo.com.cn/new/hisAnnouncement/query",
     "download_path": "http://static.cninfo.com.cn/",
     "headers": {
@@ -197,6 +200,21 @@
         "stock": "600223",
         "secid": "gssh0600223",
         "searchkey": ""
+      },
+      "博实股份": {
+        "stock": "002698",
+        "secid": "9900023192",
+        "searchkey": ""
+      },
+      "麦格米特": {
+        "stock": "002851",
+        "secid": "9900023251",
+        "searchkey": ""
+      },
+      "富邦股份": {
+        "stock": "300387",
+        "secid": "9900023050",
+        "searchkey": ""
       }
     }
   },
@@ -206,6 +224,7 @@
     "tableName": "股票交易数据",
     "checkpointHeader": ["文件名","公司简称","公司代码","截止时间"],
     "order": ["文件名"],
+    "drop_duplicate": "文件名",
     "#query_path": "http://quote.eastmoney.com/stocklist.html",
     "query_path" : "https://hq.gucheng.com/gpdmylb.html",
     "download_path": "http://quotes.money.163.com/service/chddata.html",
@@ -232,7 +251,7 @@
     "nameStandardize": "",
     "nameDiscard": [],
     "RESPONSE_TIMEOUT": 10,
-    "WAIT_TIME": 6
+    "WAIT_TIME": 5
   },
 
 

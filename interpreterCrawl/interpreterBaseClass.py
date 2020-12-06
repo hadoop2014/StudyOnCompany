@@ -51,6 +51,7 @@ class InterpreterBase(BaseClass):
         self.websites = self.gJsonInterpreter['WEBSITE'].split('|')
         self.dictWebsites = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
                            keyword in self.websites}
+        self.indexes = self.gJsonInterpreter['INDEX'].split('|')
         #self.tables = self.gJsonInterpreter['TABLE'].split('|')
         #self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
         #                   keyword in self.tables}

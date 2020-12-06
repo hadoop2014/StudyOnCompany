@@ -43,7 +43,6 @@ class CrawlBase(InterpreterBase):
         sql_df['公司代码'] = dataFrame['公司代码'].apply(lambda x: x.replace('\'', NULLSTR))
         #isRecordExist = self._is_record_exist(conn, tableName, sql_df)
         minTradingDate, maxTradingDate = self._get_max_min_trading_date(conn, tableName, sql_df)
-        #if isRecordExist:
         if minTradingDate is not None and maxTradingDate is not None:
             #condition = self._get_condition(sql_df)
             #sql = ''
@@ -70,9 +69,13 @@ class CrawlBase(InterpreterBase):
         minTradingDate, maxTradingDate = None, None
         condition = self._get_condition(dataFrame)
         sql = "select min(报告时间), max(报告时间) from {} where ".format(tableName) + condition
-        result = conn.execute(sql).fetchall()
-        if len(result) > 0:
-            minTradingDate, maxTradingDate = result[0]
+        try:
+            result = conn.execute(sql).fetchall()
+            if len(result) > 0:
+                minTradingDate, maxTradingDate = result[0]
+        except Exception as e:
+            print(e)
+            self.logger.error('failed to get max & min trading data from sql:%s'% sql)
         return minTradingDate,maxTradingDate
 
 
@@ -156,6 +159,14 @@ class CrawlBase(InterpreterBase):
         self.checkpoint.close()
 
 
+    def get_checkpoint(self):
+        if self.checkpointIsOn == False:
+            return
+        with open(self.checkpointfilename, 'r', encoding='utf-8') as csv_in:
+            reader = csv_in.read().splitlines()
+        return reader
+
+
     def _remove_duplicate(self,content,website):
         assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
         resultContent = content
@@ -166,7 +177,7 @@ class CrawlBase(InterpreterBase):
         dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader)
         dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader))
         # 根据数据第一列去重
-        dataFrame = dataFrame.drop_duplicates([checkpointHeader[0]], keep= 'last')
+        dataFrame = dataFrame.drop_duplicates(self.dictWebsites[website]['drop_duplicate'], keep= 'last')
         order = self.dictWebsites[website]['order']
         dataFrame = dataFrame.sort_values(by=order, ascending=False)
         resultContent = dataFrame.values.tolist()

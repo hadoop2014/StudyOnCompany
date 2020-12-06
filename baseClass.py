@@ -358,16 +358,19 @@ class BaseClass():
         stockcodeHeader = self.gJsonBase['stockcodeHeader']
         if os.path.exists(self.stockcodefile):
             dataFrame = pd.read_csv(self.stockcodefile,names=stockcodeHeader,dtype=str)
-            dataFrame.append(pd.DataFrame(stockcodeSpecial,columns=stockcodeHeader))
+            # stockcodeSpecial只有两列, 而stockcodeHeader有三列,最后一列为公司, 需要特殊处理
+            dataFrameSpecial = pd.DataFrame(stockcodeSpecial,columns=stockcodeHeader[0:-1])
+            dataFrameSpecial[stockcodeHeader[-1]] = '公司'
+            dataFrame = dataFrame.append(dataFrameSpecial)
         else:
             dataFrame = pd.DataFrame(stockcodeSpecial,columns=stockcodeHeader)
         dataFrame = dataFrame.drop_duplicates()
         indexNeeded = dataFrame[stockcodeHeader[0]].isin(companyList)
         dataFrame = dataFrame[indexNeeded]
         stockList = dataFrame.values.tolist()
-        companyDiffer = set(companyList).difference(set([company for company,_ in stockList]))
+        companyDiffer = set(companyList).difference(set([company for company,_,_ in stockList]))
         if len(companyDiffer) > 0:
-            self.logger.error("failed to get these stock list:%s"%companyDiffer)
+            self.logger.info("failed to get these stock list:%s"%companyDiffer)
         return stockList
 
 
