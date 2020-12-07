@@ -7,9 +7,7 @@
 
 from interpreterAccounting.docparser.docParserBaseClass import *
 import pdfplumber
-import csv
 import itertools
-import pandas as pd
 from functools import reduce
 
 

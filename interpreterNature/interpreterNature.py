@@ -97,6 +97,8 @@ class InterpreterNature(InterpreterBase):
 
         def p_expression_batch_parse(p):
             '''expression : SCALE EXECUTE PARSE'''
+            command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
+            self.logger.info(command)
             scale = p[1]
             isForced = (p[2] == '强制运行')
             self._process_parse(scale,isForced)
@@ -105,6 +107,7 @@ class InterpreterNature(InterpreterBase):
         def p_expression_create_table(p):
             '''expression : CREATE TABLE'''
             command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
+            self.logger.info(command)
             tableName = p[2]
             assert tableName in self.tableNames, 'tableName(%s) is invalid, which must be in %s!'%(tableName, self.tableNames)
             self._process_create_table(command)
@@ -113,6 +116,7 @@ class InterpreterNature(InterpreterBase):
         def p_expression_visualize(p):
             '''expression : SCALE VISUALIZE TABLE'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            self.logger.info(command)
             tableName = p[3]
             assert tableName in self.tableNames, 'tableName(%s) is invalid, which must be in %s!' % (
             tableName, self.tableNames)
@@ -122,6 +126,7 @@ class InterpreterNature(InterpreterBase):
         def p_expression_crawl(p):
             '''expression : SCALE CRAWL WEBSITE'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            self.logger.info(command)
             website = p[3]
             assert website in self.websites,"website(%s) is invalid, which must be in %s" % (website, self.websites)
             self._process_crawl_finance(command)
@@ -130,6 +135,7 @@ class InterpreterNature(InterpreterBase):
         def p_expression_train_model(p):
             '''expression : TRAIN MODEL'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            self.logger.info(command)
             model = p[2]
             assert model in self.models, "model(%s) is invalid, which must be in %s" % (model, self.models)
             self._process_train_model(command)

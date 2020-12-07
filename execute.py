@@ -107,7 +107,8 @@ def is_file_name_valid(fileName):
 
 def run_task_in_nature():
     interpreterNature = InterpreterAssemble().get_interpreter_nature()
-    interpreterNature.doWork(debug=True)
+    interpreterNature.doWork(debug=False)
+
 
 def main():
     gConfig = getConfig.get_config()
@@ -125,8 +126,8 @@ def main():
         unittestIsOn = gConfig['unittestIsOn'.lower()]
         assert unittestIsOn == False, \
             'Now in training mode,unitestIsOn must be False whitch in configbase.ini'
-
     run_task_in_nature()
+
 
 if __name__=='__main__':
     main()

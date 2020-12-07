@@ -10,7 +10,13 @@ create table if not exists 年度公司价格分析表 (
     报告周总市值 REAL,
     结束周 CHAR(10),
     结束周总市值 REAL,
-    增长率 REAL
+    增长率 REAL,
+    报告周沪深300指数 REAL,
+    结束周沪深300指数 REAL,
+    沪深300指数增长率 REAL,
+    上证指数增长率 REAL,
+    深证成指增长率 REAL,
+    创业板指增长率 REAL
 );
 
 insert into 年度公司价格分析表
@@ -25,7 +31,13 @@ select
     b.周平均总市值 as 报告周总市值,
     a.结束周,
     c.周平均总市值 as 结束周总市值,
-    round((c.周平均总市值 - b.周平均总市值)/b.周平均总市值, 4) as 增长率
+    round((c.周平均总市值 - b.周平均总市值)/b.周平均总市值, 4) as 增长率,
+    d.周平均收盘价 as 报告周沪深300指数,
+    e.周平均收盘价 as 结束周沪深300指数,
+    round((e.周平均收盘价 - d.周平均收盘价)/d.周平均收盘价, 4) as 沪深300指数增长率,
+    round((g.周平均收盘价 - f.周平均收盘价)/g.周平均收盘价, 4) as 上证指数增长率,
+    round((i.周平均收盘价 - h.周平均收盘价)/h.周平均收盘价, 4) as 深证成指增长率,
+    round((k.周平均收盘价 - j.周平均收盘价)/j.周平均收盘价, 4) as 创业板指增长率
 from
 (
     select x.报告时间,
@@ -98,8 +110,132 @@ left join
     )x
     group by 报告周, 公司代码, 公司简称
 )c
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.收盘价), 0) as 周平均收盘价
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    where x.公司简称 = '沪深300'
+    group by 报告周, 公司代码, 公司简称
+)d
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.收盘价), 0) as 周平均收盘价
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    where x.公司简称 = '沪深300'
+    group by 报告周, 公司代码, 公司简称
+)e
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.收盘价), 0) as 周平均收盘价
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    where x.公司简称 = '上证指数'
+    group by 报告周, 公司代码, 公司简称
+)f
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.收盘价), 0) as 周平均收盘价
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    where x.公司简称 = '上证指数'
+    group by 报告周, 公司代码, 公司简称
+)g
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.收盘价), 0) as 周平均收盘价
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    where x.公司简称 = '深证成指'
+    group by 报告周, 公司代码, 公司简称
+)h
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.收盘价), 0) as 周平均收盘价
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    where x.公司简称 = '深证成指'
+    group by 报告周, 公司代码, 公司简称
+)i
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.收盘价), 0) as 周平均收盘价
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    where x.公司简称 = '创业板指'
+    group by 报告周, 公司代码, 公司简称
+)j
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.收盘价), 0) as 周平均收盘价
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    where x.公司简称 = '创业板指'
+    group by 报告周, 公司代码, 公司简称
+)k
 where (a.公司代码 = b.公司代码 and a.报告周 = b.报告周)
-    and (a.公司代码 = c.公司代码 and a.结束周 = c.报告周);
+    and (a.公司代码 = c.公司代码 and a.结束周 = c.报告周)
+    and (a.报告周 = d.报告周 and a.结束周 = e.报告周)
+    and (a.报告周 = f.报告周 and a.结束周 = g.报告周)
+    and (a.报告周 = h.报告周 and a.结束周 = i.报告周)
+    and (a.报告周 = j.报告周 and a.结束周 = k.报告周);
 
 
 CREATE INDEX IF NOT EXISTS [年度公司价格分析表索引] on [年度公司价格分析表] (
