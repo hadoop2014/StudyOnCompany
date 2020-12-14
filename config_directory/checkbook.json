@@ -1,30 +1,13 @@
-
 {
-  "#batch": {
-    "config_file": "configpdf.ini",
-    "config_file_json": "interpretAccounting.json",
-    "docparser": "docparser.docParserPdf",
-    "excelparser": "docparser.docParserExcel",
-    "sqlparser": "docparser.docParserSql",
-    "interpreter": "interpreter.interpretAccounting"
-  },
-  "#single": {
-    "config_file": "configpdf.ini",
-    "config_file_json": "interpretAccounting.json",
-    "docparser": "docparser.docParserPdf",
-    "excelparser": "docparser.docParserExcel",
-    "sqlparser": "docparser.docParserSql",
-    "interpreter": "interpreter.interpretAccounting"
-  },
   "accounting": {
     "module": "interpreterAccounting.interpreterAccounting",
     "config_file": "",
     "config_json": "config_directory/interpreterAccounting.json",
     "program_directory": "",
     "member_modules": {
-      "docparser":"interpreterAccounting.docparser.docParserPdf",
-      "excelparser":"interpreterAccounting.docparser.docParserExcel",
-      "sqlparser":"interpreterAccounting.docparser.docParserSql"
+      "docParser":"interpreterAccounting.docparser.docParserPdf",
+      "excelParser":"interpreterAccounting.docparser.docParserExcel",
+      "sqlParser":"interpreterAccounting.docparser.docParserSql"
     }
   },
   "analysize": {
@@ -33,7 +16,7 @@
     "config_json": "config_directory/interpreterAnalysize.json",
     "program_directory": "program_directory/interpreterAnalysize/",
     "member_modules": {
-      "dataVisualization":"interpreterAnalysize.excelVisualization",
+      "excelVisualization":"interpreterAnalysize.excelVisualization",
       "companyEvaluate": "interpreterAnalysize.companyEvaluate"
     }
   },
@@ -43,8 +26,8 @@
     "config_json": "config_directory/interpreterCrawl.json",
     "program_directory": "program_directory/interpreterCrawl/",
     "member_modules": {
-      "crawlfinance":"interpreterCrawl.webcrawl.crawlFinance",
-      "crawlstock": "interpreterCrawl.webcrawl.crawlStock"
+      "crawlFinance":"interpreterCrawl.webcrawl.crawlFinance",
+      "crawlStock": "interpreterCrawl.webcrawl.crawlStock"
     }
   },
   "nature": {

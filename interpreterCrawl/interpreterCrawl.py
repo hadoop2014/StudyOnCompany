@@ -11,8 +11,8 @@ from interpreterCrawl.interpreterBaseClass import *
 class InterpreterCrawl(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterCrawl, self).__init__(gConfig)
-        self.crawlFinance = memberModuleDict['crawlfinance']
-        self.crawlStock = memberModuleDict['crawlstock']
+        self.crawlFinance = memberModuleDict['crawlFinance']
+        self.crawlStock = memberModuleDict['crawlStock']
         self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.interpretDefine()

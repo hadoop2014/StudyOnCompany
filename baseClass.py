@@ -113,6 +113,7 @@ class BaseClass():
                 break
         return type
 
+
     def _get_time_type_company_code_by_name(self,filename):
         time = self._standardize('\\d+年',filename)
         type = self._get_report_type_by_filename(filename)

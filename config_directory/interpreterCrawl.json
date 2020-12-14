@@ -89,7 +89,7 @@
     "nameStandardize": "(（\\d+）)*[\\u4E00-\\u9FA5|：]+\\d+[\\u4E00-\\u9FA5]+(（[\\u4E00-\\u9FA5]+）)*",
     "nameDiscard": ["摘要","取消","英文","正文","公告"],
     "RESPONSE_TIMEOUT": 10,
-    "WAIT_TIME": 6,
+    "WAIT_TIME": 3,
     "exception": {
       "通策医疗": {
         "stock": "600763",
@@ -230,10 +230,8 @@
     "download_path": "http://quotes.money.163.com/service/chddata.html",
     "headers": {
       "Accept": "application/json, text/javascript, */*; q=0.01",
-
       "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       "Accept-Encoding": "gzip, deflate",
-
       "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7,zh-HK;q=0.6,zh-TW;q=0.5",
       "Host": "www.cninfo.com.cn",
       "Origin": "http://www.cninfo.com.cn",
@@ -251,19 +249,17 @@
     "nameStandardize": "",
     "nameDiscard": [],
     "RESPONSE_TIMEOUT": 10,
-    "WAIT_TIME": 5
+    "WAIT_TIME": 2
   },
 
 
-  "股城网": {
+  "#股城网": {
     "query_path": "https://hq.gucheng.com/gpdmylb.html",
     "download_path": "https://hq.gucheng.com/",
     "headers": {
       "Accept": "application/json, text/javascript, */*; q=0.01",
-
       "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       "Accept-Encoding": "gzip, deflate",
-
       "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7,zh-HK;q=0.6,zh-TW;q=0.5",
       "Host": "www.cninfo.com.cn",
       "Origin": "http://www.cninfo.com.cn",

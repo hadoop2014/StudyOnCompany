@@ -6,7 +6,6 @@
 # @Note    : 用于从财务报表中提取财务数据
 from ply import lex,yacc
 import time
-import pandas as pd
 from xlrd.biffh import XLRDError
 from interpreterAccounting.interpreterBaseClass import *
 
@@ -14,9 +13,9 @@ from interpreterAccounting.interpreterBaseClass import *
 class InterpreterAccounting(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterAccounting, self).__init__(gConfig)
-        self.docParser = memberModuleDict['docParser'.lower()]
-        self.excelParser = memberModuleDict['excelParser'.lower()]
-        self.sqlParser = memberModuleDict['sqlParser'.lower()]
+        self.docParser = memberModuleDict['docParser']
+        self.excelParser = memberModuleDict['excelParser']
+        self.sqlParser = memberModuleDict['sqlParser']
         self.currentPageNumber = 0
         self.interpretDefine()
 
@@ -140,9 +139,10 @@ class InterpreterAccounting(InterpreterBase):
             '''fetchtable : TABLE optional unit tail
                           | TABLE optional time optional unit tail
                           | TABLE optional tail
-                          | TABLE optional time tail
+                          | TABLE optional time optional tail
                           | TABLE optional HEADER optional unit tail
                           | TABLE optional HEADER optional tail'''
+            # TABLE optional time tail修改为TABLE optional time optional tail,解决（603638）艾迪精密：2017年年度报告.PDF中合并资产负债表出现在页尾的问题
             # TABLE optional HEADER optional tail 解决长春高新2018年报,合并所有者权益变动表出现在页尾
             # TABLE optional unit DISCARD tail 解决通策医疗2017年报 主营业务分行业经营情况出现在业尾,即: 主营业务分行业、分产品、分地区情况 单位:元币种:人民币 主营业务分行业情况 16/175
             # TABLE optional HEADER optional unit tail解决中石科技2017年报 合并资产负债表刚好出现在页尾的场景. 如下: 合并所有者权益变动表 本期金额 单位：元 79

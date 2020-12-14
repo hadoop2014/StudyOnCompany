@@ -12,7 +12,7 @@ from ply import lex,yacc
 class InterpreterAnalysize(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterAnalysize, self).__init__(gConfig)
-        self.dataVisualization = memberModuleDict['dataVisualization']
+        self.excelVisualization = memberModuleDict['excelVisualization']
         self.companyEvaluate = memberModuleDict['companyEvaluate']
         #self.modelPropose = memberModuleDict['modelPropose']
         self.interpretDefine()
@@ -115,8 +115,8 @@ class InterpreterAnalysize(InterpreterBase):
         if visualize_file == NULLSTR:
             self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
             return
-        self.dataVisualization.initialize(self.gConfig)
-        self.dataVisualization.read_and_visualize(visualize_file,tableName,scale)
+        self.excelVisualization.initialize(self.gConfig)
+        self.excelVisualization.read_and_visualize(visualize_file, tableName, scale)
 
 
     def _process_visualize_table_batch(self,tableName):
@@ -127,13 +127,15 @@ class InterpreterAnalysize(InterpreterBase):
         if visualize_file == NULLSTR:
             self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
             return
-        self.dataVisualization.read_and_visualize(visualize_file,tableName)
+        self.excelVisualization.read_and_visualize(visualize_file, tableName)
 
 
     def _process_train_model(self,modelName):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
             return
+        dictModel = self.dictModels[modelName]
+        self.gConfig.update(dictModel)
         self.logger.info("Reatch the interpreterAnalysize just for debug : train %s" % modelName)
 
     '''

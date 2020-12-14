@@ -59,9 +59,7 @@ class InterpreterBase(BaseClass):
                 else:
                     dictModel.update({key : value})
             dictModels.update({model : dictModel})
-
         return dictModels
-
 
 
     def interpretDefine(self):

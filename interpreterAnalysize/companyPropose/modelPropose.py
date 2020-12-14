@@ -2,6 +2,7 @@ from interpreterAnalysize.companyPropose.modelBaseClassH import *
 from torch import nn
 import torch.nn.functional as F
 
+
 class lenet(nn.Module):
     def __init__(self,gConfig,input_channels,activation,input_dim_x,input_dim_y,classnum,compute_dim_xy):
         super(lenet,self).__init__()
@@ -67,6 +68,7 @@ class lenet(nn.Module):
         x = self.dense3(x)
         return x
 
+
 class lenetModel(modelBaseH):
     def __init__(self,gConfig,getdataClass):
         super(lenetModel,self).__init__(gConfig)
@@ -77,12 +79,14 @@ class lenetModel(modelBaseH):
         self.optimizer = self.get_optimizer(self.gConfig['optimizer'],self.net.parameters())
         self.input_shape = (self.batch_size,*self.resizedshape)
 
+
     def get_net(self):
         activation = self.gConfig['activation']#sigmoid
         activation = self.get_activation(activation)
         input_channels, input_dim_x, input_dim_y = self.resizedshape
         self.net = lenet(self.gConfig,input_channels,activation,input_dim_x,input_dim_y,self.classnum,
                          modelBaseH.compute_dim_xy)
+
 
     def run_train_loss_acc(self,X,y):
         self.optimizer.zero_grad()
@@ -96,6 +100,7 @@ class lenetModel(modelBaseH):
         acc= (y_hat.argmax(dim=1) == y).sum().item()
         return loss,acc
 
+
     def run_eval_loss_acc(self, X, y):
         with torch.no_grad():
             #解决GPU　out memory问题
@@ -104,12 +109,15 @@ class lenetModel(modelBaseH):
         loss = self.loss(y_hat, y).sum().item()
         return loss,acc
 
+
     def get_input_shape(self):
         return self.input_shape
 
 
-def create_object(gConfig,ckpt_used,getdataClass):
+def create_object(gConfig):
     #用cnnModel实例化一个对象model
+    ckpt_used = gConfig['ckpt_used']
+    getdataClass = gConfig['getdataClass']
     model=lenetModel(gConfig=gConfig,getdataClass=getdataClass)
     model.initialize(ckpt_used)
     return model
