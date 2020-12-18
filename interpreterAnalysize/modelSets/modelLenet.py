@@ -1,4 +1,4 @@
-from interpreterAnalysize.companyPropose.modelBaseClassH import *
+from interpreterAnalysize.modelSets.modelBaseClassH import *
 from torch import nn
 import torch.nn.functional as F
 
@@ -69,15 +69,26 @@ class lenet(nn.Module):
         return x
 
 
-class lenetModel(modelBaseH):
-    def __init__(self,gConfig,getdataClass):
+class lenetModel(ModelBaseH):
+    def __init__(self,gConfig):
         super(lenetModel,self).__init__(gConfig)
+        #self.loss = nn.CrossEntropyLoss().to(self.ctx)
+        #self.resizedshape = getdataClass.resizedshape
+        #self.classnum = getdataClass.classnum
+        #self.get_net()
+        #self.optimizer = self.get_optimizer(self.gConfig['optimizer'],self.net.parameters())
+        #self.input_shape = (self.batch_size,*self.resizedshape)
+
+
+    def _init_parameters(self):
+        super(lenetModel, self)._init_parameters()
         self.loss = nn.CrossEntropyLoss().to(self.ctx)
+        getdataClass = self.gConfig['getdataClass']
         self.resizedshape = getdataClass.resizedshape
         self.classnum = getdataClass.classnum
         self.get_net()
-        self.optimizer = self.get_optimizer(self.gConfig['optimizer'],self.net.parameters())
-        self.input_shape = (self.batch_size,*self.resizedshape)
+        self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
+        self.input_shape = (self.batch_size, *self.resizedshape)
 
 
     def get_net(self):
@@ -85,7 +96,7 @@ class lenetModel(modelBaseH):
         activation = self.get_activation(activation)
         input_channels, input_dim_x, input_dim_y = self.resizedshape
         self.net = lenet(self.gConfig,input_channels,activation,input_dim_x,input_dim_y,self.classnum,
-                         modelBaseH.compute_dim_xy)
+                         ModelBaseH.compute_dim_xy)
 
 
     def run_train_loss_acc(self,X,y):
@@ -114,10 +125,18 @@ class lenetModel(modelBaseH):
         return self.input_shape
 
 
+    #def initialize(self,dictParameter = None):
+    #    assert dictParameter is not None,"dictParameter must not be None!"
+    #    getdataClass = dictParameter['getdataClass']
+    #    self.resizedshape = getdataClass.resizedshape
+    #    self.classnum = getdataClass.classnum
+    #    super(lenetModel, self).initialize(dictParameter)
+
+
 def create_object(gConfig):
     #用cnnModel实例化一个对象model
-    ckpt_used = gConfig['ckpt_used']
-    getdataClass = gConfig['getdataClass']
-    model=lenetModel(gConfig=gConfig,getdataClass=getdataClass)
-    model.initialize(ckpt_used)
+    #ckpt_used = gConfig['ckpt_used']
+    #getdataClass = gConfig['getdataClass']
+    model=lenetModel(gConfig=gConfig)#,getdataClass=getdataClass)
+    #model.initialize(ckpt_used)
     return model

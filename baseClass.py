@@ -104,7 +104,7 @@ class BaseClass():
         #根据传入的TypeList,让lexer从defaultType中进一步细分出所需的type(从TypeList中选出)
         #Local_name中保存了每个Type所对应的正则表达式
         #VALUE为lexer所识别的值
-        assert(typeLict,list),"parameter typeList must be a list!"
+        assert isinstance(typeLict,list),"parameter typeList must be a list!"
         type = defaultType
         for key in typeLict:
             match = re.search(local_name[key],value)

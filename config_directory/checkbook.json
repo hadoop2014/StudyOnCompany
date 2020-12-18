@@ -17,7 +17,8 @@
     "program_directory": "program_directory/interpreterAnalysize/",
     "member_modules": {
       "excelVisualization":"interpreterAnalysize.excelVisualization",
-      "companyEvaluate": "interpreterAnalysize.companyEvaluate"
+      "companyEvaluate": "interpreterAnalysize.companyEvaluate",
+      "modelLenet": "interpreterAnalysize.modelSets.modelLenet"
     }
   },
   "crawl": {
@@ -39,5 +40,15 @@
       "accounting": "",
       "analysize": ""
     }
+  },
+
+  "datafetch": {
+    "cifar10": "datafetch.getCifar10",
+    "mnist": "datafetch.getMnist",
+    "fashionmnist": "datafetch.getFashionMnist",
+    "houseprice": "datafetch.getHouseprice",
+    "lyric": "datafetch.getLyric",
+    "hotdog": "datafetch.getHotdog",
+    "pikachu": "datafetch.getPikachu"
   }
 }

@@ -1,7 +1,7 @@
 from datafetch.getBaseClass import *
+import sys
 
-
-class getdataBaseH(GetdataBase):
+class getdataBaseH(getdataBase):
     def __init__(self,gConfig):
         super(getdataBaseH,self).__init__(gConfig)
         #self.dataset_name = self.get_dataset_name(self.gConfig)

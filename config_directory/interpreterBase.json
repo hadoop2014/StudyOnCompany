@@ -866,6 +866,8 @@
       "mode": "train",
       "framework": "mxnet",
       "dataset": "pikachu",
+      "ctx": "cpu",
+      "model": "rnn",
       "cpu_num": 0,
       "#used for max to keep checkpoint": "",
       "max_to_keep" : 2,
@@ -874,7 +876,8 @@
       "#用于paddle的logger.image(tag='input',num_samples=num_samples])": "",
       "num_samples" : 10,
       "#用于plt.show()后，在pltsleeptime(单位s)后自动关闭图形": "",
-      "pltsleeptime" : 1
+      "pltsleeptime" : 1,
+      "ckpt_used": false
     },
     "dataset": {
       "mnist": {

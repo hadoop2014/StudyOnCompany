@@ -6,6 +6,9 @@
 # @Note    : 用于财务数据分析
 
 from interpreterAnalysize.interpreterBaseClass import *
+from interpreterAssemble import InterpreterAssemble
+import matplotlib.pyplot as plt
+from time import sleep
 from ply import lex,yacc
 
 
@@ -14,7 +17,8 @@ class InterpreterAnalysize(InterpreterBase):
         super(InterpreterAnalysize, self).__init__(gConfig)
         self.excelVisualization = memberModuleDict['excelVisualization']
         self.companyEvaluate = memberModuleDict['companyEvaluate']
-        #self.modelPropose = memberModuleDict['modelPropose']
+        self.modelLenet = memberModuleDict['modelLenet']
+        self.modelSets = dict({'lenet': self.modelLenet})
         self.interpretDefine()
 
 
@@ -134,16 +138,74 @@ class InterpreterAnalysize(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
             return
+        assert modelName in self.models,'model(%s) must be in model list:%s'%(modelName, self.models)
         dictModel = self.dictModels[modelName]
-        self.gConfig.update(dictModel)
-        self.logger.info("Reatch the interpreterAnalysize just for debug : train %s" % modelName)
+        modelName = dictModel['model']
+        dataset = dictModel['dataset']
+        gConfig = self.gConfig
+        gConfig.update(dictModel)
+        getdataClass = InterpreterAssemble().get_data_class(gConfig,dataset)
+        dictModel.update({'getdataClass':getdataClass})
+        modelModule = self.modelSets[modelName]
+        modelModule.initialize(dictModel)
+        self.trainStart(modelModule,modelModule,gConfig)
+        #self.logger.info("Reatch the interpreterAnalysize just for debug : train %s" % modelName)
 
-    '''
-    def _process_generate_table(self):
-        if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing in _process_generate_table!')
-            return
-   '''
+    def trainStart(self,model, model_eval, gConfig):
+        getdataClass = gConfig['getdataClass']
+        framework = gConfig['framework']
+        modelName = gConfig['model']
+        dataset = gConfig['dataset']
+        mode = gConfig['mode']
+        if gConfig['unittestIsOn'.lower()] == True:
+            num_epochs = 1
+        else:
+            num_epochs = gConfig['train_num_epoch']
+        start_time = time.time()
+
+        self.logger.info("\n\n(%s %s %s %s) is starting, use optimizer %s,ctx=%s,initializer=%s,check_point=%s,"
+              "activation=%s...............\n\n"
+              % (modelName, framework, dataset, mode, gConfig['optimizer'], gConfig['ctx'], gConfig['initializer'],
+                 gConfig['ckpt_used'], gConfig['activation']))
+        losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test = \
+            model.train(model_eval, getdataClass, gConfig, num_epochs)
+        getdataClass.endProcess()
+        self.plotLossAcc(losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, modelName)
+        self.logger.info('\n\ntraining %s end, time used %.4f' % (modelName, (time.time() - start_time)))
+
+
+    def plotLossAcc(self,losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, taskName):
+        fig = plt.figure()
+        ax1 = fig.add_subplot(2, 1, 1)
+        ax1.plot(np.reshape(losses_train, [-1]), 'g', label='train loss')
+        if losses_test[0] is not None:
+            ax1.plot(np.reshape(losses_test, [-1]), 'r-', label='test loss')
+        if losses_valid[0] is not None:
+            ax1.plot(np.reshape(losses_valid, [-1]), 'r-', label='valid loss')
+
+        ax1.legend()
+        ax1.set_ylabel('loss')
+        plt.title(taskName, loc='center')
+
+        ax2 = fig.add_subplot(2, 1, 2)
+        ax2.plot(np.reshape(acces_train, [-1]), 'g', label='train accuracy')
+        if acces_test[0] is not None:
+            ax2.plot(np.reshape(acces_test, [-1]), 'r-', label='test accuracy')
+        if acces_valid[0] is not None:
+            ax2.plot(np.reshape(acces_valid, [-1]), 'r-', label='valid accuracy')
+        ax2.set_ylabel('accuracy')
+        ax2.legend()
+        ax2.set_xlabel(format('epochs (per %d)' % gConfig['epoch_per_print']))
+        # thread = Thread(target=closeplt, args=(gConfig['pltsleeptime'],))
+        # thread.start()
+        if gConfig['unittestIsOn'.lower()] == False:
+            # 在unittest模式下，不需要进行绘图，否则会阻塞后续程序运行
+            plt.show()
+
+
+    def closeplt(self,time):
+        sleep(time)
+        plt.close()
 
 
     def initialize(self,dictParameter=None):

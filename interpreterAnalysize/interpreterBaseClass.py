@@ -5,11 +5,10 @@
 # @File    : interpreterAccounting.py
 # @Note    : 用于从财务报表中提取财务数据
 
-from baseClass import *
 from modelBaseClass import *
 
 #数据读写处理的基类
-class InterpreterBase(BaseClass):
+class InterpreterBase(ModelBase):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
         self.interpreter_name = self._get_class_name(self.gConfig)
@@ -58,6 +57,11 @@ class InterpreterBase(BaseClass):
                     dictModel.update(value)
                 else:
                     dictModel.update({key : value})
+            modelName = dictModel['model']
+            if modelName in self.gJsonInterpreter.keys():
+                dictModel.update(self.gJsonInterpreter[modelName])
+            else:
+                self.logger.error('model(%s) is not configure in interpreterAnalysize.json!' % (modelName))
             dictModels.update({model : dictModel})
         return dictModels
 

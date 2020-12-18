@@ -10,21 +10,17 @@ from baseClass import *
 class ModelBase(BaseClass):
     def __init__(self,gConfig):
         super(ModelBase, self).__init__(gConfig)
-        self.gConfig = gConfig
         self.start_time = time.time()
-        #self.working_directory = os.path.join(self.gConfig['working_directory'],self.gConfig['framework'])
-        #self.logging_directory = self.gConfig['logging_directory']
-        #self.data_directory = self.gConfig['data_directory']
-        self.model_savefile = os.path.join(self.working_directory,
-                                           self.get_model_name(self.gConfig) + 'model.' + self.gConfig['framework'])
-        self.symbol_savefile = os.path.join(self.working_directory,
-                                            self.get_model_name(self.gConfig) + 'symbol.' + self.gConfig['framework'])
-        self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
-        self.checkpoint_filename = self.get_model_name(self.gConfig)+'.ckpt'
-        self.epoch_per_print = self.gConfig['epoch_per_print']
-        self.debug_per_steps = self.gConfig['debug_per_steps']
-        self.epochs_per_checkpoint = self.gConfig['epochs_per_checkpoint']
-        self.batch_size = self.gConfig['batch_size']
+        #self.model_savefile = os.path.join(self.working_directory,
+        #                                   self.get_model_name(self.gConfig) + 'model.' + self.gConfig['framework'])
+        #self.symbol_savefile = os.path.join(self.working_directory,
+        #                                    self.get_model_name(self.gConfig) + 'symbol.' + self.gConfig['framework'])
+        #self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
+        #self.checkpoint_filename = self.get_model_name(self.gConfig)+'.ckpt'
+        #self.epoch_per_print = self.gConfig['epoch_per_print']
+        #self.debug_per_steps = self.gConfig['debug_per_steps']
+        #self.epochs_per_checkpoint = self.gConfig['epochs_per_checkpoint']
+        #self.batch_size = self.gConfig['batch_size']
         self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.check_book = self.get_check_book()
         self.losses_train = []
@@ -33,6 +29,18 @@ class ModelBase(BaseClass):
         self.acces_valid = []
         self.losses_test = []
         self.acces_test = []
+
+
+    def _init_parameters(self):
+        self.model_savefile = os.path.join(self.working_directory,
+                                           self._get_class_name(self.gConfig) + 'model.' + self.gConfig['framework'])
+        self.symbol_savefile = os.path.join(self.working_directory,
+                                            self._get_class_name(self.gConfig) + 'symbol.' + self.gConfig['framework'])
+        self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
+        self.epoch_per_print = self.gConfig['epoch_per_print']
+        self.debug_per_steps = self.gConfig['debug_per_steps']
+        self.epochs_per_checkpoint = self.gConfig['epochs_per_checkpoint']
+        self.batch_size = self.gConfig['batch_size']
 
 
     def get_check_book(self):
@@ -46,7 +54,7 @@ class ModelBase(BaseClass):
         return check_book
 
 
-    def get_model_name(self,gConfig):
+    def _get_class_name(self, gConfig):
         #model_name = re.findall('model(.*)', self.__class__.__name__).pop().lower()
         #assert model_name in gConfig['tasknamelist'], \
         #    'tasknamelist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \

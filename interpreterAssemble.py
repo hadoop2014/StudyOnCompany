@@ -16,7 +16,7 @@ class InterpreterAssemble(BaseClass):
         self.check_book = getConfig.get_check_book()
 
 
-    def get_gConfig(self,interpreterName,debugIsOn = False,unittestIsOn = False):
+    def get_gConfig(self,interpreterName,unittestIsOn = False):
         assert self.check_book is not None,'check_book is None ,it may be some error occured when open the checkbook.json!'
         gConfig = getConfig.get_config(self.check_book[interpreterName]["config_file"])
         program_directory = self.check_book[interpreterName]['program_directory']
@@ -24,21 +24,18 @@ class InterpreterAssemble(BaseClass):
         gConfig.update({"gJsonInterpreter".lower(): gJsonInterpreter})
         gConfig.update({"gJsonBase".lower(): gJsonBase})
         gConfig.update({'program_directory':program_directory})
-        gConfig.update({'debugIsOn'.lower():debugIsOn})
-        gConfig.update({'unittestIsOn'.lower():unittestIsOn})
+        #gConfig.update({'debugIsOn'.lower():debugIsOn})
+        if unittestIsOn:
+            gConfig.update({'unittestIsOn'.lower():unittestIsOn})
         # 在unitest模式,这三个数据是从unittest.main中设置，而非从文件中读取．
-        #gConfig['taskName'] = taskName
-        #gConfig['unittestIsOn'.lower()] = unittestIsOn
-        #if unittestIsOn:
-        #    pass
         return gConfig
 
 
-    def interpreter_assemble(self,interpreterName,deubgIsOn = False,unittestIsOn = False):
+    def interpreter_assemble(self,interpreterName,unittestIsOn = False):
         gConfig = getConfig.get_config()
         assert interpreterName in gConfig['interpreterlist'], 'interpreterName(%s) is invalid,it must one of %s' % \
                                                     (interpreterName, gConfig['interpreterlist'])
-        gConfig = self.get_gConfig(interpreterName,deubgIsOn,unittestIsOn)
+        gConfig = self.get_gConfig(interpreterName,unittestIsOn)
         memberModuleDict = self.member_module_assemble(gConfig,self.check_book[interpreterName]["member_modules"])
         module = __import__(self.check_book[interpreterName]['module'],
                             fromlist=(self.check_book[interpreterName]['module'].split('.')[-1]))
@@ -50,7 +47,6 @@ class InterpreterAssemble(BaseClass):
         moduleDict = {}
         if not memberModules:
             return moduleDict
-
         for moduleName,module in memberModules.items():
             moduleCase = __import__(module,fromlist=(module.split('.')[-1]))
             moduleCase = getattr(moduleCase, 'create_object')(gConfig)
@@ -58,17 +54,17 @@ class InterpreterAssemble(BaseClass):
         return moduleDict
 
 
-    def get_interpreter_nature(self,debugIsOn = False,unittestIsOn = False):
+    def get_interpreter_nature(self,unittestIsOn = False):
         gConfig = getConfig.get_config()
         interpreterDict = {}
         for interpreterName in gConfig['interpreterlist']:
             self.validate_parameter(interpreterName)
             if interpreterName == 'nature':
                 continue
-            interpreter = self.interpreter_assemble(interpreterName,debugIsOn,unittestIsOn)
+            interpreter = self.interpreter_assemble(interpreterName,unittestIsOn)
             interpreterDict.update({interpreterName:interpreter})
         interpreterName = 'nature'
-        gConfig = self.get_gConfig(interpreterName,debugIsOn,unittestIsOn)
+        gConfig = self.get_gConfig(interpreterName,unittestIsOn)
         #program_directory = self.check_book[interpreterName]['program_directory']
         #gConfig.update({'program_directory':program_directory})
         module = __import__(self.check_book[interpreterName]['module'],
@@ -81,3 +77,13 @@ class InterpreterAssemble(BaseClass):
         assert self.check_book[interpreterName]["module"] != '' \
                and self.check_book[interpreterName]['config_json'] != '' \
                ,'the config (module or config_json) of %s in checkbook.json must not be empty'%interpreterName
+
+
+    def get_data_class(self,gConfig,dataset):
+        assert self.check_book is not None, 'check_book is None ,it may be some error occured when open the checkbook.json!'
+        assert dataset in self.check_book['datafetch'].keys(),'dataset(%s) must be in list:%s'\
+                                                              %(dataset,self.check_book['datafetch'].keys())
+        module = __import__(self.check_book['datafetch'][dataset],
+                            fromlist=(self.check_book['datafetch'][dataset].split('.')[-1]))
+        getdataClass = getattr(module, 'create_model')(gConfig)
+        return getdataClass
