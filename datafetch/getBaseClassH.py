@@ -1,6 +1,7 @@
 from datafetch.getBaseClass import *
 import sys
 
+
 class getdataBaseH(getdataBase):
     def __init__(self,gConfig):
         super(getdataBaseH,self).__init__(gConfig)

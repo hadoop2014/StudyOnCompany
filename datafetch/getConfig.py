@@ -5,6 +5,7 @@ import platform
 import json
 import os
 
+
 def get_config(config_file='',config_file_base='config_directory/configbase.ini'):
     assert os.path.exists(config_file_base),"%s is not exists" % config_file_base
     assert config_file =='' or os.path.exists(config_file),"%s is not exists" % config_file

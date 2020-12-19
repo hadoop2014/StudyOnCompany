@@ -364,7 +364,7 @@
     "environment": {
       "mode": "train",
       "ctx": "gpu",
-      "framework": "pytorch",
+      "framework": "mxnet",
       "dataset": "mnist",
       "model": "lenet",
       "ckpt_used": true

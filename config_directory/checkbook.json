@@ -18,7 +18,8 @@
     "member_modules": {
       "excelVisualization":"interpreterAnalysize.excelVisualization",
       "companyEvaluate": "interpreterAnalysize.companyEvaluate",
-      "modelLenet": "interpreterAnalysize.modelSets.modelLenet"
+      "modelLenetH": "interpreterAnalysize.modelSets.lenetModelH",
+      "modelLenetM": "interpreterAnalysize.modelSets.lenetModelM"
     }
   },
   "crawl": {

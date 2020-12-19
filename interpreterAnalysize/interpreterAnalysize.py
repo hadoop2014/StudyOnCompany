@@ -17,8 +17,10 @@ class InterpreterAnalysize(InterpreterBase):
         super(InterpreterAnalysize, self).__init__(gConfig)
         self.excelVisualization = memberModuleDict['excelVisualization']
         self.companyEvaluate = memberModuleDict['companyEvaluate']
-        self.modelLenet = memberModuleDict['modelLenet']
-        self.modelSets = dict({'lenet': self.modelLenet})
+        self.modelLenetH = memberModuleDict['modelLenetH']
+        self.modelLenetM = memberModuleDict['modelLenetM']
+        self.modelSets = dict({'lenetPytorch': self.modelLenetH})
+        self.modelSets.update({'lenetMxnet': self.modelLenetM})
         self.interpretDefine()
 
 
@@ -142,11 +144,12 @@ class InterpreterAnalysize(InterpreterBase):
         dictModel = self.dictModels[modelName]
         modelName = dictModel['model']
         dataset = dictModel['dataset']
+        framework = dictModel['framework']
         gConfig = self.gConfig
         gConfig.update(dictModel)
         getdataClass = InterpreterAssemble().get_data_class(gConfig,dataset)
         dictModel.update({'getdataClass':getdataClass})
-        modelModule = self.modelSets[modelName]
+        modelModule = self.modelSets[modelName + framework.title()]
         modelModule.initialize(dictModel)
         self.trainStart(modelModule,modelModule,gConfig)
         #self.logger.info("Reatch the interpreterAnalysize just for debug : train %s" % modelName)
