@@ -367,26 +367,21 @@
       "framework": "pytorch",
       "dataset": "mnist",
       "model": "lenet",
-      "optimizer": "rmsprop",
-      "initializer": "xavier",
-      "activation": "sigmoid"
-    },
-    "dataset": {
-
+      "ckpt_used": true
     },
     "trainer": {
       "train_num_epoch" : 5
     },
     "optimizer": {
-
+      "optimizer": "rmsprop"
     },
     "initializer": {
-
+      "initializer": "xavier"
     }
-
   },
 
   "lenet": {
+    "activation": "sigmoid",
     "resize": 0,
     "input_dim_x" : 28,
     "input_dim_y" : 28,
@@ -409,6 +404,12 @@
     "dense2_hiddens" : 84,
     "dense3_hiddens" : 10,
     "class_num" : 10
+  },
+
+  "rnn": {
+    "input_dim" :  1,
+    "rnn_hiddens" : 256,
+    "output_dim" : 1
   }
 
 }

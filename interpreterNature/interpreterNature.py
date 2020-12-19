@@ -231,6 +231,7 @@ class InterpreterNature(InterpreterBase):
         self.gConfig.update(self.names_global)
         taskResults = list()
         sourcefiles = self._get_needed_files(scale,isForced)
+        sourcefiles = self._remove_black_lists(sourcefiles)
         sourcefiles = list(sourcefiles)
         sourcefiles.sort()
         for sourcefile in sourcefiles:
@@ -345,6 +346,28 @@ class InterpreterNature(InterpreterBase):
             sourcefiles = list(sourcefilesValid)
             self.interpreterAccounting.docParser.remove_checkpoint_files(sourcefiles)
         return sourcefiles
+
+
+    def _remove_black_lists(self,sourcefiles):
+        # 根据interpreterBase.json中的black_lists的配置, 将落在blaclist中的文件移除,不进行解析操作
+        assert isinstance(sourcefiles,set),"sourcefile(%s) must be a list!" % sourcefiles
+        resultSourcefiles = [sourcefile for sourcefile in sourcefiles if not self._is_file_in_black_lists(sourcefile)]
+        diffSourcefiles = sourcefiles.difference(set(resultSourcefiles))
+        if len(diffSourcefiles) > 0:
+            self.logger.info('these file is in black_lists of interpreterBase.json, now no need to process:\n\t%s'
+                             % '\n\t'.join(sorted(diffSourcefiles)))
+        return resultSourcefiles
+
+
+    def _is_file_in_black_lists(self,sourcefile):
+        patterns = list()
+        for company,value in self.gJsonBase['black_lists'].items():
+            if isinstance(value,dict):
+                for type,times in value.items():
+                    patterns = patterns + [company + '：' + time + type for time in times]
+        matchPattern = '|'.join(patterns)
+        isFileMatched = self._is_matched(matchPattern, sourcefile)
+        return isFileMatched
 
 
     def _remove_duplicate_files(self,sourcefiles):
