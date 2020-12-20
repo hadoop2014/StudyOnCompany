@@ -59,7 +59,12 @@ class InterpreterBase(ModelBase):
                     dictModel.update({key : value})
             modelName = dictModel['model']
             if modelName in self.gJsonInterpreter.keys():
-                dictModel.update(self.gJsonInterpreter[modelName])
+                for key, value in self.gJsonInterpreter[modelName].items():
+                    if isinstance(value, dict):
+                        dictModel.update(value)
+                    else:
+                        dictModel.update({key: value})
+                #dictModel.update(self.gJsonInterpreter[modelName])
             else:
                 self.logger.error('model(%s) is not configure in interpreterAnalysize.json!' % (modelName))
             dictModels.update({model : dictModel})

@@ -368,7 +368,9 @@
       "dataset": "lyric",
       "model": "rnn",
       "ckpt_used": true
-    },
+    }
+  },
+  "lenet": {
     "trainer": {
       "train_num_epoch" : 5
     },
@@ -376,61 +378,69 @@
       "optimizer": "rmsprop"
     },
     "initializer": {
-      "initializer": "xavier"
+      "initializer": "xavier",
+      "init_sigma": 0.01,
+      "init_bias": 0.0
+    },
+    "net": {
+      "activation": "sigmoid",
+      "resize": 0,
+      "input_dim_x" : 28,
+      "input_dim_y" : 28,
+      "input_channels" : 1,
+      "conv1_channels" : 6,
+      "conv1_kernel_size" : 5,
+      "conv1_strides" : 1,
+      "conv1_padding" : 0,
+      "pool1_size" : 2,
+      "pool1_strides" : 2,
+      "pool1_padding" : 0,
+      "conv2_channels" : 16,
+      "conv2_kernel_size" : 5,
+      "conv2_striders" : 1,
+      "conv2_padding" : 0,
+      "pool2_size" : 2,
+      "pool2_strides" : 2,
+      "pool2_padding" : 0,
+      "dense1_hiddens" : 120,
+      "dense2_hiddens" : 84,
+      "dense3_hiddens" : 10,
+      "class_num" : 10
     }
-  },
-
-  "lenet": {
-    "activation": "sigmoid",
-    "resize": 0,
-    "input_dim_x" : 28,
-    "input_dim_y" : 28,
-    "input_channels" : 1,
-    "conv1_channels" : 6,
-    "conv1_kernel_size" : 5,
-    "conv1_strides" : 1,
-    "conv1_padding" : 0,
-    "pool1_size" : 2,
-    "pool1_strides" : 2,
-    "pool1_padding" : 0,
-    "conv2_channels" : 16,
-    "conv2_kernel_size" : 5,
-    "conv2_striders" : 1,
-    "conv2_padding" : 0,
-    "pool2_size" : 2,
-    "pool2_strides" : 2,
-    "pool2_padding" : 0,
-    "dense1_hiddens" : 120,
-    "dense2_hiddens" : 84,
-    "dense3_hiddens" : 10,
-    "class_num" : 10
   },
 
   "rnn": {
     "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",
     "randomIterIsOn" : true,
     "scratchIsOn" : true,
-    "k" : 5,
-    "clip_gradient" : 1e-2,
-    "train_num_epoch" : 251,
     "prefixes" : ["分开", "不分开"],
     "predict_length" : 50,
-    "activation": "relu",
-    "cell": "lstm",
-    "init_sigma": 0.01,
-    "init_bias" : 0.0,
-    "learning_rate" : 1e2,
-    "learning_rate_decay_factor" : 0.9,
-    "keeps" : 0.6,
-    "test_percent" : 0.1,
-    "optimizer" : "sgd",
-    "initializer" : "normal",
-    "batch_size" : 32,
-    "time_steps" : 35,
-    "resize" : 0,
-    "input_dim" :  1,
-    "rnn_hiddens" : 256,
-    "output_dim" : 1
+    "trainer": {
+      "k" : 5,
+      "clip_gradient" : 1e-2,
+      "train_num_epoch" : 251,
+      "learning_rate" : 1e2,
+      "learning_rate_decay_factor" : 0.9,
+      "test_percent" : 0.1,
+      "batch_size" : 32,
+      "time_steps" : 35
+    },
+    "optimizer": {
+      "optimizer" : "sgd"
+    },
+    "initializer": {
+      "initializer" : "normal",
+      "init_sigma": 0.01,
+      "init_bias" : 0.0
+    },
+    "net": {
+      "cell": "lstm",
+      "activation": "relu",
+      "keeps" : 0.6,
+      "resize" : 0,
+      "input_dim" :  1,
+      "rnn_hiddens" : 256,
+      "output_dim" : 1
+    }
   }
-
 }
