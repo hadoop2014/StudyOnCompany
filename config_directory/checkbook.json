@@ -19,7 +19,8 @@
       "excelVisualization":"interpreterAnalysize.excelVisualization",
       "companyEvaluate": "interpreterAnalysize.companyEvaluate",
       "modelLenetH": "interpreterAnalysize.modelSets.lenetModelH",
-      "modelLenetM": "interpreterAnalysize.modelSets.lenetModelM"
+      "modelLenetM": "interpreterAnalysize.modelSets.lenetModelM",
+      "modelRnnM": "interpreterAnalysize.modelSets.rnnModelM"
     }
   },
   "crawl": {

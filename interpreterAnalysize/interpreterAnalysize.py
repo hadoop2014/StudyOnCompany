@@ -19,8 +19,10 @@ class InterpreterAnalysize(InterpreterBase):
         self.companyEvaluate = memberModuleDict['companyEvaluate']
         self.modelLenetH = memberModuleDict['modelLenetH']
         self.modelLenetM = memberModuleDict['modelLenetM']
+        self.modelRnnM = memberModuleDict['modelRnnM']
         self.modelSets = dict({'lenetPytorch': self.modelLenetH})
         self.modelSets.update({'lenetMxnet': self.modelLenetM})
+        self.modelSets.update({'rnnMxnet':self.modelRnnM})
         self.interpretDefine()
 
 

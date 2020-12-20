@@ -365,8 +365,8 @@
       "mode": "train",
       "ctx": "gpu",
       "framework": "mxnet",
-      "dataset": "mnist",
-      "model": "lenet",
+      "dataset": "lyric",
+      "model": "rnn",
       "ckpt_used": true
     },
     "trainer": {
@@ -407,6 +407,27 @@
   },
 
   "rnn": {
+    "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",
+    "randomIterIsOn" : true,
+    "scratchIsOn" : true,
+    "k" : 5,
+    "clip_gradient" : 1e-2,
+    "train_num_epoch" : 251,
+    "prefixes" : ["分开", "不分开"],
+    "predict_length" : 50,
+    "activation": "relu",
+    "cell": "lstm",
+    "init_sigma": 0.01,
+    "init_bias" : 0.0,
+    "learning_rate" : 1e2,
+    "learning_rate_decay_factor" : 0.9,
+    "keeps" : 0.6,
+    "test_percent" : 0.1,
+    "optimizer" : "sgd",
+    "initializer" : "normal",
+    "batch_size" : 32,
+    "time_steps" : 35,
+    "resize" : 0,
     "input_dim" :  1,
     "rnn_hiddens" : 256,
     "output_dim" : 1
