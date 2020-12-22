@@ -33,7 +33,7 @@ class ModelBaseM(InterpreterBase):
         self.learning_rate = self.gConfig['learning_rate']
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
         self.lr_mult = self.gConfig['lr_mult']  # learning_rate的乘数，加速学习，用于预训练模型
-        self.viewIsOn = self.gConfig['viewIsOn'.lower()]
+        self.viewIsOn = self.gConfig['viewIsOn']
         self.max_to_keep = self.gConfig['max_to_keep']
         self.ctx = self.get_ctx(self.gConfig['ctx'])
         self.optimizer = self.get_optimizer(self.gConfig['optimizer'])

@@ -306,6 +306,9 @@ class DocParserSql(DocParserBase):
                     result = re.split("[ ]{2,}",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
+                    value = value.replace(' ',NULLSTR)       # 解决石头科技2019年报,主营业务分行业经营情况中出现 "增加 7.30个 百 分 点" 和 "增加 8.65个 百 分"
+                    value = re.sub('个百分点$', NULLSTR, value)
+                    value = re.sub('个百分$', NULLSTR, value)
                 else:
                     if self.lastValue != None and value == NONESTR:
                         value = self.lastValue

@@ -277,6 +277,7 @@ class rnnModel(ModelBaseM):
         self.predict_length = self.gConfig['predict_length']
         self.time_steps = self.resizedshape[0]
         self.rnn_hiddens = self.gConfig['rnn_hiddens']  # 256
+        self.num_layers = self.gConfig['num_layers']
         self.input_dim = self.vocab_size
         self.output_dim = self.vocab_size
         self.activation = self.get_activation(self.gConfig['activation'])

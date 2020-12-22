@@ -33,7 +33,7 @@ class ModelBaseH(InterpreterBase):
         super(ModelBaseH, self)._init_parameters()
         self.learning_rate = self.gConfig['learning_rate']
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
-        self.viewIsOn = self.gConfig['viewIsOn'.lower()]
+        self.viewIsOn = self.gConfig['viewIsOn']
         self.max_to_keep = self.gConfig['max_to_keep']
         self.ctx = self.get_ctx(self.gConfig['ctx'])
         self.init_sigma = self.gConfig['init_sigma']
@@ -117,6 +117,14 @@ class ModelBaseH(InterpreterBase):
             return torch.nn.Sigmoid()
         elif activation == 'relu':
             return torch.nn.ReLU()
+        elif activation == 'tanh':
+            return torch.nn.Tanh()
+
+
+    def get_nonlinearity(self, activation='relu'):
+        assert activation in self.gConfig['activationlist'], 'activation(%s) is invalid,it must one of %s' % \
+                                                    (activation, self.gConfig['activationlist'])
+        return activation
 
 
     def get_context(self):
@@ -314,6 +322,8 @@ class ModelBaseH(InterpreterBase):
             self.net.apply(self.params_initialize)
             self.global_step = torch.tensor(0,dtype=torch.int64,device=self.ctx)
         self.debug_info(self.net)
+        #summary(self.net,input_size=self.get_input_shape()[1:],batch_size=self.get_input_shape()[0],
+        #        device=re.findall(r'(\w*)',self.ctx.__str__())[0])
         summary(self.net,input_size=self.get_input_shape()[1:],batch_size=self.get_input_shape()[0],
                 device=re.findall(r'(\w*)',self.ctx.__str__())[0])
         dummy_input = torch.zeros(*self.get_input_shape(),device=self.ctx)

@@ -350,9 +350,9 @@ class InterpreterNature(InterpreterBase):
 
     def _remove_black_lists(self,sourcefiles):
         # 根据interpreterBase.json中的black_lists的配置, 将落在blaclist中的文件移除,不进行解析操作
-        assert isinstance(sourcefiles,set),"sourcefile(%s) must be a list!" % sourcefiles
+        assert isinstance(sourcefiles,list),"sourcefile(%s) must be a list, not %s!" % (sourcefiles, type(sourcefiles))
         resultSourcefiles = [sourcefile for sourcefile in sourcefiles if not self._is_file_in_black_lists(sourcefile)]
-        diffSourcefiles = sourcefiles.difference(set(resultSourcefiles))
+        diffSourcefiles = set(sourcefiles).difference(set(resultSourcefiles))
         if len(diffSourcefiles) > 0:
             self.logger.info('these file is in black_lists of interpreterBase.json, now no need to process:\n\t%s'
                              % '\n\t'.join(sorted(diffSourcefiles)))

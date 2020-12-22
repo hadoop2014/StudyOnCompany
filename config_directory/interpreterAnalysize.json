@@ -364,10 +364,11 @@
     "environment": {
       "mode": "train",
       "ctx": "gpu",
-      "framework": "mxnet",
-      "dataset": "lyric",
-      "model": "rnn",
-      "ckpt_used": true
+      "framework": "pytorch",
+      "dataset": "mnist",
+      "model": "lenet",
+      "ckpt_used": false,
+      "viewIsOn" : true
     }
   },
   "lenet": {
@@ -412,7 +413,7 @@
   "rnn": {
     "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",
     "randomIterIsOn" : true,
-    "scratchIsOn" : true,
+    "scratchIsOn" : false,
     "prefixes" : ["分开", "不分开"],
     "predict_length" : 50,
     "trainer": {
@@ -434,12 +435,13 @@
       "init_bias" : 0.0
     },
     "net": {
-      "cell": "lstm",
+      "cell": "rnn",
       "activation": "relu",
       "keeps" : 0.6,
       "resize" : 0,
       "input_dim" :  1,
       "rnn_hiddens" : 256,
+      "num_layers" : 1,
       "output_dim" : 1
     }
   }

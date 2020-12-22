@@ -875,6 +875,7 @@
       "#用于plt.show()后，在pltsleeptime(单位s)后自动关闭图形": "",
       "pltsleeptime" : 1,
       "ckpt_used": true,
+      "viewIsOn" : true,
       "lybric_filename": "jaychou_lyrics.txt.zip"
     },
     "trainer": {
