@@ -12,20 +12,6 @@ import re
 class ModelBaseH(InterpreterBase):
     def __init__(self,gConfig):
         super(ModelBaseH, self).__init__(gConfig)
-        #self.learning_rate = self.gConfig['learning_rate']
-        #self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
-        #self.viewIsOn = self.gConfig['viewIsOn'.lower()]
-        #self.max_to_keep = self.gConfig['max_to_keep']
-        #self.ctx =self.get_ctx(self.gConfig['ctx'])
-        #self.init_sigma = self.gConfig['init_sigma']
-        #self.init_bias = self.gConfig['init_bias']
-        #self.momentum = self.gConfig['momentum']
-        #self.initializer = self.gConfig['initializer']
-        #self.max_queue = self.gConfig['max_queue']
-        #self.weight_initializer = self.get_initializer(self.initializer)
-        #self.bias_initializer = self.get_initializer('constant')
-        #self.global_step = torch.tensor(0,dtype=torch.int64,device=self.ctx)
-        #self.set_default_tensor_type()  #设置默认的tensor在ｇｐｕ还是在ｃｐｕ上运算
         self.net = nn.Module()
 
 
@@ -143,6 +129,10 @@ class ModelBaseH(InterpreterBase):
         return tuple()
 
 
+    def init_state(self):
+        pass
+
+
     def saveCheckpoint(self):
         torch.save(self.net.state_dict(),self.model_savefile)
         torch.save(self.global_step,self.symbol_savefile)
@@ -218,10 +208,15 @@ class ModelBaseH(InterpreterBase):
         return loss,acc
 
 
+    def get_batch_size(self,y):
+        return y.size()[0]
+
+
     def train_loss_acc(self, data_iter):
         acc_sum = 0
         loss_sum = 0
         n = 0
+        self.init_state()  # 仅用于RNN,LSTM等
         self.net.train()
         for X, y in data_iter:
             try:
@@ -236,7 +231,8 @@ class ModelBaseH(InterpreterBase):
             loss, acc = self.run_train_loss_acc(X, y)
             loss_sum += loss
             acc_sum += acc
-            n += y.size()[0]
+            #n += y.size()[0]
+            n += self.get_batch_size(y)
             self.writer.add_scalar('train/loss', loss, self.global_step.item())
             self.writer.add_scalar('train/accuracy', acc, self.global_step.item())
             self.global_step += 1
@@ -260,7 +256,8 @@ class ModelBaseH(InterpreterBase):
             loss,acc = self.run_eval_loss_acc(X, y)
             acc_sum += acc
             loss_sum += loss
-            n += y.size()[0]
+            #n += y.size()[0]
+            n += self.get_batch_size(y)
         return loss_sum / n, acc_sum / n
 
 
@@ -273,8 +270,27 @@ class ModelBaseH(InterpreterBase):
             loss_test,acc_test = self.evaluate_loss_acc(test_iter)
             self.writer.add_scalar('test/loss',loss_test,self.global_step.item())
             self.writer.add_scalar('test/accuracy',acc_test,self.global_step.item())
-
+            self.run_matrix(loss_train, loss_test)  # 仅用于rnn,lstm,ssd等
+            self.predict_nlp(self.net)  # 仅用于rnn,lstm,ssd等
         return loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test
+
+
+    def predict_nlp(self,net):
+        pass
+
+
+    def run_matrix(self, loss_train, loss_test):
+        pass
+
+
+    def grad_clipping(self,params, theta, device):
+        norm = torch.tensor([0.0], device=device)
+        for param in params:
+            norm += (param.grad.data ** 2).sum()
+        norm = norm.sqrt().item()
+        if norm > theta:
+            for param in params:
+                param.grad.data *= (theta / norm)
 
 
     def set_default_tensor_type(self):
@@ -290,6 +306,16 @@ class ModelBaseH(InterpreterBase):
         out_dim_x = np.floor((input_dim_x - kernel_size + 2 * padding) / strides) + 1
         out_dim_y = np.floor((input_dim_y - kernel_size + 2 * padding) / strides) + 1
         return out_dim_x,out_dim_y
+
+
+    def summary(self,net):
+        summary(net, input_size=self.get_input_shape()[1:], batch_size=self.get_input_shape()[0],
+                device=re.findall(r'(\w*)', self.ctx.__str__())[0])
+
+
+    def add_graph(self,net):
+        dummy_input = torch.zeros(*self.get_input_shape(),device=self.ctx)
+        self.writer.add_graph(net,dummy_input)
 
 
     def initialize(self,dictParameter = None):
@@ -324,7 +350,7 @@ class ModelBaseH(InterpreterBase):
         self.debug_info(self.net)
         #summary(self.net,input_size=self.get_input_shape()[1:],batch_size=self.get_input_shape()[0],
         #        device=re.findall(r'(\w*)',self.ctx.__str__())[0])
-        summary(self.net,input_size=self.get_input_shape()[1:],batch_size=self.get_input_shape()[0],
-                device=re.findall(r'(\w*)',self.ctx.__str__())[0])
-        dummy_input = torch.zeros(*self.get_input_shape(),device=self.ctx)
-        self.writer.add_graph(self.net,dummy_input)
+        self.summary(self.net)
+        self.add_graph(self.net)
+        #dummy_input = torch.zeros(*self.get_input_shape(),device=self.ctx)
+        #self.writer.add_graph(self.net,dummy_input)

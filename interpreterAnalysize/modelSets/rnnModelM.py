@@ -222,47 +222,6 @@ class rnnModel(ModelBaseM):
     def __init__(self,gConfig):
         super(rnnModel,self).__init__(gConfig)
         self.loss = gloss.SoftmaxCrossEntropyLoss()
-        #self.resizedshape = getdataClass.resizedshape
-        #self.vocab_size = getdataClass.vocab_size
-        #self.idx_to_char = getdataClass.idx_to_char
-        #self.char_to_idx = getdataClass.char_to_idx
-        #self.clip_gradient = self.gConfig['clip_gradient']
-        #self.prefixes = self.gConfig['prefixes']
-        #self.predict_length = self.gConfig['predict_length']
-        #self.time_steps = self.resizedshape[0]
-        #self.rnn_hiddens =self.gConfig['rnn_hiddens'] #256
-        #self.input_dim = self.vocab_size
-        #self.output_dim = self.vocab_size
-        #self.activation = self.get_activation(self.gConfig['activation'])
-        #self.cell = self.get_cell(self.gConfig['cell'])
-        #self.scratchIsOn = self.gConfig['scratchIsOn'.lower()]
-        #self.cell_selector = {
-        #    'rnn':rnn.RNN(hidden_size=self.rnn_hiddens, activation=self.activation,
-        #          i2h_weight_initializer=self.weight_initializer, h2h_weight_initializer=self.weight_initializer,
-        #          i2h_bias_initializer=self.bias_initializer, h2h_bias_initializer=self.bias_initializer),
-        #    'gru':rnn.GRU(hidden_size=self.rnn_hiddens,
-        #                  i2h_weight_initializer=self.weight_initializer,h2h_weight_initializer=self.weight_initializer,
-        #                  i2h_bias_initializer=self.bias_initializer,h2h_bias_initializer=self.bias_initializer),
-        #    'lstm':rnn.LSTM(hidden_size=self.rnn_hiddens,
-        #                    i2h_weight_initializer=self.weight_initializer,h2h_weight_initializer=self.weight_initializer,
-        #                    i2h_bias_initializer=self.bias_initializer,h2h_bias_initializer=self.bias_initializer)
-        #}
-        #self.scratch_selector = {
-        #    'rnn':Rnn(self.input_dim,self.rnn_hiddens,self.output_dim,self.batch_size,self.ctx,
-        #              self.weight_initializer,self.bias_initializer),
-        #    'gru':Gru(self.input_dim,self.rnn_hiddens,self.output_dim,self.batch_size,self.ctx,
-        #              self.weight_initializer,self.bias_initializer),
-        #    'lstm':Lstm(self.input_dim,self.rnn_hiddens,self.output_dim,self.batch_size,self.ctx,
-        #                self.weight_initializer,self.bias_initializer)
-        #
-        #}
-        #self.randomIterIsOn = self.gConfig['randomIterIsOn'.lower()]
-        #self.get_net()
-        #self.net.initialize(ctx=self.ctx)
-        ##该处的clip_gradient没有起到效果
-        #self.trainer = gluon.Trainer(self.net.collect_params(),self.optimizer,
-        #                             {'learning_rate':self.learning_rate,'clip_gradient':self.clip_gradient})
-        #self.input_shape = (self.resizedshape[0],self.batch_size,self.resizedshape[1])
 
 
     def _init_parameters(self):

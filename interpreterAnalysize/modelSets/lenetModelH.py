@@ -72,12 +72,6 @@ class lenet(nn.Module):
 class lenetModel(ModelBaseH):
     def __init__(self,gConfig):
         super(lenetModel,self).__init__(gConfig)
-        #self.loss = nn.CrossEntropyLoss().to(self.ctx)
-        #self.resizedshape = getdataClass.resizedshape
-        #self.classnum = getdataClass.classnum
-        #self.get_net()
-        #self.optimizer = self.get_optimizer(self.gConfig['optimizer'],self.net.parameters())
-        #self.input_shape = (self.batch_size,*self.resizedshape)
 
 
     def _init_parameters(self):

@@ -365,8 +365,8 @@
       "mode": "train",
       "ctx": "gpu",
       "framework": "pytorch",
-      "dataset": "mnist",
-      "model": "lenet",
+      "dataset": "lyric",
+      "model": "rnn",
       "ckpt_used": false,
       "viewIsOn" : true
     }
@@ -420,14 +420,14 @@
       "k" : 5,
       "clip_gradient" : 1e-2,
       "train_num_epoch" : 251,
-      "learning_rate" : 1e2,
+      "learning_rate" : 1e-3,
       "learning_rate_decay_factor" : 0.9,
       "test_percent" : 0.1,
       "batch_size" : 32,
       "time_steps" : 35
     },
     "optimizer": {
-      "optimizer" : "sgd"
+      "optimizer" : "adam"
     },
     "initializer": {
       "initializer" : "normal",

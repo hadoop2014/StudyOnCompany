@@ -5,15 +5,6 @@ from interpreterAnalysize.modelSets.modelBaseClassM import *
 class lenetModel(ModelBaseM):
     def __init__(self,gConfig):
         super(lenetModel,self).__init__(gConfig)
-        #self.optimizer = self.gConfig['optimizer']
-        #self.loss = gloss.SoftmaxCrossEntropyLoss()
-        #self.resizedshape = getdataClass.resizedshape
-        #self.classnum = getdataClass.classnum
-        #self.get_net()
-        #self.net.initialize(ctx=self.ctx)
-        #self.trainer = gluon.Trainer(self.net.collect_params(),self.optimizer,
-        #                             {'learning_rate':self.learning_rate})
-        #self.input_shape = (self.batch_size,*self.resizedshape)
 
 
     def _init_parameters(self):
