@@ -415,7 +415,7 @@
     "randomIterIsOn" : true,
     "scratchIsOn" : false,
     "prefixes" : ["分开", "不分开"],
-    "predict_length" : 50,
+    "predict_length" : 80,
     "trainer": {
       "k" : 5,
       "clip_gradient" : 1e-2,
@@ -435,7 +435,7 @@
       "init_bias" : 0.0
     },
     "net": {
-      "cell": "rnn",
+      "cell": "gru",
       "activation": "relu",
       "keeps" : 0.6,
       "resize" : 0,

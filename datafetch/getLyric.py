@@ -38,7 +38,7 @@ class getLyricDataM(getdataBase):
             with zin.open(filename) as f:
                 corpus_chars = f.read().decode('utf-8')
         corpus_chars = corpus_chars.replace('\n', ' ').replace('\r', ' ')
-        corpus_chars = corpus_chars[0:10000]
+        #corpus_chars = corpus_chars[0:10000]
         self.idx_to_char = list(set(corpus_chars))
         self.char_to_idx = dict([(char, i) for i, char in enumerate(self.idx_to_char)])
         self.vocab_size = len(self.char_to_idx)
