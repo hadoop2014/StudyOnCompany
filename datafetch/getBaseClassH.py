@@ -5,8 +5,6 @@ import sys
 class getdataBaseH(getdataBase):
     def __init__(self,gConfig):
         super(getdataBaseH,self).__init__(gConfig)
-        #self.dataset_name = self.get_dataset_name(self.gConfig)
-        #self.data_path = os.path.join(self.gConfig['data_directory'], self.dataset_name)
         self.resize = self.gConfig['resize']
         self.test_percent = self.gConfig['test_percent']
         self.batch_size = self.gConfig['batch_size']

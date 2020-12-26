@@ -5,8 +5,6 @@
 # @File    : interpreterBaseClass.py
 # @Note    : 爬虫解释器的基础类
 
-import re
-import os
 from baseClass import *
 
 #数据读写处理的基类

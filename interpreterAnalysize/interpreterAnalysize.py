@@ -21,10 +21,12 @@ class InterpreterAnalysize(InterpreterBase):
         self.modelLenetM = memberModuleDict['modelLenetM']
         self.modelRnnM = memberModuleDict['modelRnnM']
         self.modelRnnH = memberModuleDict['modelRnnH']
+        self.modelRnnregressionH = memberModuleDict['modelRnnregressionH']
         self.modelSets = dict({'lenetPytorch': self.modelLenetH})
         self.modelSets.update({'lenetMxnet': self.modelLenetM})
         self.modelSets.update({'rnnMxnet':self.modelRnnM})
         self.modelSets.update({'rnnPytorch':self.modelRnnH})
+        self.modelSets.update({'rnnregressionPytorch':self.modelRnnregressionH})
         self.interpretDefine()
 
 

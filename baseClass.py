@@ -30,6 +30,7 @@ class BaseClass():
         self.debugIsOn = gConfig['debugIsOn'.lower()]
         self.program_directory = gConfig['program_directory']
         self.working_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
+        self.logging_directory = os.path.join(self.gConfig['logging_directory'], self._get_module_path())
         self.data_directory = gConfig['data_directory']
         self.stockcodefile = os.path.join(self.data_directory,self.gConfig['stockcodefile'])
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]

@@ -27,35 +27,18 @@ class getdataBase():
 
 
     def get_classnum(self,gConfig):
-        is_find = False
         dataset_name = self.get_dataset_name(gConfig)
-        #for key in gConfig:
-        #    if key.find('.') >= 0:
-        #        dataset_key = re.findall('(.*)\.', key).pop().lower()
-        #        if dataset_key == dataset_name:
-        #            is_find = True
-        #            break
         if dataset_name not in self.gConfig.keys():
-        #if is_find == False:
             raise ValueError('dataset(%s) has not be configed in datasetlist(%s)'
                              % (dataset_name, gConfig['datasetlist']))
-        #return gConfig[dataset_name+'.classnum']
         return gConfig[dataset_name]['classnum']
 
 
     def get_rawshape(self,gConfig):
-        is_find = False
         dataset_name = self.get_dataset_name(gConfig)
-        #for key in gConfig:
-        #    if key.find('.') >= 0:
-        #        dataset_key = re.findall('(.*)\.',key).pop().lower()
-        #        if dataset_key == dataset_name:
-        #            is_find = True
         if dataset_name not in self.gConfig:
-        #if is_find == False:
             raise ValueError('dataset(%s) has not be configed in datasetlist(%s)'
                              %(dataset_name,gConfig['datasetlist']))
-        #return [gConfig[dataset_name+'.channels'],gConfig[dataset_name+'.dim_x'],gConfig[dataset_name+'.dim_y']]
         return [gConfig[dataset_name]['channels'],gConfig[dataset_name]['dim_x'],gConfig[dataset_name]['dim_y']]
 
 

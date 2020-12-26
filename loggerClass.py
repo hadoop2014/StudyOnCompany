@@ -13,8 +13,8 @@ DEFAULT_LOG_FMT = "%(asctime)s %(filename)s [line:%(lineno)d] %(levelname)s: %(m
 DEFUALT_LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
 #把Logger变成为一个单例对象
 
-class Logger():
 
+class Logger():
     def __init__(self,gConfig,suffixName):
         # 1. 获取一个logger对象
         dictLogger = gConfig['logger']
@@ -34,6 +34,7 @@ class Logger():
         # 4. 设置日志等级
         self._logger.setLevel(dictLogger['DEFAULT_LOG_LEVEL'.lower()])
 
+
     def _get_file_handler(self, filename,backupCount,maxBytes):
         '''返回一个文件日志handler'''
         # 1. 获取一个文件日志handler
@@ -47,6 +48,7 @@ class Logger():
         # 3. 返回
         return filehandler
 
+
     def _get_console_handler(self):
         '''返回一个输出到终端日志handler'''
         # 1. 获取一个输出到终端日志handler
@@ -55,6 +57,7 @@ class Logger():
         console_handler.setFormatter(self.formatter)
         # 3. 返回handler
         return console_handler
+
 
     @property
     def logger(self):

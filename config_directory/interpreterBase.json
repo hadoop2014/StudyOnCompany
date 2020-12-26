@@ -899,7 +899,7 @@
     },
     "checklist": {
       "modelist" : ["train","pretrain"],
-      "tasknamelist" : ["regression","lenet","alexnet","vgg","capsnet","resnet","nin","rnn","ssd"],
+      "#modellist" : ["regression","lenet","alexnet","vgg","capsnet","resnet","nin","rnn","ssd","rnnregression"],
       "optimizerlist" : ["sgd","adam","rmsprop","adagrad","adadelta","momentum"],
       "datasetlist" : ["mnist","fashionmnist","cifar10","houseprice","lyric","hotdog","pikachu"],
       "frameworklist" : ["mxnet","tensorflow","paddle","pytorch","keras"],

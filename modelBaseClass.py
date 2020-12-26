@@ -56,9 +56,9 @@ class ModelBase(BaseClass):
 
     def _get_class_name(self, gConfig):
         #model_name = re.findall('model(.*)', self.__class__.__name__).pop().lower()
-        #assert model_name in gConfig['tasknamelist'], \
-        #    'tasknamelist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
-        #    (gConfig['tasknamelist'], model_name, self.__class__.__name__)
+        #assert model_name in gConfig['modellist'], \
+        #    'modellist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
+        #    (gConfig['modellist'], model_name, self.__class__.__name__)
         return "ModelBase"
 
 

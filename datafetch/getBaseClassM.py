@@ -5,14 +5,10 @@ import sys
 class getdataBaseM(getdataBase):
     def __init__(self,gConfig):
         super(getdataBaseM,self).__init__(gConfig)
-        #self.dataset_name = self.get_dataset_name(self.gConfig)
-        #self.data_path = os.path.join(self.gConfig['data_directory'],self.dataset_name)
         self.resize = self.gConfig['resize']
         self.test_percent = self.gConfig['test_percent']
         self.batch_size = self.gConfig['batch_size']
         import mxnet.gluon.data as gdata
-        #from datafetch.BaseClass.hotdogClassM import HOTDOG
-        #from datafetch.BaseClass.pikachuClassM import PIKACHU
         self.dataset_selector = {
             'mnist': gdata.vision.MNIST,
             'fashionmnist': gdata.vision.FashionMNIST,

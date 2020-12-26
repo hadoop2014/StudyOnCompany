@@ -21,7 +21,8 @@
       "modelLenetH": "interpreterAnalysize.modelSets.lenetModelH",
       "modelLenetM": "interpreterAnalysize.modelSets.lenetModelM",
       "modelRnnM": "interpreterAnalysize.modelSets.rnnModelM",
-      "modelRnnH": "interpreterAnalysize.modelSets.rnnModelH"
+      "modelRnnH": "interpreterAnalysize.modelSets.rnnModelH",
+      "modelRnnregressionH": "interpreterAnalysize.modelSets.rnnregressionModelH"
     }
   },
   "crawl": {

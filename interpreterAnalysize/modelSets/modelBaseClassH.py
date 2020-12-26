@@ -35,9 +35,9 @@ class ModelBaseH(InterpreterBase):
 
     def _get_class_name(self, gConfig):
         model_name = re.findall('(.*)Model', self.__class__.__name__).pop().lower()
-        assert model_name in gConfig['tasknamelist'], \
-            'tasknamelist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
-            (gConfig['tasknamelist'], model_name, self.__class__.__name__)
+        assert model_name in gConfig['modellist'], \
+            'modellist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
+            (gConfig['modellist'], model_name, self.__class__.__name__)
         return model_name
 
 
@@ -256,7 +256,6 @@ class ModelBaseH(InterpreterBase):
             loss,acc = self.run_eval_loss_acc(X, y)
             acc_sum += acc
             loss_sum += loss
-            #n += y.size()[0]
             n += self.get_batch_size(y)
         return loss_sum / n, acc_sum / n
 
@@ -348,9 +347,5 @@ class ModelBaseH(InterpreterBase):
             self.net.apply(self.params_initialize)
             self.global_step = torch.tensor(0,dtype=torch.int64,device=self.ctx)
         self.debug_info(self.net)
-        #summary(self.net,input_size=self.get_input_shape()[1:],batch_size=self.get_input_shape()[0],
-        #        device=re.findall(r'(\w*)',self.ctx.__str__())[0])
         self.summary(self.net)
         self.add_graph(self.net)
-        #dummy_input = torch.zeros(*self.get_input_shape(),device=self.ctx)
-        #self.writer.add_graph(self.net,dummy_input)

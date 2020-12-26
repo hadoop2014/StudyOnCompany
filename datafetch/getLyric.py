@@ -38,7 +38,7 @@ class getLyricDataM(getdataBase):
             with zin.open(filename) as f:
                 corpus_chars = f.read().decode('utf-8')
         corpus_chars = corpus_chars.replace('\n', ' ').replace('\r', ' ')
-        #corpus_chars = corpus_chars[0:10000]
+        corpus_chars = corpus_chars[0:10000]
         self.idx_to_char = list(set(corpus_chars))
         self.char_to_idx = dict([(char, i) for i, char in enumerate(self.idx_to_char)])
         self.vocab_size = len(self.char_to_idx)
@@ -46,9 +46,6 @@ class getLyricDataM(getdataBase):
 
         self.transformers = [self.fn_onehot]
         self.resizedshape = [self.time_steps,self.vocab_size]
-        #train_nums = int((1-self.test_percent) * len(self.corpus_indices))
-        #self.train_data = self.corpus_indices[:train_nums] #paddle.dataset.cifar.train10()#gdata.vision.FashionMNIST(root=root,train=True)
-        #self.test_data = self.corpus_indices[train_nums:]#paddle.dataset.cifar.test10()#gdata.vision.FashionMNIST(root=root,train=False)
 
 
     def fn_onehot(self,x):
@@ -157,12 +154,6 @@ class getLyricDataM(getdataBase):
         assert dataset_name in gConfig['datasetlist'], \
             'datasetlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
             (gConfig['datasetlist'],dataset_name,self.__class__.__name__)
-        #for key in gConfig:
-        #    if key.find('.') >= 0:
-        #        dataset_key = re.findall('(.*)\.',key).pop().lower()
-        #        if dataset_key == dataset_name:
-        #            is_find = True
-        #if is_find == False:
         if dataset_name not in self.gConfig:
             raise ValueError('dataset(%s) has not be configed in datasetlist(%s)'
                              %(dataset_name,gConfig['datasetlist']))
