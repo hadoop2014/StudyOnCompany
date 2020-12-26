@@ -1,8 +1,6 @@
 from mxnet.gluon import nn
 from mxnet import nd, gluon,autograd,init
 import mxnet as mx
-import numpy as np
-#from modelBaseClass import  *
 from interpreterAnalysize.interpreterBaseClass import *
 import datafetch.commFunction as commFunc
 import mxnet.gluon.model_zoo.vision

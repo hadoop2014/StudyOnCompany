@@ -388,6 +388,8 @@ class DocParserSql(DocParserBase):
             dataFrame.set_index(0,inplace=True)
             dataFrame = dataFrame.T.copy()
         else:
+            # 国金证券2016年报,丽珠集团：2014年年度报告, 合并资产负债表的表头出现 : 2015.12.31  2014.12.31
+            dataFrame.iloc[0] = dataFrame.iloc[0].apply(self._fill_year_standardize)
             dataFrame.columns = dataFrame.iloc[0].copy()
             #主要会计数据的表头通过上述过程去不掉,采用专门的函数去掉
             dataFrame = self._discard_header_row(dataFrame,tableName)
@@ -720,9 +722,13 @@ class DocParserSql(DocParserBase):
 
     def _fill_year_standardize(self,year):
         if isinstance(year,str) == True:
-           if re.search('\\d{4}',year) is not None:
-               if re.search('年',year) is None:
-                   year = year + '年'
+           if re.search('\\d{4}$',year) is not None:
+               # 针对恒瑞医药2014年报,普通股现金分红情况表,起分红年度为:2014,2013,2012,需要补充为2014年,2013年,2012年
+               #if re.search('年',year) is None:
+               year = re.sub("(\\d{4})$","\g<1>年",year)
+           elif re.search('\\d{4}[.]\\d+[.]\\d{2}',year) is not None:
+               # 国金证券2016年报,丽珠集团：2014年年度报告, 合并资产负债表的表头出现 : 2015.12.31  2014.12.31
+               year = re.sub("(\\d{4})[.]\\d+[.]\\d{2}","\g<1>年",year)
         return year
 
 

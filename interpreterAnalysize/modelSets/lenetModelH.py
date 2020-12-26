@@ -119,18 +119,6 @@ class lenetModel(ModelBaseH):
         return self.input_shape
 
 
-    #def initialize(self,dictParameter = None):
-    #    assert dictParameter is not None,"dictParameter must not be None!"
-    #    getdataClass = dictParameter['getdataClass']
-    #    self.resizedshape = getdataClass.resizedshape
-    #    self.classnum = getdataClass.classnum
-    #    super(lenetModel, self).initialize(dictParameter)
-
-
 def create_object(gConfig):
-    #用cnnModel实例化一个对象model
-    #ckpt_used = gConfig['ckpt_used']
-    #getdataClass = gConfig['getdataClass']
-    model=lenetModel(gConfig=gConfig)#,getdataClass=getdataClass)
-    #model.initialize(ckpt_used)
+    model=lenetModel(gConfig=gConfig)
     return model

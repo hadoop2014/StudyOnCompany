@@ -231,7 +231,7 @@ class InterpreterNature(InterpreterBase):
         self.gConfig.update(self.names_global)
         taskResults = list()
         sourcefiles = self._get_needed_files(scale,isForced)
-        sourcefiles = self._remove_black_lists(sourcefiles)
+        sourcefiles = self._remove_black_lists(list(sourcefiles))
         sourcefiles = list(sourcefiles)
         sourcefiles.sort()
         for sourcefile in sourcefiles:

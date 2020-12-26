@@ -85,5 +85,4 @@ class lenetModel(ModelBaseM):
 
 def create_object(gConfig):
     model=lenetModel(gConfig=gConfig)
-    #model.initialize(ckpt_used)
     return model

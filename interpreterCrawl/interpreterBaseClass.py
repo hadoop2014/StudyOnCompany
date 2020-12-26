@@ -12,9 +12,11 @@ class InterpreterBase(BaseClass):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
         self.interpreter_name = self._get_class_name(self.gConfig)
-        self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)
+        #self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
+        if os.path.exists(self.logging_directory) == False:
+            os.makedirs(self.logging_directory)
         self._get_interpreter_keyword()
 
 

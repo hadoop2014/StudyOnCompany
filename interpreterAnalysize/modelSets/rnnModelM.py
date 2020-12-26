@@ -1,6 +1,5 @@
 from mxnet.gluon import loss as gloss,nn,rnn
 from mxnet import gluon,init,symbol
-#from modelBaseClassM import *
 from interpreterAnalysize.modelSets.modelBaseClassM import *
 import math
 

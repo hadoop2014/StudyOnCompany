@@ -13,9 +13,9 @@ class CrawlBase(InterpreterBase):
     def __init__(self,gConfig):
         super(CrawlBase, self).__init__(gConfig)
         self.start_time = time.time()
-        self.logging_directory = self.gConfig['logging_directory']
-        self.data_directory = self.gConfig['data_directory']
-        self.logging_directory = os.path.join(self.logging_directory, 'docparser', self._get_class_name(gConfig))
+        #self.logging_directory = self.gConfig['logging_directory']
+        #self.data_directory = self.gConfig['data_directory']
+        #self.logging_directory = os.path.join(self.logging_directory, 'docparser', self._get_class_name(gConfig))
         self.model_savefile = os.path.join(self.working_directory, self._get_class_name(self.gConfig) + '.model')
         self.checkpoint_filename = self._get_class_name(self.gConfig) + '.ckpt'
         self.source_directory = os.path.join(self.data_directory, self.gConfig['source_directory'])

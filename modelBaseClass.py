@@ -11,17 +11,7 @@ class ModelBase(BaseClass):
     def __init__(self,gConfig):
         super(ModelBase, self).__init__(gConfig)
         self.start_time = time.time()
-        #self.model_savefile = os.path.join(self.working_directory,
-        #                                   self.get_model_name(self.gConfig) + 'model.' + self.gConfig['framework'])
-        #self.symbol_savefile = os.path.join(self.working_directory,
-        #                                    self.get_model_name(self.gConfig) + 'symbol.' + self.gConfig['framework'])
-        #self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
-        #self.checkpoint_filename = self.get_model_name(self.gConfig)+'.ckpt'
-        #self.epoch_per_print = self.gConfig['epoch_per_print']
-        #self.debug_per_steps = self.gConfig['debug_per_steps']
-        #self.epochs_per_checkpoint = self.gConfig['epochs_per_checkpoint']
-        #self.batch_size = self.gConfig['batch_size']
-        self.debugIsOn = self.gConfig['debugIsOn'.lower()]
+        #self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.check_book = self.get_check_book()
         self.losses_train = []
         self.acces_train = []
@@ -55,10 +45,6 @@ class ModelBase(BaseClass):
 
 
     def _get_class_name(self, gConfig):
-        #model_name = re.findall('model(.*)', self.__class__.__name__).pop().lower()
-        #assert model_name in gConfig['modellist'], \
-        #    'modellist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
-        #    (gConfig['modellist'], model_name, self.__class__.__name__)
         return "ModelBase"
 
 
