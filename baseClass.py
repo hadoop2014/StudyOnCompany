@@ -63,6 +63,11 @@ class BaseClass():
         return self._data[item]
 
 
+    def _get_connect(self):
+        #用于获取数据库连接
+        return sqlite.connect(self.database)
+
+
     def _get_interpreter_keyword(self):
         # 编译器,文件解析器共同使用的关键字
         self.tables = self.gJsonBase['TABLE'].split('|')

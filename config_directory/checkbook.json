@@ -53,6 +53,7 @@
     "houseprice": "datafetch.getHouseprice",
     "lyric": "datafetch.getLyric",
     "hotdog": "datafetch.getHotdog",
-    "pikachu": "datafetch.getPikachu"
+    "pikachu": "datafetch.getPikachu",
+    "finance": "datafetch.getFinance"
   }
 }

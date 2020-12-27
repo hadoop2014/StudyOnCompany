@@ -17,9 +17,10 @@ class getdataBaseH(getdataBase):
         self.load_data(resize=self.resize, root=self.data_path)
 
 
-    def load_data(self,resize=None,root=""):
-        from torch import utils
+    def load_data(self,resize=None,root="",*args):
+        #from torch import utils
         from torchvision import transforms
+        import torch.utils.data
         root = os.path.expanduser(root)
         transformer = []
         if resize is not None and resize != 0:
@@ -32,5 +33,7 @@ class getdataBaseH(getdataBase):
         test_data = self.dataset_selector[self.dataset_name](root=root,train=True,download=True,transform=transformer)
         num_workers = 0 if sys.platform.startswith('win32') else self.cpu_num
         kwargs = {'num_workers': 1, 'pin_memory': True} if self.ctx == 'gpu' else {'num_workers':num_workers}
-        self.train_iter = utils.data.DataLoader(train_data,batch_size=self.batch_size,shuffle=True,**kwargs)
-        self.test_iter = utils.data.DataLoader(test_data,batch_size=self.batch_size,shuffle=True,**kwargs)
+        self.train_iter = torch.utils.data.DataLoader(train_data,batch_size=self.batch_size,shuffle=True,**kwargs)
+        self.test_iter = torch.utils.data.DataLoader(test_data,batch_size=self.batch_size,shuffle=True,**kwargs)
+
+

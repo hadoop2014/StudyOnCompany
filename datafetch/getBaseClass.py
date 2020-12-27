@@ -1,12 +1,14 @@
 import re
 import os
+from baseClass import *
 
 numeric_types = (int,float)
 
 #数据读写处理的基类
-class getdataBase():
+class getdataBase(BaseClass):
     def __init__(self,gConfig):
-        self.gConfig = gConfig
+        super(getdataBase, self).__init__(gConfig)
+        #self.gConfig = gConfig
         self.dataset_name = self.get_dataset_name(self.gConfig)
         self.data_path = os.path.join(self.gConfig['data_directory'],self.dataset_name)
         self.rawshape = self.get_rawshape(self.gConfig)

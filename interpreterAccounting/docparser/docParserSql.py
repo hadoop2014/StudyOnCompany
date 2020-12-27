@@ -883,10 +883,11 @@ class DocParserSql(DocParserBase):
         return condition
     '''
 
-
+    '''
     def _get_connect(self):
         #用于获取数据库连接
         return sqlite.connect(self.database)
+    '''
 
     '''
     def _fetch_all_tables(self, cursor):

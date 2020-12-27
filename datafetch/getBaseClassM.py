@@ -31,7 +31,7 @@ class getdataBaseM(getdataBase):
         return transformer
 
 
-    def load_data(self,root=""):
+    def load_data(self,root=NULLSTR):
         from mxnet.gluon import data as gdata
         root = os.path.expanduser(root)
         train_data = self.dataset_selector[self.dataset_name](root=root,train=True)
@@ -45,6 +45,5 @@ class getdataBaseM(getdataBase):
         self.test_iter = gdata.DataLoader(test_data.transform_first(transformer),
                                           self.batch_size, shuffle=False,
                                           num_workers=num_workers)
-
 
 

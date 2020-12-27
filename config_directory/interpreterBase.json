@@ -953,7 +953,7 @@
       "modelist" : ["train","pretrain"],
       "#modellist" : ["regression","lenet","alexnet","vgg","capsnet","resnet","nin","rnn","ssd","rnnregression"],
       "optimizerlist" : ["sgd","adam","rmsprop","adagrad","adadelta","momentum"],
-      "datasetlist" : ["mnist","fashionmnist","cifar10","houseprice","lyric","hotdog","pikachu"],
+      "datasetlist" : ["mnist","fashionmnist","cifar10","houseprice","lyric","hotdog","pikachu","finance"],
       "frameworklist" : ["mxnet","tensorflow","paddle","pytorch","keras"],
       "activationlist" : ["sigmoid","relu","tanh"],
       "initializerlist" : ["normal","xavier","kaiming","constant","uniform"],
@@ -961,6 +961,15 @@
       "celllist" : ["rnn","gru","lstm"]
     },
     "dataset": {
+      "#finance": "为公司财务数据和股票交易数据的组合,用来训练rnnregression模型",
+      "finance": {
+        "tableName": "年度公司价格分析表",
+        "fieldStart": 10,
+        "dim": 1
+      },
+      "lyric":{
+        "dim": 1
+      },
       "mnist": {
         "channels" : 1,
         "dim_x" : 28,
@@ -985,9 +994,6 @@
         "dim_x" : 224,
         "dim_y" : 224,
         "classnum" : 2
-      },
-      "lyric":{
-        "dim": 1
       },
       "pikachu": {
         "channels" : 3,

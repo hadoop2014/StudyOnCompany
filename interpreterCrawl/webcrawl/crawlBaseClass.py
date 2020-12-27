@@ -41,6 +41,7 @@ class CrawlBase(InterpreterBase):
         #sql_df = dataFrame.set_index(dataFrame.columns[0],inplace=False).T
         sql_df = dataFrame
         sql_df['公司代码'] = dataFrame['公司代码'].apply(lambda x: x.replace('\'', NULLSTR))
+        sql_df['公司简称'] = dataFrame['公司简称'].apply(lambda x: x.replace(' ', NULLSTR))
         #isRecordExist = self._is_record_exist(conn, tableName, sql_df)
         minTradingDate, maxTradingDate = self._get_max_min_trading_date(conn, tableName, sql_df)
         if minTradingDate is not None and maxTradingDate is not None:

@@ -365,7 +365,7 @@
       "mode": "train",
       "ctx": "gpu",
       "framework": "pytorch",
-      "dataset": "lyric",
+      "dataset": "finance",
       "model": "rnnregression",
       "ckpt_used": false,
       "viewIsOn" : true
@@ -375,9 +375,9 @@
   "rnnregression": {
     "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",
     "randomIterIsOn" : true,
-    "scratchIsOn" : false,
-    "prefixes" : ["分开", "不分开"],
-    "predict_length" : 80,
+    "#scratchIsOn" : false,
+    "#prefixes" : ["分开", "不分开"],
+    "#predict_length" : 80,
     "trainer": {
       "k" : 5,
       "clip_gradient" : 1e-2,
@@ -386,7 +386,7 @@
       "learning_rate_decay_factor" : 0.9,
       "test_percent" : 0.1,
       "batch_size" : 32,
-      "time_steps" : 35
+      "time_steps" : 6
     },
     "optimizer": {
       "optimizer" : "adam"
@@ -402,7 +402,7 @@
       "keeps" : 0.6,
       "resize" : 0,
       "input_dim" :  1,
-      "rnn_hiddens" : 256,
+      "rnn_hiddens" : 128,
       "num_layers" : 1,
       "output_dim" : 1
     }
