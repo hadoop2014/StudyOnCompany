@@ -26,7 +26,7 @@ class CrawlBase(InterpreterBase):
         self.checkpointfilename = os.path.join(self.working_directory, self.gConfig['checkpointfile'])
         self.checkpoint = None
         self.checkpointWriter = None
-        self._create_tables(self.tables)
+        self._create_tables(self.tableNames)
 
 
     def _get_merged_columns(self,tableName):
@@ -37,27 +37,21 @@ class CrawlBase(InterpreterBase):
 
     def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
         conn = self._get_connect()
-        #dataFrame = dataFrame.T
-        #sql_df = dataFrame.set_index(dataFrame.columns[0],inplace=False).T
         sql_df = dataFrame
         sql_df['公司代码'] = dataFrame['公司代码'].apply(lambda x: x.replace('\'', NULLSTR))
         sql_df['公司简称'] = dataFrame['公司简称'].apply(lambda x: x.replace(' ', NULLSTR))
-        #isRecordExist = self._is_record_exist(conn, tableName, sql_df)
         minTradingDate, maxTradingDate = self._get_max_min_trading_date(conn, tableName, sql_df)
         if minTradingDate is not None and maxTradingDate is not None:
-            #condition = self._get_condition(sql_df)
-            #sql = ''
-            #sql = sql + 'delete from {}'.format(tableName)
-            #sql = sql + '\nwhere ' + condition
-            #self._sql_executer(sql)
-            self.logger.info("delete from {} where is {} {} - {}!".format(tableName,sql_df['公司简称'].values[0]
-                                                                  ,minTradingDate, maxTradingDate))
-            sql_df = sql_df[sql_df['报告时间'] > maxTradingDate]
-            if not sql_df.empty:
-                sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
-                conn.commit()
-                self.logger.info("insert into {} where is {} {} - {}!".format(tableName, sql_df['公司简称'].values[0]
-                                                                        ,sql_df['报告时间'].values[-1],sql_df['报告时间'].values[0]))
+            if sql_df['报告时间'].max() > maxTradingDate:
+                #self.logger.info("delete from {} where is {} {} - {}!".format(tableName,sql_df['公司简称'].values[0]
+                #                                                             ,maxTradingDate, sql_df['报告时间'].max()))
+                sql_df = sql_df[sql_df['报告时间'] > maxTradingDate]
+                if not sql_df.empty:
+                    sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+                    conn.commit()
+                    self.logger.info("insert into {} where is {} {} - {}!".format(tableName, sql_df['公司简称'].values[0]
+                                                                                 ,sql_df['报告时间'].values[-1]
+                                                                                 ,sql_df['报告时间'].values[0]))
         else:
             sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
             conn.commit()
@@ -173,7 +167,6 @@ class CrawlBase(InterpreterBase):
         resultContent = content
         if len(content) == 0:
             return resultContent
-        #checkpointHeader = self.gJsonInterpreter['checkpointHeader']
         checkpointHeader = self.dictWebsites[website]['checkpointHeader']
         dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader)
         dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader))

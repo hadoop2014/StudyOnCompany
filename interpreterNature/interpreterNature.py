@@ -132,6 +132,15 @@ class InterpreterNature(InterpreterBase):
             self._process_crawl_finance(command)
 
 
+        def p_expression_import(p):
+            '''expression : SCALE IMPORT TABLE'''
+            command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
+            self.logger.info(command)
+            tableName = p[3]
+            assert tableName in self.tableNames,"table(%s) is invalid, which must be in %s" % (tableName, self.tableNames)
+            self._process_import_finance(command)
+
+
         def p_expression_train_model(p):
             '''expression : TRAIN MODEL'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
@@ -284,6 +293,19 @@ class InterpreterNature(InterpreterBase):
 
 
     def _process_crawl_finance(self,command):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
+            return
+        assert self.names_global['报告时间'] != NULLSTR and self.names_global['报告类型'] != NULLSTR\
+            ,"报告时间,报告类型为空,必须在参数配置中明确配置!"
+        self.gConfig.update(self.names_global)
+        # 爬取时在时间上少设置1年,因为2020年的时间本来就会爬取2019年的数据
+        self.gConfig.update({'报告时间': self.names_global['报告时间'][1:]})
+        self.interpreterCrawl.initialize(self.gConfig)
+        self.interpreterCrawl.doWork(command)
+
+
+    def _process_import_finance(self,command):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return

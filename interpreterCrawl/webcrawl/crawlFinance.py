@@ -45,7 +45,7 @@ class CrawlFinance(CrawlBase):
     def _process_save_to_sqlite3(self,fileList, website, encoding = 'utf-8'):
         assert isinstance(fileList,list),"fileList must be a list!"
         tableName = self.dictWebsites[website]['tableName']
-        assert tableName in self.tables, "tableName(%s) must be in table list(%s)!"% (tableName, self.tables)
+        assert tableName in self.tableNames, "tableName(%s) must be in table list(%s)!" % (tableName, self.tableNames)
         if len(fileList) > 0:
             dataFrame = pd.DataFrame(fileList)
             dataFrame.columns = self._get_merged_columns(tableName)

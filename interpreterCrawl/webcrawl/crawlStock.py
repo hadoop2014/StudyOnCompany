@@ -25,7 +25,6 @@ class CrawlStock(CrawlBase):
 
     def crawl_stock_data(self,website,scale):
         assert website in self.dictWebsites.keys(),"website(%s) is not in valid set(%s)"%(website,self.dictWebsites.keys())
-        #stockList = []
         resultPaths = []
         if scale == '批量':
             assert ('公司简称' in self.gConfig.keys() and self.gConfig['公司简称'] != NULLSTR) \
@@ -50,10 +49,25 @@ class CrawlStock(CrawlBase):
         self.close_checkpoint()
 
 
+    def import_stock_data(self,tableName,scale):
+        assert tableName in self.tableNames,"website(%s) is not in valid set(%s)"%(tableName,self.tableNames)
+        if scale == '批量':
+            assert ('公司简称' in self.gConfig.keys() and self.gConfig['公司简称'] != NULLSTR) \
+                   and ('报告时间' in self.gConfig.keys() and self.gConfig['报告时间'] != NULLSTR) \
+                   and ('报告类型' in self.gConfig.keys() and self.gConfig['报告类型'] != NULLSTR) \
+                , "parameter 公司简称(%s) 报告时间(%s) 报告类型(%s) is not valid parameter" \
+                  % (self.gConfig['公司简称'], self.gConfig['报告时间'], self.gConfig['报告类型'])
+            stockList = self._get_stock_list(self.gConfig['公司简称'])
+            resultPaths = self._process_construct_stock_list(stockList)
+            self._process_import_to_sqlite3(resultPaths, tableName, encoding='gbk')
+
+
     def _process_save_to_sqlite3(self,fileList, website, encoding = 'utf-8'):
         assert isinstance(fileList, list),"fileList must be a list!"
         tableName = self.dictWebsites[website]['tableName']
-        assert tableName in self.tables, "tableName(%s) must be in table list(%s)"% (tableName, self.tables)
+        successPaths = self._process_import_to_sqlite3(fileList,tableName,encoding)
+        '''
+        assert tableName in self.tableNames, "tableName(%s) must be in table list(%s)" % (tableName, self.tableNames)
         successPaths = []
         for fileName in fileList:
             fullfileName = os.path.join(self.working_directory, fileName[0])
@@ -68,6 +82,25 @@ class CrawlStock(CrawlBase):
             else:
                 self.logger.info('failed to write to sqlite3,the file is empty: %s'% fileName)
             #self.logger.info("success to write to sqlite3 from file %s"% fullfileName)
+        '''
+        return successPaths
+
+
+    def _process_import_to_sqlite3(self,fileList, tableName, encoding = 'utf-8'):
+        assert tableName in self.tableNames, "tableName(%s) must be in table list(%s)" % (tableName, self.tableNames)
+        successPaths = []
+        for fileName in fileList:
+            fullfileName = os.path.join(self.working_directory, fileName[0])
+            if not os.path.exists(fullfileName):
+                self.logger.info('file %s is not exist!' % fullfileName)
+                continue
+            dataFrame = pd.read_csv(fullfileName, encoding=encoding)
+            dataFrame.columns = self._get_merged_columns(tableName)
+            if not dataFrame.empty:
+                self._write_to_sqlite3(dataFrame, tableName)
+                successPaths.append(fileName)
+            else:
+                self.logger.info('failed to write to sqlite3,the file is empty: %s' % fileName)
         return successPaths
 
 
@@ -102,6 +135,24 @@ class CrawlStock(CrawlBase):
         companyDiffer = set([company for company,_,_ in stockList]).difference([company for _,company,_,_ in resultPaths])
         if len(companyDiffer) > 0:
             self.logger.info("failed to fetch stock data : %s"% companyDiffer)
+        return resultPaths
+
+
+    def _process_construct_stock_list(self, stockList):
+        endTime = time.strftime('%Y%m%d')
+        stockList = self._get_deduplicate_stock(stockList,endTime)
+        resultPaths = []
+        for company, code, type in stockList:
+            fileName = "（" + code + "）" + company + '.csv'
+            fullfileName = os.path.join(self.working_directory, fileName)
+            if os.path.exists(fullfileName):
+                resultPaths.append([fileName, company, str(code), endTime])
+                self.logger.info('success to get stock (%s)%s trading data!'% (code, company))
+            else:
+                self.logger.error('failed to get stock (%s)%s, %s is not exist!'% (code, company, fileName))
+        companyDiffer = set([company for company,_,_ in stockList]).difference([company for _,company,_,_ in resultPaths])
+        if len(companyDiffer) > 0:
+            self.logger.info("failed to get stock data : %s"% companyDiffer)
         return resultPaths
 
 

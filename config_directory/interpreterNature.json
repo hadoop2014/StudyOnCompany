@@ -1,8 +1,8 @@
 {
   "#tokens": ["批量运行","执行",   "数据解析","表",    "创建",   "展示",     "参数配置", "参数名称",  "参数值", "数值"
-             ,"报告时间","爬取",   "网站",    "行业分类","模型" ,"训练"],
+             ,"报告时间","爬取",   "网站",    "行业分类","模型" ,"训练"    ,"导入数据"],
   "tokens":  ["SCALE", "EXECUTE","PARSE",  "TABLE", "CREATE","VISUALIZE","CONFIG", "PARAMETER","VALUE", "NUMERIC"
-             ,"TIME",  "CRAWL",  "WEBSITE","CATEGORY","MODEL","TRAIN"],
+             ,"TIME",  "CRAWL",  "WEBSITE","CATEGORY","MODEL","TRAIN","IMPORT"],
 
   "SCALE": "全量|批量|单次",
   "EXECUTE": "运行|强制运行",
@@ -10,7 +10,8 @@
   "CREATE": "创建",
   "VISUALIZE": "展示",
   "CONFIG": "参数配置",
-  "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表",
+  "IMPORT": "导入",
+  "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表|股票交易数据",
   "TRAIN": "训练",
   "MODEL": "公司价格预测模型",
   "PARAMETER": "报告时间|报告类型|公司简称|行业分类",

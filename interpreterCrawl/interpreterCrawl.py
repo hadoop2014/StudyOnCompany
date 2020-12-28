@@ -62,8 +62,19 @@ class InterpreterCrawl(InterpreterBase):
             website = p[3]
             scale = p[1]
             if p[1] != '批量':
-                self.logger.warning('the scale %s is not support,now only support scale \'全量\''%p[1])
+                self.logger.warning('the scale %s is not support,now only support scale \'批量\''%p[1])
             self._process_crawl_from_website(website,scale)
+
+
+        def p_expression_import(p):
+            '''expression : SCALE IMPORT TABLE'''
+            p[0] = p[1] + p[2] + p[3]
+            self.logger.info('Start to import finance data to %s'%p[3])
+            tableName = p[3]
+            scale = p[1]
+            if p[1] != '批量':
+                self.logger.warning('the scale %s is not support,now only support scale \'批量\''%p[1])
+            self._process_import_to_table(tableName, scale)
 
 
         def p_error(p):
@@ -93,9 +104,18 @@ class InterpreterCrawl(InterpreterBase):
         if website == '巨潮资讯网':
             self.crawlFinance.initialize(self.gConfig)
             self.crawlFinance.crawl_finance_data(website,scale)
-        elif website == '网易财经' or website == '股城网':
+        elif website == '网易财经':
             self.crawlStock.initialize(self.gConfig)
             self.crawlStock.crawl_stock_data(website,scale)
+
+
+    def _process_import_to_table(self,tableName,scale):
+        assert tableName != NULLSTR,"tableName(%s) is invalid"%tableName
+        if tableName == '股票交易数据':
+            self.crawlStock.initialize(self.gConfig)
+            self.crawlStock.import_stock_data(tableName, scale)
+        else:
+            self.logger.info('the table %s is not support,now only support table \'股票交易数据\''% tableName)
 
 
     def _is_file_selcted(self,sourcefile):

@@ -70,9 +70,9 @@ class BaseClass():
 
     def _get_interpreter_keyword(self):
         # 编译器,文件解析器共同使用的关键字
-        self.tables = self.gJsonBase['TABLE'].split('|')
+        self.tableNames = self.gJsonBase['TABLE'].split('|')
         self.commonFields = self.gJsonBase['公共表字段定义']
-        self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tables}
+        self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
 
 
     def _set_dataset(self,index=None):
