@@ -73,6 +73,7 @@ class getLyricDataM(getdataBase):
         return transform_reader
 
 
+    '''
     # Ｋ折交叉验证
     def get_k_fold_data(self, k, features):
         assert k > 1, 'k折交叉验证算法中，必须满足条件ｋ>1'
@@ -92,7 +93,7 @@ class getLyricDataM(getdataBase):
                 X_train.extend(X_part)
                 #y_train = nd.concat(y_train, y_part, dim=0)
         return X_train,  X_valid
-
+    '''
 
     def data_iter_random(self, corpus_indices, batch_size, time_steps, ctx=None):
         # 减1是因为输出的索引是相应输入的索引加1

@@ -385,7 +385,7 @@
       "learning_rate" : 2e-3,
       "learning_rate_decay_factor" : 0.9,
       "test_percent" : 0.1,
-      "batch_size" : 32,
+      "batch_size" : 16,
       "time_steps" : 6
     },
     "optimizer": {

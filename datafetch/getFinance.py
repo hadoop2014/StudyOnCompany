@@ -1,10 +1,80 @@
-from  datafetch.getBaseClass import *
 from datafetch.getBaseClassH import *
-#from mxnet import  nd
-#import mxnet as mx
 import torch
 import pandas as pd
 import numpy as np
+from torch.utils.data import Dataset,DataLoader
+
+
+class FinanceDataSet(Dataset):
+    def __init__(self,features): #self参数必须，其他参数及其形式随程序需要而不同，比如(self,*inputs)
+        self._data = features
+
+    def __len__(self):
+        return len(self._data)
+
+    def __getitem__(self,idx):
+        data = self._data[idx]
+        return data
+
+
+def pad_tensor(vec, pad):
+    """
+    args:
+        vec - tensor to pad
+        pad - the size to pad to
+
+    return:
+        a new tensor padded to 'pad'
+    """
+    if vec.dim() == 1:
+        result =  torch.cat([vec, torch.zeros(pad - len(vec), dtype=torch.float)], dim=0).data.numpy()
+    else:
+        result = torch.cat([vec, torch.zeros(pad - len(vec),*vec.shape[1:], dtype=torch.float)], dim=0).data.numpy()
+    return result
+
+class Collate:
+    """
+    a variant of callate_fn that pads according to the longest sequence in
+    a batch of sequences
+    """
+
+    def __init__(self):
+        pass
+
+    def _collate(self, batch):
+        """
+        args:
+            batch - list of (tensor, label)
+
+        reutrn:
+            xs - a tensor of all examples in 'batch' before padding like:
+                '''
+                [tensor([1,2,3,4]),
+                 tensor([1,2]),
+                 tensor([1,2,3,4,5])]
+                '''
+            ys - a LongTensor of all labels in batch like:
+                '''
+                [1,0,1]
+                '''
+        """
+        xs = [torch.FloatTensor(v[:,:-1]) for v in batch] #获取特征, T * input_dim
+        ys = [torch.FloatTensor(v[:,-1]) for v in batch] #获取标签, T * 1
+        #ys = torch.LongTensor([v[:,-1] for v in batch])  #获取标签, T * 1
+        # 获得每个样本的序列长度
+        seq_lengths = torch.LongTensor([v for v in map(len, xs)])
+        max_len = max([len(v) for v in xs])
+        # 每个样本都padding到当前batch的最大长度
+        xs = torch.FloatTensor([pad_tensor(v, max_len) for v in xs])
+        ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
+        # 把xs和ys按照序列长度从大到小排序
+        seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
+        xs = xs[perm_idx]
+        ys = ys[perm_idx]
+        return xs, seq_lengths, ys
+
+    def __call__(self, batch):
+        return self._collate(batch)
 
 
 class getFinanceDataH(getdataBase):
@@ -44,21 +114,20 @@ class getFinanceDataH(getdataBase):
         fieldStart = dictSourceData['fieldStart']
         for _,group in dataGroups:
             group = group.sort_values(by=['报告时间'], ascending=True)
-            features += [torch.from_numpy(np.array(group.iloc[:,fieldStart:-1],dtype=np.float32))]
-            labels += [torch.from_numpy(np.array(group.iloc[:,-1],dtype=np.float32))]
-        self.features = torch.cat(features,dim=0)
-        self.labels = torch.cat(labels,dim=0)
+            features += [torch.from_numpy(np.array(group.iloc[:,fieldStart:],dtype=np.float32))]
+            #labels += [torch.from_numpy(np.array(group.iloc[:,-1],dtype=np.float32))]
+        self.features = FinanceDataSet(features)
+        #self.labels = FinanceDataSet(labels)
         self.input_dim = len(dataFrame.columns) - fieldStart - 1
         self.transformers = [self.fn_transpose]
         self.resizedshape = [self.time_steps,self.input_dim]
-        #corpus_chars = corpus_chars.replace('\n', ' ').replace('\r', ' ')
-        #corpus_chars = corpus_chars[0:10000]
-        #self.idx_to_char = list(set(corpus_chars))
-        #self.char_to_idx = dict([(char, i) for i, char in enumerate(self.idx_to_char)])
-        #self.vocab_size = len(self.char_to_idx)
-        #self.corpus_indices = [self.char_to_idx[char] for char in corpus_chars]
-        #self.transformers = [self.fn_onehot]
-        #self.resizedshape = [self.time_steps,self.vocab_size]
+        #train_data_X = DataLoader(dataset=self.features, batch_size=self.batch_size, num_workers=self.cpu_num
+        #                        , collate_fn=Collate())
+
+        #for X in train_data_X:
+        #    shape = X.shape
+
+        #torch.nn.utils.rnn.pack_padded_sequence()
 
     '''
     def fn_onehot(self,x):
@@ -89,28 +158,6 @@ class getFinanceDataH(getdataBase):
                 yield (X,y)
         return transform_reader
 
-
-    # Ｋ折交叉验证
-    def get_k_fold_data(self, k, features, labels):
-        assert k > 1, 'k折交叉验证算法中，必须满足条件ｋ>1'
-        fold_size = len(features)// k
-        X_train, y_train = None, None
-        X_valid, y_valid = None, None
-        i = np.random.randint(k)
-        for j in range(k):
-            idx = slice(j * fold_size, (j + 1) * fold_size)
-            X_part = features[idx.start:idx.stop]
-            y_part = labels[idx.start:idx.stop]
-            if j == i:
-                X_valid = X_part
-                y_valid = y_part
-            elif X_train is None:
-                X_train = X_part
-                y_train = y_part
-            else:
-                X_train.extend(X_part)
-                y_train.extend(y_part)
-        return X_train, y_train,  X_valid,y_valid
 
     '''
     def data_iter_random(self, corpus_indices, batch_size, time_steps, ctx=None):
@@ -165,13 +212,14 @@ class getFinanceDataH(getdataBase):
 
     @getdataBase.getdataForUnittest
     def getTrainData(self,batch_size):
-        self.train_data_X,self.train_data_y,self.test_data_X,self.test_data_y \
-            = self.get_k_fold_data(self.k,self.features,self.labels)
+        self.train_data,self.test_data = self.get_k_fold_data(self.k,self.features)
         #if self.randomIterIsOn == True:
         #    train_iter = self.data_iter_random(self.train_data,self.batch_size,self.time_steps,self.ctx)
         #else:
         #    train_iter = self.data_iter_consecutive(self.train_data, self.batch_size, self.time_steps, self.ctx)
-        train_iter = self.data_iter(self.train_data_X,self.train_data_y,self.batch_size,self.time_steps,self.ctx)
+        #train_iter = self.data_iter(self.train_data_X,self.train_data_y,self.batch_size,self.time_steps,self.ctx)
+        train_iter = DataLoader(dataset=self.train_data, batch_size=self.batch_size, num_workers=self.cpu_num
+                               ,collate_fn=Collate())
         self.train_iter = self.transform(train_iter,self.transformers)
         return self.train_iter()
 
@@ -182,7 +230,8 @@ class getFinanceDataH(getdataBase):
         #    test_iter = self.data_iter_random(self.test_data,self.batch_size,self.time_steps,self.ctx)
         #else:
         #    test_iter = self.data_iter_consecutive(self.test_data, self.batch_size, self.time_steps, self.ctx)
-        test_iter = self.data_iter(self.test_data_X,self.test_data_y,batch_size,self.time_steps,self.ctx)
+        test_iter = DataLoader(dataset=self.test_data, batch_size=self.batch_size, num_workers=self.cpu_num
+                              ,collate_fn=Collate())
         self.test_iter = self.transform(test_iter,self.transformers)
         return self.test_iter()
 
