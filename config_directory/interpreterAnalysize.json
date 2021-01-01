@@ -382,10 +382,10 @@
       "k" : 5,
       "clip_gradient" : 1e-2,
       "train_num_epoch" : 300,
-      "learning_rate" : 5e-2,
+      "learning_rate" : 3e-2,
       "learning_rate_decay_factor" : 0.9,
       "test_percent" : 0.1,
-      "batch_size" : 8,
+      "batch_size" : 32,
       "time_steps" : 6
     },
     "optimizer": {
@@ -402,7 +402,7 @@
       "keeps" : 0.6,
       "resize" : 0,
       "input_dim" :  1,
-      "rnn_hiddens" : 128,
+      "rnn_hiddens" : 64,
       "num_layers" : 1,
       "output_dim" : 1
     }

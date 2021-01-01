@@ -84,6 +84,7 @@ class rnnModel(ModelBaseH):
 
 
     def run_train_loss_acc(self,X,y):
+        self.init_state()
         if self.state is not None:
             # 使用detach函数从计算图分离隐藏状态, 这是为了
             # 使模型参数的梯度计算只依赖一次迭代读取的小批量序列(防止梯度计算开销太大)

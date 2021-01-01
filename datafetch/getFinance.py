@@ -61,7 +61,6 @@ class Collate:
         """
         xs = [torch.FloatTensor(v[:,:-1]) for v in batch] #获取特征, T * input_dim
         ys = [torch.FloatTensor(v[:,-1]) for v in batch] #获取标签, T * 1
-        #ys = torch.LongTensor([v[:,-1] for v in batch])  #获取标签, T * 1
         # 获得每个样本的序列长度
         seq_lengths = torch.LongTensor([v for v in map(len, xs)])
         max_len = max([len(v) for v in xs])
@@ -109,35 +108,19 @@ class getFinanceDataH(getdataBase):
         sql = ''
         sql = sql + 'select * from {}'.format(tableName)
         dataFrame = pd.read_sql(sql,self._get_connect())
-        #dataFrame = dataFrame.fillna(0)
         dataGroups = dataFrame.groupby(dataFrame['公司代码'])
         features = []
-        #labels = []
         fieldStart = dictSourceData['fieldStart']
         for _,group in dataGroups:
             group = group.sort_values(by=['报告时间'], ascending=True)
-            if len(group) <= 2:
-                continue
+            if len(group) <= 1:
+                pass
             features += [torch.from_numpy(np.array(group.iloc[:,fieldStart:],dtype=np.float32))]
-            #labels += [torch.from_numpy(np.array(group.iloc[:,-1],dtype=np.float32))]
         self.features = FinanceDataSet(features)
-        #self.labels = FinanceDataSet(labels)
         self.input_dim = len(dataFrame.columns) - fieldStart - 1
         self.transformers = [self.fn_transpose]
         self.resizedshape = [self.time_steps,self.input_dim]
-        #train_data_X = DataLoader(dataset=self.features, batch_size=self.batch_size, num_workers=self.cpu_num
-        #                        , collate_fn=Collate())
 
-        #for X in train_data_X:
-        #    shape = X.shape
-
-        #torch.nn.utils.rnn.pack_padded_sequence()
-
-    '''
-    def fn_onehot(self,x):
-        x = nd.transpose(x)
-        return nd.one_hot(x,self.vocab_size)
-    '''
 
     def fn_transpose(self,X,seq_lengths):
         X = torch.transpose(X,0,1)
@@ -164,65 +147,9 @@ class getFinanceDataH(getdataBase):
         return transform_reader
 
 
-    '''
-    def data_iter_random(self, corpus_indices, batch_size, time_steps, ctx=None):
-        # 减1是因为输出的索引是相应输入的索引加1
-        num_examples = (len(corpus_indices) - 1) // time_steps
-        epoch_size = num_examples // batch_size
-        example_indices = list(range(num_examples))
-        random.shuffle(example_indices)
-
-        # 返回从pos开始的长为time_steps的序列
-        def _data(pos):
-            return corpus_indices[pos: pos + time_steps]
-
-        for i in range(epoch_size):
-            # 每次读取batch_size个随机样本
-            i = i * batch_size
-            batch_indices = example_indices[i: i + batch_size]
-            X = [_data(j * time_steps) for j in batch_indices]
-            Y = [_data(j * time_steps + 1) for j in batch_indices]
-            yield nd.array(X, ctx), nd.array(Y, ctx)
-    '''
-
-    '''
-    def data_iter_consecutive(self, corpus_indices, batch_size, time_steps, ctx=None):
-        corpus_indices = nd.array(corpus_indices, ctx=ctx)
-        data_len = len(corpus_indices)
-        batch_len = data_len // batch_size
-        indices = corpus_indices[0: batch_size * batch_len].reshape((
-            batch_size, batch_len))
-        epoch_size = (batch_len - 1) // time_steps
-        for i in range(epoch_size):
-            i = i * time_steps
-            X = indices[:, i: i + time_steps]
-            Y = indices[:, i + 1: i + time_steps + 1]
-            yield X, Y
-    '''
-    '''
-    def data_iter(self,features,labels,batch_size,time_steps,ctx):
-        features = torch.nn.utils.rnn.pack_padded_sequence(features,time_steps)
-        labels = torch.nn.utils.rnn.pack_padded_sequence(labels)
-        data_len = len(features)
-        batch_len = data_len // batch_size
-        indicesX = features[0: batch_size * batch_len].reshape((batch_size, batch_len, -1))
-        indicesY = labels[0: batch_size * batch_len].reshape((batch_size, batch_len, -1))
-        epoch_size = (batch_len - 1) // time_steps
-        for i in range(epoch_size):
-            i = i * time_steps
-            X = indicesX[:, i: i + time_steps,:]
-            Y = indicesY[:, i: i + time_steps,:]
-            yield X, Y
-    '''
-
     @getdataBase.getdataForUnittest
     def getTrainData(self,batch_size):
         self.train_data,self.test_data = self.get_k_fold_data(self.k,self.features)
-        #if self.randomIterIsOn == True:
-        #    train_iter = self.data_iter_random(self.train_data,self.batch_size,self.time_steps,self.ctx)
-        #else:
-        #    train_iter = self.data_iter_consecutive(self.train_data, self.batch_size, self.time_steps, self.ctx)
-        #train_iter = self.data_iter(self.train_data_X,self.train_data_y,self.batch_size,self.time_steps,self.ctx)
         train_iter = DataLoader(dataset=self.train_data, batch_size=self.batch_size, num_workers=self.cpu_num
                                ,collate_fn=Collate(self.ctx))
         self.train_iter = self.transform(train_iter,self.transformers)
@@ -231,10 +158,6 @@ class getFinanceDataH(getdataBase):
 
     @getdataBase.getdataForUnittest
     def getTestData(self,batch_size):
-        #if self.randomIterIsOn == True:
-        #    test_iter = self.data_iter_random(self.test_data,self.batch_size,self.time_steps,self.ctx)
-        #else:
-        #    test_iter = self.data_iter_consecutive(self.test_data, self.batch_size, self.time_steps, self.ctx)
         test_iter = DataLoader(dataset=self.test_data, batch_size=self.batch_size, num_workers=self.cpu_num
                               ,collate_fn=Collate(self.ctx))
         self.test_iter = self.transform(test_iter,self.transformers)

@@ -78,6 +78,7 @@ class ModelBaseH(InterpreterBase):
             self.weight_initializer(module.weight.data)
             self.bias_initializer(module.bias.data)
         elif type(module) == nn.LSTM or type(module) == nn.GRU or type(module) == nn.RNN:
+            #for i in module.num_layers:
             self.weight_initializer(module.weight_hh_l0.data)
             self.weight_initializer(module.weight_ih_l0.data)
             self.bias_initializer(module.bias_hh_l0.data)
