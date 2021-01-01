@@ -122,7 +122,7 @@ class rnnModel(ModelBaseH):
         loss = loss.item() * y.shape[0]
         #acc  = (y_hat.argmax(dim=1) == y).sum().item()
         acc = 0
-        print(list(zip(y_hat.cpu().numpy(),y.cpu().numpy()))[:6])
+        print(list(zip(y_hat.cpu().numpy(),y.cpu().numpy()))[:8])
         print('\n')
         return loss,acc
 

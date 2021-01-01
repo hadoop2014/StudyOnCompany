@@ -12,8 +12,11 @@ create table if not exists 年度公司价格分析中间表 (
     报告周总市值 REAL,
     结束周 CHAR(10),
     结束周总市值 REAL,
+    起始周 CHAR(10),
+    起始周总市值 REAL,
+    本年市值增长率 REAL,
     市值增长率 REAL,
-    指数增长率 REAL,
+    本年指数增长率 REAL,
     报告周上证指数 REAL,
     结束周上证指数 REAL,
     上证指数增长率 REAL,
@@ -37,18 +40,21 @@ select
     b.周平均总市值 as 报告周总市值,
     a.结束周,
     c.周平均总市值 as 结束周总市值,
+    a.起始周,
+    o.周平均总市值 as 起始周总市值,
+    round((b.周平均总市值 - o.周平均总市值)/o.周平均总市值, 4) as 本年市值增长率,
     round((c.周平均总市值 - b.周平均总市值)/b.周平均总市值, 4) as 市值增长率,
-    case when a.公司代码 < '300000' then round((g.周平均收盘价 - f.周平均收盘价)/g.周平均收盘价, 4) else
-        case when a.公司代码 < '600000' then round((k.周平均收盘价 - j.周平均收盘价)/j.周平均收盘价, 4) else
-            round((i.周平均收盘价 - h.周平均收盘价)/h.周平均收盘价, 4)
+    case when a.公司代码 < '300000' then round((f.周平均收盘价 - g.周平均收盘价)/g.周平均收盘价, 4) else
+        case when a.公司代码 < '600000' then round((j.周平均收盘价 - k.周平均收盘价)/k.周平均收盘价, 4) else
+            round((h.周平均收盘价 - i.周平均收盘价)/i.周平均收盘价, 4)
         end
-    end as 指数增长率,
+    end as 本年指数增长率,
     f.周平均收盘价 as 报告周上证指数,
-    g.周平均收盘价 as 结束周上证指数,
-    round((g.周平均收盘价 - f.周平均收盘价)/g.周平均收盘价, 4) as 上证指数增长率,
-    round((i.周平均收盘价 - h.周平均收盘价)/h.周平均收盘价, 4) as 深证成指增长率,
-    round((k.周平均收盘价 - j.周平均收盘价)/j.周平均收盘价, 4) as 创业板指增长率,
-    round((e.周平均收盘价 - d.周平均收盘价)/d.周平均收盘价, 4) as 沪深300指数增长率
+    g.周平均收盘价 as 起始周上证指数,
+    round((f.周平均收盘价 - g.周平均收盘价)/g.周平均收盘价, 4) as 上证指数增长率,
+    round((h.周平均收盘价 - i.周平均收盘价)/i.周平均收盘价, 4) as 深证成指增长率,
+    round((j.周平均收盘价 - k.周平均收盘价)/k.周平均收盘价, 4) as 创业板指增长率,
+    round((d.周平均收盘价 - e.周平均收盘价)/e.周平均收盘价, 4) as 沪深300指数增长率
 from
 (
     select x.报告时间,
@@ -75,7 +81,25 @@ from
                     else date(x.发布时间, '+1 year')
                     end
             end
-            as 结束时间
+            as 结束时间,
+        case when x.起始时间 is not NULL
+            then strftime('%Y-%W', x.起始时间)
+            else
+                case when strftime('%Y-%W',x.发布时间, '-1 year') < z.起始周
+                    then z.起始周
+                    else strftime('%Y-%W',x.发布时间, '-1 year')
+                    end
+            end
+            as 起始周,
+        case when x.起始时间 is not NULL
+            then x.起始时间
+            else
+                case when strftime('%Y-%W',x.发布时间, '-1 year') > z.起始周
+                    then z.起始时间
+                    else date(x.发布时间, '-1 year')
+                    end
+            end
+            as 起始时间
 
         --case when strftime('%Y-%W',x.发布时间, '+1 year') > z.结束周
         --    then z.结束周
@@ -88,10 +112,10 @@ from
         -- ) AS 去重标识
     from
     (
-        select bb.*,aa.结束时间
+        select bb.*, aa.结束时间, aa.起始时间
         from
         (
-            select ii.*,jj.发布时间 as 结束时间
+            select ii.*,jj.发布时间 as 结束时间, kk.发布时间 as 起始时间
             from
             (
                 -- 同一个公司同一年度可能会发布两次财报, 第二次为第一次发布财报的修正, 但是我们认为第一次发布的财报影响更大, 因此取第一次发布的时间为准
@@ -107,6 +131,14 @@ from
                 group by 公司代码, 报告时间, 报告类型
             )jj
             on ii.公司代码 = jj.公司代码 and jj.报告时间 - ii.报告时间 = 1
+            left join
+            (
+                -- 同一个公司同一年度可能会发布两次财报, 第二次为第一次发布财报的修正, 但是我们认为第一次发布的财报影响更大, 因此取第一次发布的时间为准
+                select 公司代码, 报告时间, 报告类型, min(发布时间) as 发布时间
+                from 财报发布信息
+                group by 公司代码, 报告时间, 报告类型
+            )kk
+            on ii.公司代码 = kk.公司代码 and ii.报告时间 - kk.报告时间 = 1
         )aa
         left join 财报发布信息 bb
         on aa.公司代码 = bb.公司代码 and aa.报告时间 = bb.报告时间 and aa.报告类型 = bb.报告类型 and aa.发布时间 = bb.发布时间
@@ -115,7 +147,9 @@ from
     (
         select 公司代码,
             max(报告时间) as 结束时间,
-            max(报告周) as 结束周
+            max(报告周) as 结束周,
+            min(报告时间) as 起始时间,
+            min(报告周) as 起始周
         from
         (
             select 公司代码,
@@ -155,6 +189,20 @@ left join
     )x
     group by 报告周, 公司代码, 公司简称
 )c
+left join
+(
+    select x.报告周,
+        x.公司代码,
+        x.公司简称,
+        round(avg(x.总市值), 0) as 周平均总市值
+    from
+    (
+        select *,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+    )x
+    group by 报告周, 公司代码, 公司简称
+)o
 left join
 (
     select x.报告周,
@@ -277,10 +325,11 @@ left join
 )k
 where (a.公司代码 = b.公司代码 and a.报告周 = b.报告周)
     and (a.公司代码 = c.公司代码 and a.结束周 = c.报告周)
-    and (a.报告周 = d.报告周 and a.结束周 = e.报告周)
-    and (a.报告周 = f.报告周 and a.结束周 = g.报告周)
-    and (a.报告周 = h.报告周 and a.结束周 = i.报告周)
-    and (a.报告周 = j.报告周 and a.结束周 = k.报告周);
+    and (a.公司代码 = o.公司代码 and a.起始周 = o.报告周)
+    and (a.报告周 = d.报告周 and a.起始周 = e.报告周)
+    and (a.报告周 = f.报告周 and a.起始周 = g.报告周)
+    and (a.报告周 = h.报告周 and a.起始周 = i.报告周)
+    and (a.报告周 = j.报告周 and a.起始周 = k.报告周);
 
 
 CREATE INDEX IF NOT EXISTS [年度公司价格分析中间表索引] on [年度公司价格分析中间表] (
@@ -340,8 +389,9 @@ create table if not exists 年度公司价格分析表 (
     营业收入占营业资金的比率 REAL,
     还原后的净资产收益率（ROCE） REAL,
     投资收益率 REAL,
+    本年市值增长率 REAL,
+    本年指数增长率 REAL,
     间隔时长 REAL,
-    指数增长率 REAL,
     市值增长率 REAL
 );
 
@@ -395,8 +445,9 @@ select a.报告时间,
     a.营业收入占营业资金的比率,
     a.还原后的净资产收益率（ROCE）,
     round(a.归属于上市公司股东的净利润/b.报告周总市值,4) as 投资收益率,
+    b.本年市值增长率 REAL,
+    b.本年指数增长率,
     b.间隔时长,
-    b.指数增长率,
     b.市值增长率
 from 年度财务分析综合表 a
 left join 年度公司价格分析中间表 b
