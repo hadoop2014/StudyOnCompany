@@ -17,6 +17,7 @@ class DocParserPdf(DocParserBase):
         self._interpretPrefix = NULLSTR
         self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
+        self.debugExtractTable = self.gConfig["debugExtractTable".lower()]
 
 
     def _load_data(self,sourceFile=None):
@@ -334,7 +335,7 @@ class DocParserPdf(DocParserBase):
 
 
     def _debug_extract_tables(self,page,table_settings):
-        if self.debugIsOn == False:
+        if self.debugExtractTable == False:
             return
         image = page.to_image()
         image.reset().debug_tablefinder(table_settings)

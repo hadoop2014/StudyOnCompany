@@ -31,6 +31,7 @@ class ModelBase(BaseClass):
         self.debug_per_steps = self.gConfig['debug_per_steps']
         self.epochs_per_checkpoint = self.gConfig['epochs_per_checkpoint']
         self.batch_size = self.gConfig['batch_size']
+        self.debugIsOn = self.gConfig['debugIsOn']
 
 
     def get_check_book(self):

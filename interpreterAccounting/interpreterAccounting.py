@@ -162,7 +162,6 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_fetchtable_wrong(p):
             '''fetchtablewrong :  TABLE optional PUNCTUATION
-                          | TABLE optional '(' NUMERO ')'
                           | TABLE optional '（' NUMERO '）'
                           | TABLE optional '（' discard '）'
                           | TABLE optional '(' discard ')'
@@ -171,6 +170,7 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional NUMERIC
                           | TABLE optional time optional  NUMERIC
                           | TABLE optional error '''
+            #  TABLE optional '(' NUMERO ')' 去掉,放入optional中, 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
             # TABLE optional error  解决尚荣医疗2016年 P90页,合并资产负债表搜索错误 ,而导致连续多页搜索错误
             # TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
             # TABLE optional '(' NAME ')' 和optional  '(' NAME ')'冲突
@@ -198,6 +198,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional COMPANY
                         | optional LOCATION
                         | optional NUMERO
+                        | optional '(' NUMERO ')'
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
                         | optional '（' TIME '）'
@@ -206,6 +207,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '-'
                         | NUMERIC
                         | empty '''
+            # optional '(' NUMERO ')' 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
             # optional '（' TIME DISCARD '）'解决沪电股份：2014年报出现,合并现金流量表 （2014 年 12 月 31 日止年度） 单位：人民
             # optional '-' 解决爱朋医疗2014年 主营业务分行业经营情况 出现在页尾的情况: 以上的行业、产品或地区情况 √ 适用 □ 不适用 - 31-
             # optional HEADER可解决海螺水泥2014年合并所有者权限变动表的搜索问题,但是采用TABLE optional HEADER optional unit

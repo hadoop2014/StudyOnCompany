@@ -27,7 +27,7 @@ class BaseClass():
         self.gConfig = gConfig
         self.gJsonInterpreter = gConfig['gJsonInterpreter'.lower()]
         self.gJsonBase = gConfig['gJsonBase'.lower()]
-        self.debugIsOn = gConfig['debugIsOn'.lower()]
+        #self.debugIsOn = gConfig['debugIsOn'.lower()]
         self.program_directory = gConfig['program_directory']
         self.working_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
         self.logging_directory = os.path.join(self.gConfig['logging_directory'], self._get_module_path())
@@ -304,10 +304,13 @@ class BaseClass():
     def _is_record_exist(self, conn, tableName, dataFrame:DataFrame,specialKeys = None):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
         #对于Sqlit3,字符串表示为'string' ,而不是"string".
+        isRecordExist = False
         condition = self._get_condition(dataFrame,specialKeys)
+        if condition == NULLSTR:
+            #condition为空时,说明dataFrame没有有效数据,直接返回False
+            return isRecordExist
         sql = 'select count(*) from {} where '.format(tableName) + condition
         result = conn.execute(sql).fetchall()
-        isRecordExist = False
         if len(result) > 0:
             isRecordExist = (result[0][0] > 0)
         return isRecordExist
@@ -320,9 +323,14 @@ class BaseClass():
         # 对于Sqlit3,字符串表示为'string' ,而不是"string".
         joined = list()
         for key in primaryKey:
+            if dataFrame[key].shape[0] == 0:
+                joined = list()
+                break
             current = '(' + ' or '.join(['{} = \'{}\''.format(key,value) for value in set(dataFrame[key].tolist())]) + ')'
             joined = joined + list([current])
-        condition = ' and '.join(joined)
+        condition = NULLSTR
+        if len(joined) > 0:
+            condition = ' and '.join(joined)
         return condition
 
 

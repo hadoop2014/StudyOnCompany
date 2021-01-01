@@ -39,8 +39,9 @@ class Collate:
     a batch of sequences
     """
 
-    def __init__(self,ctx):
+    def __init__(self,ctx,time_steps):
         self.ctx = ctx
+        self.time_steps = time_steps
 
     def _collate(self, batch):
         """
@@ -59,11 +60,23 @@ class Collate:
                 [1,0,1]
                 '''
         """
+        def cut_tensor(v):
+            resLength = len(v) - self.time_steps
+            if resLength > 0:
+                return v[resLength:]
+            else:
+                return v
+
         xs = [torch.FloatTensor(v[:,:-1]) for v in batch] #获取特征, T * input_dim
         ys = [torch.FloatTensor(v[:,-1]) for v in batch] #获取标签, T * 1
+        max_len = max([len(v) for v in xs])
+        if max_len > self.time_steps:
+            # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
+            xs = list(map(cut_tensor, xs))
+            ys = list(map(cut_tensor, ys))
+            max_len = self.time_steps
         # 获得每个样本的序列长度
         seq_lengths = torch.LongTensor([v for v in map(len, xs)])
-        max_len = max([len(v) for v in xs])
         # 每个样本都padding到当前batch的最大长度
         xs = torch.FloatTensor([pad_tensor(v, max_len) for v in xs])
         ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
@@ -151,7 +164,7 @@ class getFinanceDataH(getdataBase):
     def getTrainData(self,batch_size):
         self.train_data,self.test_data = self.get_k_fold_data(self.k,self.features)
         train_iter = DataLoader(dataset=self.train_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                               ,collate_fn=Collate(self.ctx))
+                               ,collate_fn=Collate(self.ctx,self.time_steps))
         self.train_iter = self.transform(train_iter,self.transformers)
         return self.train_iter()
 
@@ -159,7 +172,7 @@ class getFinanceDataH(getdataBase):
     @getdataBase.getdataForUnittest
     def getTestData(self,batch_size):
         test_iter = DataLoader(dataset=self.test_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                              ,collate_fn=Collate(self.ctx))
+                              ,collate_fn=Collate(self.ctx,self.time_steps))
         self.test_iter = self.transform(test_iter,self.transformers)
         return self.test_iter()
 

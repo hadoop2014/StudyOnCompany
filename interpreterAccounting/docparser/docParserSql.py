@@ -263,10 +263,13 @@ class DocParserSql(DocParserBase):
             self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
                                                                         ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
         else:
-            sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
-            conn.commit()
-            self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
+            if sql_df['公司简称'].shape[0] > 0:
+                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
+                conn.commit()
+                self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
                                                                             ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
+            else:
+                self.logger.error('sql_df is empty!')
         conn.close()
 
 
