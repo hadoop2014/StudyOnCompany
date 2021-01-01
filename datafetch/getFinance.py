@@ -32,14 +32,15 @@ def pad_tensor(vec, pad):
         result = torch.cat([vec, torch.zeros(pad - len(vec),*vec.shape[1:], dtype=torch.float)], dim=0).data.numpy()
     return result
 
+
 class Collate:
     """
     a variant of callate_fn that pads according to the longest sequence in
     a batch of sequences
     """
 
-    def __init__(self):
-        pass
+    def __init__(self,ctx):
+        self.ctx = ctx
 
     def _collate(self, batch):
         """
@@ -69,7 +70,7 @@ class Collate:
         ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
         # 把xs和ys按照序列长度从大到小排序
         seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
-        xs = xs[perm_idx]
+        xs = xs[perm_idx].to(self.ctx)
         ys = ys[perm_idx]
         return xs, seq_lengths, ys
 
@@ -108,12 +109,15 @@ class getFinanceDataH(getdataBase):
         sql = ''
         sql = sql + 'select * from {}'.format(tableName)
         dataFrame = pd.read_sql(sql,self._get_connect())
+        #dataFrame = dataFrame.fillna(0)
         dataGroups = dataFrame.groupby(dataFrame['公司代码'])
         features = []
-        labels = []
+        #labels = []
         fieldStart = dictSourceData['fieldStart']
         for _,group in dataGroups:
             group = group.sort_values(by=['报告时间'], ascending=True)
+            if len(group) <= 2:
+                continue
             features += [torch.from_numpy(np.array(group.iloc[:,fieldStart:],dtype=np.float32))]
             #labels += [torch.from_numpy(np.array(group.iloc[:,-1],dtype=np.float32))]
         self.features = FinanceDataSet(features)
@@ -135,9 +139,10 @@ class getFinanceDataH(getdataBase):
         return nd.one_hot(x,self.vocab_size)
     '''
 
-    def fn_transpose(self,x):
-        x = torch.transpose(x,0,1)
-        return x
+    def fn_transpose(self,X,seq_lengths):
+        X = torch.transpose(X,0,1)
+        X = torch.nn.utils.rnn.pack_padded_sequence(X,seq_lengths)
+        return X
 
 
     def transform(self,reader,transformers):
@@ -152,9 +157,9 @@ class getFinanceDataH(getdataBase):
         :rtype: callable
         """
         def transform_reader():
-            for (X,y) in reader:
+            for (X,seq_lengths,y) in reader:
                 for transformer in transformers:
-                    X = transformer(X)
+                    X = transformer(X,seq_lengths)
                 yield (X,y)
         return transform_reader
 
@@ -193,8 +198,8 @@ class getFinanceDataH(getdataBase):
             X = indices[:, i: i + time_steps]
             Y = indices[:, i + 1: i + time_steps + 1]
             yield X, Y
-   '''
-
+    '''
+    '''
     def data_iter(self,features,labels,batch_size,time_steps,ctx):
         features = torch.nn.utils.rnn.pack_padded_sequence(features,time_steps)
         labels = torch.nn.utils.rnn.pack_padded_sequence(labels)
@@ -208,7 +213,7 @@ class getFinanceDataH(getdataBase):
             X = indicesX[:, i: i + time_steps,:]
             Y = indicesY[:, i: i + time_steps,:]
             yield X, Y
-
+    '''
 
     @getdataBase.getdataForUnittest
     def getTrainData(self,batch_size):
@@ -219,7 +224,7 @@ class getFinanceDataH(getdataBase):
         #    train_iter = self.data_iter_consecutive(self.train_data, self.batch_size, self.time_steps, self.ctx)
         #train_iter = self.data_iter(self.train_data_X,self.train_data_y,self.batch_size,self.time_steps,self.ctx)
         train_iter = DataLoader(dataset=self.train_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                               ,collate_fn=Collate())
+                               ,collate_fn=Collate(self.ctx))
         self.train_iter = self.transform(train_iter,self.transformers)
         return self.train_iter()
 
@@ -231,7 +236,7 @@ class getFinanceDataH(getdataBase):
         #else:
         #    test_iter = self.data_iter_consecutive(self.test_data, self.batch_size, self.time_steps, self.ctx)
         test_iter = DataLoader(dataset=self.test_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                              ,collate_fn=Collate())
+                              ,collate_fn=Collate(self.ctx))
         self.test_iter = self.transform(test_iter,self.transformers)
         return self.test_iter()
 

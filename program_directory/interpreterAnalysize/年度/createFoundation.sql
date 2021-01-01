@@ -105,12 +105,15 @@ select
     e.四、利润总额,
     e.所得税费用,
     e.五、净利润,
-    e.销售费用,
-    e.管理费用,
-    e.财务费用,
+    case when e.销售费用 is not NULL and e.销售费用 != '' then replace(e.销售费用,',','') else 0 end
+        as 销售费用,
+    case when e.管理费用 is not NULL and e.管理费用 != '' then replace(e.管理费用,',','') else 0 end
+        as 管理费用,
+    case when e.财务费用 is not NULL and e.财务费用 != '' then replace(e.财务费用,',','') else 0 end
+        as 财务费用,
     case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else
         case when e.研发费用 is not NULL and e.研发费用 != '' then replace(e.研发费用,',','') else 0 end
-    end as 研发费用,
+        end as 研发费用,
     case when a.本期资本化研发投入修正 != '' then a.本期资本化研发投入修正 else 0 end as 资本化研发投入,
     case when g.资产减值准备 != '' then replace(g.资产减值准备,',','') else 0 end as 资产减值准备 ,
     case when g.固定资产折旧、油气资产折耗、生产性生物资产折旧 is not NULL and g.固定资产折旧、油气资产折耗、生产性生物资产折旧 != ''
@@ -133,7 +136,7 @@ select
     case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.投资性房地产 else 0 end as 投资性房地产,
     --case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
     case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
-    case when c.预收款项 is not NULL and 预收款项 != '' then c.预收款项 else 0 end as 预收款项,
+    case when c.预收款项 is not NULL and 预收款项 != '' then replace(c.预收款项,',','') else 0 end as 预收款项,
     case when c.应付票据及应付账款 is not NULL then replace(c.应付票据及应付账款,',','') else
         case when c.应付账款 is not NULL and c.应付票据 is not NULL
             then replace(c.应付账款,',','') + replace(c.应付票据,',','') else 0
@@ -141,8 +144,8 @@ select
     end as 应付票据及应付账款,
     case when c.应付账款 is not NULL then c.应付账款 else 0 end as 应付账款,
     c.预付款项,
-    case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then c.应收票据及应收账款 else
-        case when c.应收账款 is not NULL and c.应收账款 != '' then c.应收账款 else 0 end
+    case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then replace(c.应收票据及应收账款,',','') else
+        case when c.应收账款 is not NULL and c.应收账款 != '' then replace(c.应收账款,',','') else 0 end
     end as 应收账款,
     case when c.应收票据 is not NULL and c.应收票据 != '' then c.应收票据 else 0 end as 应收票据,
     c.流动资产合计,

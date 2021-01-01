@@ -95,8 +95,8 @@ class ModelBase(BaseClass):
             if loss_valid is None:
                 print("epoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
                       "=%.2f" % (check_time - self.start_time),
-                      "\t acc_train = %.4f" % acc_train, "\t loss_train = %.4f" % loss_train,
-                      "\t acc_test = %.4f" % acc_test, "\t loss_test = %.4f" % loss_test,
+                      "\t acc_train = %.4f" % acc_train, "\t loss_train = %.6f" % loss_train,
+                      "\t acc_test = %.4f" % acc_test, "\t loss_test = %.6f" % loss_test,
                       #"\t acc_valid = %.4f" % acc_valid, "\t loss_valid = %.4f" % loss_valid,
                       "\t learning_rate = %.6f" % self.get_learningrate(),
                       '\t global_step = %d' % self.get_globalstep(),
@@ -104,18 +104,18 @@ class ModelBase(BaseClass):
             elif loss_test is None:
                 print("epoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
                       "=%.2f" % (check_time - self.start_time),
-                      "\t acc_train = %.4f" % acc_train, "\t loss_train = %.4f" % loss_train,
+                      "\t acc_train = %.4f" % acc_train, "\t loss_train = %.6f" % loss_train,
                       #"\t acc_test = %.4f" % acc_test, "\t loss_test = %.4f" % loss_test,
-                      "\t acc_valid = %.4f" % acc_valid, "\t loss_valid = %.4f" % loss_valid,
+                      "\t acc_valid = %.4f" % acc_valid, "\t loss_valid = %.6f" % loss_valid,
                       "\t learning_rate = %.6f" % self.get_learningrate(),
                       '\t global_step = %d' % self.get_globalstep(),
                       "  context:%s" % self.get_context())
             else:
                 print("epoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
                       "=%.2f" % (check_time - self.start_time),
-                      "\t acc_train = %.4f" % acc_train, "\t loss_train = %.4f" % loss_train,
-                      "\t acc_test = %.4f" % acc_test, "\t loss_test = %.4f" % loss_test,
-                      "\t acc_valid = %.4f" % acc_valid, "\t loss_valid = %.4f" % loss_valid,
+                      "\t acc_train = %.4f" % acc_train, "\t loss_train = %.6f" % loss_train,
+                      "\t acc_test = %.4f" % acc_test, "\t loss_test = %.6f" % loss_test,
+                      "\t acc_valid = %.4f" % acc_valid, "\t loss_valid = %.6f" % loss_valid,
                       "\t learning_rate = %.6f" % self.get_learningrate(),
                       '\t global_step = %d' % self.get_globalstep(),
                       "  context:%s" % self.get_context())

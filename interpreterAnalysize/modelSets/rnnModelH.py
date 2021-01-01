@@ -118,7 +118,7 @@ class rnnModel(ModelBaseH):
         return loss,acc
 
 
-    def predict_nlp(self, model):
+    def predict(self, model):
         for prefix in self.prefixes:
             print(' -', self.predict_rnn(
                 prefix, self.predict_length, model, self.vocab_size, self.ctx, self.idx_to_char,

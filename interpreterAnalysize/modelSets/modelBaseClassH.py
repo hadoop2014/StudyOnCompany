@@ -1,6 +1,7 @@
 from interpreterAnalysize.interpreterBaseClass import *
 from torch import optim,nn
 from functools import partial
+from torch.nn.utils.rnn import PackedSequence
 import torch
 from torchvision import models
 from tensorboardX import SummaryWriter
@@ -76,6 +77,11 @@ class ModelBaseH(InterpreterBase):
             #print(self.weight_initializer,'\tnow initializer %s'%module)
             self.weight_initializer(module.weight.data)
             self.bias_initializer(module.bias.data)
+        elif type(module) == nn.LSTM or type(module) == nn.GRU or type(module) == nn.RNN:
+            self.weight_initializer(module.weight_hh_l0.data)
+            self.weight_initializer(module.weight_ih_l0.data)
+            self.bias_initializer(module.bias_hh_l0.data)
+            self.bias_initializer(module.bias_ih_l0.data)
 
 
     def get_optimizer(self,optimizer,parameters):
@@ -223,11 +229,14 @@ class ModelBaseH(InterpreterBase):
                 X = X.asnumpy()
                 y = y.asnumpy()
             except:
-                X = np.array(X)
+                if not isinstance(X,PackedSequence):
+                    X = np.array(X)
                 y = np.array(y)
             self.image_record(self.global_step.item(), 'input/image', X[0])
-            X = torch.tensor(X, device=self.ctx)
-            y = torch.tensor(y, device=self.ctx, dtype=torch.long)
+            if not isinstance(X,PackedSequence):
+                X = torch.tensor(X, device=self.ctx)
+            #y = torch.tensor(y, device=self.ctx, dtype=torch.long)
+            y = torch.tensor(y, device=self.ctx)
             loss, acc = self.run_train_loss_acc(X, y)
             loss_sum += loss
             acc_sum += acc
@@ -249,10 +258,13 @@ class ModelBaseH(InterpreterBase):
                 X = X.asnumpy()
                 y = y.asnumpy()
             except:
-                X = np.array(X)
+                if not isinstance(X,PackedSequence):
+                    X = np.array(X)
                 y = np.array(y)
-            X = torch.tensor(X,device=self.ctx)
-            y = torch.tensor(y,device=self.ctx,dtype=torch.long)
+            if not isinstance(X,PackedSequence):
+                X = torch.tensor(X,device=self.ctx)
+            #y = torch.tensor(y,device=self.ctx,dtype=torch.long)
+            y = torch.tensor(y, device=self.ctx)
             loss,acc = self.run_eval_loss_acc(X, y)
             acc_sum += acc
             loss_sum += loss
@@ -270,11 +282,11 @@ class ModelBaseH(InterpreterBase):
             self.writer.add_scalar('test/loss',loss_test,self.global_step.item())
             self.writer.add_scalar('test/accuracy',acc_test,self.global_step.item())
             self.run_matrix(loss_train, loss_test)  # 仅用于rnn,lstm,ssd等
-            self.predict_nlp(self.net)  # 仅用于rnn,lstm,ssd等
+            self.predict(self.net)  # 仅用于rnn,lstm,ssd等
         return loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test
 
 
-    def predict_nlp(self,net):
+    def predict(self, net):
         pass
 
 

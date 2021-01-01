@@ -1,6 +1,5 @@
 from interpreterAnalysize.modelSets.modelBaseClassH import *
 from torch import nn
-import math
 import torch.nn.functional as F
 
 
@@ -18,6 +17,8 @@ class RNN(nn.Module):
         Y, self.state = self.rnn(X, state)
         # 全连接层会首先将Y的形状变成(num_steps * batch_size, num_hiddens)，它的输出
         # 形状为(num_steps * batch_size, vocab_size)
+        if isinstance(Y,PackedSequence):
+            Y,_ = torch.nn.utils.rnn.pad_packed_sequence(Y)
         Y = Y.reshape(-1,Y.shape[-1])
         output = self.dense(Y)
         return output, self.state
@@ -48,7 +49,7 @@ class rnnModel(ModelBaseH):
         self.rnn_hiddens = self.gConfig['rnn_hiddens']  # 256
         self.num_layers = self.gConfig['num_layers']
         #self.input_dim = self.vocab_size
-        self.output_dim = self.input_dim
+        self.output_dim = self.gConfig['output_dim']
         self.activation = self.get_activation(self.gConfig['activation'])
         self.nonlinearity = self.get_nonlinearity(self.gConfig['activation'])
         self.cell = self.get_cell(self.gConfig['cell'])
@@ -95,7 +96,8 @@ class rnnModel(ModelBaseH):
         # Y的形状是(batch_size, num_steps)，转置后再变成长度为
         # batch * num_steps 的向量，这样跟输出的行一一对应
         y = torch.transpose(y, 0, 1).contiguous().view(-1)
-        loss = self.loss(y_hat, y.long())
+        y_hat = y_hat.squeeze()
+        loss = self.loss(y_hat, y)
         self.optimizer.zero_grad()
         loss.backward()
         self.grad_clipping(self.net.parameters(), self.clip_gradient, self.ctx)
@@ -103,7 +105,8 @@ class rnnModel(ModelBaseH):
         if self.global_step == 0 or self.global_step == 1:
             self.debug_info()
         loss = loss.item() * y.shape[0]
-        acc= (y_hat.argmax(dim=1) == y).sum().item()
+        acc = 0
+        #acc= (y_hat.argmax(dim=1) == y).sum().item()
         return loss,acc
 
 
@@ -113,19 +116,26 @@ class rnnModel(ModelBaseH):
             #解决GPU　out memory问题
             y_hat, self.state = self.net(X, self.state)
         y = torch.transpose(y, 0, 1).contiguous().view(-1)
-        loss = self.loss(y_hat, y.long())
+        y_hat = y_hat.squeeze()
+        loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
-        acc  = (y_hat.argmax(dim=1) == y).sum().item()
+        #acc  = (y_hat.argmax(dim=1) == y).sum().item()
+        acc = 0
+        print(list(zip(y_hat.cpu().numpy(),y.cpu().numpy()))[:6])
+        print('\n')
         return loss,acc
 
 
-    def predict_nlp(self, model):
+    def predict(self, model):
+        pass
+        '''
         for prefix in self.prefixes:
             print(' -', self.predict_rnn(
                 prefix, self.predict_length, model, self.vocab_size, self.ctx, self.idx_to_char,
                 self.char_to_idx))
+        '''
 
-
+    '''
     def predict_rnn(self,prefix, num_chars, model, vocab_size, ctx, idx_to_char,
                           char_to_idx):
         state = None
@@ -145,8 +155,9 @@ class rnnModel(ModelBaseH):
             else:
                 output.append(int(Y.argmax(dim=1).item()))
         return ''.join([idx_to_char[i] for i in output])
+    '''
 
-
+    '''
     def to_onehot(self,X, n_class):
         # X shape: (batch, seq_len), output: seq_len elements of (batch, n_class)
         return [self.one_hot(X[:, i], n_class) for i in range(X.shape[1])]
@@ -158,15 +169,16 @@ class rnnModel(ModelBaseH):
         res = torch.zeros(x.shape[0], n_class, dtype=dtype, device=x.device)
         res.scatter_(1, x.view(-1, 1), 1)
         return res
-
+    '''
 
     def run_matrix(self, loss_train, loss_test):
+        return 0.0, 0.0
         #rnn中用perplexity取代accuracy
-        perplexity_train = math.exp(loss_train)
-        perplexity_test = math.exp(loss_test)
-        print('global_step %d, perplexity_train %.6f,perplexity_test %f.6'%
-              (self.global_step, perplexity_train,perplexity_test))
-        return perplexity_train,perplexity_test
+        #perplexity_train = math.exp(loss_train)
+        #perplexity_test = math.exp(loss_test)
+        #print('global_step %d, perplexity_train %.6f,perplexity_test %f.6'%
+        #      (self.global_step, perplexity_train,perplexity_test))
+        #return perplexity_train,perplexity_test
 
 
     def init_state(self):
