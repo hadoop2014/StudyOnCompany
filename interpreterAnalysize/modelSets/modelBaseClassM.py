@@ -90,7 +90,7 @@ class ModelBaseM(InterpreterBase):
         return self.learning_rate
 
 
-    def get_globalstep(self):
+    def get_global_step(self):
         return self.global_step.asscalar()
 
 

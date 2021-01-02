@@ -31,7 +31,7 @@ class ModelBaseH(InterpreterBase):
         self.max_queue = self.gConfig['max_queue']
         self.weight_initializer = self.get_initializer(self.initializer)
         self.bias_initializer = self.get_initializer('constant')
-        self.global_step = torch.tensor(0, dtype=torch.int64, device=self.ctx)
+        #self.global_step = torch.tensor(0, dtype=torch.int64, device=self.ctx)
         #self.set_default_tensor_type()  #设置默认的tensor在ｇｐｕ还是在ｃｐｕ上运算
 
 
@@ -129,8 +129,9 @@ class ModelBaseH(InterpreterBase):
         return self.learning_rate
 
 
-    def get_globalstep(self):
-        return self.global_step.item()
+    def get_global_step(self):
+        return 0
+        #return self.global_step.item()
 
 
     def get_input_shape(self):
@@ -141,9 +142,29 @@ class ModelBaseH(InterpreterBase):
         pass
 
 
+    def get_optim_state(self):
+        pass
+
+
+    def load_optim_state(self,state_dict):
+        pass
+
+
     def saveCheckpoint(self):
-        torch.save(self.net.state_dict(),self.model_savefile)
-        torch.save(self.global_step,self.symbol_savefile)
+        stateSaved = {'model':self.net.state_dict(),'optimizer':self.get_optim_state()}
+        torch.save(stateSaved,self.model_savefile)
+        #torch.save(self.global_step,self.symbol_savefile)
+        self.logger.info('success to save checkpoint to file %s'%self.model_savefile)
+
+
+    def loadCheckpoint(self):
+        model_savefile = self.getSaveFile()
+        if model_savefile is not None:
+            stateLoaded = torch.load(model_savefile,map_location=self.ctx)
+            self.net.load_state_dict(stateLoaded['model'])
+            self.net.to(self.ctx)
+            self.load_optim_state(stateLoaded['optimizer'])
+            #self.global_step = stateLoaded['global_step']
 
 
     def getSaveFile(self):
@@ -171,6 +192,7 @@ class ModelBaseH(InterpreterBase):
     def train(self,model_eval,getdataClass,gConfig,num_epochs):
         for epoch in range(num_epochs):
             self.run_epoch(getdataClass,epoch)
+        self.saveCheckpoint()
         self.writer.close()
 
         return self.losses_train,self.acces_train,self.losses_valid,self.acces_valid,\
@@ -234,7 +256,7 @@ class ModelBaseH(InterpreterBase):
                 if not isinstance(X,PackedSequence):
                     X = np.array(X)
                 y = np.array(y)
-            self.image_record(self.global_step.item(), 'input/image', X[0])
+            self.image_record(self.get_global_step(), 'input/image', X[0])
             if not isinstance(X,PackedSequence):
                 X = torch.tensor(X, device=self.ctx)
             #y = torch.tensor(y, device=self.ctx, dtype=torch.long)
@@ -244,9 +266,9 @@ class ModelBaseH(InterpreterBase):
             acc_sum += acc
             #n += y.size()[0]
             n += self.get_batch_size(y)
-            self.writer.add_scalar('train/loss', loss, self.global_step.item())
-            self.writer.add_scalar('train/accuracy', acc, self.global_step.item())
-            self.global_step += 1
+            self.writer.add_scalar('train/loss', loss, self.get_global_step())
+            self.writer.add_scalar('train/accuracy', acc, self.get_global_step())
+            #self.global_step += 1
         return loss_sum / n, acc_sum / n
 
 
@@ -281,8 +303,8 @@ class ModelBaseH(InterpreterBase):
         if epoch % epoch_per_print == 0:
             # print(features.shape,labels.shape)
             loss_test,acc_test = self.evaluate_loss_acc(test_iter)
-            self.writer.add_scalar('test/loss',loss_test,self.global_step.item())
-            self.writer.add_scalar('test/accuracy',acc_test,self.global_step.item())
+            self.writer.add_scalar('test/loss', loss_test, self.get_global_step())
+            self.writer.add_scalar('test/accuracy', acc_test, self.get_global_step())
             self.run_matrix(loss_train, loss_test)  # 仅用于rnn,lstm,ssd等
             self.predict(self.net)  # 仅用于rnn,lstm,ssd等
         return loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test
@@ -352,14 +374,15 @@ class ModelBaseH(InterpreterBase):
         ckpt_used = self.gConfig['ckpt_used']
         if ckpt and ckpt_used:
             print("Reading model parameters from %s" % ckpt)
-            self.net.load_state_dict(torch.load(ckpt))
-            self.net.to(device=self.ctx)
-            self.global_step = torch.load(self.symbol_savefile,map_location=self.ctx)
+            #self.net.load_state_dict(torch.load(ckpt))
+            self.loadCheckpoint()
+            #self.net.to(device=self.ctx)
+            #self.global_step = torch.load(self.symbol_savefile,map_location=self.ctx)
         else:
             print("Created model with fresh parameters.")
             self.net.to(device=self.ctx)
             self.net.apply(self.params_initialize)
-            self.global_step = torch.tensor(0,dtype=torch.int64,device=self.ctx)
+            #self.global_step = torch.tensor(0,dtype=torch.int64,device=self.ctx)
         self.debug_info(self.net)
         self.summary(self.net)
         self.add_graph(self.net)

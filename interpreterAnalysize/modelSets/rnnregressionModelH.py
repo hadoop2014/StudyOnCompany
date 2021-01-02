@@ -104,9 +104,10 @@ class rnnModel(ModelBaseH):
         self.optimizer.zero_grad()
         loss.backward()
         self.grad_clipping(self.net.parameters(), self.clip_gradient, self.ctx)
-        self.optimizer.step()
         self.scheduler.step()
-        if self.global_step == 0 or self.global_step == 1:
+        self.optimizer.step()
+        #if self.global_step == 0 or self.global_step == 1:
+        if self.get_global_step() == 0 or self.get_global_step() == 1:
             self.debug_info()
         loss = loss.item() * y.shape[0]
         acc = 0
@@ -189,9 +190,25 @@ class rnnModel(ModelBaseH):
         return self.optimizer.state_dict()['param_groups'][0]['lr']
 
 
+    def get_global_step(self):
+        global_step = 0
+        if len(self.optimizer.state_dict()['state']) > 0:
+            global_step = self.optimizer.state_dict()['state'][0]['step']
+        return global_step
+
+
     def init_state(self):
         self.state = None
         #self.state = self.net.begin_state(batch_size=self.batch_size,num_hiddens=self.rnn_hiddens, device=self.ctx)
+
+
+    def get_optim_state(self):
+        return self.optimizer.state_dict()
+
+
+    def load_optim_state(self,state_dict):
+        self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
+        self.optimizer.load_state_dict(state_dict)
 
 
     def get_input_shape(self):

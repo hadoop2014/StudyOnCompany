@@ -61,7 +61,7 @@ class ModelBase(BaseClass):
         pass
 
 
-    def get_globalstep(self):
+    def get_global_step(self):
         pass
 
 
@@ -100,7 +100,7 @@ class ModelBase(BaseClass):
                       "\t acc_test = %.4f" % acc_test, "\t loss_test = %.6f" % loss_test,
                       #"\t acc_valid = %.4f" % acc_valid, "\t loss_valid = %.4f" % loss_valid,
                       "\t learning_rate = %.6f" % self.get_learningrate(),
-                      '\t global_step = %d' % self.get_globalstep(),
+                      '\t global_step = %d' % self.get_global_step(),
                       "  context:%s" % self.get_context())
             elif loss_test is None:
                 print("epoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
@@ -109,7 +109,7 @@ class ModelBase(BaseClass):
                       #"\t acc_test = %.4f" % acc_test, "\t loss_test = %.4f" % loss_test,
                       "\t acc_valid = %.4f" % acc_valid, "\t loss_valid = %.6f" % loss_valid,
                       "\t learning_rate = %.6f" % self.get_learningrate(),
-                      '\t global_step = %d' % self.get_globalstep(),
+                      '\t global_step = %d' % self.get_global_step(),
                       "  context:%s" % self.get_context())
             else:
                 print("epoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
@@ -118,7 +118,7 @@ class ModelBase(BaseClass):
                       "\t acc_test = %.4f" % acc_test, "\t loss_test = %.6f" % loss_test,
                       "\t acc_valid = %.4f" % acc_valid, "\t loss_valid = %.6f" % loss_valid,
                       "\t learning_rate = %.6f" % self.get_learningrate(),
-                      '\t global_step = %d' % self.get_globalstep(),
+                      '\t global_step = %d' % self.get_global_step(),
                       "  context:%s" % self.get_context())
             self.start_time = check_time
             self.debug_info()  #tensorflow框架下有无效打印，需要修改
