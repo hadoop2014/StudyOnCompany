@@ -20,6 +20,7 @@ class ModelBaseH(InterpreterBase):
         super(ModelBaseH, self)._init_parameters()
         self.learning_rate = self.gConfig['learning_rate']
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
+        self.learning_rate_decay_step = self.gConfig['learning_rate_decay_step']
         self.viewIsOn = self.gConfig['viewIsOn']
         self.max_to_keep = self.gConfig['max_to_keep']
         self.ctx = self.get_ctx(self.gConfig['ctx'])

@@ -39,9 +39,10 @@ class Collate:
     a batch of sequences
     """
 
-    def __init__(self,ctx,time_steps):
+    def __init__(self,ctx,time_steps,fieldEnd):
         self.ctx = ctx
         self.time_steps = time_steps
+        self.fieldEnd = fieldEnd
 
     def _collate(self, batch):
         """
@@ -67,8 +68,8 @@ class Collate:
             else:
                 return v
 
-        xs = [torch.FloatTensor(v[:,:-1]) for v in batch] #获取特征, T * input_dim
-        ys = [torch.FloatTensor(v[:,-1]) for v in batch] #获取标签, T * 1
+        xs = [torch.FloatTensor(v[:,:self.fieldEnd]) for v in batch] #获取特征, T * input_dim
+        ys = [torch.FloatTensor(v[:,self.fieldEnd]) for v in batch] #获取标签, T * 1
         max_len = max([len(v) for v in xs])
         if max_len > self.time_steps:
             # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
@@ -102,6 +103,7 @@ class getFinanceDataH(getdataBase):
         self.ctx = self.get_ctx(gConfig['ctx'])
         self.randomIterIsOn = self.gConfig['randomIterIsOn']
         self.k = self.gConfig['k']
+        self.dictSourceData = self.get_dictSourceData(self.gConfig)
         self.load_data()
 
 
@@ -116,21 +118,22 @@ class getFinanceDataH(getdataBase):
 
 
     def load_data(self,*args):
-        dictSourceData = self.get_dictSourceData(self.gConfig)
-        tableName = dictSourceData['tableName']
+        #dictSourceData = self.get_dictSourceData(self.gConfig)
+        tableName = self.dictSourceData['tableName']
         sql = ''
         sql = sql + 'select * from {}'.format(tableName)
         dataFrame = pd.read_sql(sql,self._get_connect())
         dataGroups = dataFrame.groupby(dataFrame['公司代码'])
         features = []
-        fieldStart = dictSourceData['fieldStart']
+        fieldStart = self.dictSourceData['fieldStart']
+        fieldEnd = self.dictSourceData['fieldEnd']
         for _,group in dataGroups:
             group = group.sort_values(by=['报告时间'], ascending=True)
             if len(group) <= 1:
                 pass
             features += [torch.from_numpy(np.array(group.iloc[:,fieldStart:],dtype=np.float32))]
         self.features = FinanceDataSet(features)
-        self.input_dim = len(dataFrame.columns) - fieldStart - 1
+        self.input_dim = len(dataFrame.columns) - fieldStart + fieldEnd
         self.transformers = [self.fn_transpose]
         self.resizedshape = [self.time_steps,self.input_dim]
 
@@ -164,7 +167,7 @@ class getFinanceDataH(getdataBase):
     def getTrainData(self,batch_size):
         self.train_data,self.test_data = self.get_k_fold_data(self.k,self.features)
         train_iter = DataLoader(dataset=self.train_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                               ,collate_fn=Collate(self.ctx,self.time_steps))
+                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
         self.train_iter = self.transform(train_iter,self.transformers)
         return self.train_iter()
 
@@ -172,7 +175,7 @@ class getFinanceDataH(getdataBase):
     @getdataBase.getdataForUnittest
     def getTestData(self,batch_size):
         test_iter = DataLoader(dataset=self.test_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                              ,collate_fn=Collate(self.ctx,self.time_steps))
+                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
         self.test_iter = self.transform(test_iter,self.transformers)
         return self.test_iter()
 

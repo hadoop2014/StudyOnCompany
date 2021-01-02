@@ -381,9 +381,10 @@
     "trainer": {
       "k" : 5,
       "clip_gradient" : 1e-2,
-      "train_num_epoch" : 500,
+      "train_num_epoch" : 800,
       "learning_rate" : 4e-3,
-      "learning_rate_decay_factor" : 0.9,
+      "learning_rate_decay_factor" : 0.8,
+      "learning_rate_decay_step": 400,
       "test_percent" : 0.1,
       "batch_size" : 32,
       "time_steps" : 6

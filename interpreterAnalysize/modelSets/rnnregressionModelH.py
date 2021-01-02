@@ -64,6 +64,8 @@ class rnnModel(ModelBaseH):
         self.randomIterIsOn = self.gConfig['randomIterIsOn']
         self.get_net()
         self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer,step_size=self.learning_rate_decay_step
+                                                         ,gamma=self.learning_rate_decay_factor)
         self.input_shape = (self.time_steps, self.batch_size, self.resizedshape[1])
 
 
@@ -103,6 +105,7 @@ class rnnModel(ModelBaseH):
         loss.backward()
         self.grad_clipping(self.net.parameters(), self.clip_gradient, self.ctx)
         self.optimizer.step()
+        self.scheduler.step()
         if self.global_step == 0 or self.global_step == 1:
             self.debug_info()
         loss = loss.item() * y.shape[0]
@@ -180,6 +183,10 @@ class rnnModel(ModelBaseH):
         #print('global_step %d, perplexity_train %.6f,perplexity_test %f.6'%
         #      (self.global_step, perplexity_train,perplexity_test))
         #return perplexity_train,perplexity_test
+
+
+    def get_learningrate(self):
+        return self.optimizer.state_dict()['param_groups'][0]['lr']
 
 
     def init_state(self):

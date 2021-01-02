@@ -351,6 +351,7 @@ class InterpreterNature(InterpreterBase):
                      self.logger.warning('These file is can not be parse:%s'%sourcefile)
             if scale == '批量':
                 sourcefilesValid = [sourcefile  for sourcefile in sourcefilesValid if self._is_file_selected(sourcefile)]
+            sourcefilesValid = self._remove_exclude_files(sourcefilesValid)
             sourcefilesValid = self._remove_duplicate_files(sourcefilesValid)
         if isForced == False:
             checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
@@ -392,6 +393,19 @@ class InterpreterNature(InterpreterBase):
         return isFileMatched
 
 
+    def _remove_exclude_files(self,sourcefiles):
+        assert isinstance(sourcefiles,list),"Parameter sourcefiles must be list!"
+        excludeFiles = self.gJsonBase['black_lists']['例外文件']
+        rawSourceFiles = sourcefiles
+        if len(excludeFiles) > 0:
+            sourcefiles = [sourcefile for sourcefile in sourcefiles if sourcefile not in excludeFiles]
+        removedFiles = set(rawSourceFiles).difference(set(sourcefiles))
+        if len(removedFiles) > 0:
+            self.logger.info('these file is in black_lists 例外文件 of interpreterBase.json, now no need to process:\n\t%s'
+                             % '\n\t'.join(sorted(removedFiles)))
+        return sourcefiles
+
+
     def _remove_duplicate_files(self,sourcefiles):
         #上峰水泥：2015年年度报告（更新后）.PDF和（000672）上峰水泥：2015年年度报告（更新后）.PDF并存时,则去掉前者(即去掉长度短的)
         assert isinstance(sourcefiles,list),"Parameter sourcefiles must be list!"
@@ -407,6 +421,7 @@ class InterpreterNature(InterpreterBase):
             else:
                 if standardizedName in dictDuplicate.keys():
                     if len(dictDuplicate[standardizedName]) < len(sourcefile):
+                        # 相同年份的财报,取文件名长的文件,示例: （300529）健帆生物：2018年年度报告.PDF 和 （603707）健友股份：2018年年度报告（修订版）.PDF,取后则
                         self.logger.info("File %s is duplicated and replaced by %s"
                                          %(dictDuplicate[standardizedName],sourcefile))
                         dictDuplicate.update({standardizedName:sourcefile})
