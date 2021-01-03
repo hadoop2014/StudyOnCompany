@@ -62,6 +62,8 @@ class rnnModel(ModelBaseH):
         self.randomIterIsOn = self.gConfig['randomIterIsOn']
         self.get_net()
         self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer,step_size=self.learning_rate_decay_step
+                                                         ,gamma=self.learning_rate_decay_factor)
         self.input_shape = (self.time_steps, self.batch_size, self.resizedshape[1])
 
 
@@ -82,6 +84,8 @@ class rnnModel(ModelBaseH):
 
 
     def run_train_loss_acc(self,X,y):
+        if self.randomIterIsOn:
+            self.init_state()
         if self.state is not None:
             # 使用detach函数从计算图分离隐藏状态, 这是为了
             # 使模型参数的梯度计算只依赖一次迭代读取的小批量序列(防止梯度计算开销太大)
@@ -98,6 +102,7 @@ class rnnModel(ModelBaseH):
         self.optimizer.zero_grad()
         loss.backward()
         self.grad_clipping(self.net.parameters(), self.clip_gradient, self.ctx)
+        self.scheduler.step()
         self.optimizer.step()
         #if self.global_step == 0 or self.global_step == 1:
         if self.get_global_step()==0 or self.get_global_step() == 1:
@@ -108,7 +113,8 @@ class rnnModel(ModelBaseH):
 
 
     def run_eval_loss_acc(self, X, y):
-        self.init_state()
+        if self.randomIterIsOn:
+            self.init_state()
         with torch.no_grad():
             #解决GPU　out memory问题
             y_hat, self.state = self.net(X, self.state)

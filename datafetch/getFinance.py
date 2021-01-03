@@ -123,6 +123,9 @@ class getFinanceDataH(getdataBase):
         sql = ''
         sql = sql + 'select * from {}'.format(tableName)
         dataFrame = pd.read_sql(sql,self._get_connect())
+        dataFrameNa = dataFrame[dataFrame.isna().any(axis=1)]
+        if len(dataFrameNa) > 0:
+            self.logger.error('NaN found in input tensor:%s'%dataFrameNa.values)
         dataGroups = dataFrame.groupby(dataFrame['公司代码'])
         features = []
         fieldStart = self.dictSourceData['fieldStart']

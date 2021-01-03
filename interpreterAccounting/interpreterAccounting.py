@@ -114,7 +114,7 @@ class InterpreterAccounting(InterpreterBase):
             # TABLE optional CURRENCY UNIT finis 解决海螺水泥2018年财报现金流量表补充资料 的识别问题
             # TABLE optional TIME DISCARD TIME解决康龙化成：2019年年度报告中主要会计数据的表头不规范, 两个TIME直接插入一个DISCARD
             # TABLE optional HEADER HEADER 专门用于解决杰瑞股份2016,2017,2018,2019年年度报告中现金流量表补充资料,无形资产情况搜索不到的情况.
-            tableName = self._get_tablename_alias(str.strip(p[1]))
+            tableName = self._get_tablename_alias(str.strip(p[1]).replace(' ',NULLSTR))
             #interpretPrefix必须用\n做连接,lexer需要用到\n
             interpretPrefix = '\n'.join([slice.strip() for slice in p if slice is not None]) + '\n'
             self.logger.info("fetchtable %s -> %s :%s page %d!" % (p[1],tableName,interpretPrefix.replace('\n',' '),self.currentPageNumber))
@@ -150,7 +150,7 @@ class InterpreterAccounting(InterpreterBase):
             # TABLE optional COMPANY NUMERIC解决大立科技2018年年报合并资产负债表出现在页尾的情况.
             # TABLE optional UNIT CURRENCY NUMERIC解决郑煤机2019年财报无形资产情况出现在页尾
             # TABLE optional COMPANY tail已经被TABLE optional unit tail取代
-            tableName = self._get_tablename_alias(str.strip(p[1]))
+            tableName = self._get_tablename_alias(str.strip(p[1]).replace(' ',NULLSTR))
             interpretPrefix = '\n'.join([str(slice).strip() for slice in p[:-1] if slice is not None]) + '\n'
             self.logger.info("fetchtable warning(reach tail) %s -> %s : %s page %d" % (p[1], tableName, interpretPrefix.replace('\n',' '), self.currentPageNumber))
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
