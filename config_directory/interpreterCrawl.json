@@ -90,7 +90,7 @@
     "nameStandardize": "(（\\d+）)*[\\u4E00-\\u9FA5|：]+\\d+[\\u4E00-\\u9FA5]+(（[\\u4E00-\\u9FA5]+）)*",
     "nameDiscard": ["摘要","取消","英文","正文","公告"],
     "RESPONSE_TIMEOUT": 10,
-    "WAIT_TIME": 3,
+    "WAIT_TIME": 4,
     "exception": {
       "通策医疗": {
         "stock": "600763",

@@ -244,14 +244,32 @@ left join
 left join 年度合并利润表 e
 left join 年度合并现金流量表 f
 left join 年度现金流量表补充资料 g
-left join 年度无形资产情况 h
+left join
+(
+    --针对有些无形资产情况中,没有土地使用权的情况,如东方财富2017,2018年报,默认设置 期末账面价值 为0
+    select x.报告时间,x.公司代码,x.报告类型,x.公司简称,
+        case when y.期末账面价值 is not NULL and y.期末账面价值 != '' then y.期末账面价值 else x.期末账面价值 end as 期末账面价值
+    from
+    (
+        select 报告时间,公司代码,报告类型,公司简称,0 as 期末账面价值
+        from 年度无形资产情况
+        group by 报告时间,公司代码,报告类型
+    )x
+    left join
+    (
+        select 报告时间,公司代码,报告类型,公司简称,期末账面价值
+        from 年度无形资产情况 x
+        where 项目 = '土地使用权'
+    )y
+    on x.报告时间 = y.报告时间 and x.公司代码 = y.公司代码 and x.报告类型 = y.报告类型
+)h
 where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报告类型 = b.报告类型)
     and (a.报告时间 = c.报告时间 and a.公司代码 = c.公司代码 and a.报告类型 = c.报告类型)
     and (a.报告时间 = d.报告时间 and a.公司代码 = d.公司代码 and a.报告类型 = d.报告类型)
     and (a.报告时间 = e.报告时间 and a.公司代码 = e.公司代码 and a.报告类型 = e.报告类型)
     and (a.报告时间 = f.报告时间 and a.公司代码 = f.公司代码 and a.报告类型 = f.报告类型)
     and (a.报告时间 = g.报告时间 and a.公司代码 = g.公司代码 and a.报告类型 = g.报告类型)
-    and (a.报告时间 = h.报告时间 and a.公司代码 = h.公司代码 and a.报告类型 = h.报告类型 and h.项目 = '土地使用权')
+    and (a.报告时间 = h.报告时间 and a.公司代码 = h.公司代码 and a.报告类型 = h.报告类型)
     and (a.报告时间 != '' and a.公司代码 != '' and a.报告类型 != '')
 order by a.报告时间,a.公司代码,a.报告类型;
 

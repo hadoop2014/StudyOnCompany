@@ -803,10 +803,16 @@ class InterpreterAccounting(InterpreterBase):
         assert isinstance(headers,list) and isinstance(fields,list)\
             ,"headers (%s) and fields(%s) must be list"%(str(headers),str(fields))
         rows = [list([key,value]) for key,value in self.names.items() if key in fields]
-        table = [headers] + rows
+        #table = [headers] + rows
+        headersUsed = headers.copy()
+        # 如果关键数据表是空的,则最后一个header是空的,这样这个数据是无法入库的
+        headersUsed[-1] = NULLSTR
         for row in rows:
             if row[-1] == NULLSTR:
                 self.logger.warning('critical %s failed to fetch'%row[0])
+            else:
+                headersUsed = headers
+        table = [headersUsed] + rows
         return table
 
 
