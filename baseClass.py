@@ -389,6 +389,14 @@ class BaseClass():
         return stockList
 
 
+    def _year_plus(self,reportTime, plusNumber):
+        # 2019年 + 1 = 2020年, 2020年 - 1 = 2019年
+        assert isinstance(reportTime,str) and isinstance(plusNumber,int),'reportTime must be str and plusNumber must be int!'
+        newYear = int(reportTime.split('年')[0]) + plusNumber
+        newYear = str(newYear) + '年'
+        return newYear
+
+
     @property
     def index(self):
         return self._index - 1

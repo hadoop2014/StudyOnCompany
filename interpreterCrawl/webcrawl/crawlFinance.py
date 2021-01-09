@@ -8,6 +8,7 @@ import random
 import requests
 import math
 import csv
+import itertools
 from interpreterCrawl.webcrawl.crawlBaseClass import *
 
 
@@ -86,14 +87,16 @@ class CrawlFinance(CrawlBase):
         headers = self.dictWebsites[website]["headers"]
         query = self.dictWebsites[website]['query']
         query.update({'seDate': self._sedate_transfer(self.gConfig['报告时间'])})
-        query.update({'category': self._category_transfer(self.gConfig['报告类型'], website)})
+        #query.update({'category': self._category_transfer(self.gConfig['报告类型'], website)})
         companys = self.gConfig['公司简称']
         assert isinstance(companys,list),"Company(%s) is not valid,it must be a list!"%companys
         RESPONSE_TIMEOUT = self.dictWebsites[website]['RESPONSE_TIMEOUT']
         exception = self.dictWebsites[website]['exception']
         pageSize = query['pageSize']
-        for company in companys:
+        dictCompanys = self._get_deduplicate_companys(companys, self.gConfig['报告时间'], self.gConfig['报告类型'],website)
+        for company, reportType in dictCompanys.items():
             query['searchkey'] = company
+            query.update({'category': self._category_transfer(reportType, website)})
             query['stock'] = ""
             if company in exception.keys():
                 query['stock'] = ','.join([exception[company]['stock'],exception[company]['secid']])
@@ -180,6 +183,33 @@ class CrawlFinance(CrawlBase):
         return standardPaths
 
 
+    def _get_deduplicate_companys(self, companys, reportTime, reportType,website):
+        # checkpointfile中已经有的company剔除掉
+        checkpoint = self.get_checkpoint()
+        checkpointHeader = self.dictWebsites[website]['checkpointHeader']
+        checkpoint = [item.split(',') for item in checkpoint]
+        dataFrame = pd.DataFrame(checkpoint,columns=checkpointHeader)
+        dataFrame = dataFrame[['公司简称','报告时间','报告类型']]
+        companysCheckpoint = [','.join(item) for item in dataFrame.values.tolist()]
+        # 因为从巨潮咨询网上下载年报数据时,2020年只能下载到2019年的,所以在这里报告时间要进行-1处理
+        reportTime = [self._year_plus(time, -1) for time in reportTime]
+        companysConstruct = itertools.product(companys,reportTime,reportType)
+        companysConstruct = [','.join(item) for item in companysConstruct]
+        companysRequired = set(companysConstruct).difference(set(companysCheckpoint))
+        companysDiff = set(companysConstruct).difference(set(companysRequired))
+        if len(companysDiff) > 0:
+            self.logger.info('these companys is already fetched from %s, no need to process: \n%s'
+                             % (website, '\n\t'.join(list(sorted(companysDiff)))))
+        # 只留下公司,上报类型, 比如: 千禾味业 年度报告. 并且做去重处理
+        companysResult = [','.join([item.split(',')[0],item.split(',')[-1]]) for item in companysRequired]
+        companysResult = [item.split(',') for item in set(companysResult)]
+        # 把相同公司的 上报类型 组合成列表,比如 千禾味业, ['年度报告','第一季度报告']
+        dictCompanys = {}
+        for company,reportType in companysResult:
+            dictCompanys.setdefault(company,[]).append(reportType)
+        return dictCompanys
+
+
     def _get_publishing_time(self,url):
         #获取年报的发布时间
         assert url != NULLSTR,"url must not be NULL!"
@@ -255,35 +285,6 @@ class CrawlFinance(CrawlBase):
             ,"timelist(%s) must be a list"%timelist
         seData = timelist[0].split('年')[0] + '-01-01' + '~' + timelist[-1].split('年')[0] + '-12-30'
         return seData
-
-
-    '''
-    def save_checkpoint(self, content):
-        assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
-        content = self._remove_duplicate(content)
-        self.checkpoint.seek(0)
-        self.checkpoint.truncate()
-        self.checkpointWriter.writerows(content)
-        #读取checkpoint内容,去掉重复记录,重新排序,写入文件
-
-
-    def close_checkpoint(self):
-        self.checkpoint.close()
-
-
-    def _remove_duplicate(self,content):
-        assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
-        resultContent = content
-        if len(content) == 0:
-            return resultContent
-        checkpointHeader = self.gJsonInterpreter['checkpointHeader']
-        dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader)
-        dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader))
-        dataFrame = dataFrame.drop_duplicates()
-        dataFrame = dataFrame.sort_values(by=["报告类型","文件名"],ascending=False)
-        resultContent = dataFrame.values.tolist()
-        return resultContent
-    '''
 
 
     def initialize(self,dictParameter = None):

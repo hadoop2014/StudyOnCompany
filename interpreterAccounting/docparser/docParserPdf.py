@@ -243,9 +243,10 @@ class DocParserPdf(DocParserBase):
         if isinstance(table[-1][0],str) and len(table[-1][0]) > 2 * maxFieldLen:
             #去掉最后一个超长且无用的字段
             table = table[:-1]
-        if isinstance(table[0][0],str) and len(table[0][0]) > 1.5 * maxFieldLen:
+        if len(table) > 0:
+            if isinstance(table[0][0],str) and len(table[0][0]) > 1.5 * maxFieldLen:
             #解决广济药业2015年报,合并资产负债表的第一个单元格为: 合并资产负债表 编制单位：湖北广济药业股份有限公司 2015年12月31日 单位：人民币元'
-            table = table[1:]
+                table = table[1:]
         return  table
 
     #@pysnooper.snoop()

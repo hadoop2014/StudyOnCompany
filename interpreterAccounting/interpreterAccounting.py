@@ -116,7 +116,11 @@ class InterpreterAccounting(InterpreterBase):
             # TABLE optional HEADER HEADER 专门用于解决杰瑞股份2016,2017,2018,2019年年度报告中现金流量表补充资料,无形资产情况搜索不到的情况.
             tableName = self._get_tablename_alias(str.strip(p[1]).replace(' ',NULLSTR))
             #interpretPrefix必须用\n做连接,lexer需要用到\n
-            interpretPrefix = '\n'.join([slice.strip() for slice in p if slice is not None]) + '\n'
+            if p.slice[-1].type == 'finis':
+                # 解决东方生物2019年报,合并所有者权益变动表,第3页搜索错误问题
+                interpretPrefix = '\n'.join([slice.strip() for slice in p[:-1] if slice is not None]) + '\n'
+            else:
+                interpretPrefix = '\n'.join([slice.strip() for slice in p if slice is not None]) + '\n'
             self.logger.info("fetchtable %s -> %s :%s page %d!" % (p[1],tableName,interpretPrefix.replace('\n',' '),self.currentPageNumber))
             if len(self.names[tableName]['page_numbers']) != 0:
                 # 处理主要会计数据的的场景,存在第一次匹配到,又重新因为表头而第二次匹配到的场景,实际通过语法规则,已经规避了该问题
