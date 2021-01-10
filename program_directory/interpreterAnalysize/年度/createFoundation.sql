@@ -79,7 +79,7 @@ select
     a.行业分类,
     case when a.在职员工的数量合计 != '' then a.在职员工的数量合计 else a.当期领取薪酬员工总人数 end as 在职员工的数量合计,
     f.支付给职工及为职工支付的现金,
-    c.应付职工薪酬 as 应付职工薪酬（期末余额）,
+    case when c.应付职工薪酬 != '' then replace(c.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期末余额）,
     c.应付职工薪酬（期初余额）,
     b.营业收入,
     b.归属于上市公司股东的净利润,
@@ -142,15 +142,34 @@ select
             then replace(c.应付账款,',','') + replace(c.应付票据,',','') else 0
         end
     end as 应付票据及应付账款,
-    case when c.应付账款 is not NULL then c.应付账款 else 0 end as 应付账款,
-    c.预付款项,
+    case when c.应付账款 is not NULL then replace(c.应付账款,',','') else 0 end as 应付账款,
+    case when c.预付款项 is not NULL then replace(c.预付款项,',','') else 0 end as 预付款项,
     case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then replace(c.应收票据及应收账款,',','') else
         case when c.应收账款 is not NULL and c.应收账款 != '' then replace(c.应收账款,',','') else 0 end
     end as 应收账款,
-    case when c.应收票据 is not NULL and c.应收票据 != '' then c.应收票据 else 0 end as 应收票据,
-    c.流动资产合计,
+    case when c.应收票据 is not NULL and c.应收票据 != '' then replace(c.应收票据,',','') else 0 end as 应收票据,
+    case when c.流动资产合计 is not NULL then replace(c.流动资产合计,',','')
+        -- 解决国金证券 没有 流动资产合计 字段
+        else replace(c.资产总计,',','')
+            - iif(c.可供出售金融资产 != '', replace(c.可供出售金融资产,',',''),0)
+            - iif(c.持有至到期投资 != '', replace(c.持有至到期投资,',',''),0)
+            - iif(c.长期股权投资 != '', replace(c.长期股权投资,',',''),0)
+            - iif(c.投资性房地产 != '', replace(c.投资性房地产,',',''),0)
+            - iif(c.固定资产 != '', replace(c.固定资产,',',''),0)
+            - iif(c.在建工程 != '', replace(c.在建工程,',',''),0)
+            - iif(c.无形资产 != '', replace(c.无形资产,',',''),0)
+            - iif(c.商誉 != '', replace(c.商誉,',',''),0)
+            - iif(c.长期待摊费用 != '' and c.长期待摊费用 is not NULL, replace(c.长期待摊费用,',',''),0)
+            - iif(c.递延所得税资产 != '', replace(c.递延所得税资产,',',''),0)  end
+        as 流动资产合计,
     c.负债合计,
-    c.流动负债合计,
+    case when c.流动负债合计 is not NULL then replace(c.流动负债合计,',','')
+        -- 解决国金证券 没有 流动负债合计 字段
+        else replace(c.负债合计,',','')
+            - iif(c.长期借款 != '', replace(c.长期借款,',',''),0)
+            - iif(c.应付债券 != '', replace(c.应付债券,',',''),0)
+            - iif(c.递延所得税负债 != '' , replace(c.递延所得税负债,',',''),0) end
+        as 流动负债合计,
     case when c.存货 != '' then c.存货 else 0 end as 存货,
     c.货币资金,
     case when c.短期借款 is not NULL and c.短期借款 != '' then c.短期借款 else 0 end as 短期借款,
@@ -158,7 +177,10 @@ select
         as 一年内到期的非流动负债,
     case when c.长期借款 is not NULL and c.长期借款 != '' then c.长期借款 else 0 end as 长期借款,
     case when c.应付债券 is not NULL and c.应付债券 != '' then c.应付债券 else 0 end as 应付债券,
-    f.销售商品、提供劳务收到的现金,
+    case when f.销售商品、提供劳务收到的现金 is not NULL then replace(f.销售商品、提供劳务收到的现金,',','')
+        -- 解决国金证券 没有 销售商品、提供劳务收到的现金 字段, 用 收取利息、手续费及佣金的现金 字段来取代
+        else replace(f.收取利息、手续费及佣金的现金,',','') end
+        as 销售商品、提供劳务收到的现金,
     f.六、期末现金及现金等价物余额,
     f.五、现金及现金等价物净增加额
 from
@@ -219,7 +241,7 @@ left join
 left join
 (
     select x.*,
-        y.应付职工薪酬 as 应付职工薪酬（期初余额）,
+        case when y.应付职工薪酬 != '' then replace(y.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期初余额）,
         replace(y.归属于母公司所有者权益（或股东权益）合计,',','') as 归属于上市公司股东的净资产（上期）,
         replace(y.负债和所有者权益（或股东权益）总计,',','') as 总资产（上期）
     from 年度合并资产负债表 x
