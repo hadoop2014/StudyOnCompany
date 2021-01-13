@@ -141,13 +141,13 @@ class InterpreterNature(InterpreterBase):
             self._process_import_finance(command)
 
 
-        def p_expression_train_model(p):
-            '''expression : TRAIN MODEL'''
+        def p_expression_handle_model(p):
+            '''expression : HANDLE MODEL'''
             command = ' '.join([slice.value for slice in p.slice[1:] if slice.value is not None])
             self.logger.info(command)
             model = p[2]
             assert model in self.models, "model(%s) is invalid, which must be in %s" % (model, self.models)
-            self._process_train_model(command)
+            self._process_handle_model(command)
 
 
         def p_expression_config(p):
@@ -283,7 +283,7 @@ class InterpreterNature(InterpreterBase):
         self.interpreterAnalysize.doWork(command)
 
 
-    def _process_train_model(self, command):
+    def _process_handle_model(self, command):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return

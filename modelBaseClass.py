@@ -13,6 +13,11 @@ class ModelBase(BaseClass):
         self.start_time = time.time()
         #self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.check_book = self.get_check_book()
+        self.model_savefile = os.path.join(self.working_directory,
+                                           self._get_class_name(self.gConfig) + '.model')# + self.gConfig['framework'])
+        self.symbol_savefile = os.path.join(self.working_directory,
+                                            self._get_class_name(self.gConfig) + '.symbol')# + self.gConfig['framework'])
+        #self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
         self.losses_train = []
         self.acces_train = []
         self.losses_valid = []
@@ -22,11 +27,11 @@ class ModelBase(BaseClass):
 
 
     def _init_parameters(self):
-        self.model_savefile = os.path.join(self.working_directory,
-                                           self._get_class_name(self.gConfig) + 'model.' + self.gConfig['framework'])
-        self.symbol_savefile = os.path.join(self.working_directory,
-                                            self._get_class_name(self.gConfig) + 'symbol.' + self.gConfig['framework'])
-        self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
+        #self.model_savefile = os.path.join(self.working_directory,
+        #                                   self._get_class_name(self.gConfig) + 'model.' + self.gConfig['framework'])
+        #self.symbol_savefile = os.path.join(self.working_directory,
+        #                                    self._get_class_name(self.gConfig) + 'symbol.' + self.gConfig['framework'])
+        #self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
         self.epoch_per_print = self.gConfig['epoch_per_print']
         self.debug_per_steps = self.gConfig['debug_per_steps']
         self.epochs_per_checkpoint = self.gConfig['epochs_per_checkpoint']
@@ -138,7 +143,7 @@ class ModelBase(BaseClass):
 
     def clear_logging_directory(self,logging_directory):
         assert logging_directory == self.logging_directory ,\
-            'It is only clear logging directory, but %s is not'%logging_directory
+            'It is only clear logging directory, but %s is not %s'% (logging_directory,self.logging_directory)
         files = os.listdir(logging_directory)
         for file in files:
             full_file = os.path.join(logging_directory,file)

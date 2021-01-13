@@ -18,6 +18,7 @@ class ModelBaseH(InterpreterBase):
 
     def _init_parameters(self):
         super(ModelBaseH, self)._init_parameters()
+        #ModelBase._init_parameters()
         self.learning_rate = self.gConfig['learning_rate']
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
         self.learning_rate_decay_step = self.gConfig['learning_rate_decay_step']
@@ -164,7 +165,9 @@ class ModelBaseH(InterpreterBase):
             self.net.load_state_dict(stateLoaded['model'])
             self.net.to(self.ctx)
             self.load_optim_state(stateLoaded['optimizer'])
-            #self.global_step = stateLoaded['global_step']
+        else:
+            self.logger.error("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
+            raise ValueError("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
 
 
     def getSaveFile(self):
@@ -367,22 +370,26 @@ class ModelBaseH(InterpreterBase):
 
         self.writer = SummaryWriter(logdir=self.logging_directory,max_queue=self.max_queue)
         #self.vis = visdom.Visdom(env='test')
-        if 'pretrained' in self.gConfig:
-            pass
-
-        ckpt = self.getSaveFile()
-        ckpt_used = self.gConfig['ckpt_used']
-        if ckpt and ckpt_used:
-            print("Reading model parameters from %s" % ckpt)
-            #self.net.load_state_dict(torch.load(ckpt))
+        assert self.gConfig['mode'] in self.gConfig['modelist']\
+            ,"mode(%s) must be in modelist: %s'(self.gConfig['mode'],self.gConfig['modelist']"
+        if self.gConfig['mode'] == 'apply':
             self.loadCheckpoint()
-            #self.net.to(device=self.ctx)
-            #self.global_step = torch.load(self.symbol_savefile,map_location=self.ctx)
+        elif self.gConfig['mode'] == 'pretrain':
+            pass
         else:
-            print("Created model with fresh parameters.")
-            self.net.to(device=self.ctx)
-            self.net.apply(self.params_initialize)
-            #self.global_step = torch.tensor(0,dtype=torch.int64,device=self.ctx)
+            ckpt = self.getSaveFile()
+            ckpt_used = self.gConfig['ckpt_used']
+            if ckpt and ckpt_used:
+                print("Reading model parameters from %s" % ckpt)
+                #self.net.load_state_dict(torch.load(ckpt))
+                self.loadCheckpoint()
+                #self.net.to(device=self.ctx)
+                #self.global_step = torch.load(self.symbol_savefile,map_location=self.ctx)
+            else:
+                print("Created model with fresh parameters.")
+                self.net.to(device=self.ctx)
+                self.net.apply(self.params_initialize)
+                #self.global_step = torch.tensor(0,dtype=torch.int64,device=self.ctx)
         self.debug_info(self.net)
         self.summary(self.net)
         self.add_graph(self.net)

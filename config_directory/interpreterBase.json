@@ -1124,7 +1124,7 @@
       "keep": 1.0
     },
     "checklist": {
-      "modelist" : ["train","pretrain"],
+      "modelist" : ["train","pretrain","apply"],
       "#modellist" : ["regression","lenet","alexnet","vgg","capsnet","resnet","nin","rnn","ssd","rnnregression"],
       "optimizerlist" : ["sgd","adam","rmsprop","adagrad","adadelta","momentum"],
       "datasetlist" : ["mnist","fashionmnist","cifar10","houseprice","lyric","hotdog","pikachu","finance"],

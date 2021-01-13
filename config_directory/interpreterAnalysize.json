@@ -1,12 +1,12 @@
 {
-  "#tokens": ["创建",   "表",   "展示",     "处理规模","模型", "训练"],
-  "tokens":  ["CREATE","TABLE","VISUALIZE","SCALE","MODEL","TRAIN"],
+  "#tokens": ["创建",   "表",   "展示",     "处理规模","模型", "操作" ],
+  "tokens":  ["CREATE","TABLE","VISUALIZE","SCALE","MODEL","HANDLE"],
 
   "SCALE" : "全量|批量|单次",
   "CREATE": "创建",
   "VISUALIZE": "展示",
   "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表",
-  "TRAIN": "训练",
+  "HANDLE": "训练|应用",
   "MODEL": "公司价格预测模型",
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
@@ -367,7 +367,7 @@
       "framework": "pytorch",
       "dataset": "finance",
       "model": "rnnregression",
-      "ckpt_used": true,
+      "ckpt_used": false,
       "viewIsOn" : true
     }
   },
@@ -381,7 +381,7 @@
     "trainer": {
       "k" : 5,
       "clip_gradient" : 1e-2,
-      "train_num_epoch" : 600,
+      "train_num_epoch" : 500,
       "learning_rate" : 5e-3,
       "learning_rate_decay_factor" : 0.8,
       "learning_rate_decay_step": 500,

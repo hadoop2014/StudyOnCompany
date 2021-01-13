@@ -80,10 +80,11 @@ class InterpreterAnalysize(InterpreterBase):
             self._process_visualize_table(tableName,scale)
 
 
-        def p_expression_train_model(p):
-            '''expression : TRAIN MODEL'''
+        def p_expression_handle_model(p):
+            '''expression : HANDLE MODEL'''
+            handle = p[1]
             modelName = p[2]
-            self._process_train_model(modelName)
+            self._process_handle_model(modelName, handle)
 
 
         def p_error(p):
@@ -142,7 +143,7 @@ class InterpreterAnalysize(InterpreterBase):
         self.excelVisualization.read_and_visualize(visualize_file, tableName)
 
 
-    def _process_train_model(self,modelName):
+    def _process_handle_model(self, modelName,handle):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
             return
@@ -151,16 +152,19 @@ class InterpreterAnalysize(InterpreterBase):
         modelName = dictModel['model']
         dataset = dictModel['dataset']
         framework = dictModel['framework']
+        if handle == '应用':
+            dictModel.update({'mode': "apply"}) # 如果是应用模型来做预测,则把 mode 设置为 apply
         gConfig = self.gConfig
         gConfig.update(dictModel)
         getdataClass = InterpreterAssemble().get_data_class(gConfig,dataset)
         dictModel.update({'getdataClass':getdataClass})
         modelModule = self.modelSets[modelName + framework.title()]
         modelModule.initialize(dictModel)
-        self.trainStart(modelModule,modelModule,gConfig)
+        self.handleStart(modelModule, modelModule, gConfig, handle)
         #self.logger.info("Reatch the interpreterAnalysize just for debug : train %s" % modelName)
 
-    def trainStart(self,model, model_eval, gConfig):
+
+    def handleStart(self, model, model_eval, gConfig,handle):
         getdataClass = gConfig['getdataClass']
         framework = gConfig['framework']
         modelName = gConfig['model']
@@ -172,15 +176,22 @@ class InterpreterAnalysize(InterpreterBase):
             num_epochs = gConfig['train_num_epoch']
         start_time = time.time()
 
-        self.logger.info("\n\n(%s %s %s %s) is starting, use optimizer %s,ctx=%s,initializer=%s,check_point=%s,"
-              "activation=%s...............\n\n"
-              % (modelName, framework, dataset, mode, gConfig['optimizer'], gConfig['ctx'], gConfig['initializer'],
-                 gConfig['ckpt_used'], gConfig['activation']))
-        losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test = \
-            model.train(model_eval, getdataClass, gConfig, num_epochs)
-        getdataClass.endProcess()
-        self.plotLossAcc(losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, modelName)
-        self.logger.info('\n\ntraining %s end, time used %.4f' % (modelName, (time.time() - start_time)))
+        if handle == '训练':
+            self.logger.info("\n\n(%s %s %s %s) is starting, use optimizer %s,ctx=%s,initializer=%s,check_point=%s,"
+                  "activation=%s...............\n\n"
+                  % (modelName, framework, dataset, mode, gConfig['optimizer'], gConfig['ctx'], gConfig['initializer'],
+                     gConfig['ckpt_used'], gConfig['activation']))
+            losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test = \
+                model.train(model_eval, getdataClass, gConfig, num_epochs)
+            getdataClass.endProcess()
+            self.plotLossAcc(losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, modelName)
+            self.logger.info('\n\ntraining %s end, time used %.4f' % (modelName, (time.time() - start_time)))
+        elif handle == '应用':
+            self.logger.info("Reatch the interpreterAnalysize just for debug : 应用模型 %s " % modelName)
+
+
+    def applyModel(self,model,gConfig):
+        pass
 
 
     def plotLossAcc(self,losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, taskName):
