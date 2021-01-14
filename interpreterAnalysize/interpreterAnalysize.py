@@ -188,10 +188,7 @@ class InterpreterAnalysize(InterpreterBase):
             self.logger.info('\n\ntraining %s end, time used %.4f' % (modelName, (time.time() - start_time)))
         elif handle == '应用':
             self.logger.info("Reatch the interpreterAnalysize just for debug : 应用模型 %s " % modelName)
-
-
-    def applyModel(self,model,gConfig):
-        pass
+            model.predict(model_eval)
 
 
     def plotLossAcc(self,losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, taskName):

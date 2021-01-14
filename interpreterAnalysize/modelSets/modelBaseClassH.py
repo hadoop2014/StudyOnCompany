@@ -314,6 +314,15 @@ class ModelBaseH(InterpreterBase):
 
 
     def predict(self, net):
+        getdataClass = self.gConfig['getdataClass']
+        keyfields_iter,valid_iter = getdataClass.getValidData(self.batch_size)
+        mergedFields = []
+        for (X,y),keyfields in zip(keyfields_iter,valid_iter):
+            y = torch.tensor(y, device=self.ctx)
+            mergedFields += self.predict_with_keyfileds(net,X,y,keyfields)
+
+
+    def predict_with_keyfileds(self,net,keyfields,X,y):
         pass
 
 

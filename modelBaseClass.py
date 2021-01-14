@@ -143,7 +143,7 @@ class ModelBase(BaseClass):
 
     def clear_logging_directory(self,logging_directory):
         assert logging_directory == self.logging_directory ,\
-            'It is only clear logging directory, but %s is not %s'% (logging_directory,self.logging_directory)
+            'It is only clear logging directory, but %s is not %s,please remove it by hand!'% (logging_directory,self.logging_directory)
         files = os.listdir(logging_directory)
         for file in files:
             full_file = os.path.join(logging_directory,file)

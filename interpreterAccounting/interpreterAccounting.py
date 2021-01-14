@@ -512,9 +512,11 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_tail(p):
-            '''tail : NUMERO TAIL
+            '''tail : TAIL
+                    | NUMERO TAIL
                     | NUMERO NUMERO TAIL
                     | SPECIALWORD NUMERO NUMERO TAIL'''
+            # tail : TAIL 解决三全食品2019年报, 主营业务分行业经营情况出现在页尾,但是没有页码的情况
             # SPECIALWORD NUMERO NUMERO TAIL 解决苏博特：2018年年度,主营业务分行业经营情况出现在页尾,且只有一行表头: 主营业务分行业情况
             # tail : TAIL 解决华侨城A 2016年, 无形资产情况出现在页尾,但是没有页码
             tail = ' '.join([str(slice) for slice in p if slice is not None])

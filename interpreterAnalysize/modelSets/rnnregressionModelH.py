@@ -131,50 +131,23 @@ class rnnModel(ModelBaseH):
         return loss,acc
 
 
-    def predict(self, model):
-        pass
-        '''
-        for prefix in self.prefixes:
-            print(' -', self.predict_rnn(
-                prefix, self.predict_length, model, self.vocab_size, self.ctx, self.idx_to_char,
-                self.char_to_idx))
-        '''
+    def predict_with_keyfileds(self,net,X,y,keyfields):
+        self.init_state()
+        keyfields,seq_lengths = keyfields
+        with torch.no_grad():
+            # 解决GPU　out memory问题
+            y_hat, self.state = self.net(X, self.state)
+        y_raw = y_hat.reshape(self.time_steps,-1)
+        y_raw = torch.transpose(y_raw, 0, 1)
+        y = torch.transpose(y, 0, 1).contiguous().view(-1)
+        y_hat = y_hat.squeeze()
+        loss = self.loss(y_hat, y)
+        loss = loss.item() * y.shape[0]
+        acc = 0
+        print(list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:8])
+        print('\n')
+        return loss, acc
 
-    '''
-    def predict_rnn(self,prefix, num_chars, model, vocab_size, ctx, idx_to_char,
-                          char_to_idx):
-        state = None
-        output = [char_to_idx[prefix[0]]]  # output会记录prefix加上输出
-        for t in range(num_chars + len(prefix) - 1):
-            X = torch.tensor([output[-1]], device=ctx).view(1, 1)
-            X = self.to_onehot(X,vocab_size)
-            X = torch.stack(X)
-            if state is not None:
-                if isinstance(state, tuple):  # LSTM, state:(h, c)
-                    state = (state[0].to(ctx), state[1].to(ctx))
-                else:
-                    state = state.to(ctx)
-            (Y, state) = model(X, state)  # 前向计算不需要传入模型参数
-            if t < len(prefix) - 1:
-                output.append(char_to_idx[prefix[t + 1]])
-            else:
-                output.append(int(Y.argmax(dim=1).item()))
-        return ''.join([idx_to_char[i] for i in output])
-    '''
-
-    '''
-    def to_onehot(self,X, n_class):
-        # X shape: (batch, seq_len), output: seq_len elements of (batch, n_class)
-        return [self.one_hot(X[:, i], n_class) for i in range(X.shape[1])]
-
-
-    def one_hot(self,x, n_class, dtype=torch.float32):
-        # X shape: (batch), output shape: (batch, n_class)
-        x = x.long()
-        res = torch.zeros(x.shape[0], n_class, dtype=dtype, device=x.device)
-        res.scatter_(1, x.view(-1, 1), 1)
-        return res
-    '''
 
     def run_matrix(self, loss_train, loss_test):
         return 0.0, 0.0

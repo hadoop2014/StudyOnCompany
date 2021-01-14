@@ -279,7 +279,7 @@ left join
     )x
     left join
     (
-        select 报告时间,公司代码,报告类型,公司简称,期末账面价值
+        select 报告时间,公司代码,报告类型,公司简称,replace(期末账面价值,',','') as 期末账面价值
         from 年度无形资产情况 x
         where 项目 = '土地使用权'
     )y
