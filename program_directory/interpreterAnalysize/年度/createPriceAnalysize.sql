@@ -165,7 +165,7 @@ left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.总市值), 0) as 周平均总市值
     from
     (
@@ -173,13 +173,13 @@ left join
             strftime('%Y-%W', 报告时间) as 报告周
         from 股票交易数据
     )x
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )b
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.总市值), 0) as 周平均总市值
     from
     (
@@ -187,13 +187,13 @@ left join
             strftime('%Y-%W', 报告时间) as 报告周
         from 股票交易数据
     )x
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )c
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.总市值), 0) as 周平均总市值
     from
     (
@@ -201,13 +201,13 @@ left join
             strftime('%Y-%W', 报告时间) as 报告周
         from 股票交易数据
     )x
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )o
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -216,13 +216,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '沪深300'
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )d
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -231,13 +231,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '沪深300'
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )e
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -246,13 +246,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '上证指数'
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )f
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -261,13 +261,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '上证指数'
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )g
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -276,13 +276,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '深证成指'
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )h
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -291,13 +291,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '深证成指'
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )i
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -306,13 +306,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '创业板指'
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )j
 left join
 (
     select x.报告周,
         x.公司代码,
-        x.公司简称,
+        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -321,7 +321,7 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '创业板指'
-    group by 报告周, 公司代码, 公司简称
+    group by 报告周, 公司代码 --, 公司简称
 )k
 where (a.公司代码 = b.公司代码 and a.报告周 = b.报告周)
     and (a.公司代码 = c.公司代码 and a.结束周 = c.报告周)
@@ -347,8 +347,10 @@ create table if not exists 年度公司价格分析表 (
     公司简称 CHAR(10),
     发布时间 DATE,
     结束时间 DATE,
+    起始周 CHAR(10),
     报告周 CHAR(10),
     结束周 CHAR(10),
+    起始周总市值 REAL,
     报告周总市值 REAL,
     结束周总市值 REAL,
     员工工资占营业收入比率 REAL,
@@ -388,8 +390,8 @@ create table if not exists 年度公司价格分析表 (
     营业利润占营业资金的比率 REAL,
     营业收入占营业资金的比率 REAL,
     还原后的净资产收益率（ROCE） REAL,
-    投资收益率 REAL,
-    --市盈率 REAL,
+    --投资收益率 REAL,
+    市盈率 REAL,
     本年市值增长率 REAL,
     本年指数增长率 REAL,
     间隔时长 REAL,
@@ -404,8 +406,10 @@ select a.报告时间,
     a.公司简称,
     b.发布时间,
     b.结束时间,
+    b.起始周,
     b.报告周,
     b.结束周,
+    b.起始周总市值,
     b.报告周总市值,
     b.结束周总市值,
     a.员工工资占营业收入比率,
@@ -445,8 +449,8 @@ select a.报告时间,
     a.营业利润占营业资金的比率,
     a.营业收入占营业资金的比率,
     a.还原后的净资产收益率（ROCE）,
-    round(a.归属于上市公司股东的净利润/b.报告周总市值,4) as 投资收益率,
-    --round(b.报告周总市值/a.归属于上市公司股东的净利润,4) as 市盈率,
+    --round(a.归属于上市公司股东的净利润/b.报告周总市值,4) as 投资收益率,
+    round(b.报告周总市值/a.归属于上市公司股东的净利润,4) as 市盈率,
     b.本年市值增长率 REAL,
     b.本年指数增长率,
     b.间隔时长,

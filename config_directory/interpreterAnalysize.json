@@ -367,6 +367,7 @@
       "framework": "pytorch",
       "dataset": "finance",
       "model": "rnnregression",
+      "tableName": "公司价格预测表",
       "ckpt_used": false,
       "viewIsOn" : true
     }
@@ -381,7 +382,7 @@
     "trainer": {
       "k" : 5,
       "clip_gradient" : 1e-2,
-      "train_num_epoch" : 500,
+      "train_num_epoch" : 600,
       "learning_rate" : 5e-3,
       "learning_rate_decay_factor" : 0.8,
       "learning_rate_decay_step": 500,

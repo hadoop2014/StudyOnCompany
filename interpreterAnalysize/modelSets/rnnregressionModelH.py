@@ -18,7 +18,7 @@ class RNN(nn.Module):
         # 全连接层会首先将Y的形状变成(num_steps * batch_size, num_hiddens)，它的输出
         # 形状为(num_steps * batch_size, vocab_size)
         if isinstance(Y,PackedSequence):
-            Y,_ = torch.nn.utils.rnn.pad_packed_sequence(Y)
+            Y,seq_lengths = torch.nn.utils.rnn.pad_packed_sequence(Y)
         Y = Y.reshape(-1,Y.shape[-1])
         output = self.dense(Y)
         return output, self.state
@@ -133,30 +133,43 @@ class rnnModel(ModelBaseH):
 
     def predict_with_keyfileds(self,net,X,y,keyfields):
         self.init_state()
-        keyfields,seq_lengths = keyfields
         with torch.no_grad():
             # 解决GPU　out memory问题
-            y_hat, self.state = self.net(X, self.state)
-        y_raw = y_hat.reshape(self.time_steps,-1)
-        y_raw = torch.transpose(y_raw, 0, 1)
+            y_hat, self.state = net(X, self.state)
+        mergedDataFrame = self.merged_fields(keyfields, X, y, y_hat)
         y = torch.transpose(y, 0, 1).contiguous().view(-1)
         y_hat = y_hat.squeeze()
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
         acc = 0
-        print(list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:8])
+        print("(y_hat, y):",list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:8])
         print('\n')
-        return loss, acc
+        return loss, acc, mergedDataFrame
+
+
+    def merged_fields(self, keyfields, X, y, y_predict):
+        # 用keyfields, X, y, y_predict拼接出原始数据 , 加上 预测市值增长率
+        keyfields, seq_lengths_key = keyfields
+        X_raw, seq_lengths_X =  torch.nn.utils.rnn.pad_packed_sequence(X)
+        X_raw = torch.transpose(X_raw, 0, 1)
+        batch_size = len(seq_lengths_X)
+        y_predict = y_predict.reshape(-1, batch_size)
+        y_predict = torch.transpose(y_predict, 0, 1)
+        getdataClass = self.gConfig['getdataClass']
+        keyfields_columns = getdataClass.get_keyfields_columns()
+        X_columns = getdataClass.get_X_columns()
+        y_columns = getdataClass.get_y_columns()
+        y_predict_columns = getdataClass.get_y_predict_columns()
+        dataFrame_keyfields = pd.concat(keyfields, axis=0).reset_index(drop=True)
+        dataFrame_X = pd.DataFrame(X_raw.cpu().numpy().reshape(-1, X_raw.shape[-1]), columns=X_columns)
+        dataFrame_y = pd.DataFrame(y.cpu().numpy().reshape(-1,1), columns=y_columns)
+        dataFrame_y_predict = pd.DataFrame(y_predict.cpu().numpy().reshape(-1,1), columns=y_predict_columns)
+        dataFrame_merged = pd.concat([dataFrame_keyfields, dataFrame_X, dataFrame_y, dataFrame_y_predict], axis=1)
+        return dataFrame_merged
 
 
     def run_matrix(self, loss_train, loss_test):
         return 0.0, 0.0
-        #rnn中用perplexity取代accuracy
-        #perplexity_train = math.exp(loss_train)
-        #perplexity_test = math.exp(loss_test)
-        #print('global_step %d, perplexity_train %.6f,perplexity_test %f.6'%
-        #      (self.global_step, perplexity_train,perplexity_test))
-        #return perplexity_train,perplexity_test
 
 
     def get_learningrate(self):

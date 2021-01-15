@@ -265,9 +265,11 @@ class BaseClass():
         return path
 
 
-    def _get_connect(self):
-        #用于获取数据库连接
-        return sqlite.connect(self.database)
+    def _write_to_sqlite3(self,dataFrame:DataFrame, tableName):
+        conn = self._get_connect()
+        dataFrame.to_sql(tableName, conn, if_exists='replace', index=False)
+        conn.close()
+
 
     @pysnooper.snoop()
     def _sql_executer(self,sql):

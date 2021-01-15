@@ -313,17 +313,47 @@ class ModelBaseH(InterpreterBase):
         return loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test
 
 
-    def predict(self, net):
+    def predict(self,net):
+        pass
+
+
+    def apply_model(self, net):
         getdataClass = self.gConfig['getdataClass']
         keyfields_iter,valid_iter = getdataClass.getValidData(self.batch_size)
         mergedFields = []
+        acc_sum = 0
+        loss_sum = 0
+        n = 0
+        net.eval()
         for (X,y),keyfields in zip(keyfields_iter,valid_iter):
+            try:
+                X = X.asnumpy()
+                y = y.asnumpy()
+            except:
+                if not isinstance(X,PackedSequence):
+                    X = np.array(X)
+                y = np.array(y)
+            if not isinstance(X,PackedSequence):
+                X = torch.tensor(X,device=self.ctx)
             y = torch.tensor(y, device=self.ctx)
-            mergedFields += self.predict_with_keyfileds(net,X,y,keyfields)
+            loss, acc, dataFrame = self.predict_with_keyfileds(net,X,y,keyfields)
+            mergedFields += [dataFrame]
+            acc_sum += acc
+            loss_sum += loss
+            n += self.get_batch_size(y)
+        mergedDataFrame = pd.concat(mergedFields, axis=0)
+        mergedDataFrame = mergedDataFrame.dropna(axis=0)
+        for reportType in self.gConfig['报告类型']:
+            tablePrefix = self._get_tableprefix_by_report_type(reportType)
+            tableName = tablePrefix + self.gConfig['tableName']
+            self._write_to_sqlite3(mergedDataFrame, tableName)
+            self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'
+                             %(self.gConfig['model'], tableName))
+        return loss_sum / n, acc_sum / n
 
 
     def predict_with_keyfileds(self,net,keyfields,X,y):
-        pass
+        return (None, None, None)
 
 
     def run_matrix(self, loss_train, loss_test):

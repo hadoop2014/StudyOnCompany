@@ -36,9 +36,6 @@ def pad_tensor(vec, pad):
             nanRow = np.array([np.nan] * (pad - len(vec)))
             result = vec.append(pd.DataFrame(nanRow))
         else:
-            #if pad - len(vec) == 0:
-            #    result = vec
-            #else:
             nanRow = np.array([np.nan] * (pad - len(vec)) * np.prod(vec.shape[1:])).reshape(pad - len(vec),*vec.shape[1:])
             nanFrame = pd.DataFrame(nanRow,columns=vec.columns)
             result = vec.append(nanFrame)
@@ -78,90 +75,56 @@ class Collate:
         def cut_tensor(v):
             resLength = len(v) - self.time_steps
             if resLength > 0:
-                return v[resLength:]
+                if isinstance(v, torch.Tensor):
+                    return v[resLength:]
+                elif isinstance(v, pd.DataFrame):
+                    return v.loc[resLength:]
+                else:
+                    raise ValueError('type(%s) of v is not supported, it must be torch.Tensor or pd.DataFrame' % type(v))
             else:
                 return v
 
-        xs = [torch.FloatTensor(v[:,:self.fieldEnd]) for v in batch] #获取特征, T * input_dim
-        ys = [torch.FloatTensor(v[:,self.fieldEnd]) for v in batch] #获取标签, T * 1
-        max_len = max([len(v) for v in xs])
-        if max_len > self.time_steps:
-            # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
-            xs = list(map(cut_tensor, xs))
-            ys = list(map(cut_tensor, ys))
-            max_len = self.time_steps
-        # 获得每个样本的序列长度
-        seq_lengths = torch.LongTensor([v for v in map(len, xs)])
-        # 每个样本都padding到当前batch的最大长度
-        xs = torch.FloatTensor([pad_tensor(v, max_len) for v in xs])
-        ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
-        # 把xs和ys按照序列长度从大到小排序
-        seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
-        xs = xs[perm_idx].to(self.ctx)
-        ys = ys[perm_idx]
-        return xs, seq_lengths, ys
-
-    def __call__(self, batch):
-        return self._collate(batch)
-
-
-class CollateKeyfields:
-    """
-    a variant of callate_fn that pads according to the longest sequence in
-    a batch of sequences
-    """
-
-    def __init__(self,ctx,time_steps):
-        self.ctx = ctx
-        self.time_steps = time_steps
-
-
-    def _collate(self, batch):
-        """
-        args:
-            batch - list of (tensor, label)
-
-        reutrn:
-            xs - a tensor of all examples in 'batch' before padding like:
-                '''
-                [tensor([1,2,3,4]),
-                 tensor([1,2]),
-                 tensor([1,2,3,4,5])]
-                '''
-            ys - a LongTensor of all labels in batch like:
-                '''
-                [1,0,1]
-                '''
-        """
-        def cut_tensor(v):
-            # v 是 DataFrame
-            resLength = len(v) - self.time_steps
-            if resLength > 0:
-                return v.loc[resLength:]
-            else:
-                return v
-
-        #xs = [torch.FloatTensor(v[:,:self.fieldEnd]) for v in batch] #获取特征, T * input_dim
-        #ys = [torch.FloatTensor(v[:,self.fieldEnd]) for v in batch] #获取标签, T * 1
-        xs = batch
-        max_len = max([len(v) for v in xs])
-        if max_len > self.time_steps:
-            # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
-            xs = list(map(cut_tensor, xs))
-            #ys = list(map(cut_tensor, ys))
-            max_len = self.time_steps
-        # 获得每个样本的序列长度
-        seq_lengths = torch.LongTensor([v for v in map(len, xs)])
-        # 每个样本都padding到当前batch的最大长度
-        #xs = torch.FloatTensor([pad_tensor(v, max_len) for v in xs])
-        #ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
-        xs = [pad_tensor(v,max_len) for v in xs]
-        # 把xs和ys按照序列长度从大到小排序
-        seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
-        xs = [xs[i] for i in perm_idx]
-        #xs = xs[perm_idx].to(self.ctx)
-        #ys = ys[perm_idx]
-        return xs, seq_lengths#, ys
+        if isinstance(batch[0], torch.Tensor):
+            xs = [torch.FloatTensor(v[:,:self.fieldEnd]) for v in batch] #获取特征, T * input_dim
+            ys = [torch.FloatTensor(v[:,self.fieldEnd]) for v in batch] #获取标签, T * 1
+            max_len = max([len(v) for v in xs])
+            if max_len > self.time_steps:
+                # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
+                xs = list(map(cut_tensor, xs))
+                ys = list(map(cut_tensor, ys))
+                max_len = self.time_steps
+            # 获得每个样本的序列长度
+            seq_lengths = torch.LongTensor([v for v in map(len, xs)])
+            # 每个样本都padding到当前batch的最大长度
+            xs = torch.FloatTensor([pad_tensor(v, max_len) for v in xs])
+            ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
+            # 把xs和ys按照序列长度从大到小排序
+            seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
+            xs = xs[perm_idx].to(self.ctx)
+            ys = ys[perm_idx]
+            return xs, seq_lengths, ys
+        elif isinstance(batch[0], pd.DataFrame):
+            xs = batch
+            max_len = max([len(v) for v in xs])
+            if max_len > self.time_steps:
+                # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
+                xs = list(map(cut_tensor, xs))
+                # ys = list(map(cut_tensor, ys))
+                max_len = self.time_steps
+            # 获得每个样本的序列长度
+            seq_lengths = torch.LongTensor([v for v in map(len, xs)])
+            # 每个样本都padding到当前batch的最大长度
+            # xs = torch.FloatTensor([pad_tensor(v, max_len) for v in xs])
+            # ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
+            xs = [pad_tensor(v, max_len) for v in xs]
+            # 把xs和ys按照序列长度从大到小排序
+            seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
+            xs = [xs[i] for i in perm_idx]
+            # xs = xs[perm_idx].to(self.ctx)
+            # ys = ys[perm_idx]
+            return xs, seq_lengths  # , ys
+        else:
+            raise ValueError('type(%s) of batch items is not supported, it must be torch.Tensor or pd.DataFrame!' % type(batch[0]))
 
     def __call__(self, batch):
         return self._collate(batch)
@@ -215,6 +178,9 @@ class getFinanceDataH(getdataBase):
             features += [torch.from_numpy(np.array(group.iloc[:,fieldStart:],dtype=np.float32))]
         self.keyfields = keyfields
         self.features = FinanceDataSet(features)
+        self.columns = dataFrame.columns.values
+        self.fieldStart = fieldStart
+        self.fieldEnd = fieldEnd
         self.input_dim = len(dataFrame.columns) - fieldStart + fieldEnd
         self.transformers = [self.fn_transpose]
         self.resizedshape = [self.time_steps,self.input_dim]
@@ -265,7 +231,7 @@ class getFinanceDataH(getdataBase):
     @getdataBase.getdataForUnittest
     def getValidData(self,batch_size):
         keyfields_iter = DataLoader(dataset=self.keyfields, batch_size=self.batch_size, num_workers=self.cpu_num
-                                    ,collate_fn=CollateKeyfields(self.ctx,self.time_steps))
+                                    ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
         valid_iter = DataLoader(dataset=self.features, batch_size=self.batch_size, num_workers=self.cpu_num
                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
         self.valid_iter = self.transform(valid_iter,self.transformers)
@@ -298,6 +264,22 @@ class getFinanceDataH(getdataBase):
     def get_classnum(self,gConfig):
         #非分类用数据集，需要重写该函数，返回None
         return None
+
+
+    def get_keyfields_columns(self):
+        return self.columns[:self.fieldStart]
+
+
+    def get_X_columns(self):
+        return self.columns[self.fieldStart: self.fieldEnd]
+
+
+    def get_y_columns(self):
+        return [self.columns[self.fieldEnd]]
+
+
+    def get_y_predict_columns(self):
+        return [self.dictSourceData['predictColumnsName']]
 
 
 class_selector = {

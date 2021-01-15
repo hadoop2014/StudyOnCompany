@@ -185,10 +185,12 @@ class InterpreterAnalysize(InterpreterBase):
                 model.train(model_eval, getdataClass, gConfig, num_epochs)
             getdataClass.endProcess()
             self.plotLossAcc(losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, modelName)
-            self.logger.info('\n\ntraining %s end, time used %.4f' % (modelName, (time.time() - start_time)))
+            self.logger.info('training %s end, time used %.4f' % (modelName, (time.time() - start_time)))
         elif handle == '应用':
-            self.logger.info("Reatch the interpreterAnalysize just for debug : 应用模型 %s " % modelName)
-            model.predict(model_eval)
+            self.logger.info("Starting apply %s at (%s %s) to predict ..................................... "
+                             % (modelName, framework, dataset))
+            model.apply_model(model_eval.net)
+            self.logger.info('apply model %s end, time used %.4f\n\n' % (modelName, (time.time() - start_time)))
 
 
     def plotLossAcc(self,losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, taskName):

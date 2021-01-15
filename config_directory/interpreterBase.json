@@ -1138,8 +1138,9 @@
       "#finance": "为公司财务数据和股票交易数据的组合,用来训练rnnregression模型",
       "finance": {
         "tableName": "年度公司价格分析表",
-        "fieldStart": 10,
+        "fieldStart": 12,
         "fieldEnd": -1,
+        "predictColumnsName": "预测市值增长率",
         "dim": 1
       },
       "lyric":{
