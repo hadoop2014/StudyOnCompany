@@ -376,9 +376,6 @@
   "rnnregression": {
     "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",
     "randomIterIsOn" : false,
-    "#scratchIsOn" : false,
-    "#prefixes" : ["分开", "不分开"],
-    "#predict_length" : 80,
     "trainer": {
       "k" : 5,
       "clip_gradient" : 1e-2,

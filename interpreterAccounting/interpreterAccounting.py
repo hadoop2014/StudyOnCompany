@@ -639,7 +639,8 @@ class InterpreterAccounting(InterpreterBase):
         company,reportTime,reportType = self.names['公司简称'],self.names['报告时间'],self.names['报告类型']
         isRepairListsInvalid, tableList, sourceFile = self._check_repair_lists(company,reportTime,reportType,failedTable)
         repairedTable = set()
-        if isRepairListsInvalid == False:
+        criticalTableName = "关键数据表"
+        if isRepairListsInvalid == False and criticalTableName not in failedTable:
             return repairedTable
         for tableName in sorted(tableList):
             self.logger.info('now start to repair %s'%tableName)
@@ -648,6 +649,18 @@ class InterpreterAccounting(InterpreterBase):
                 self.names[tableName].update({'tableName': tableName, 'table': table, 'tableBegin': True, "tableEnd": True})
                 self._parse_table(tableName)
                 repairedTable.add(tableName)
+        #对剩余未修复的表采用 quickRepaired方式来修复
+        residueTable = set(failedTable).difference(set(repairedTable))
+        if len(residueTable) > 0:
+            # 尝试用 quickRepaired来修复关键数据表
+            tableName = criticalTableName
+            if tableName in residueTable:
+                # 如果关键数据表 是失效的,则尝试用 quickRepaired来修复
+                table = self._repair_critical_table_quick(tableName)
+                if len(table) > 0:
+                    self.names[tableName].update({'tableName': tableName, 'table': table, 'tableBegin': True, "tableEnd": True})
+                    self._parse_table(tableName)
+                    repairedTable.add(tableName)
         return repairedTable
 
 
@@ -694,8 +707,8 @@ class InterpreterAccounting(InterpreterBase):
 
     def _check_repair_lists(self,company,reportTime,reportType,failedTable):
         assert company != NULLSTR and reportTime != NULLSTR and reportType != NULLSTR and isinstance(failedTable,set) \
-            , "Parameter: company(%s) reportTime(%s) reportType(%s) must not be NULL and failedTable(%s) must be set!" % (
-        company, reportTime, reportType, failedTable)
+            , "Parameter: company(%s) reportTime(%s) reportType(%s) must not be NULL and failedTable(%s) must be set!" \
+              % (company, reportTime, reportType, failedTable)
         isRepairListsInvalid = False
         tableList = list()
         sourceFile = NULLSTR
@@ -740,6 +753,30 @@ class InterpreterAccounting(InterpreterBase):
         except Exception as e:
             print(e)
             self.logger.error('some error occured when repair %s %s'%(os.path.split(sourceFile)[-1],tableName))
+        return table
+
+
+    def _repair_critical_table_quick(self,tableName):
+        # 部分2014年财报数据中,没有 在职员工数量, 采用 quickRepair修复
+        #assert tableName != NULLSTR,"Parameter: sourceFile(%s) tableName(%s) must not be NULL!" %  tableName
+        assert tableName == "关键数据表","Now only support quick repair 关键数据表, %s is not supported!"%tableName
+        company, reportTime, reportType = self.names['公司简称'], self.names['报告时间'], self.names['报告类型']
+        table = []
+        try:
+            quick_repair_lists = self.gJsonBase['repair_lists']['quickRepaired']
+            dictRepairData = quick_repair_lists[company][reportType][reportTime][tableName]
+            fields = self.dictTables[tableName]['fieldName']
+            fieldsDiff = set(dictRepairData.keys()).difference(fields)
+            if len(fieldsDiff) > 0:
+                self.logger.info('error configured field in quickRepaired of interpreterBase.json at (%s %s %s %s) : %s'
+                                 % (company,reportTime,reportType,tableName,fieldsDiff))
+                return table
+            # 把数据转化为str类型
+            dictRepairData = dict([key,str(value)] for key,value in dictRepairData.items())
+            table = self._construct_table(tableName, dictRepairData)
+        except Exception as e:
+            print(e)
+            self.logger.info('some error occured when repair %s, may be it not configured in quickRepaired of interpreterBase.json'%(tableName))
         return table
 
 
@@ -788,22 +825,14 @@ class InterpreterAccounting(InterpreterBase):
         return category
 
 
-    '''
-    def _get_time_type_by_name(self,filename):
-        time = self._standardize('\\d+年',filename)
-        #type = self._standardize('|'.join(self.gJsonBase['reportType']),filename)
-        type = self._get_report_type_by_filename(filename)
-        company = self._standardize(self.gJsonInterpreter['DISCARD'],filename)
-        code = self._standardize('（\\d+）',filename)
-        return company,time,type,code
-    '''
-
-
-    def _construct_table(self,tableNmae):
-        headers = self.dictTables[tableNmae]['headerName']
-        fields = self.dictTables[tableNmae]['fieldName']
+    def _construct_table(self,tableName,dictRepairData = None):
+        headers = self.dictTables[tableName]['headerName']
+        fields = self.dictTables[tableName]['fieldName']
         assert isinstance(headers,list) and isinstance(fields,list)\
             ,"headers (%s) and fields(%s) must be list"%(str(headers),str(fields))
+        if dictRepairData is not None and isinstance(dictRepairData, dict):
+            # 当dictRepairData有效时, 即interpreterBase.json 中的quickRepaired配置生效了,则采用该数据来修复关键数据表
+            self.names.update(dictRepairData)
         rows = [list([key,value]) for key,value in self.names.items() if key in fields]
         #table = [headers] + rows
         headersUsed = headers.copy()

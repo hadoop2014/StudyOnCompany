@@ -288,13 +288,14 @@ class DocParserSql(DocParserBase):
                     value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
                     value = re.sub('^上升',NULLSTR,value)#解决京新药业2017年年报,主要会计数据的一列数据中出现"上升 0.49个百分点"
                     value = re.sub('个百分点$',NULLSTR,value)#解决京新药业2017年年报,海螺水泥2018年年报主要会计数据的一列数据中出现"上升 0.49个百分点"
+                    value = re.sub('个.*百分点$',NULLSTR,value)#解决 许继电气 2019年报,主营业务分行业经营情况中出现 : 个% 百分点
                     value = re.sub('个百分$', NULLSTR, value)  # 解决新城控股2015年年报,主营业务分行业经营情况一行数据在末尾"减少 4.38 个百分"
                     value = re.sub('^注释',NULLSTR,value)#解决灰顶科技2019年年报中,合并资产负债表,合并利润表中的字段出现'注释'
                     value = re.sub('^）\\s*',NULLSTR,value)
                     value = re.sub('^同比增加',NULLSTR,value)#解决冀东水泥：2017年年度报告.PDF主要会计数据中的一列数据中出现'同比增加',导致_precess_header_merge_simple误判
                     value = re.sub('注$', NULLSTR, value)#解决康泰生物2018年年报中普通股现金分红情况表中出现中文字符'注',导致_process_merge_header_simple出问题
-                    value = re.sub('^增加', NULLSTR, value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
-                    value = re.sub('^减少', '-', value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
+                    value = re.sub('^增\\s*加', NULLSTR, value) #1)解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'； 2)解决福耀玻璃2015年报 主营业务分行业经营情况的数据中出现: 增 加 0.27 个百分点
+                    value = re.sub('^减\\s*少', '-', value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
                     value = re.sub('^下降', '-', value)  # 解决海螺水泥2014年报中主营业物质的数据中出现,'下降'
                     value = re.sub('^储$', NULLSTR, value) #解决尚荣医疗2014年报,合并所有者权益变动表,、上年年末余额 这一行中出现 "储","备
                     value = re.sub('^备-$',NULLSTR, value)
@@ -303,6 +304,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('【注.*】',NULLSTR,value) #解决健友股份：2018年 主营业务分行业经营情况 的数据中出现 【注 1】
                     value = re.sub('^不派发现金红利$',NULLSTR,value) #解决沪电股份2014年报 普通股现金分行情况表中出现 '不派发现金红利'
                     value = re.sub('^每\\d+股转增\\d+股',NULLSTR,value) #解决（300033）同花顺：2014年年度报告中,普通股现金分行情况表中出现 每10股转增10股
+                    value = re.sub('^货币单位：人民币$',NULLSTR,value) # 解决思源电器2015年报,合并资产负债表的前三行为 : 编制单位：思源电气股份有限公司合并资产负债表2015年12月31日 货币单位：人民
                     #解决海康威视2019-2014年报合并资产负债表等 中的辅助中出现 :  (五)2
                     value = re.sub('(^\\s*[（(]*[一二三四五六七八九十〇、]{1,3})[)）]*(?=[^\\u4E00-\\u9FA5])', NULLSTR, value) # 新城控股合并利润表中出现附注,数据中出现四(38)及一、四(38).  海康威视2019-2014年报合并资产负债表等 中的附注中出现 :  (五)2
                     value = re.sub('([（(]*[一二三四五六七八九十〇、]{1,3})[)）]*(?=[^\\u4E00-\\u9FA5])', NULLSTR, value)  # 执行两次,解决安琪酵母2014年报中,并资产负债表等 中的附注中出现 :五（一）
@@ -339,11 +341,14 @@ class DocParserSql(DocParserBase):
         # 增加blankFrame来驱动最后一个field的合并
         #blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
         #dataFrame = dataFrame.append(blankFrame)
-        while dataFrame.shape[0] > 0 and self._is_row_all_invalid(dataFrame.iloc[0].tolist()):
+        while dataFrame.shape[0] > 0 and ( self._is_row_all_invalid(dataFrame.iloc[0].tolist())\
+            or self._is_header_in_row(dataFrame.iloc[0].tolist(),tableName) == False):
+            # self._is_header_in_row(dataFrame.iloc[0].tolist(),tableName) == False 解决思源电器2015年报,合并资产负债表,前三行为: 编制单位：思源电气股份有限公司合并资产负债表2015年12月31日货币单位：人民
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
-            dataFrame.iloc[0] = NaN
-            dataFrame = dataFrame.dropna()
+            self.logger.info('delete all invalid row or no header row: %s' % dataFrame.iloc[0].tolist())
+            dataFrame.iloc[0][0] = NaN
+            dataFrame = dataFrame.dropna(axis=0)
         dataFrame = self._major_accounting_data_tailor(dataFrame,tableName)
         if dataFrame.shape[0] == 0:
             return dataFrame
@@ -826,25 +831,6 @@ class DocParserSql(DocParserBase):
         duplicatedField = [duplicate(fieldName) for fieldName in fieldList]
         return duplicatedField
 
-    '''
-    def _is_first_field_in_row(self, row_or_field, tableName):
-        #对获取到的字段做标准化(需要的话),然后和配置表中代表最后一个字段(或模式)做匹配,如匹配到,则认为找到表尾
-        #对于现金分红情况表,因为字段为时间,则用模式去匹配,匹配到一个即可认为找到表尾
-        isFirstFieldInRow = False
-        if row_or_field is None or row_or_field is NaN:
-            return isFirstFieldInRow
-        if isinstance(row_or_field, list):
-            firstField = row_or_field[0]
-        else:
-            firstField = row_or_field
-        if firstField == NULLSTR or firstField == NONESTR:
-            return isFirstFieldInRow
-        fieldFirst = self.dictTables[tableName]["fieldFirst"]
-        #解决部分主要会计数据表中,前面几个字段拼成一起的情况
-        fieldFirst = '^' + fieldFirst + '$'
-        isFirstFieldInRow = self._is_field_matched(fieldFirst, firstField)
-        return isFirstFieldInRow
-    '''
 
     def _is_row_all_invalid_exclude_blank(self,row:DataFrame):
         #如果该行以None开头,其他所有字段都是None或NULLSTR,则返回True
@@ -861,47 +847,6 @@ class DocParserSql(DocParserBase):
     def _is_row_not_any_none(self,row:DataFrame):
         return (row != NONESTR).all()
 
-
-    '''
-    def _is_record_exist(self, conn, tableName, dataFrame:DataFrame):
-        #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
-        #对于Sqlit3,字符串表示为'string' ,而不是"string".
-        condition = self._get_condition(dataFrame)
-        sql = 'select count(*) from {} where '.format(tableName) + condition
-        result = conn.execute(sql).fetchall()
-        isRecordExist = False
-        if len(result) > 0:
-            isRecordExist = (result[0][0] > 0)
-        return isRecordExist
-    '''
-
-    '''
-    def _get_condition(self,dataFrame):
-        primaryKey = [key for key, value in self.commonFields.items() if value.find('NOT NULL') >= 0]
-        # 对于Sqlit3,字符串表示为'string' ,而不是"string".
-        joined = list()
-        for key in primaryKey:
-            current = '(' + ' or '.join(['{} = \'{}\''.format(key,value) for value in set(dataFrame[key].tolist())]) + ')'
-            joined = joined + list([current])
-        condition = ' and '.join(joined)
-        return condition
-    '''
-
-    '''
-    def _get_connect(self):
-        #用于获取数据库连接
-        return sqlite.connect(self.database)
-    '''
-
-    '''
-    def _fetch_all_tables(self, cursor):
-        #获取数据库中所有的表,用于判断待新建的表是否已经存在
-        try:
-            cursor.execute("select name from sqlite_master where type='table' order by name")
-        except Exception as e:
-            print(e)
-        return cursor.fetchall()
-    '''
 
     def _create_tables(self):
         for reportType in self.reportTypes:
