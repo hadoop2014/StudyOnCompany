@@ -134,9 +134,9 @@ class DocParserPdf(DocParserBase):
         tableName = dictTable['tableName']
         fetchTables = self._get_tables(dictTable)
         page_numbers = dictTable['page_numbers']
-        processedTable,isTableEnd,isTableStart = self._process_table(page_numbers,fetchTables, tableName)
+        processedTable, isTableEnd, tableStartScore = self._process_table(page_numbers, fetchTables, tableName)
         dictTable.update({'tableEnd':isTableEnd})
-        if len(page_numbers) == 1 and isTableStart == 0 and processedTable == NULLSTR:
+        if len(page_numbers) == 1 and tableStartScore == 0 and processedTable == NULLSTR:
             #这种情况下表明解释器在搜索时出现了误判,需要重置搜索条件,解决三诺生物2019年年报第60,61页出现了错误的合并资产负责表,真正的在第100页.
             #这种情况下还需要判断processedTable是否有效,如果有效,说明已经搜索到了,此时忽略isTableStart
             self.logger.warning('failed to fetchtable %s witch has invalid data,prefix : %s page %d!'
@@ -148,9 +148,19 @@ class DocParserPdf(DocParserBase):
             self.interpretPrefix = NULLSTR
             return dictTable
         if isinstance(savedTable, list):
-            savedTable.extend(processedTable)
+            if tableStartScore > dictTable['tableStartScore']:
+                # 如果第二次搜索到同一张表, 而且tableStartScore更高, 则认为是正确的表, 则重新开始拼接表
+                # 解决国城矿业：2019年年度报告, 合并资产负债表出现两次, 后面一次是正确的
+                savedTable = processedTable
+                self.logger.info('second searched table %s at page %d, whitch tableStartScore(%d) > last one(%d)'
+                                 %(tableName, page_numbers[-1], tableStartScore, dictTable['tableStartScore']))
+                dictTable.update({'page_numbers':[page_numbers[-1]]})
+                dictTable.update({'tableStartScore': tableStartScore})
+            else:
+                savedTable.extend(processedTable)
         else:
             savedTable = processedTable
+            dictTable.update({'tableStartScore': tableStartScore})
         if dictTable['tableBegin'] == True and dictTable['tableEnd'] == True:
             self.interpretPrefix = NULLSTR
         dictTable.update({'table':savedTable})
@@ -158,11 +168,11 @@ class DocParserPdf(DocParserBase):
 
 
     def _process_table(self,page_numbers,tables,tableName):
-        processedTable,isTableEnd,isTableStart = NULLSTR , False,0
+        processedTable, isTableEnd, tableStartScore = NULLSTR , False, 0
         assert isinstance(page_numbers,list) and len(page_numbers) > 0,"page_number(%s) must not be NULL"%page_numbers
         if tables is None or len(tables) == 0:
             #tables = None是从interpreterAccountingUnittest.py调用时出现的情景
-            return processedTable,isTableEnd,isTableStart
+            return processedTable, isTableEnd, tableStartScore
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         processedTable = self._discard_last_row(processedTable,tableName)
         if len(processedTable) > 0:
@@ -172,20 +182,20 @@ class DocParserPdf(DocParserBase):
             fieldList = [row[0] for row in processedTable]
             headerList = processedTable[0]
             #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
-            isTableStart = 0
+            tableStartScore = 0
             if len(processedTable[0]) > 1:
                 secondFieldList = [row[1] for row in processedTable]
-                isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList,headerList)
+                tableStartScore = self._is_table_start_simple(tableName, fieldList, secondFieldList, headerList)
             isTableEnd = self._is_table_end(tableName,fieldList)
         if len(tables) == 1:
             #（000652）泰达股份：2019年年度报告.PDF P40页出现了错误的普通股现金分红情况表的语句,这个时候不能够把带有值的processedTable返回
-            if len(page_numbers) == 1 and isTableStart == 0:
+            if len(page_numbers) == 1 and tableStartScore == 0:
                 self.logger.warning('failed to fetch %s whitch has invalid data:%s'%(tableName,processedTable))
                 processedTable = NULLSTR
-            return processedTable, isTableEnd,isTableStart
+            return processedTable, isTableEnd, tableStartScore
         processedTable = NULLSTR
         # 引入maxTableStart 解决鲁商发展 2020年半年报P12页主营业务分行业经营情况表 出现了两张表头几乎一样的表,使得之前的isTableStart判断失效,改为置信度算法
-        maxTableStart = 0
+        maxTableStartScore = 0
         maxTableEnd = False
         for index,table in enumerate(tables):
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table ]
@@ -201,17 +211,17 @@ class DocParserPdf(DocParserBase):
             headerList = table[0]
             #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.
             isTableEnd = self._is_table_end(tableName, fieldList)
-            isTableStart = self._is_table_start_simple(tableName, fieldList, secondFieldList,headerList)
+            tableStartScore = self._is_table_start_simple(tableName, fieldList, secondFieldList, headerList)
             if len(page_numbers) == 1:
                 #len(page_numers) == 1表示本表所在的第一页,需要明确判断出isTabletart = True 才能使得isTableEnd生效
-                if isTableStart > maxTableStart and isTableEnd:
+                if tableStartScore > maxTableStartScore and isTableEnd:
                     processedTable = table
-                    maxTableStart = isTableStart
+                    maxTableStartScore = tableStartScore
                     maxTableEnd = isTableEnd
                     #break
-                elif isTableStart > maxTableStart:
+                elif tableStartScore > maxTableStartScore:
                     processedTable = table
-                    maxTableStart = isTableStart
+                    maxTableStartScore = tableStartScore
                 else:
                     #在第一页,没有搜索到表字段头的情况下搜索到了表尾,则是非法的: 荣盛发展2017年报P63 普通股现金分红情况表 出现了这种情况
                     #if maxTableStart == 0:
@@ -224,9 +234,9 @@ class DocParserPdf(DocParserBase):
                     #if isTableStart == False:
                         #解决（002812）恩捷股份：2018年年度报告.PDF,只能通过repair_list解决.主要会计数据分成两样,第二页出现一张统一控制下企业合并,和主要会计数据表字段完全一样,导致误判
                     break
-                elif isTableStart > maxTableStart:
+                elif tableStartScore > maxTableStartScore:
                     processedTable = table
-                    maxTableStart = isTableStart
+                    maxTableStartScore = tableStartScore
                 else:
                     #正对华侨城A 2018年年报, 合并资产负债表 的 中间表出现在某一页,但是被拆成了两个表,需要被重新组合成一张新的表
                     if processedTable == NULLSTR:
@@ -234,7 +244,7 @@ class DocParserPdf(DocParserBase):
                     else:
                         processedTable.extend(table)
                         self.logger.warning('%s 的中间页出现的表被拆成多份,在此对表进行合并,just for debug!'%tableName)
-        return processedTable,maxTableEnd,maxTableStart
+        return processedTable, maxTableEnd, maxTableStartScore
 
 
     def _discard_last_row(self,table,tableName):
@@ -257,7 +267,7 @@ class DocParserPdf(DocParserBase):
         # 解决通策医疗2019年年报中无形资产情况表所在的页中,存在另外一个表头 "项目名称",会导致用"^项目"去匹配时出现误判
         assert isinstance(fieldList, list) and isinstance(secondFieldList, list), \
             "fieldList and headerList must be list,but now get %s %s" % (type(fieldList), type(secondFieldList))
-        isTableStart,isTableStartFirst,isTableStartSecond,isTableStartTree = False,False,False,False
+        tableStartScore, isTableStartFirst, isTableStartSecond, isTableStartTree = 0, False, False, False
         mergedFields = reduce(self._merge, fieldList)
         mergedFieldsSecond = reduce(self._merge, secondFieldList)
         mergedHeaders = reduce(self._merge, headerList)
@@ -296,22 +306,8 @@ class DocParserPdf(DocParserBase):
             matched = re.search(patternHeaders,mergedHeaders)
             if matched is not None:
                 isTableStartTree = True
-
-        #if tableName == '无形资产情况' :
-            #解决杰瑞股份2018年年报无形资产情况,同一个页面出现了另外一张表,两张表的第一列完全相同,所以需要判断第二列结果才行
-            #星源材质2019年年报中无形资产情况出现在页尾,且只有一行表头: 项目 土地使用权 专利权 非专利技术 软件及其他 合计. 这个时候isTableStartFirst失效
-            #isTableStart = isTableStartFirst and isTableStartSecond
-        #    isTableStart = isTableStartSecond
-        #elif tableName == '主营业务分行业经营情况':
-            #解决宝来特2014年报,主营业务分行业经营情况表所在的页,出现两张第一列完全相同的表
-            #解决九安医疗2014年财报,主营业务分行业经营情况 出现在页尾,且只有一行: 营业收入 营业成本 毛利率营业收入比上年同期增减营业成本比上年同期增减毛利率比上年同期
-            #isTableStart = isTableStartFirst and isTableStartSecond
-        #    isTableStart = isTableStartSecond + isTableStartTree
-            #解决安琪酵母2014年年报中同一页中还有 主要会计数据 和主要财务指标,结果误读了主要财务指标
-        #else:
-        #    isTableStart = isTableStartFirst + isTableStartSecond
-        isTableStart = isTableStartFirst + isTableStartSecond + isTableStartTree
-        return int(isTableStart)
+        tableStartScore = isTableStartFirst + isTableStartSecond + isTableStartTree
+        return int(tableStartScore)
 
 
     def _is_table_end(self,tableName,fieldList):

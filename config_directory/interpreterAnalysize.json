@@ -367,7 +367,7 @@
       "framework": "pytorch",
       "dataset": "finance",
       "model": "rnnregression",
-      "tableName": "公司价格预测表",
+      "tableName": "公司价格预测中间表",
       "ckpt_used": false,
       "viewIsOn" : true
     }

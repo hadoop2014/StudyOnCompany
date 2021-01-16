@@ -40,15 +40,11 @@ class InterpreterBase(BaseClass):
         self.references = self.gJsonInterpreter['REFERENCE'].split('|')
         self.references = list(set([self._get_reference_alias(reference) for reference in self.references]))
         self.criticalAlias = self.gJsonInterpreter['criticalAlias']
-        self.criticals = self.gJsonInterpreter['CRITICAL'].split('|')
-        self.criticals = list(set([self._get_critical_alias(cirtical) for cirtical in self.criticals]))
+        self.criticals = self._get_criticals()
         #self.reportAlias = self.gJsonInterpreter['reportAlias']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
-        self.tableAlias = self.gJsonInterpreter['tableAlias']
-        #tableNames标准化,去掉正则表达式中的$^
-        self.tableNames = [self._standardize(self.gJsonInterpreter['TABLEStandardize'],tableName)
-                           for tableName in self.gJsonInterpreter['TABLE'].split('|')]
-        self.tableNames = list(set([self._get_tablename_alias(tableName) for tableName in self.tableNames]))
+        self.tableAlias = self.gJsonInterpreter['tableAlias']  # 必须在self.tableNames之前定义
+        self.tableNames = self._get_tablenames()
         self.dictTables = {keyword: value for keyword,value in self.gJsonInterpreter.items() if keyword in self.tableNames}
         self.commonFields = self.gJsonInterpreter['公共表字段定义']
         self.tableKeyword = self.gJsonInterpreter['TABLE']
@@ -56,6 +52,26 @@ class InterpreterBase(BaseClass):
         self.dictTables = self._fields_replace_punctuate(self.dictTables)
         self.dictTables = self._fields_standardized(self.dictTables)
         self.dictReportType = self._get_report_type_tables(self.dictTables)
+
+
+    def _get_tablenames(self):
+        # 去掉tableName中带正则表达式保留字符的串,如 ()[].
+        tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|') if not re.search('[()\[\]]',tableName)]
+        # tableNames标准化,去掉正则表达式中的$^
+        tableNames = [self._standardize(self.gJsonInterpreter['TABLEStandardize'], tableName)
+                           for tableName in tableNames]
+        tableNames = [self._get_tablename_alias(tableName) for tableName in tableNames if tableName is not NaN]
+        tableNames = list(set(tableNames + list(self.tableAlias.values())))
+        return tableNames
+
+
+    def _get_criticals(self):
+        criticals = self.gJsonInterpreter['CRITICAL'].split('|')
+        # 去掉所有带正则表达critical
+        criticals = [critical for critical in criticals if not re.search('[().*\[\]]+',critical)]
+        criticals = [self._get_critical_alias(cirtical) for cirtical in criticals]
+        criticals = list(set(criticals + list(self.criticalAlias.values())))
+        return criticals
 
 
     def _get_table_field(self,tableName):

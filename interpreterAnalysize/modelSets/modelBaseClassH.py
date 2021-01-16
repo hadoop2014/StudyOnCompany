@@ -342,7 +342,7 @@ class ModelBaseH(InterpreterBase):
             loss_sum += loss
             n += self.get_batch_size(y)
         mergedDataFrame = pd.concat(mergedFields, axis=0)
-        mergedDataFrame = mergedDataFrame.dropna(axis=0)
+        mergedDataFrame = mergedDataFrame.dropna(axis=0).reset_index(drop=True)
         for reportType in self.gConfig['报告类型']:
             tablePrefix = self._get_tableprefix_by_report_type(reportType)
             tableName = tablePrefix + self.gConfig['tableName']

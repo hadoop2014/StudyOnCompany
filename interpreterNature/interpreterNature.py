@@ -240,7 +240,7 @@ class InterpreterNature(InterpreterBase):
         self.gConfig.update(self.names_global)
         taskResults = list()
         sourcefiles = self._get_needed_files(scale,isForced)
-        sourcefiles = self._remove_black_lists(list(sourcefiles))
+        sourcefiles = self._remove_black_lists(scale,list(sourcefiles))
         sourcefiles = list(sourcefiles)
         sourcefiles.sort()
         for sourcefile in sourcefiles:
@@ -371,9 +371,12 @@ class InterpreterNature(InterpreterBase):
         return sourcefiles
 
 
-    def _remove_black_lists(self,sourcefiles):
+    def _remove_black_lists(self,scale,sourcefiles):
         # 根据interpreterBase.json中的black_lists的配置, 将落在blaclist中的文件移除,不进行解析操作
         assert isinstance(sourcefiles,list),"sourcefile(%s) must be a list, not %s!" % (sourcefiles, type(sourcefiles))
+        if scale == '单次':
+            #如果是单次执行,则不做处理,直接返回
+            return sourcefiles
         resultSourcefiles = [sourcefile for sourcefile in sourcefiles if not self._is_file_in_black_lists(sourcefile)]
         diffSourcefiles = set(sourcefiles).difference(set(resultSourcefiles))
         if len(diffSourcefiles) > 0:

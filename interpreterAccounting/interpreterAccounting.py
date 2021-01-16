@@ -912,7 +912,7 @@ class InterpreterAccounting(InterpreterBase):
                                           ,'货币单位': 1 #货币单位默认为1
                                           ,'货币名称': NULLSTR
                                           ,"注册地址": NULLSTR
-                                          ,'table':NULLSTR,'tableBegin':False,'tableEnd':False
+                                          ,'table':NULLSTR,'tableStartScore': 0,'tableBegin':False,'tableEnd':False
                                           ,"page_numbers":list()}})
         self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR,'address':NULLSTR})
         for commonField,_ in self.commonFields.items():

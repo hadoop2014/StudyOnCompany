@@ -99,7 +99,7 @@ class ModelBase(BaseClass):
 
             check_time = time.time()
             if loss_valid is None:
-                print("epoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
+                print("\nepoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
                       "=%.2f" % (check_time - self.start_time),
                       "\t acc_train = %.4f" % acc_train, "\t loss_train = %.6f" % loss_train,
                       "\t acc_test = %.4f" % acc_test, "\t loss_test = %.6f" % loss_test,
@@ -108,7 +108,7 @@ class ModelBase(BaseClass):
                       '\t global_step = %d' % self.get_global_step(),
                       "  context:%s" % self.get_context())
             elif loss_test is None:
-                print("epoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
+                print("\nepoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
                       "=%.2f" % (check_time - self.start_time),
                       "\t acc_train = %.4f" % acc_train, "\t loss_train = %.6f" % loss_train,
                       #"\t acc_test = %.4f" % acc_test, "\t loss_test = %.4f" % loss_test,
@@ -117,7 +117,7 @@ class ModelBase(BaseClass):
                       '\t global_step = %d' % self.get_global_step(),
                       "  context:%s" % self.get_context())
             else:
-                print("epoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
+                print("\nepoch %d:" % (epoch), "train_time(%depochs)" % self.gConfig['epoch_per_print'],
                       "=%.2f" % (check_time - self.start_time),
                       "\t acc_train = %.4f" % acc_train, "\t loss_train = %.6f" % loss_train,
                       "\t acc_test = %.4f" % acc_test, "\t loss_test = %.6f" % loss_test,
