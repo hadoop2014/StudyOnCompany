@@ -53,16 +53,16 @@ class InterpreterBase(ModelBase):
 
     def _merged_dict_table(self,dictTable,dictTableParent):
         """
-            args:
-                dictTable - 当前表的配置参数
-                dictTableParent - 父表的配置参数
-            reutrn:
-                dictTableMerged - 当前表和父表融合后的配置, 融合的规则:
-                    '''
-                    1) 当前表的value是一个值, 则覆盖父表;
-                    2) 当前表的value是一个list,则追加到父表；
-                    3) 当前表的value是一个dict,则进行递归调用;
-                    '''
+        args:
+            dictTable - 当前表的配置参数
+            dictTableParent - 父表的配置参数
+        reutrn:
+            dictTableMerged - 当前表和父表融合后的配置, 融合的规则:
+                '''
+                1) 当前表的value是一个值, 则覆盖父表;
+                2) 当前表的value是一个list,则追加到父表；
+                3) 当前表的value是一个dict,则进行递归调用;
+                '''
         """
         dictTableMerged = dictTableParent.copy()
         for key,value in dictTable.items():
@@ -85,17 +85,17 @@ class InterpreterBase(ModelBase):
 
     def _get_models_parameters(self,models):
         """
-            args:
-                models - 当前解释器配置文件下的所有模型名称,定义在文件interpreterAnalysize.json,如:
-                    '''
-                    公司价格预测模型
-                    '''
-            reutrn:
-                dictModels - 把interpreterAnalysize.json中的模型配置参数和interpreterBase.json中的"模型公共参数"进行融合, 融合的规则:
-                    '''
-                    1) interpreterAnalysize.json中的模型配置参数 更新到 "模型公共参数" 中;
-                    2) 模型配置参数model所指定的子模型配置参数 更新到 interpreterAnalysize.json中的模型配置参数中;
-                    '''
+        args:
+            models - 当前解释器配置文件下的所有模型名称,定义在文件interpreterAnalysize.json,如:
+                '''
+                公司价格预测模型
+                '''
+        reutrn:
+            dictModels - 把interpreterAnalysize.json中的模型配置参数和interpreterBase.json中的"模型公共参数"进行融合, 融合的规则:
+                '''
+                1) interpreterAnalysize.json中的模型配置参数 更新到 "模型公共参数" 中;
+                2) 模型配置参数model所指定的子模型配置参数 更新到 interpreterAnalysize.json中的模型配置参数中;
+                '''
         """
         assert isinstance(models,list) and len(models) > 0,"models(%s) must be a list and not be NULL!"% models
         dictModels = {}
@@ -128,7 +128,7 @@ class InterpreterBase(ModelBase):
 
     def interpretDefine(self):
         #定义一个解释器语言词法
-        pass
+        ...
 
 
     def initialize(self):
@@ -137,3 +137,4 @@ class InterpreterBase(ModelBase):
             os.makedirs(self.logging_directory)
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
+

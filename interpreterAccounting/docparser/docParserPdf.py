@@ -214,7 +214,9 @@ class DocParserPdf(DocParserBase):
             tableStartScore = self._is_table_start_simple(tableName, fieldList, secondFieldList, headerList)
             if len(page_numbers) == 1:
                 #len(page_numers) == 1表示本表所在的第一页,需要明确判断出isTabletart = True 才能使得isTableEnd生效
-                if tableStartScore > maxTableStartScore and isTableEnd:
+                if (isTableEnd and tableStartScore > 0) \
+                    or (isTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0):
+                    # (isTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0) 解决片仔癀：2016年年度报告,分季度财务数据的解析问题
                     processedTable = table
                     maxTableStartScore = tableStartScore
                     maxTableEnd = isTableEnd

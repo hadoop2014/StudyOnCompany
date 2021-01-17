@@ -334,24 +334,24 @@ class InterpreterNature(InterpreterBase):
 
     def _get_needed_files(self,scale,isForced = False):
         """
-            args:
-                scale - 语句中指示的处理规模:
-                    '''
-                    单次,批量,全量
-                    '''
-                isForced - 语句中指示的处理方式:
-                    '''
-                    True - 强制执行, 清除checkpoint中指定的sourcefiles,后续进行这些报表的解析
-                    False - 如果sourcefiles已经在checkpoint中已经有记录,则后续不再进行这些报表解析
-                    '''
-            reutrn:
-                sourcefiles - 需要下一步进行财报解析的文件列表,处理规则:
-                    '''
-                    1) 从data_directory中读取所有文件,剔除无效文件;
-                    2) _remove_exclude_files移除在interpreterBase.json:'black_lists':'例外文件'中配置的文件;
-                    3) _remove_duplicate_files移除重复文件, 如果'昊海生科：2019年年度报告','昊海生科：2019年年度报告（修订版）',保留后者;
-                    4) 如果isForced=False,则移除已经在checkpoint记录中的文件,这些文件不再继续解析;
-                    '''
+        args:
+            scale - 语句中指示的处理规模:
+                '''
+                单次,批量,全量
+                '''
+            isForced - 语句中指示的处理方式:
+                '''
+                True - 强制执行, 清除checkpoint中指定的sourcefiles,后续进行这些报表的解析
+                False - 如果sourcefiles已经在checkpoint中已经有记录,则后续不再进行这些报表解析
+                '''
+        reutrn:
+            sourcefiles - 需要下一步进行财报解析的文件列表,处理规则:
+                '''
+                1) 从data_directory中读取所有文件,剔除无效文件;
+                2) _remove_exclude_files移除在interpreterBase.json:'black_lists':'例外文件'中配置的文件;
+                3) _remove_duplicate_files移除重复文件, 如果'昊海生科：2019年年度报告','昊海生科：2019年年度报告（修订版）',保留后者;
+                4) 如果isForced=False,则移除已经在checkpoint记录中的文件,这些文件不再继续解析;
+                '''
         """
         sourcefiles = list()
         if scale == '单次':
@@ -418,15 +418,15 @@ class InterpreterNature(InterpreterBase):
 
     def _remove_exclude_files(self,sourcefiles):
         """
-            args:
-                sourcefiles - 带进行财务报表解析的文件列表:
-            reutrn:
-                sourcefiles - 将符合在interpreterBase.json:'black_lists':'例外文件' 和 '例外文件特征'定义的文件移除:
-                    '''
-                    1) interpreterBase.json:'black_lists':'例外文件',这些文件是错误的,可以用其他文件取代;
-                    2) interpreterBase.json:'black_lists':'例外文件特征',具有这些特征的文件是不用解析的,可以用其他文件取代,示例:
-                        （603707）健友股份：2018年年度报告（已取消）.PDF)
-                    '''
+        args:
+            sourcefiles - 带进行财务报表解析的文件列表:
+        reutrn:
+            sourcefiles - 将符合在interpreterBase.json:'black_lists':'例外文件' 和 '例外文件特征'定义的文件移除:
+                '''
+                1) interpreterBase.json:'black_lists':'例外文件',这些文件是错误的,可以用其他文件取代;
+                2) interpreterBase.json:'black_lists':'例外文件特征',具有这些特征的文件是不用解析的,可以用其他文件取代,示例:
+                    （603707）健友股份：2018年年度报告（已取消）.PDF)
+                '''
         """
         assert isinstance(sourcefiles,list),"Parameter sourcefiles must be list!"
         excludeFiles = self.gJsonBase['black_lists']['例外文件']
