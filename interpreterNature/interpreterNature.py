@@ -104,13 +104,13 @@ class InterpreterNature(InterpreterBase):
             self._process_parse(scale,isForced)
 
 
-        def p_expression_create_table(p):
-            '''expression : CREATE TABLE'''
+        def p_expression_manipulate_table(p):
+            '''expression : MANIPULATE TABLE'''
             command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
             self.logger.info(command)
             tableName = p[2]
             assert tableName in self.tableNames, 'tableName(%s) is invalid, which must be in %s!'%(tableName, self.tableNames)
-            self._process_create_table(command)
+            self._process_manipulate_table(command)
 
 
         def p_expression_visualize(p):
@@ -261,7 +261,7 @@ class InterpreterNature(InterpreterBase):
         return taskResult
 
 
-    def _process_create_table(self,command):
+    def _process_manipulate_table(self, command):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return

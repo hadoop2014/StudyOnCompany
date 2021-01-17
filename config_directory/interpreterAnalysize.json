@@ -1,9 +1,9 @@
 {
-  "#tokens": ["创建",   "表",   "展示",     "处理规模","模型", "操作" ],
-  "tokens":  ["CREATE","TABLE","VISUALIZE","SCALE","MODEL","HANDLE"],
+  "#tokens": ["操作",   "表",   "展示",     "处理规模","模型", "操作" ],
+  "tokens":  ["MANIPULATE","TABLE","VISUALIZE","SCALE","MODEL","HANDLE"],
 
   "SCALE" : "全量|批量|单次",
-  "CREATE": "创建",
+  "MANIPULATE": "创建|更新",
   "VISUALIZE": "展示",
   "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表",
   "HANDLE": "训练|应用",
@@ -41,7 +41,9 @@
       ,"应收票据增加额（本期应收票据余额-上期应收票据余额）","长期借款","应付债券","流动比率","速动比率","六、期末现金及现金等价物余额","有息负债"
       ,"流动资产合计","负债合计","销售商品、提供劳务收到的现金","六、期末现金及现金等价物余额","五、现金及现金等价物净增加额","现金收入"],
     "fieldDiscard": [],
+    "parent": "",
     "create": "createFoundation.sql",
+    "update": "",
     "visualize": "",
     "order": [],
     "startrow": 0,
@@ -75,10 +77,12 @@
       ,"流动资产合计/负债合计","销售商品、提供劳务收到的现金","六、期末现金及现金等价物余额","五、现金及现金等价物净增加额","现金收入／营业收入"
       ,"应收账款周转率","存货周转率","营业利润/营业资金","营业收入/营业资金","还原后的净资产收益率(ROCE)","要求的回报率","剩余收益增长率"
       ,"剩余收益","永续收益"],
-    "fieldDiscard": ["报告类型","公司代码","公司名称","行业分类"],
+    "fieldDiscard": ["报告类型","公司代码","公司名称"],
+    "parent": "",
     "create": "createComprehensive.sql",
+    "update": "",
     "visualize": "FinanceAnalysis v1.0.xlsx",
-    "order": ["公司简称","报告时间 desc"],
+    "order": ["公司投资等级 desc","公司简称","报告时间 desc"],
     "startrow": 1,
     "freezecol": 4,
     "maxrow": 1000,
@@ -339,10 +343,25 @@
     }
   },
 
+
+  "公司价值分析表": {
+    "fieldName": [],
+    "fieldDiscard": [],
+    "parent": "财务分析综合表",
+    "create": "createValueAnalysize.sql",
+    "update": "",
+    "visualize": "FinanceAnalysis v1.0.xlsx",
+    "order": [],
+    "startrow": 1
+  },
+
+
   "公司价格分析表": {
     "fieldName": ["报告时间","公司简称","公司代码"],
     "fieldDiscard": [],
+    "parent": "",
     "create": "createPriceAnalysize.sql",
+    "update": "",
     "visualize": "",
     "order": [],
     "startrow": 0,
@@ -356,9 +375,6 @@
     }
   },
 
-  "公司价值分析表": {
-
-  },
 
   "公司价格预测模型": {
     "environment": {
@@ -367,7 +383,7 @@
       "framework": "pytorch",
       "dataset": "finance",
       "model": "rnnregression",
-      "tableName": "公司价格预测中间表",
+      "tableName": "公司价格预测表",
       "ckpt_used": false,
       "viewIsOn" : true
     }

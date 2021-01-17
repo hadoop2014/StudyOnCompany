@@ -1,13 +1,13 @@
 {
-  "#tokens": ["批量运行","执行",   "数据解析","表",    "创建",   "展示",     "参数配置", "参数名称",  "参数值", "数值"
+  "#tokens": ["批量运行","执行",   "数据解析","表",    "操作",   "展示",     "参数配置", "参数名称",  "参数值", "数值"
              ,"报告时间","爬取",   "网站",    "行业分类","模型"  ,"操作"   ,"导入数据"],
-  "tokens":  ["SCALE", "EXECUTE","PARSE",  "TABLE", "CREATE","VISUALIZE","CONFIG", "PARAMETER","VALUE", "NUMERIC"
+  "tokens":  ["SCALE", "EXECUTE","PARSE",  "TABLE", "MANIPULATE","VISUALIZE","CONFIG", "PARAMETER","VALUE", "NUMERIC"
              ,"TIME",  "CRAWL",  "WEBSITE","CATEGORY","MODEL","HANDLE"  ,"IMPORT"],
 
   "SCALE": "全量|批量|单次",
   "EXECUTE": "运行|强制运行",
   "PARSE": "财务报表解析",
-  "CREATE": "创建",
+  "MANIPULATE": "创建|更新",
   "VISUALIZE": "展示",
   "CONFIG": "参数配置",
   "IMPORT": "导入",

@@ -45,11 +45,12 @@ class ExcelVisualization(InterpreterBase):
         #if self.checkpointIsOn == False:
             # 没有启用备份文件时,初始化workbook
         if os.path.exists(visualize_file):
-            os.remove(visualize_file)
+            pass
+            #os.remove(visualize_file)
         workbook = Workbook()
         writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
         writer.book = workbook
-        writer.save()  # 生成一个新文件
+        #writer.save()  # 生成一个新文件
         workbook = load_workbook(visualize_file)
         #workbook.get_active_sheet().title = tableName
         writer = pd.ExcelWriter(visualize_file,engine='openpyxl')
@@ -61,6 +62,9 @@ class ExcelVisualization(InterpreterBase):
         for reportType in self.gConfig['报告类型']:
             tablePrefix = self._get_tableprefix_by_report_type(reportType)
             sheetName = tablePrefix + tableName# + str(time.thread_time_ns())
+            if sheetName in workbook.sheetnames:
+                # 先清空旧的工作薄
+                workbook.remove(workbook[sheetName])
 
             dataframe = self._sql_to_dataframe(tableName,sourceTableName=sheetName,scale=scale)
 
@@ -285,18 +289,6 @@ class ExcelVisualization(InterpreterBase):
             os.makedirs(self.logging_directory)
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
-        #suffix = self.analysizeresult.split('.')[-1]
-        #assert suffix in self.gConfig['excelSuffix'.lower()], \
-        #    'suffix of %s is invalid,it must one of %s' % (self.analysizeresult, self.gConfig['excelSuffix'.lower()])
-        #if self.checkpointIsOn == False:
-            # 没有启用备份文件时,初始化workbook
-            #if os.path.exists(self.analysizeresult):
-            #    os.remove(self.analysizeresult)
-        #assert os.path.exists(self.analysizeresult),'%s file is not exists,you must create it first!'%self.analysizeresult
-        #self.workbook = Workbook()
-        #self.writer = pd.ExcelWriter(self.analysizeresult, engine='openpyxl')
-        #self.writer.book = self.workbook
-        #self.writer.save()  # 生成一个新文件
 
 
 def create_object(gConfig):

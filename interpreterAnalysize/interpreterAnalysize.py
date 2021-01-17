@@ -67,10 +67,11 @@ class InterpreterAnalysize(InterpreterBase):
             pass
 
 
-        def p_expression_create_table(p):
-            '''expression : CREATE TABLE'''
+        def p_expression_manipulate_table(p):
+            '''expression : MANIPULATE TABLE'''
+            manipulate = p[1]
             tableName = p[2]
-            self._process_create_table(tableName)
+            self._process_manipulate_table(tableName, manipulate)
 
 
         def p_expression_visualize_table(p):
@@ -104,19 +105,20 @@ class InterpreterAnalysize(InterpreterBase):
         self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
 
 
-    def _process_create_table(self,tableName):
+    def _process_manipulate_table(self, tableName,manipulate):
         if self.unitestIsOn:
-            self.logger.info('Now in unittest mode,do nothing in _process_create_table!')
+            self.logger.info('Now in unittest mode,do nothing in _process_manipulate_table!')
             return
+        sqlFilename = self._manipulate_transfer(manipulate)
         for reportType in self.gConfig['报告类型']:
-            sql_file = self.dictTables[tableName]['create']
+            sql_file = self.dictTables[tableName][sqlFilename]
             tablePrefix = self._get_tableprefix_by_report_type(reportType)
             sql_file = os.path.join(self.program_directory,tablePrefix,sql_file)
             if not os.path.exists(sql_file):
-                self.logger.error('create script is not exist,you must create it first :%s!'%sql_file)
+                self.logger.error('%s script is not exist,you must create it first :%s!'% (manipulate, sql_file))
                 continue
-            create_sql = self._get_file_context(sql_file)
-            isSuccess = self._sql_executer_script(create_sql)
+            manipulate_sql = self._get_file_context(sql_file)
+            isSuccess = self._sql_executer_script(manipulate_sql)
             assert isSuccess,"failed to execute sql"
 
 
@@ -220,6 +222,15 @@ class InterpreterAnalysize(InterpreterBase):
         if gConfig['unittestIsOn'.lower()] == False:
             # 在unittest模式下，不需要进行绘图，否则会阻塞后续程序运行
             plt.show()
+
+
+    def _manipulate_transfer(self,manipulate):
+        manipulate_transfer = {
+            "创建": "create",
+            "更新": "update"
+        }
+        sqlFilename = manipulate_transfer[manipulate]
+        return sqlFilename
 
 
     def closeplt(self,time):

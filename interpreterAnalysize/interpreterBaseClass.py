@@ -36,10 +36,43 @@ class InterpreterBase(ModelBase):
         self.ignores = self.gJsonInterpreter['ignores']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
         self.tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|')]
-        self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
-                           keyword in self.tableNames}
+        #self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
+        #                   keyword in self.tableNames}
+        self.dictTables = self._get_dict_tables()
         self.models = self.gJsonInterpreter['MODEL'].split('|')
         self.dictModels = self._get_models_parameters(self.models)
+
+
+    def _get_dict_tables(self):
+        dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
+                           keyword in self.tableNames}
+        # 如果表的配置中,还有 parent这段,则要和父表的字段进行合并,合并的原则: 1) 子表的value是一个值,覆盖附表；2)value是列表,则追加到父表；3)value是dict,则进行递归
+        for tableName, dictTable in dictTables.items():
+            parent = dictTable['parent']
+            if parent != NULLSTR:
+                mergedDictTable = self._merged_dict_table(dictTable,dictTables[parent])
+                dictTables[tableName].update(mergedDictTable)
+        return dictTables
+
+
+    def _merged_dict_table(self,dictTable,dictTableParent):
+        dictTableMerged = dictTableParent.copy()
+        for key,value in dictTable.items():
+            # 遍历子表的值, 和父表进行合并
+            if isinstance(value, list):
+                # 如果子表的值是列表,则追加到父表
+                if len(value) != 0:
+                    dictTableMerged.setdefault(key,[]).append(*value)
+            elif isinstance(value, dict):
+                # 如果子表的值是dict, 则进行递归
+                dictTableMergedChild = self._merged_dict_table(value, dictTableMerged[key])
+                dictTableMerged.update({key: dictTableMergedChild})
+            else:
+                # 如果子表的值非上述几中,则覆盖父表
+                if key != 'parent':
+                    # 避免迭代循环
+                    dictTableMerged.update({key: value})
+        return dictTableMerged
 
 
     def _get_models_parameters(self,models):

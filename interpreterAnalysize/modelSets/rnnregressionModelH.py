@@ -126,7 +126,7 @@ class rnnModel(ModelBaseH):
         loss = loss.item() * y.shape[0]
         #acc  = (y_hat.argmax(dim=1) == y).sum().item()
         acc = 0
-        print("(y_hat, y):",list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:8])
+        print("(y_hat, y):",list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:6])
         return loss,acc
 
 
@@ -141,7 +141,7 @@ class rnnModel(ModelBaseH):
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
         acc = 0
-        print("(y_hat, y):",list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:8])
+        print("(y_hat, y):",list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:6])
         return loss, acc, mergedDataFrame
 
 
