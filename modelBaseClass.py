@@ -17,7 +17,6 @@ class ModelBase(BaseClass):
                                            self._get_class_name(self.gConfig) + '.model')# + self.gConfig['framework'])
         self.symbol_savefile = os.path.join(self.working_directory,
                                             self._get_class_name(self.gConfig) + '.symbol')# + self.gConfig['framework'])
-        #self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
         self.losses_train = []
         self.acces_train = []
         self.losses_valid = []
@@ -27,11 +26,6 @@ class ModelBase(BaseClass):
 
 
     def _init_parameters(self):
-        #self.model_savefile = os.path.join(self.working_directory,
-        #                                   self._get_class_name(self.gConfig) + 'model.' + self.gConfig['framework'])
-        #self.symbol_savefile = os.path.join(self.working_directory,
-        #                                    self._get_class_name(self.gConfig) + 'symbol.' + self.gConfig['framework'])
-        #self.logging_directory = os.path.join(self.logging_directory, self.gConfig['framework'])
         self.epoch_per_print = self.gConfig['epoch_per_print']
         self.debug_per_steps = self.gConfig['debug_per_steps']
         self.epochs_per_checkpoint = self.gConfig['epochs_per_checkpoint']

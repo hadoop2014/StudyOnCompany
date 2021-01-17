@@ -17,10 +17,6 @@ from interpreterCrawl.webcrawl.crawlBaseClass import *
 class CrawlStock(CrawlBase):
     def __init__(self,gConfig):
         super(CrawlStock, self).__init__(gConfig)
-        #self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
-        #self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        #self.checkpoint = None
-        #self.checkpointWriter = None
 
 
     def crawl_stock_data(self,website,scale):
@@ -66,23 +62,6 @@ class CrawlStock(CrawlBase):
         assert isinstance(fileList, list),"fileList must be a list!"
         tableName = self.dictWebsites[website]['tableName']
         successPaths = self._process_import_to_sqlite3(fileList,tableName,encoding)
-        '''
-        assert tableName in self.tableNames, "tableName(%s) must be in table list(%s)" % (tableName, self.tableNames)
-        successPaths = []
-        for fileName in fileList:
-            fullfileName = os.path.join(self.working_directory, fileName[0])
-            if not os.path.exists(fullfileName):
-                self.logger.info('file %s is not exist!'% fullfileName)
-                continue
-            dataFrame = pd.read_csv(fullfileName, encoding = encoding)
-            dataFrame.columns = self._get_merged_columns(tableName)
-            if not dataFrame.empty:
-                self._write_to_sqlite3(dataFrame,tableName)
-                successPaths.append(fileName)
-            else:
-                self.logger.info('failed to write to sqlite3,the file is empty: %s'% fileName)
-            #self.logger.info("success to write to sqlite3 from file %s"% fullfileName)
-        '''
         return successPaths
 
 
@@ -282,7 +261,6 @@ class CrawlStock(CrawlBase):
                         #else:
                         content = i.contents[0]
                         code, company, type = self._content_transfer(content)
-                            #type = '公司'
                         if code is not NaN and company is not NaN:
                             # 针对TMT50指数, 在这里去掉
                             stockList.append([company, code, type])
@@ -340,34 +318,6 @@ class CrawlStock(CrawlBase):
         pat = re.compile(s)
         code = pat.findall(html)
         return code
-    '''
-
-    '''
-    def save_checkpoint(self, content):
-        assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
-        content = self._remove_duplicate(content)
-        self.checkpoint.seek(0)
-        self.checkpoint.truncate()
-        self.checkpointWriter.writerows(content)
-        #读取checkpoint内容,去掉重复记录,重新排序,写入文件
-
-
-    def close_checkpoint(self):
-        self.checkpoint.close()
-
-
-    def _remove_duplicate(self,content):
-        assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
-        resultContent = content
-        if len(content) == 0:
-            return resultContent
-        checkpointHeader = self.gJsonInterpreter['checkpointHeader']
-        dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader)
-        dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader))
-        dataFrame = dataFrame.drop_duplicates()
-        dataFrame = dataFrame.sort_values(by=["报告类型","文件名"],ascending=False)
-        resultContent = dataFrame.values.tolist()
-        return resultContent
     '''
 
     def initialize(self,dictParameter = None):

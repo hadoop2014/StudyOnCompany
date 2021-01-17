@@ -109,20 +109,15 @@ class Collate:
             if max_len > self.time_steps:
                 # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
                 xs = list(map(cut_tensor, xs))
-                # ys = list(map(cut_tensor, ys))
                 max_len = self.time_steps
             # 获得每个样本的序列长度
             seq_lengths = torch.LongTensor([v for v in map(len, xs)])
             # 每个样本都padding到当前batch的最大长度
-            # xs = torch.FloatTensor([pad_tensor(v, max_len) for v in xs])
-            # ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
             xs = [pad_tensor(v, max_len) for v in xs]
             # 把xs和ys按照序列长度从大到小排序
             seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
             xs = [xs[i] for i in perm_idx]
-            # xs = xs[perm_idx].to(self.ctx)
-            # ys = ys[perm_idx]
-            return xs, seq_lengths  # , ys
+            return xs, seq_lengths
         else:
             raise ValueError('type(%s) of batch items is not supported, it must be torch.Tensor or pd.DataFrame!' % type(batch[0]))
 
@@ -157,7 +152,6 @@ class getFinanceDataH(getdataBase):
 
 
     def load_data(self,*args):
-        #dictSourceData = self.get_dictSourceData(self.gConfig)
         tableName = self.dictSourceData['tableName']
         sql = ''
         sql = sql + 'select * from {}'.format(tableName)

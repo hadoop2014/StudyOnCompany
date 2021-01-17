@@ -3,10 +3,9 @@ from torch import optim,nn
 from functools import partial
 from torch.nn.utils.rnn import PackedSequence
 import torch
-from torchvision import models
+#from torchvision import models
 from tensorboardX import SummaryWriter
 from torchsummary import summary # 该1.8版本在pytorch 1.2.0版本下使用, add_graph函数存在异常
-#import visdom
 import re
 
 #深度学习模型的基类
@@ -18,7 +17,6 @@ class ModelBaseH(InterpreterBase):
 
     def _init_parameters(self):
         super(ModelBaseH, self)._init_parameters()
-        #ModelBase._init_parameters()
         self.learning_rate = self.gConfig['learning_rate']
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
         self.learning_rate_decay_step = self.gConfig['learning_rate_decay_step']
@@ -32,7 +30,6 @@ class ModelBaseH(InterpreterBase):
         self.max_queue = self.gConfig['max_queue']
         self.weight_initializer = self.get_initializer(self.initializer)
         self.bias_initializer = self.get_initializer('constant')
-        #self.global_step = torch.tensor(0, dtype=torch.int64, device=self.ctx)
         #self.set_default_tensor_type()  #设置默认的tensor在ｇｐｕ还是在ｃｐｕ上运算
 
 
@@ -132,7 +129,6 @@ class ModelBaseH(InterpreterBase):
 
     def get_global_step(self):
         return 0
-        #return self.global_step.item()
 
 
     def get_input_shape(self):
@@ -154,7 +150,6 @@ class ModelBaseH(InterpreterBase):
     def saveCheckpoint(self):
         stateSaved = {'model':self.net.state_dict(),'optimizer':self.get_optim_state()}
         torch.save(stateSaved,self.model_savefile)
-        #torch.save(self.global_step,self.symbol_savefile)
         self.logger.info('success to save checkpoint to file %s'%self.model_savefile)
 
 
@@ -271,7 +266,6 @@ class ModelBaseH(InterpreterBase):
             n += self.get_batch_size(y)
             self.writer.add_scalar('train/loss', loss, self.get_global_step())
             self.writer.add_scalar('train/accuracy', acc, self.get_global_step())
-            #self.global_step += 1
         return loss_sum / n, acc_sum / n
 
 
@@ -420,15 +414,11 @@ class ModelBaseH(InterpreterBase):
             ckpt_used = self.gConfig['ckpt_used']
             if ckpt and ckpt_used:
                 print("Reading model parameters from %s" % ckpt)
-                #self.net.load_state_dict(torch.load(ckpt))
                 self.loadCheckpoint()
-                #self.net.to(device=self.ctx)
-                #self.global_step = torch.load(self.symbol_savefile,map_location=self.ctx)
             else:
                 print("Created model with fresh parameters.")
                 self.net.to(device=self.ctx)
                 self.net.apply(self.params_initialize)
-                #self.global_step = torch.tensor(0,dtype=torch.int64,device=self.ctx)
         self.debug_info(self.net)
         self.summary(self.net)
         self.add_graph(self.net)

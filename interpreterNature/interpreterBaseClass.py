@@ -11,10 +11,6 @@ from baseClass import *
 class InterpreterBase(BaseClass):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
-        #self.interpreter_name = self._get_class_name(self.gConfig)
-        #self.working_directory = os.path.join(self.gConfig['working_directory'],'interpreter',self.interpreter_name)
-        #self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)
-        #self.program_directory = self.gConfig['program_directory']
         self.mainprogram = os.path.join(self.program_directory,self.gConfig['mainprogram'])
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)

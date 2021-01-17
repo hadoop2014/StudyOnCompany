@@ -40,21 +40,14 @@ class rnnModel(ModelBaseH):
         getdataClass = self.gConfig['getdataClass']
         self.resizedshape = getdataClass.resizedshape
         self.input_dim = getdataClass.input_dim
-        #self.idx_to_char = getdataClass.idx_to_char
-        #self.char_to_idx = getdataClass.char_to_idx
         self.clip_gradient = self.gConfig['clip_gradient']
-        #self.prefixes = self.gConfig['prefixes']
-        #self.predict_length = self.gConfig['predict_length']
         self.time_steps = self.resizedshape[0]
         self.rnn_hiddens = self.gConfig['rnn_hiddens']  # 256
         self.num_layers = self.gConfig['num_layers']
-        #self.input_dim = self.vocab_size
         self.output_dim = self.gConfig['output_dim']
         self.activation = self.get_activation(self.gConfig['activation'])
         self.nonlinearity = self.get_nonlinearity(self.gConfig['activation'])
         self.cell = self.get_cell(self.gConfig['cell'])
-        #self.scratchIsOn = self.gConfig['scratchIsOn']
-        #self.randomIterIsOn = self.gConfig['randomIterIsOn']
         self.cell_selector = {
             'rnn': nn.RNN(input_size = self.input_dim,hidden_size=self.rnn_hiddens, num_layers=self.num_layers,
                           nonlinearity=self.nonlinearity),

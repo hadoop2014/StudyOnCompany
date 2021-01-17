@@ -12,7 +12,6 @@ class InterpreterBase(BaseClass):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
         self.interpreter_name = self._get_class_name(self.gConfig)
-        #self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
         if os.path.exists(self.logging_directory) == False:
@@ -47,14 +46,10 @@ class InterpreterBase(BaseClass):
         self.literals = self.gJsonInterpreter['literals']
         self.ignores = self.gJsonInterpreter['ignores']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
-        #self.websites = [website for website in self.gJsonInterpreter['WEBSITE'].split('|')]
         self.websites = self.gJsonInterpreter['WEBSITE'].split('|')
         self.dictWebsites = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
                            keyword in self.websites}
         self.indexes = self.gJsonInterpreter['INDEX'].split('|')
-        #self.tables = self.gJsonInterpreter['TABLE'].split('|')
-        #self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
-        #                   keyword in self.tables}
 
 
     def _get_keyword(self,tableKeyword):

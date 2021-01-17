@@ -19,45 +19,28 @@ class ExcelVisualization(InterpreterBase):
     def __init__(self,gConfig):
         super(ExcelVisualization, self).__init__(gConfig)
         self.analysizeresult = os.path.join(self.working_directory,gConfig['analysizeresult'])
-        #self.workbook = Workbook()
         self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
 
 
     def _get_class_name(self, gConfig):
         visualization_name = re.findall('(.*)Visualization', self.__class__.__name__).pop().lower()
-        #assert dataset_name in gConfig['interpreterlist'], \
-        #    'interpreterlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
-        #    (gConfig['interpreterlist'], dataset_name, self.__class__.__name__)
         return visualization_name
 
 
     def read_and_visualize(self,visualize_file,tableName,scale):
         # 专门用于写文件
-        #table = dictTable['table']
-        #tableName = dictTable['tableName']
-        #workbook = load_workbook(self.targetFile)
-        #if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
-        #    workbook.remove(workbook['Sheet'])  # 删除空工作薄
-        #writer = pd.ExcelWriter(self.targetFile, engine='openpyxl')
-        #writer.book = workbook
         visualize_file = os.path.join(self.working_directory,visualize_file)
-        #assert os.path.exists(visualize_file),"the file %s is not exists,you must create it first!"%visualize_file
-        #if self.checkpointIsOn == False:
-            # 没有启用备份文件时,初始化workbook
-        if os.path.exists(visualize_file):
-            pass
-            #os.remove(visualize_file)
+        #if os.path.exists(visualize_file):
+        #    os.remove(visualize_file)
         workbook = Workbook()
         writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
         writer.book = workbook
         #writer.save()  # 生成一个新文件
         workbook = load_workbook(visualize_file)
-        #workbook.get_active_sheet().title = tableName
         writer = pd.ExcelWriter(visualize_file,engine='openpyxl')
         writer.book = workbook
         if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
             workbook.remove(workbook['Sheet'])  # 删除空工作薄
-        #sheetNames = workbook.sheetnames
 
         for reportType in self.gConfig['报告类型']:
             tablePrefix = self._get_tableprefix_by_report_type(reportType)
@@ -91,14 +74,12 @@ class ExcelVisualization(InterpreterBase):
         self._set_conditional_formatting(sheet,tableName)
 
         #blue_fill = PatternFill(start_color='FF0000FF', end_color='FF0000FF', fill_type='solid')
-
         #dxf = DifferentialStyle(fill=blue_fill, numFmt=NumFmt(10, '0.00%'))
         #rule = Rule('expression', formula=['E3 > 3'], dxf=dxf)
         #ws.conditional_formatting.add('E3', rule)
 
 
     def _sql_to_dataframe(self,tableName,sourceTableName,scale):
-        #tablePrefix = self._get_tableprefix_by_report_type(self.gConfig['报告类型'])
         if scale == "批量":
             assert ('公司简称' in self.gConfig.keys() and self.gConfig['公司简称'] != NULLSTR) \
                 and ('报告时间' in self.gConfig.keys() and self.gConfig['报告时间'] != NULLSTR) \
@@ -264,11 +245,6 @@ class ExcelVisualization(InterpreterBase):
 
 
     def _is_cell_pecentage(self,cell,tableName):
-        isCellPecentage = False
-        #percentage_exclude = self.dictTables[tableName]['percentage_exclude']
-        #if self._is_cell_emphasize(cell,tableName):
-        #    pattern_percentage_exclude = '|'.join(percentage_exclude)
-        #    isCellPecentage = not self._is_matched(pattern_percentage_exclude,cell.value)
         percentage_field = [key for key,value in self.dictTables[tableName]['conditional_formatting'].items()
                             if value['value_format'] == 'percentage']
         pattern_percentage_field = '|'.join(percentage_field)

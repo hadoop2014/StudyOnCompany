@@ -13,9 +13,6 @@ class CrawlBase(InterpreterBase):
     def __init__(self,gConfig):
         super(CrawlBase, self).__init__(gConfig)
         self.start_time = time.time()
-        #self.logging_directory = self.gConfig['logging_directory']
-        #self.data_directory = self.gConfig['data_directory']
-        #self.logging_directory = os.path.join(self.logging_directory, 'docparser', self._get_class_name(gConfig))
         self.model_savefile = os.path.join(self.working_directory, self._get_class_name(self.gConfig) + '.model')
         self.checkpoint_filename = self._get_class_name(self.gConfig) + '.ckpt'
         self.source_directory = os.path.join(self.data_directory, self.gConfig['source_directory'])
@@ -133,9 +130,6 @@ class CrawlBase(InterpreterBase):
 
     def _get_class_name(self, gConfig):
         parser_name = re.findall('Crawl(.*)', self.__class__.__name__).pop().lower()
-        #assert parser_name in gConfig['docformatlist'], \
-        #    'docformatlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
-        #    (gConfig['docformatlist'], parser_name, self.__class__.__name__)
         return parser_name
 
 

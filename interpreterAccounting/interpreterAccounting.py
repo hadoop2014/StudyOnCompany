@@ -174,7 +174,7 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional NUMERIC
                           | TABLE optional time optional  NUMERIC
                           | TABLE optional error '''
-            #  TABLE optional '(' NUMERO ')' 去掉,放入optional中, 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
+            # TABLE optional '(' NUMERO ')' 去掉,放入optional中, 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
             # TABLE optional error  解决尚荣医疗2016年 P90页,合并资产负债表搜索错误 ,而导致连续多页搜索错误
             # TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
             # TABLE optional '(' NAME ')' 和optional  '(' NAME ')'冲突

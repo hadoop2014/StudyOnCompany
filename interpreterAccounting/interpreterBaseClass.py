@@ -13,8 +13,6 @@ import itertools
 class InterpreterBase(BaseClass):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
-        #self.interpreter_name = self._get_class_name(self.gConfig)
-        #self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
         if os.path.exists(self.logging_directory) == False:
@@ -135,7 +133,6 @@ class InterpreterBase(BaseClass):
         for tableName in dictTables.keys():
             for tokenName in ['field','header']:
                 dictTables[tableName].update({tokenName + 'Name':list(map(self._replace_fieldname,dictTables[tableName][tokenName + 'Name']))})
-                #dictTables[tableName].update({'fieldName':list(map(self._replace_fieldname,dictTables[tableName]['fieldName']))})
                 dictTables[tableName].update({tokenName + 'Discard': list(map(self._replace_fieldname, dictTables[tableName][tokenName + 'Discard']))})
                 #dictTables[tableName].update({'fieldDiscard': list(map(self._replace_fieldname, dictTables[tableName]['fieldDiscard']))})
                 #dictTables[tableName].update({'fieldFirst': self._replace_fieldname(self.dictTables[tableName]['fieldFirst'])})

@@ -295,7 +295,6 @@ class DocParserPdf(DocParserBase):
                 isTableStartFirst = True
         if isinstance(mergedFieldsSecond, str) and isinstance(patternHeaderSecond, str) :
             mergedFieldsSecond = mergedFieldsSecond.replace('(', '（').replace(')', '）').replace('(', '（').replace(')', '）').replace('[','（').replace(']','）').replace(' ', NULLSTR)
-            #mergedFieldsSecond = self._replace_fieldname(mergedFieldsSecond)
             matched = re.search(patternHeaderSecond, mergedFieldsSecond)
             if matched is not None:
                 isTableStartSecond = True

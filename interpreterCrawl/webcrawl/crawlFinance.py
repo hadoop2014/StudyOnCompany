@@ -15,10 +15,6 @@ from interpreterCrawl.webcrawl.crawlBaseClass import *
 class CrawlFinance(CrawlBase):
     def __init__(self,gConfig):
         super(CrawlFinance, self).__init__(gConfig)
-        #self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
-        #self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        #self.checkpoint = None
-        #self.checkpointWriter = None
 
 
     def crawl_finance_data(self,website,scale):
@@ -55,8 +51,6 @@ class CrawlFinance(CrawlBase):
 
     def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
         conn = self._get_connect()
-        #dataFrame = dataFrame.T
-        #sql_df = dataFrame.set_index(dataFrame.columns[0],inplace=False).T
         sql_df = dataFrame
         # 对于财报发布信息, 必须用报告时间, 报告类型作为过滤关键字
         specialKeys = ['发布时间', '报告类型']

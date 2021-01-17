@@ -225,7 +225,6 @@ class DocParserSql(DocParserBase):
 
         #把dataframe写入sqlite3数据库
         reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
-        #reportType = self._get_report_type_alias(reportType)
         targetTableName = self._get_tablename_by_report_type(reportType, tableName)
         self._write_to_sqlite3(dataframe,targetTableName)
         self.process_info[tableName].update({'processtime':time.time() - self.process_info[tableName]['processtime']})
@@ -424,7 +423,6 @@ class DocParserSql(DocParserBase):
         lexer = self.dictLexers[tableName]['lexer'+tokenName.title()]
         dictToken = self.dictLexers[tableName]['dictToken'+tokenName.title()]
         lexer.input(mergedColumn)
-        #dictFieldPos = dict({0:{"lexpos":0,'value':NULLSTR,'type':NULLSTR}})
         dictFieldPos = dict()
         for index,tok in enumerate(lexer):
             #针对主营业务分行业经营情况表做特殊处理

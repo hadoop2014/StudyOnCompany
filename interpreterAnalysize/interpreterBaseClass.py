@@ -11,8 +11,6 @@ from modelBaseClass import *
 class InterpreterBase(ModelBase):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
-        #self.interpreter_name = self._get_class_name(self.gConfig)
-        #self.logging_directory = os.path.join(self.gConfig['logging_directory'], 'interpreter', self.interpreter_name)
         if os.path.exists(self.working_directory) == False:
             os.makedirs(self.working_directory)
         if os.path.exists(self.logging_directory) == False:
@@ -36,8 +34,6 @@ class InterpreterBase(ModelBase):
         self.ignores = self.gJsonInterpreter['ignores']
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
         self.tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|')]
-        #self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
-        #                   keyword in self.tableNames}
         self.dictTables = self._get_dict_tables()
         self.models = self.gJsonInterpreter['MODEL'].split('|')
         self.dictModels = self._get_models_parameters(self.models)
@@ -56,6 +52,18 @@ class InterpreterBase(ModelBase):
 
 
     def _merged_dict_table(self,dictTable,dictTableParent):
+        """
+            args:
+                dictTable - 当前表的配置参数
+                dictTableParent - 父表的配置参数
+            reutrn:
+                dictTableMerged - 当前表和父表融合后的配置, 融合的规则:
+                    '''
+                    1) 当前表的value是一个值, 则覆盖父表;
+                    2) 当前表的value是一个list,则追加到父表；
+                    3) 当前表的value是一个dict,则进行递归调用;
+                    '''
+        """
         dictTableMerged = dictTableParent.copy()
         for key,value in dictTable.items():
             # 遍历子表的值, 和父表进行合并
@@ -76,7 +84,19 @@ class InterpreterBase(ModelBase):
 
 
     def _get_models_parameters(self,models):
-        # 把interpreterBase.json中的模型公共参数 和 interpreterAnalysize.json中的模型专用配置参数合并到一起
+        """
+            args:
+                models - 当前解释器配置文件下的所有模型名称,定义在文件interpreterAnalysize.json,如:
+                    '''
+                    公司价格预测模型
+                    '''
+            reutrn:
+                dictModels - 把interpreterAnalysize.json中的模型配置参数和interpreterBase.json中的"模型公共参数"进行融合, 融合的规则:
+                    '''
+                    1) interpreterAnalysize.json中的模型配置参数 更新到 "模型公共参数" 中;
+                    2) 模型配置参数model所指定的子模型配置参数 更新到 interpreterAnalysize.json中的模型配置参数中;
+                    '''
+        """
         assert isinstance(models,list) and len(models) > 0,"models(%s) must be a list and not be NULL!"% models
         dictModels = {}
         dictModel = {}

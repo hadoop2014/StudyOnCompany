@@ -288,22 +288,18 @@ class ModelBaseM(InterpreterBase):
 
 
     def transfer_learning(self):
+        # 迁移学习
         pretrained_net = self.get_pretrain_model(pretrained=True, ctx=self.ctx,
                                                  root=self.working_directory, classes=self.get_classes())
         net = self.get_pretrain_model(classes=self.get_classes())
         net.features = pretrained_net.features
-        #net.features.collect_params().setattr('grad_req', 'null') #所有的features的梯度不再更新
         net.output.initialize(self.weight_initializer, ctx=self.ctx)
         net.output.collect_params().setattr('lr_mult', self.lr_mult)
-        # weight = pretrained_net.output.weight
-        # hotdog_w = nd.split(weight.data(), 1000, axis=0)[713]  ＃713即为imagenet中hotdog的分类
-        # self.net.output.weight.data()[1]= hotdog_w
         return net
 
 
     def initialize(self,dictParameter = None):
         assert dictParameter is not None,'dictParameter must not be None!'
-
         self.gConfig.update(dictParameter)
         self._init_parameters()
 
