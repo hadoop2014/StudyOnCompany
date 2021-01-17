@@ -121,17 +121,23 @@ class BaseClass():
 
 
     def _get_time_type_company_code_by_name(self,filename):
-        time = self._standardize('\\d+年',filename)
+        timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
+        #time = self._standardize('\\d+年',filename)
+        time = self._standardize(timeStandardize, filename)
         type = self._get_report_type_by_filename(filename)
         company,code = self._get_company_code_by_content(filename)
         return company,time,type,code
 
 
     def _get_company_code_by_content(self,content):
-        code = self._standardize('（\\d+）',content)
+        codeStandardize = self.gJsonBase['codeStandardize'] # （\\d+）
+        #code = self._standardize('（\\d+）',content)
+        code = self._standardize(codeStandardize, content)
         if code is not NaN:
             code = code.replace('（',NULLSTR).replace('）',NULLSTR)
-        company = self._standardize("[*A-Z]*[\\u4E00-\\u9FA5]+[A-Z0-9]*",content)
+        companyStandardize = self.gJsonBase['companyStandardize']   # "[*A-Z]*[\\u4E00-\\u9FA5]+[A-Z0-9]*"
+        #company = self._standardize("[*A-Z]*[\\u4E00-\\u9FA5]+[A-Z0-9]*",content)
+        company = self._standardize(companyStandardize, content)
         return company,code
 
 
@@ -146,8 +152,9 @@ class BaseClass():
         #assert,因为repair_table会传进来一个文件 通用数据：适用所有年度报告.xlsx 不符合标准文件名
         #assert self._is_matched('\\d+年',name),"name(%s) is invalid"%name
         type = name
-        pattern = "\\d+年([\\u4E00-\\u9FA5]+)"
-        matched = re.findall(pattern,name)
+        #pattern = "\\d+年([\\u4E00-\\u9FA5]+)"
+        reportTypeStandardize = self.gJsonBase['reportTypeStandardize']  # "\\d+年([\\u4E00-\\u9FA5]+)"
+        matched = re.findall(reportTypeStandardize,name)
         if matched is not None and len(matched) > 0:
             type = matched.pop()
         #reportType = self._alias(type, self.reportTypeAlias)

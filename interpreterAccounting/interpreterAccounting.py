@@ -98,10 +98,12 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional unit finis
                           | TABLE optional time optional TIME
                           | TABLE optional time optional HEADER unit
+                          | TABLE optional time optional HEADER HEADER
                           | TABLE optional HEADER optional HEADER
                           | TABLE optional HEADER optional unit finis
                           | TABLE optional HEADER optional time unit
                           | TABLE optional HEADER TIME TIME'''
+            # TABLE optional time optional HEADER HEADER 解决 古井贡酒2018年, 现金流量表补充资料出现在页尾, 然后在搜索第二页时出错
             # TABLE optional time optional HEADER unit 解决凯利泰：2016年 合并所有者权益变动表出现在页尾的情况
             # TABLE optional HEADER optional HEADER解决鱼跃医疗：2014年年度 主营业务分行业经营情况,搜索不到问题
             # TABLE optional HEADER optional time unit解决长春高新2018年报合并所有者权益变动表出现在页尾的场景

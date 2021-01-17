@@ -30,18 +30,16 @@ class ExcelVisualization(InterpreterBase):
     def read_and_visualize(self,visualize_file,tableName,scale):
         # 专门用于写文件
         visualize_file = os.path.join(self.working_directory,visualize_file)
-        #if os.path.exists(visualize_file):
-        #    os.remove(visualize_file)
-        workbook = Workbook()
-        writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
-        writer.book = workbook
+        #workbook = Workbook()
+        #writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
+        #writer.book = workbook
         #writer.save()  # 生成一个新文件
-        workbook = load_workbook(visualize_file)
-        writer = pd.ExcelWriter(visualize_file,engine='openpyxl')
-        writer.book = workbook
-        if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
-            workbook.remove(workbook['Sheet'])  # 删除空工作薄
-
+        #workbook = load_workbook(visualize_file)
+        #writer = pd.ExcelWriter(visualize_file,engine='openpyxl')
+        #writer.book = workbook
+        #if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
+        #    workbook.remove(workbook['Sheet'])  # 删除空工作薄
+        workbook,writer = self._get_workbook_and_writer(visualize_file)
         for reportType in self.gConfig['报告类型']:
             tablePrefix = self._get_tableprefix_by_report_type(reportType)
             sheetName = tablePrefix + tableName# + str(time.thread_time_ns())
@@ -60,6 +58,31 @@ class ExcelVisualization(InterpreterBase):
 
         workbook.save(visualize_file)
         workbook.close()
+
+
+    def _get_workbook_and_writer(self,visualize_file):
+        #if os.path.exists(visualize_file):
+        #    os.remove(visualize_file)
+        workbook = Workbook()
+        writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
+        writer.book = workbook
+        if not os.path.exists(visualize_file):
+            writer.save()  # 生成一个新文件
+        try:
+            workbook = load_workbook(visualize_file)
+        except Exception as e:
+            # 删除文件重新执行一次
+            print(e)
+            self.logger.info('failed to load workbook,remove it and try load it again from file %s, !' % visualize_file)
+            if os.path.exists(visualize_file):
+                os.remove(visualize_file)
+                writer.save()
+            workbook =load_workbook(visualize_file)
+        writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
+        writer.book = workbook
+        if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
+            workbook.remove(workbook['Sheet'])  # 删除空工作薄
+        return workbook, writer
 
 
     def _adjust_style_excel(self,workbook,sheetName,tableName):
