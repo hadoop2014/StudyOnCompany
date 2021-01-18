@@ -129,15 +129,20 @@ class InterpreterAccounting(InterpreterBase):
                 if self.currentPageNumber == self.names[tableName]['page_numbers'][-1]:
                     self.logger.info("fetchtable warning(search again)%s -> %s %s page %d" % (p[1], tableName, p[3], self.currentPageNumber))
                     return
-            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True \
+                and self.names[tableName]['interpretPrefix'] != NULLSTR:
                 self.docParser.interpretPrefix = NULLSTR
+                # 此处把self.names[tableName]['interpretPrefix'] 设置为NULLSTR,下次再搜索到时可以重入, 解决天齐锂业：2019年年度报告,合并资产负债表 在P55,P102页出现,后者是正确的
+                self.names[tableName].update({'interpretPrefix': NULLSTR})
                 return
+            self.names[tableName].update({'interpretPrefix' : interpretPrefix})
             if self.names['公司名称'] == NULLSTR:
                 self.names['公司名称'] = self.names['company']
             self.names['货币单位'] = self._unit_transfer(self.names['unit'])
             self.names['unit'] = NULLSTR
             self.names['货币名称'] = self.names['currency']
             self._process_fetch_table(tableName, tableBegin=True, interpretPrefix=interpretPrefix)
+            self.logger.info(' '.join([str(word.type) for word in p.slice]))
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
 
 
@@ -159,10 +164,14 @@ class InterpreterAccounting(InterpreterBase):
             tableName = self._get_tablename_alias(str.strip(p[1]).replace(' ',NULLSTR))
             interpretPrefix = '\n'.join([str(slice).strip() for slice in p[:-1] if slice is not None]) + '\n'
             self.logger.info("fetchtable warning(reach tail) %s -> %s : %s page %d" % (p[1], tableName, interpretPrefix.replace('\n',' '), self.currentPageNumber))
-            if self._is_reatch_max_pages(self.names[tableName],tableName) is True:
+            if self._is_reatch_max_pages(self.names[tableName],tableName) is True \
+                and self.names[tableName]['interpretPrefix'] != NULLSTR:
                 self.docParser.interpretPrefix = NULLSTR
+                self.names[tableName].update({'interpretPrefix': NULLSTR})
                 return
+            self.names[tableName].update({'interpretPrefix': interpretPrefix})
             self.docParser.interpretPrefix = interpretPrefix
+            self.logger.info(' '.join([str(word.type) for word in p.slice]))
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
 
 
@@ -173,9 +182,9 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional '(' discard ')'
                           | TABLE optional '(' LABEL ')'
                           | TABLE optional LABEL
-                          | TABLE optional NUMERIC
-                          | TABLE optional time optional  NUMERIC
                           | TABLE optional error '''
+            # 去掉 TABLE optional NUMERIC  尚不确定对那个报表解析有影响
+            # 去掉 TABLE optional time optional NUMERIC 解决赣锋锂业：2019年年度报告,主要会计数据 的搜索问题
             # TABLE optional '(' NUMERO ')' 去掉,放入optional中, 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
             # TABLE optional error  解决尚荣医疗2016年 P90页,合并资产负债表搜索错误 ,而导致连续多页搜索错误
             # TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料
@@ -193,6 +202,7 @@ class InterpreterAccounting(InterpreterBase):
             # TABLE optional NUMERO DISCARD 需要去掉,会导致三诺生物2018年年报 合并资产负债表搜索失败
             # TABLE optional '(' LABEL ')'解决海天味业2016年年报 出现" 近三年主要会计数据和财务指标(一) 主要会计数据",第一个TABLE '近三年主要会计数据和财务指标'是误判
             interpretPrefix = '\n'.join([str(slice) for slice in p if slice is not None]) + '\n'
+            self.logger.info(' '.join([str(word.type) for word in p.slice]))
             self.logger.warning("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             #针对上一页fetchtable reatch tail时,下一页搜索到错误的TABLE,不再继续往下搜索
             self.docParser.interpretPrefix = NULLSTR
@@ -210,9 +220,11 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '（' TIME '）'
                         | optional '（' TIME DISCARD '）'
                         | optional NAME
+                        | optional NAME NUMERIC
                         | optional '-'
                         | NUMERIC
                         | empty '''
+            # optional NAME NUMERIC 解决 赣锋锂业2019年报,主要会计数据 出现在页尾,且出现一大段文字,包含有数字
             # optional '(' NUMERO ')' 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
             # optional '（' TIME DISCARD '）'解决沪电股份：2014年报出现,合并现金流量表 （2014 年 12 月 31 日止年度） 单位：人民
             # optional '-' 解决爱朋医疗2014年 主营业务分行业经营情况 出现在页尾的情况: 以上的行业、产品或地区情况 √ 适用 □ 不适用 - 31-
@@ -915,7 +927,7 @@ class InterpreterAccounting(InterpreterBase):
                                           ,'货币名称': NULLSTR
                                           ,"注册地址": NULLSTR
                                           ,'table':NULLSTR,'tableStartScore': 0,'tableBegin':False,'tableEnd':False
-                                          ,"page_numbers":list()}})
+                                          ,"page_numbers":list(),"interpretPrefix": NULLSTR}})
         self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR,'address':NULLSTR})
         for commonField,_ in self.commonFields.items():
             self.names.update({commonField:NULLSTR})
