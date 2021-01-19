@@ -22,7 +22,8 @@ create table if not exists 年度公司价格分析中间表 (
     上证指数增长率 REAL,
     深证成指增长率 REAL,
     创业板指增长率 REAL,
-    沪深300指数增长率 REAL
+    沪深300指数增长率 REAL,
+    训练标识 INTEGER DEFAULT NULL
 );
 
 
@@ -54,7 +55,8 @@ select
     round((f.周平均收盘价 - g.周平均收盘价)/g.周平均收盘价, 4) as 上证指数增长率,
     round((h.周平均收盘价 - i.周平均收盘价)/i.周平均收盘价, 4) as 深证成指增长率,
     round((j.周平均收盘价 - k.周平均收盘价)/k.周平均收盘价, 4) as 创业板指增长率,
-    round((d.周平均收盘价 - e.周平均收盘价)/e.周平均收盘价, 4) as 沪深300指数增长率
+    round((d.周平均收盘价 - e.周平均收盘价)/e.周平均收盘价, 4) as 沪深300指数增长率,
+    a.训练标识
 from
 (
     select x.报告时间,
@@ -99,7 +101,8 @@ from
                     else date(x.发布时间, '-1 year')
                     end
             end
-            as 起始时间
+            as 起始时间,
+        case when x.结束时间 is not NULL then 1 else 0 end as 训练标识
 
         --case when strftime('%Y-%W',x.发布时间, '+1 year') > z.结束周
         --    then z.结束周
@@ -165,7 +168,6 @@ left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.总市值), 0) as 周平均总市值
     from
     (
@@ -173,13 +175,13 @@ left join
             strftime('%Y-%W', 报告时间) as 报告周
         from 股票交易数据
     )x
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )b
+on a.公司代码 = b.公司代码 and a.报告周 = b.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.总市值), 0) as 周平均总市值
     from
     (
@@ -187,13 +189,13 @@ left join
             strftime('%Y-%W', 报告时间) as 报告周
         from 股票交易数据
     )x
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )c
+on a.公司代码 = c.公司代码 and a.结束周 = c.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.总市值), 0) as 周平均总市值
     from
     (
@@ -201,13 +203,13 @@ left join
             strftime('%Y-%W', 报告时间) as 报告周
         from 股票交易数据
     )x
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )o
+on a.公司代码 = o.公司代码 and a.起始周 = o.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -216,13 +218,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '沪深300'
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )d
+on a.报告周 = d.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -231,13 +233,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '沪深300'
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )e
+on a.起始周 = e.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -246,13 +248,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '上证指数'
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )f
+on a.报告周 = f.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -261,13 +263,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '上证指数'
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )g
+on a.起始周 = g.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -276,13 +278,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '深证成指'
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )h
+on a.报告周 = h.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -291,13 +293,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '深证成指'
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )i
+on a.起始周 = i.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -306,13 +308,13 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '创业板指'
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )j
+on a.报告周 = j.报告周
 left join
 (
     select x.报告周,
         x.公司代码,
-        --x.公司简称,
         round(avg(x.收盘价), 0) as 周平均收盘价
     from
     (
@@ -321,15 +323,9 @@ left join
         from 股票交易数据
     )x
     where x.公司简称 = '创业板指'
-    group by 报告周, 公司代码 --, 公司简称
+    group by 报告周, 公司代码
 )k
-where (a.公司代码 = b.公司代码 and a.报告周 = b.报告周)
-    and (a.公司代码 = c.公司代码 and a.结束周 = c.报告周)
-    and (a.公司代码 = o.公司代码 and a.起始周 = o.报告周)
-    and (a.报告周 = d.报告周 and a.起始周 = e.报告周)
-    and (a.报告周 = f.报告周 and a.起始周 = g.报告周)
-    and (a.报告周 = h.报告周 and a.起始周 = i.报告周)
-    and (a.报告周 = j.报告周 and a.起始周 = k.报告周);
+on  a.起始周 = k.报告周;
 
 
 CREATE INDEX IF NOT EXISTS [年度公司价格分析中间表索引] on [年度公司价格分析中间表] (
@@ -395,7 +391,8 @@ create table if not exists 年度公司价格分析表 (
     本年市值增长率 REAL,
     本年指数增长率 REAL,
     间隔时长 REAL,
-    市值增长率 REAL
+    市值增长率 REAL,
+    训练标识 INTEGER
 );
 
 
@@ -454,7 +451,8 @@ select a.报告时间,
     b.本年市值增长率 REAL,
     b.本年指数增长率,
     b.间隔时长,
-    b.市值增长率
+    b.市值增长率,
+    b.训练标识
 from 年度财务分析综合表 a
 left join 年度公司价格分析中间表 b
 on a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报告类型 = b.报告类型

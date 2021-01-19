@@ -159,25 +159,37 @@ class getFinanceDataH(getdataBase):
         dataFrameNa = dataFrame[dataFrame.isna().any(axis=1)]
         if len(dataFrameNa) > 0:
             self.logger.error('NaN found in input tensor:%s'%dataFrameNa.values)
-        dataGroups = dataFrame.groupby(dataFrame['公司代码'])
-        keyfields = []
-        features = []
+            raise ValueError("Nan found in dataFrame,please repaire it:\n %s" % dataFrameNa)
+        dataFrameTest = dataFrame
+        dataFrameValid = dataFrame
+        # 最后一个年度的间隔时长在训练时不为1, 在预测时设置为1, 表示预测一整年的增长率
+        dataFrameValid.loc[dataFrameValid['训练标识'] == 0,'间隔时长'] = 1.0
         fieldStart = self.dictSourceData['fieldStart']
         fieldEnd = self.dictSourceData['fieldEnd']
-        for _,group in dataGroups:
-            group = group.sort_values(by=['报告时间'], ascending=True)
-            if len(group) <= 1:
-                pass
-            keyfields += [group.iloc[:,:fieldStart]]
-            features += [torch.from_numpy(np.array(group.iloc[:,fieldStart:],dtype=np.float32))]
-        self.keyfields = keyfields
-        self.features = FinanceDataSet(features)
+        # 把最后一个年度的数据排除在训练数据之外,因为这个时候还没有标签数据
+        dataFrame = dataFrame[dataFrame['训练标识'] == 1]
+        self.keyfields,self.features = self._get_keyfields_features(dataFrame,fieldStart)
+        self.keyfieldsTest,self.featuresTest = self._get_keyfields_features(dataFrameTest, fieldStart)
+        self.keyfieldsValid,self.featuresValid = self._get_keyfields_features(dataFrameValid,fieldStart)
         self.columns = dataFrame.columns.values
         self.fieldStart = fieldStart
         self.fieldEnd = fieldEnd
         self.input_dim = len(dataFrame.columns) - fieldStart + fieldEnd
         self.transformers = [self.fn_transpose]
         self.resizedshape = [self.time_steps,self.input_dim]
+
+
+    def _get_keyfields_features(self,dataFrame,fieldStart):
+        dataGroups = dataFrame.groupby(dataFrame['公司代码'])
+        keyfields = []
+        features = []
+        for _, group in dataGroups:
+            group = group.sort_values(by=['报告时间'], ascending=True)
+            if len(group) <= 1:
+                pass
+            keyfields += [group.iloc[:, :fieldStart]]
+            features += [torch.from_numpy(np.array(group.iloc[:, fieldStart:], dtype=np.float32))]
+        return keyfields,features
 
 
     def fn_transpose(self,X,seq_lengths):
@@ -216,6 +228,8 @@ class getFinanceDataH(getdataBase):
 
     @getdataBase.getdataForUnittest
     def getTestData(self,batch_size):
+        self.test_data = self.featuresTest
+        #_, self.test_data = self.get_k_fold_data(self.k, self.featuresTest)
         test_iter = DataLoader(dataset=self.test_data, batch_size=self.batch_size, num_workers=self.cpu_num
                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
         self.test_iter = self.transform(test_iter,self.transformers)
@@ -224,9 +238,9 @@ class getFinanceDataH(getdataBase):
 
     @getdataBase.getdataForUnittest
     def getValidData(self,batch_size):
-        keyfields_iter = DataLoader(dataset=self.keyfields, batch_size=self.batch_size, num_workers=self.cpu_num
+        keyfields_iter = DataLoader(dataset=self.keyfieldsValid, batch_size=self.batch_size, num_workers=self.cpu_num
                                     ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
-        valid_iter = DataLoader(dataset=self.features, batch_size=self.batch_size, num_workers=self.cpu_num
+        valid_iter = DataLoader(dataset=self.featuresValid, batch_size=self.batch_size, num_workers=self.cpu_num
                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
         self.valid_iter = self.transform(valid_iter,self.transformers)
         return self.valid_iter(),keyfields_iter

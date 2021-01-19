@@ -54,6 +54,11 @@ class ExcelVisualization(InterpreterBase):
             self._visualize_to_excel(writer,sheetName,dataframe,tableName)
 
             self._adjust_style_excel(workbook,sheetName,tableName)
+
+            if len(workbook._sheets) > 1:
+                targetSheet = workbook[sheetName]
+                workbook._sheets[1:] = workbook._sheets[:-1]
+                workbook._sheets[0] = targetSheet
             self.logger.info('%s 展示 %s 成功!' % (scale, sheetName))
 
         workbook.save(visualize_file)

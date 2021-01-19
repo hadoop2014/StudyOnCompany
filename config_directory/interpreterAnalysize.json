@@ -436,7 +436,7 @@
       "train_num_epoch" : 250,
       "learning_rate" : 2e-3,
       "learning_rate_decay_factor" : 0.9,
-      "learning_rate_decay_step": 600,
+      "learning_rate_decay_step": 500,
       "test_percent" : 0.1,
       "batch_size" : 32,
       "time_steps" : 50

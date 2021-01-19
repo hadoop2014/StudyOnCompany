@@ -167,9 +167,9 @@ class InterpreterAccounting(InterpreterBase):
             if self._is_reatch_max_pages(self.names[tableName],tableName) is True \
                 and self.names[tableName]['interpretPrefix'] != NULLSTR:
                 self.docParser.interpretPrefix = NULLSTR
-                self.names[tableName].update({'interpretPrefix': NULLSTR})
+                #self.names[tableName].update({'interpretPrefix': NULLSTR})
                 return
-            self.names[tableName].update({'interpretPrefix': interpretPrefix})
+            #self.names[tableName].update({'interpretPrefix': interpretPrefix})
             self.docParser.interpretPrefix = interpretPrefix
             self.logger.info(' '.join([str(word.type) for word in p.slice]))
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
@@ -184,7 +184,7 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional LABEL
                           | TABLE optional error '''
             # 去掉 TABLE optional NUMERIC  尚不确定对那个报表解析有影响
-            # 去掉 TABLE optional time optional NUMERIC 解决赣锋锂业：2019年年度报告,主要会计数据 的搜索问题
+            # 去掉 TABLE optional time optional NUMERIC 解决 赣锋锂业：2019年年度报告,主要会计数据 的搜索问题
             # TABLE optional '(' NUMERO ')' 去掉,放入optional中, 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
             # TABLE optional error  解决尚荣医疗2016年 P90页,合并资产负债表搜索错误 ,而导致连续多页搜索错误
             # TABLE optional TABLE去掉,上海机场2018年年报出现 现金流量表补充资料 1、 现金流量表补充资料

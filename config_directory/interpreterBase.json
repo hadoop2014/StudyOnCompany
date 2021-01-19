@@ -1261,7 +1261,7 @@
       "finance": {
         "tableName": "年度公司价格分析表",
         "fieldStart": 12,
-        "fieldEnd": -1,
+        "fieldEnd": -2,
         "predictColumnsName": "预测市值增长率",
         "dim": 1
       },
