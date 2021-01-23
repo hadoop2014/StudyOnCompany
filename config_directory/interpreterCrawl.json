@@ -41,8 +41,8 @@
 
   "巨潮资讯网": {
     "tableName": "财报发布信息",
-    "checkpointHeader": ["报告时间","公司代码","公司简称","报告类型","发布时间","文件名","网址"],
-    "order": ["公司简称","发布时间"],
+    "checkpointHeader": ["报告时间","公司代码","公司简称","报告类型","发布时间","文件名","网址","上市时间"],
+    "order": ["公司代码","发布时间"],
     "drop_duplicate": "文件名",
     "query_path": "http://www.cninfo.com.cn/new/hisAnnouncement/query",
     "download_path": "http://static.cninfo.com.cn/",
@@ -271,7 +271,18 @@
         "stock": "600066",
         "secid": "gssh0600066",
         "searchkey": ""
+      },
+      "盛弘股份": {
+        "stock": "300693",
+        "secid": "9900032564",
+        "searchkey": ""
+      },
+      "退市刚泰": {
+        "stock": "600687",
+        "secid": "gssh0600687",
+        "searchkey": ""
       }
+
 
     }
   },

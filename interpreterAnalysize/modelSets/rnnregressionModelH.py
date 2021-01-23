@@ -4,11 +4,12 @@ import torch.nn.functional as F
 
 
 class RNN(nn.Module):
-    def __init__(self,rnn_layer,output_dim,ctx):
+    def __init__(self,rnn_layer,output_dim,dropout,ctx):
         super(RNN,self).__init__()
         self.ctx = ctx
         self.rnn = rnn_layer
         self.hidden_size = rnn_layer.hidden_size * (2 if rnn_layer.bidirectional else 1)
+        self.dropout = nn.Dropout(dropout)
         self.dense = nn.Linear(self.hidden_size, output_dim)
         self.state = None
 
@@ -20,6 +21,7 @@ class RNN(nn.Module):
         if isinstance(Y,PackedSequence):
             Y,seq_lengths = torch.nn.utils.rnn.pad_packed_sequence(Y)
         Y = Y.reshape(-1,Y.shape[-1])
+        Y = self.dropout(Y)
         output = self.dense(Y)
         return output, self.state
 
@@ -45,6 +47,7 @@ class rnnModel(ModelBaseH):
         self.rnn_hiddens = self.gConfig['rnn_hiddens']  # 256
         self.num_layers = self.gConfig['num_layers']
         self.output_dim = self.gConfig['output_dim']
+        self.dropout = self.gConfig['dropout']
         self.activation = self.get_activation(self.gConfig['activation'])
         self.nonlinearity = self.get_nonlinearity(self.gConfig['activation'])
         self.cell = self.get_cell(self.gConfig['cell'])
@@ -75,7 +78,7 @@ class rnnModel(ModelBaseH):
     def get_net(self):
         cell = self.get_cell(self.gConfig['cell'])
         rnn_layer = self.cell_selector[cell]
-        self.net = RNN(rnn_layer,self.output_dim,self.ctx)
+        self.net = RNN(rnn_layer,self.output_dim,self.dropout,self.ctx)
 
 
     def run_train_loss_acc(self,X,y):
@@ -119,7 +122,11 @@ class rnnModel(ModelBaseH):
         loss = loss.item() * y.shape[0]
         #acc  = (y_hat.argmax(dim=1) == y).sum().item()
         acc = 0
-        print("(y_hat, y):",list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:6])
+        if y_hat.dim() == 0:
+            y_hat = y_hat.unsqueeze(dim=0)
+        combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
+        end = min(len(combine), self.time_steps)
+        print("(y_hat, y):",combine[:end])
         return loss,acc
 
 
@@ -134,7 +141,11 @@ class rnnModel(ModelBaseH):
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
         acc = 0
-        print("(y_hat, y):",list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))[:6])
+        if y_hat.dim() == 0:
+            y_hat = y_hat.unsqueeze(dim=0)
+        combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
+        end = min(len(combine), self.time_steps)
+        print("(y_hat, y):",combine[:end])
         return loss, acc, mergedDataFrame
 
 

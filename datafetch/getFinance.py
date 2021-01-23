@@ -220,6 +220,7 @@ class getFinanceDataH(getdataBase):
     @getdataBase.getdataForUnittest
     def getTrainData(self,batch_size):
         self.train_data,self.test_data = self.get_k_fold_data(self.k,self.features)
+        #self.train_data = self.features
         train_iter = DataLoader(dataset=self.train_data, batch_size=self.batch_size, num_workers=self.cpu_num
                                ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
         self.train_iter = self.transform(train_iter,self.transformers)
@@ -258,7 +259,6 @@ class getFinanceDataH(getdataBase):
 
 
     def get_rawshape(self,gConfig):
-        is_find = False
         dataset_name = re.findall('get(.*)Data', self.__class__.__name__).pop().lower()
         assert dataset_name in gConfig['datasetlist'], \
             'datasetlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \

@@ -94,15 +94,15 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchtable(p):
-            '''fetchtable : TABLE optional time optional unit finis
-                          | TABLE optional unit finis
+            '''fetchtable : TABLE optional unit finis
                           | TABLE optional time optional TIME
+                          | TABLE optional time optional unit finis
                           | TABLE optional time optional HEADER unit
                           | TABLE optional time optional HEADER HEADER
+                          | TABLE optional HEADER TIME TIME
                           | TABLE optional HEADER optional HEADER
-                          | TABLE optional HEADER optional unit finis
                           | TABLE optional HEADER optional time unit
-                          | TABLE optional HEADER TIME TIME'''
+                          | TABLE optional HEADER optional unit finis'''
             # TABLE optional time optional HEADER HEADER 解决 古井贡酒2018年, 现金流量表补充资料出现在页尾, 然后在搜索第二页时出错
             # TABLE optional time optional HEADER unit 解决凯利泰：2016年 合并所有者权益变动表出现在页尾的情况
             # TABLE optional HEADER optional HEADER解决鱼跃医疗：2014年年度 主营业务分行业经营情况,搜索不到问题
@@ -147,12 +147,12 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchtable_reatchtail(p):
-            '''fetchtable : TABLE optional unit tail
-                          | TABLE optional time optional unit tail
-                          | TABLE optional tail
+            '''fetchtable : TABLE optional tail
+                          | TABLE optional unit tail
                           | TABLE optional time optional tail
-                          | TABLE optional HEADER optional unit tail
-                          | TABLE optional HEADER optional tail'''
+                          | TABLE optional time optional unit tail
+                          | TABLE optional HEADER optional tail
+                          | TABLE optional HEADER optional unit tail'''
             # TABLE optional time tail修改为TABLE optional time optional tail,解决（603638）艾迪精密：2017年年度报告.PDF中合并资产负债表出现在页尾的问题
             # TABLE optional HEADER optional tail 解决长春高新2018年报,合并所有者权益变动表出现在页尾
             # TABLE optional unit DISCARD tail 解决通策医疗2017年报 主营业务分行业经营情况出现在业尾,即: 主营业务分行业、分产品、分地区情况 单位:元币种:人民币 主营业务分行业情况 16/175
@@ -177,12 +177,12 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_fetchtable_wrong(p):
             '''fetchtablewrong :  TABLE optional PUNCTUATION
-                          | TABLE optional '（' NUMERO '）'
-                          | TABLE optional '（' discard '）'
-                          | TABLE optional '(' discard ')'
-                          | TABLE optional '(' LABEL ')'
-                          | TABLE optional LABEL
-                          | TABLE optional error '''
+                                | TABLE optional '（' NUMERO '）'
+                                | TABLE optional '（' discard '）'
+                                | TABLE optional '(' discard ')'
+                                | TABLE optional '(' LABEL ')'
+                                | TABLE optional LABEL
+                                | TABLE optional error '''
             # 去掉 TABLE optional NUMERIC  尚不确定对那个报表解析有影响
             # 去掉 TABLE optional time optional NUMERIC 解决 赣锋锂业：2019年年度报告,主要会计数据 的搜索问题
             # TABLE optional '(' NUMERO ')' 去掉,放入optional中, 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题

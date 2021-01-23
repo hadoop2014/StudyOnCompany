@@ -414,7 +414,7 @@
     "net": {
       "cell": "lstm",
       "activation": "relu",
-      "keeps" : 0.6,
+      "dropout" : 0.2,
       "resize" : 0,
       "input_dim" :  1,
       "rnn_hiddens" : 64,
@@ -436,7 +436,7 @@
       "train_num_epoch" : 250,
       "learning_rate" : 2e-3,
       "learning_rate_decay_factor" : 0.9,
-      "learning_rate_decay_step": 500,
+      "learning_rate_decay_step": 600,
       "test_percent" : 0.1,
       "batch_size" : 32,
       "time_steps" : 50

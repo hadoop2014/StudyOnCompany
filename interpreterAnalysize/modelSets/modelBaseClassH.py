@@ -266,7 +266,10 @@ class ModelBaseH(InterpreterBase):
             n += self.get_batch_size(y)
             self.writer.add_scalar('train/loss', loss, self.get_global_step())
             self.writer.add_scalar('train/accuracy', acc, self.get_global_step())
-        return loss_sum / n, acc_sum / n
+        if n != 0:
+            loss_sum /= n
+            acc_sum /= n
+        return loss_sum, acc_sum
 
 
     def evaluate_loss_acc(self, data_iter):
@@ -290,7 +293,10 @@ class ModelBaseH(InterpreterBase):
             acc_sum += acc
             loss_sum += loss
             n += self.get_batch_size(y)
-        return loss_sum / n, acc_sum / n
+        if n != 0:
+            loss_sum /= n
+            acc_sum /= n
+        return loss_sum, acc_sum
 
 
     def run_step(self,epoch,train_iter,valid_iter,test_iter, epoch_per_print):
@@ -343,7 +349,11 @@ class ModelBaseH(InterpreterBase):
             self._write_to_sqlite3(mergedDataFrame, tableName)
             self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'
                              %(self.gConfig['model'], tableName))
-        return loss_sum / n, acc_sum / n
+        if n != 0:
+            loss_sum /= n
+            acc_sum /= n
+        return loss_sum, acc_sum
+        #return loss_sum / n, acc_sum / n
 
 
     def predict_with_keyfileds(self,net,keyfields,X,y):

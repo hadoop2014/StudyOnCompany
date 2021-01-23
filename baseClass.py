@@ -14,6 +14,7 @@ import sqlite3 as sqlite
 import pysnooper
 from pandas import DataFrame
 import pandas as pd
+from sklearn.preprocessing import MaxAbsScaler
 #数据读写处理的基类
 
 NULLSTR = ''

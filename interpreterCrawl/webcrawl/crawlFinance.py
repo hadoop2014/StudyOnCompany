@@ -138,6 +138,7 @@ class CrawlFinance(CrawlBase):
         reportType = NULLSTR
         publishingTime = NULLSTR
         time, code, company = NULLSTR, NULLSTR, NULLSTR
+        dictTimeToMarkets = self._get_time_to_market(urllists)
         for filename,url in urllists.items():
             try:
                 path = self._get_path_by_filename(filename)
@@ -158,7 +159,9 @@ class CrawlFinance(CrawlBase):
             except Exception as e:
                 #如果下载不成功,则去掉该记录
                 resultPaths.remove([time, code, company, reportType, publishingTime, filename, url])
+                dictTimeToMarkets[(code,reportType)] = NULLSTR
                 self.logger.error("Failed to fetch %s,file %s!"%(url,filename))
+        resultPaths = self._merge_time_to_market(resultPaths, dictTimeToMarkets)
         return resultPaths
 
 
@@ -177,19 +180,97 @@ class CrawlFinance(CrawlBase):
         return standardPaths
 
 
+    def _merge_time_to_market(self, resultPaths, dictTimeToMarkets):
+        """
+        args:
+            resultPaths - 财报文件下载列表,包括如下:
+            '''
+            "报告时间","公司代码","公司简称","报告类型","发布时间","文件名","网址"
+            '''
+            dictTimeToMarkets - 公司上市时间:
+            '''
+            "公司代码","报告类型","上市时间"
+            '''
+        reutrn:
+            resultPaths - 文件下载列表,增加了一个字段 上市时间,规则如下:
+            '''
+            1) resultPaths和dictTimeToMarkets转换为dataFrame,然后通过 code,type两个字段进行左连接, 将上市时间这个字段加到resultPaths中,最终写到checkpoint文件中.
+            '''
+        """
+        if len(dictTimeToMarkets) == 0:
+            return resultPaths
+        dictTimeToMarkets = dict([(key, value) if value > self._get_crawl_start_time(key[1]) and value != NULLSTR else (key, NULLSTR)
+                                  for key, value in dictTimeToMarkets.items()])
+        dataFrameTimeToMarket = pd.DataFrame([[*key, value] for key,value in dictTimeToMarkets.items()], columns=['code', 'type', 'time'])
+        dataFrameResultPath = pd.DataFrame(resultPaths,columns=['','code','','type','','',''])
+        dataFrameMerged = pd.merge(dataFrameResultPath,dataFrameTimeToMarket,how='left',on=['code','type'])
+        dataFrameMerged = dataFrameMerged.fillna(value = NULLSTR)
+        resultPaths = dataFrameMerged.values.tolist()
+        return resultPaths
+
+
+    def _get_crawl_start_time(self,reportType):
+        """
+            args:
+                reportType - 报告类型,如下:
+                '''
+                年度报告
+                第一季度报告
+                办年度报告
+                第三季度报告
+                '''
+            reutrn:
+                crawlStartTime - 爬虫能爬到的年报的最早时间,规则如下:
+                '''
+                1) 如果是 年度报告, 如果设定爬取2015年年报, 实际可以爬到 2014年的年报, 所以 crawlStartTime 要比设置时间减少一年
+                2) 如果是 第一季度报告,半年度报告,第三季度报告, 如果设定爬取2015年年报,实际爬到的也是2015年年报, 此时crawlStartTime不处理
+                '''
+        """
+        crawlStartTime = self.gConfig['报告时间'][0]
+        crawlStartTime = self._get_crawl_time(crawlStartTime,reportType)
+        return crawlStartTime
+
+
+    def _get_crawl_time(self,crawlTime, reportType):
+        if reportType == '年度报告':
+            crawlTime = self._year_plus(crawlTime, -1)
+        return crawlTime
+
+
+    def _get_time_to_market(self,urllists):
+        """
+        args:
+            urllists - 财报下载列表,包括如下:
+            '''
+            "报告时间","公司代码","公司简称","报告类型","发布时间","文件名","网址"
+            '''
+        reutrn:
+            dictTimToMarkets - 爬虫能爬到的年报的最早时间,规则如下:
+            '''
+            1) 其key: value结构为: ('公司代码','报告类型') : '上市时间'
+            2) 把urllists按照 ['公司代码','报告类型']进行聚合, 找出最早的时间作为上市时间
+            '''
+        """
+        dictTimToMarkets = dict()
+        if len(urllists) == 0:
+            return dictTimToMarkets
+        urllists = [list(self._get_time_type_company_code_by_name(filename)) for filename,_ in urllists.items()]
+        dataFrame = pd.DataFrame(urllists,columns=['company', 'time', 'type', 'code'])
+        dataFrame = dataFrame.groupby(['code','type'])['time'].min()
+        dictTimToMarkets = dict(dataFrame)
+        return dictTimToMarkets
+
+
     def _get_deduplicate_companys(self, companys, reportTime, reportType,website):
         # checkpointfile中已经有的company剔除掉
-        checkpoint = self.get_checkpoint()
-        checkpointHeader = self.dictWebsites[website]['checkpointHeader']
-        checkpoint = [item.split(',') for item in checkpoint]
-        dataFrame = pd.DataFrame(checkpoint,columns=checkpointHeader)
-        dataFrame = dataFrame[['公司简称','报告时间','报告类型']]
-        companysCheckpoint = [','.join(item) for item in dataFrame.values.tolist()]
         # 因为从巨潮咨询网上下载年报数据时,2020年只能下载到2019年的,所以在这里报告时间要进行-1处理
-        reportTime = [self._year_plus(time, -1) for time in reportTime]
-        companysConstruct = itertools.product(companys,reportTime,reportType)
-        companysConstruct = [','.join(item) for item in companysConstruct]
-        companysRequired = set(companysConstruct).difference(set(companysCheckpoint))
+        companysConstruct = []
+        for type in reportType:
+            #reportTimeList = [self._year_plus(time, -1) for time in reportTime]
+            reportTimeList = [self._get_crawl_time(time, type) for time in reportTime]
+            companysList = itertools.product(companys,reportTimeList,[type])
+            companysConstruct += [','.join(item) for item in companysList]
+        companysRequired = self._remove_companys_in_checkpoint(companysConstruct, website)
         companysDiff = set(companysConstruct).difference(set(companysRequired))
         if len(companysDiff) > 0:
             self.logger.info('these companys is already fetched from %s, no need to process: \n%s'
@@ -202,6 +283,43 @@ class CrawlFinance(CrawlBase):
         for company,reportType in companysResult:
             dictCompanys.setdefault(company,[]).append(reportType)
         return dictCompanys
+
+
+    def _remove_companys_in_checkpoint(self,companysConstruct, website):
+        """
+        args:
+            companysConstruct - 财报下载列表,包括如下:
+            '''
+            1) 元素由字符串构成,如: "公司简称,报告时间,报告类型"
+            '''
+            website - 网站名称, 用于dictWebsites配置表的索引
+        reutrn:
+            companysRequired - 文件下载列表,剔除了在checkpoint文件中记录的已经下载过的文件,剔除规则如下:
+            '''
+            1) 读取checkpoint文件内容, 拼接出元素为 "公司简称,报告时间,报告类型"的集合, 把这部分记录从companysConstruct中剔除
+            2) 读取checkpoint文件中的 上市时间字段, 把把这部分记录从companysConstruct中剔除中报告时间 < 上市时间的记录剔除,
+               比如: 执行器要求下载2015-2020年报,但是该公司在2017年上市,则companysConstruct中对应 公司代码,报告类型中 的2015年,2016年的记录被剔除
+            '''
+        """
+        companysRequired = companysConstruct
+        checkpoint = self.get_checkpoint()
+        if len(checkpoint) == 0:
+            return companysRequired
+        checkpointHeader = self.dictWebsites[website]['checkpointHeader']
+        checkpoint = [item.split(',') for item in checkpoint]
+        dataFrame = pd.DataFrame(checkpoint,columns=checkpointHeader)
+        dataFrameTimeToMarket = dataFrame[dataFrame['上市时间'] != NULLSTR][['公司简称','报告类型','上市时间']].drop_duplicates()
+        dataFrame = dataFrame[['公司简称','报告时间','报告类型']]
+        companysCheckpoint = [','.join(item) for item in dataFrame.values.tolist()]
+        companysRequired = set(companysConstruct).difference(set(companysCheckpoint))
+        companysRequired = set([company for company in companysRequired ])
+        dataFrameCompanysRequired = pd.DataFrame([company.split(',') for company in companysRequired],columns=['公司简称','报告时间','报告类型'])
+        dataFrameCompanysRequired = pd.merge(dataFrameCompanysRequired,dataFrameTimeToMarket,how='left',on=['公司简称','报告类型'])
+        # 对于没有关联上的记录, 上市时间为 NaN,需要替换为NULLSTR,使得下一句的条件判断生效
+        dataFrameCompanysRequired = dataFrameCompanysRequired.fillna(value=NULLSTR)
+        dataFrameCompanysRequired = dataFrameCompanysRequired[dataFrameCompanysRequired['报告时间'] > dataFrameCompanysRequired['上市时间']]
+        companysRequired = set([','.join(item) for item in dataFrameCompanysRequired[['公司简称','报告时间','报告类型']].values.tolist()])
+        return companysRequired
 
 
     def _get_publishing_time(self,url):
