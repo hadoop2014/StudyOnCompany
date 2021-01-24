@@ -76,7 +76,7 @@ select
     a.公司简称,
     a.公司名称,
     a.公司地址,
-    a.行业分类,
+    case when a.行业分类 != '' then a.行业分类 else i.行业分类 end as 行业分类,
     case when a.在职员工的数量合计 != '' then a.在职员工的数量合计 else a.当期领取薪酬员工总人数 end as 在职员工的数量合计,
     f.支付给职工及为职工支付的现金,
     case when c.应付职工薪酬 != '' then replace(c.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期末余额）,
@@ -285,6 +285,7 @@ left join
     )y
     on x.报告时间 = y.报告时间 and x.公司代码 = y.公司代码 and x.报告类型 = y.报告类型
 )h
+left join 行业分类数据 i
 where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报告类型 = b.报告类型)
     and (a.报告时间 = c.报告时间 and a.公司代码 = c.公司代码 and a.报告类型 = c.报告类型)
     and (a.报告时间 = d.报告时间 and a.公司代码 = d.公司代码 and a.报告类型 = d.报告类型)
@@ -292,6 +293,7 @@ where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a
     and (a.报告时间 = f.报告时间 and a.公司代码 = f.公司代码 and a.报告类型 = f.报告类型)
     and (a.报告时间 = g.报告时间 and a.公司代码 = g.公司代码 and a.报告类型 = g.报告类型)
     and (a.报告时间 = h.报告时间 and a.公司代码 = h.公司代码 and a.报告类型 = h.报告类型)
+    and (a.公司代码 = i.公司代码)
     and (a.报告时间 != '' and a.公司代码 != '' and a.报告类型 != '')
 order by a.报告时间,a.公司代码,a.报告类型;
 
