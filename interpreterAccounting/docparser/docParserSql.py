@@ -285,6 +285,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('不适用$',NULLSTR,value)
                     value = re.sub('^附\\s*注',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"
                     value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
+                    value = re.sub('^上升了', NULLSTR, value)  # 解决圣农发展2016年报,主营业务分行业经营情况出现 "上升 了0.49个百分点"
                     value = re.sub('^上升',NULLSTR,value)#解决京新药业2017年年报,主要会计数据的一列数据中出现"上升 0.49个百分点"
                     value = re.sub('个百分点$',NULLSTR,value)#解决京新药业2017年年报,海螺水泥2018年年报主要会计数据的一列数据中出现"上升 0.49个百分点"
                     value = re.sub('个.*百分点$',NULLSTR,value)#解决 许继电气 2019年报,主营业务分行业经营情况中出现 : 个% 百分点

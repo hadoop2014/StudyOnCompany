@@ -17,6 +17,7 @@ class InterpreterBase(BaseClass):
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
         self._get_interpreter_keyword()
+        self._create_tables(list(self.dictTables.keys()))
         self._load_data()
 
 
@@ -42,6 +43,7 @@ class InterpreterBase(BaseClass):
 
 
     def _get_interpreter_keyword(self):
+        super(InterpreterBase,self)._get_interpreter_keyword()
         #编译器,文件解析器共同使用的关键字
         self.tokens = self.gJsonInterpreter['tokens']
         self.literals = self.gJsonInterpreter['literals']
@@ -49,8 +51,9 @@ class InterpreterBase(BaseClass):
         self.dictTokens = {token:value for token,value in self.gJsonInterpreter.items() if token in self.tokens}
         self.dictTokens.update({"CATEGORY":'|'.join(self.gJsonInterpreter[self.gJsonInterpreter['CATEGORY']].keys())})
         self.tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|')]
-        self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
-                           keyword in self.tableNames}
+        #self.dictTables = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
+        #                   keyword in self.tableNames}
+        self.dictTables = self._get_dict_tables(self.tableNames,self.dictTables)
         self.websites = self.gJsonInterpreter['WEBSITE'].split('|')
         self.models = self.gJsonInterpreter['MODEL'].split('|')
 

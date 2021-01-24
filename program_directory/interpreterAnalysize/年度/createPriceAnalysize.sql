@@ -133,7 +133,7 @@ from
                 from 财报发布信息
                 group by 公司代码, 报告时间, 报告类型
             )jj
-            on ii.公司代码 = jj.公司代码 and jj.报告时间 - ii.报告时间 = 1
+            on ii.公司代码 = jj.公司代码 and ii.报告类型 = jj.报告类型 and jj.报告时间 - ii.报告时间 = 1
             left join
             (
                 -- 同一个公司同一年度可能会发布两次财报, 第二次为第一次发布财报的修正, 但是我们认为第一次发布的财报影响更大, 因此取第一次发布的时间为准
@@ -141,7 +141,7 @@ from
                 from 财报发布信息
                 group by 公司代码, 报告时间, 报告类型
             )kk
-            on ii.公司代码 = kk.公司代码 and ii.报告时间 - kk.报告时间 = 1
+            on ii.公司代码 = kk.公司代码 and ii.报告类型 = kk.报告类型 and ii.报告时间 - kk.报告时间 = 1
         )aa
         left join 财报发布信息 bb
         on aa.公司代码 = bb.公司代码 and aa.报告时间 = bb.报告时间 and aa.报告类型 = bb.报告类型 and aa.发布时间 = bb.发布时间
@@ -456,7 +456,7 @@ select a.报告时间,
 from 年度财务分析综合表 a
 left join 年度公司价格分析中间表 b
 on a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报告类型 = b.报告类型
-where b.市值增长率 is not NULL;
+where b.市值增长率 is not NULL and a.报告类型 = '年度报告';
 
 
 CREATE INDEX IF NOT EXISTS [年度公司价格分析表索引] on [年度公司价格分析表] (

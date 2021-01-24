@@ -12,6 +12,8 @@ import os
 import re
 import sqlite3 as sqlite
 import pysnooper
+import time
+from datetime import date,timedelta
 from pandas import DataFrame
 import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
@@ -44,7 +46,12 @@ class BaseClass():
         self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
         self.reportTypes =  self.gJsonBase['reportType']
         self.companyAlias = self.gJsonBase['companyAlias']
-        self._get_interpreter_keyword()
+        # 编译器,文件解析器共同使用的关键字
+        self.commonFields = self.gJsonBase['公共表字段定义']
+        self.tableNames = self.gJsonBase['TABLE'].split('|')
+        self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
+        #self._get_interpreter_keyword()
+        #self._create_tables(self.tableNames)
 
 
     def __iter__(self):
@@ -71,9 +78,69 @@ class BaseClass():
 
     def _get_interpreter_keyword(self):
         # 编译器,文件解析器共同使用的关键字
-        self.tableNames = self.gJsonBase['TABLE'].split('|')
-        self.commonFields = self.gJsonBase['公共表字段定义']
-        self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
+        #self.tableNames = self.gJsonBase['TABLE'].split('|')
+        #self.commonFields = self.gJsonBase['公共表字段定义']
+        #self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
+        ...
+
+
+    def _get_dict_tables(self,tableNames,dictTablesBase):
+        """
+            该函数目前只用在interpreterNature,interpreterCrawl,interpreterAnalysize中, 这些解释器用到了interpreterBase.json中配置的公共表字段定义
+            而interpreterAccounting不需要调用该函数, 他用了一套独立的 公共表字段定义
+            args:
+                tableNames - 当前解释器下所能读取到的表名列表, 一般配置在 interpreterXXXX.json的 TABLE 关键字下
+                dictTablesBase - 定义在interpreterBase.json下的 通用表配置
+            reutrn:
+                dictTables - 当前interpreterXXXX.json配置的表和interpreterBase.json配置的表进行融合, 融合的规则:
+                '''
+                1) dictTablesBase.keys()中的表名和tableNames中的表名重合,则从dictTablesBase中取出该表配置放到dictTable中;
+                2) 当前解释器配置文件interpreterXXXX.json中配置的表配置, 更新到第一步的dictTable中
+                '''
+        """
+        dictTables = {keyword: value for keyword, value in dictTablesBase.items() if
+                           keyword in tableNames}
+        dictTables.update({keyword: value for keyword, value in self.gJsonInterpreter.items() if
+                           keyword in tableNames})
+        # 如果表的配置中,还有 parent这段,则要和父表的字段进行合并,合并的原则: 1) 子表的value是一个值,覆盖附表；2)value是列表,则追加到父表；3)value是dict,则进行递归
+        for tableName, dictTable in dictTables.items():
+            parent = dictTable['parent']
+            if parent != NULLSTR:
+                mergedDictTable = self._merged_dict_table(dictTable,dictTables[parent])
+                dictTables[tableName].update(mergedDictTable)
+        return dictTables
+
+
+    def _merged_dict_table(self,dictTable,dictTableParent):
+        """
+        args:
+            dictTable - 当前表的配置参数
+            dictTableParent - 父表的配置参数
+        reutrn:
+            dictTableMerged - 当前表和父表融合后的配置, 融合的规则:
+                '''
+                1) 当前表的value是一个值, 则覆盖父表;
+                2) 当前表的value是一个list,则追加到父表；
+                3) 当前表的value是一个dict,则进行递归调用;
+                '''
+        """
+        dictTableMerged = dictTableParent.copy()
+        for key,value in dictTable.items():
+            # 遍历子表的值, 和父表进行合并
+            if isinstance(value, list):
+                # 如果子表的值是列表,则追加到父表
+                if len(value) != 0:
+                    dictTableMerged.setdefault(key,[]).append(*value)
+            elif isinstance(value, dict):
+                # 如果子表的值是dict, 则进行递归
+                dictTableMergedChild = self._merged_dict_table(value, dictTableMerged[key])
+                dictTableMerged.update({key: dictTableMergedChild})
+            else:
+                # 如果子表的值非上述几中,则覆盖父表
+                if key != 'parent':
+                    # 避免迭代循环
+                    dictTableMerged.update({key: value})
+        return dictTableMerged
 
 
     def _set_dataset(self,index=None):
@@ -279,6 +346,24 @@ class BaseClass():
         conn.close()
 
 
+    def _get_time_now(self):
+        return time.strftime('%Y%m%d')
+
+
+    def _get_last_week_day(self):
+        now = date.today()
+        if now.isoweekday() == 7:
+            dayStep = 2
+        elif now.isoweekday() == 6:
+            dayStep = 2
+        else:
+            dayStep = 0
+        #print(dayStep)
+        lastWorkDay = now - timedelta(days=dayStep)
+        lastWorkDay = lastWorkDay.strftime('%Y%m%d')
+        return lastWorkDay
+
+
     @pysnooper.snoop()
     def _sql_executer(self,sql):
         conn = self._get_connect()
@@ -300,6 +385,69 @@ class BaseClass():
             if matched is not None:
                 isMatched = True
         return isMatched
+
+
+    def _get_merged_columns(self,tableName):
+        mergedColumns = [key for key in self.commonFields.keys() if key != "ID"]
+        mergedColumns = mergedColumns + self.dictTables[tableName]['fieldName']
+        return mergedColumns
+
+
+    def _create_tables(self,tableNames):
+        # 用于想sqlite3数据库中创建新表
+        conn = self._get_connect()
+        cursor = conn.cursor()
+        allTables = self._fetch_all_tables(cursor)
+        allTables = list(map(lambda x: x[0], allTables))
+        for tableName in tableNames:
+            targetTableName =  tableName
+            if targetTableName not in allTables:
+                sql = " CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t" % targetTableName
+                for commonFiled, type in self.commonFields.items():
+                    sql = sql + "[%s] %s\n\t\t\t\t\t," % (commonFiled, type)
+                # 由表头转换生产的字段
+                fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
+                if len(fieldFromHeader) != 0:
+                    for field in fieldFromHeader:
+                        sql = sql + "[%s] VARCHAR(20)\n\t\t\t\t\t," % field
+                sql = sql[:-1]  # 去掉最后一个逗号
+                # 创建新表
+                standardizedFields = self.dictTables[tableName]['fieldName']
+                #duplicatedFields = self._get_duplicated_field(standardizedFields)
+                duplicatedFields = standardizedFields
+                for fieldName in duplicatedFields:
+                    if fieldName is not NaN:
+                        if 'fieldType' in self.dictTables[tableName].keys() \
+                            and fieldName in self.dictTables[tableName]['fieldType'].keys():
+                            type = self.dictTables[tableName]['fieldType'][fieldName]
+                        else:
+                            type = 'NUMERIC'
+                        sql = sql + "\n\t\t\t\t\t,[%s]  %s" % (fieldName, type)
+                sql = sql + '\n\t\t\t\t\t)'
+                try:
+                    conn.execute(sql)
+                    conn.commit()
+                    print('创建数据库表%s成功' % (targetTableName))
+                except Exception as e:
+                    # 回滚
+                    conn.rollback()
+                    print(e, ' 创建数据库表%s失败' % targetTableName)
+
+                # 创建索引
+                sql = "CREATE INDEX IF NOT EXISTS [%s索引] on [%s] (\n\t\t\t\t\t" % (targetTableName, targetTableName)
+                sql = sql + ", ".join(str(field) for field, value in self.commonFields.items()
+                                      if value.find('NOT NULL') >= 0)
+                sql = sql + '\n\t\t\t\t\t)'
+                try:
+                    conn.execute(sql)
+                    conn.commit()
+                    print('创建数据库%s索引成功' % (targetTableName))
+                except Exception as e:
+                    # 回滚
+                    conn.rollback()
+                    print(e, ' 创建数据库%s索引失败' % targetTableName)
+        cursor.close()
+        conn.close()
 
 
     def _fetch_all_tables(self, cursor):
@@ -375,7 +523,7 @@ class BaseClass():
 
 
     def _get_stock_list(self, companyList):
-        assert isinstance(companyList,list),"Parameter content(%s) must be a list"%companyList
+        assert isinstance(companyList,list),"Parameter companyList (%s) must be a list" % type(companyList)
         stockList = []
         stockcodeSpecial = [[company,code] for  company,code in self.gJsonBase['stockcode'].items()]
         if len(companyList) == 0:

@@ -11,7 +11,7 @@
   "#VALUE": "该定义不用于token,仅仅用于crawlFinance.py中的_secname_transfer函数",
   "VALUE": "[\\u4E00-\\u9FA5|A-Z|Ａ-Ｚ]+",
   "#TABLE": "该定义不用于token,用于建表. changed at 20201228,也用于token",
-  "TABLE": "股票交易数据",
+  "TABLE": "股票交易数据|财报发布信息",
   "#INDEX": "该保留字不用于lexer,仅用于下载所需要的指数",
   "INDEX": "上证指数|深证成指|创业板指|沪深300",
 
@@ -282,8 +282,6 @@
         "secid": "gssh0600687",
         "searchkey": ""
       }
-
-
     }
   },
 

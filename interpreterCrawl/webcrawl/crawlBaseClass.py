@@ -23,14 +23,14 @@ class CrawlBase(InterpreterBase):
         self.checkpointfilename = os.path.join(self.working_directory, self.gConfig['checkpointfile'])
         self.checkpoint = None
         self.checkpointWriter = None
-        self._create_tables(self.tableNames)
+        #self._create_tables(self.tableNames)
 
-
+    '''
     def _get_merged_columns(self,tableName):
         mergedColumns = [key for key in self.commonFields.keys() if key != "ID"]
         mergedColumns = mergedColumns + self.dictTables[tableName]['fieldName']
         return mergedColumns
-
+    '''
 
     def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
         conn = self._get_connect()
@@ -70,7 +70,7 @@ class CrawlBase(InterpreterBase):
             self.logger.error('failed to get max & min trading data from sql:%s'% sql)
         return minTradingDate,maxTradingDate
 
-
+    '''
     def _create_tables(self,tableNames):
         # 用于想sqlite3数据库中创建新表
         conn = self._get_connect()
@@ -126,7 +126,7 @@ class CrawlBase(InterpreterBase):
                     print(e, ' 创建数据库%s索引失败' % targetTableName)
         cursor.close()
         conn.close()
-
+    '''
 
     def _get_class_name(self, gConfig):
         parser_name = re.findall('Crawl(.*)', self.__class__.__name__).pop().lower()
@@ -162,8 +162,8 @@ class CrawlBase(InterpreterBase):
         if len(content) == 0:
             return resultContent
         checkpointHeader = self.dictWebsites[website]['checkpointHeader']
-        dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader)
-        dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader))
+        dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader,dtype=str)
+        dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader,dtype=str))
         # 根据数据第一列去重
         dataFrame = dataFrame.drop_duplicates(self.dictWebsites[website]['drop_duplicate'], keep= 'last')
         order = self.dictWebsites[website]['order']

@@ -17,6 +17,7 @@ class InterpreterBase(BaseClass):
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
         self._get_interpreter_keyword()
+        self._create_tables(list(self.dictTables.keys()))
 
 
     def _load_data(self,input=None):
@@ -50,6 +51,8 @@ class InterpreterBase(BaseClass):
         self.dictWebsites = {keyword: value for keyword, value in self.gJsonInterpreter.items() if
                            keyword in self.websites}
         self.indexes = self.gJsonInterpreter['INDEX'].split('|')
+        self.tableNames = self.gJsonInterpreter['TABLE'].split('|')
+        self.dictTables = self._get_dict_tables(self.tableNames,self.dictTables)
 
 
     def _get_keyword(self,tableKeyword):

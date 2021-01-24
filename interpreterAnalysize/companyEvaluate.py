@@ -13,10 +13,10 @@ class CompanyEvaluate(InterpreterBase):
         super(CompanyEvaluate,self).__init__(gConfig)
         self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
 
-
+    '''
     def _read_and_analysize(self,tableName,scale):
         dataFrame = self._sql_to_dataframe(tableName,tableName,scale)
-
+    '''
 
     def _sql_to_dataframe(self,tableName,sourceTableName,scale):
         if scale == "批量":

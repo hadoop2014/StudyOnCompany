@@ -73,7 +73,7 @@ class CrawlStock(CrawlBase):
             if not os.path.exists(fullfileName):
                 self.logger.info('file %s is not exist!' % fullfileName)
                 continue
-            dataFrame = pd.read_csv(fullfileName, encoding=encoding)
+            dataFrame = pd.read_csv(fullfileName, encoding=encoding,dtype=str)
             dataFrame.columns = self._get_merged_columns(tableName)
             if not dataFrame.empty:
                 self._write_to_sqlite3(dataFrame, tableName)
@@ -87,7 +87,9 @@ class CrawlStock(CrawlBase):
         stockInfoURL = self.dictWebsites[website]['download_path']
         tableName = self.dictWebsites[website]['tableName']
         fieldNameEn = self.dictTables[tableName]['fieldAlias'].values()
-        endTime = time.strftime('%Y%m%d')
+        #endTime = time.strftime('%Y%m%d')
+        #endTime = self._get_time_now()
+        endTime = self._get_last_week_day()
         resultPaths = []
         stockList = self._get_deduplicate_stock(stockList,endTime)
         for company, code, type in stockList:
@@ -118,7 +120,9 @@ class CrawlStock(CrawlBase):
 
 
     def _process_construct_stock_list(self, stockList):
-        endTime = time.strftime('%Y%m%d')
+        #endTime = time.strftime('%Y%m%d')
+        endTime = self._get_time_now()
+        #endTime = self._get_last_week_day()
         stockList = self._get_deduplicate_stock(stockList,endTime)
         resultPaths = []
         for company, code, type in stockList:

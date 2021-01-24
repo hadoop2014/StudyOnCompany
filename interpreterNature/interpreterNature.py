@@ -8,6 +8,7 @@ from collections import Counter
 from ply import lex,yacc
 import copy
 import itertools
+import time
 from interpreterNature.interpreterBaseClass import *
 
 
@@ -153,7 +154,9 @@ class InterpreterNature(InterpreterBase):
         def p_expression_config(p):
             '''expression : CONFIG '{' configuration '}' '''
             #把names_global进行更新
-            self.names_global.update(self._get_merged_names_global(self.names_global))
+            dictMergedNames = self._get_merged_names_global(self.names_global)
+            self.names_global.update(dictMergedNames)
+            self._process_industry_category(dictMergedNames['行业分类'],tableName='行业分类数据')
             p[0] = p[1] +'{ ' + p[3] +' }'
 
 
@@ -230,6 +233,71 @@ class InterpreterNature(InterpreterBase):
 
     def _get_main_program(self):
         return self._get_text()
+
+
+    def _process_industry_category(self,dictIndustryCategory, tableName='行业分类数据'):
+        """
+            args:
+                dictIndustryCategory - 行业分类数据:
+                '''
+                行业分类: 公司名称
+                '''
+                tableName - 待写入数据库的表名,表结构在interpreterBase.json中定义:
+                '''
+                默认表名为 行业分类数据,
+                '''
+            reutrn:
+                NULL - 处理规则:
+                '''
+                1) dictIndustryCategory 处理为: 报告时间, 公司代码,公司简称, 行业分类.
+                2) 将处理后的数据写入sqlite3由tableName指定的表中,默认写入 "行业分类数据"
+                '''
+        """
+        companys = list(set(dictIndustryCategory.keys()))
+        companyCodes = self._get_stock_list(companys)
+        dataFrameCompanyCodes = pd.DataFrame(companyCodes, columns=self.gJsonBase['stockcodeHeader'])
+        # 增加一列 上报时间,取当前日期
+        dataFrameCompanyCodes['报告时间'] = self._get_time_now()
+        dataFrameIndustryCategery = pd.DataFrame([[key,value] for key,value in dictIndustryCategory.items()], columns=['公司简称','行业分类'])
+        dataFrameMerged = pd.merge(dataFrameCompanyCodes,dataFrameIndustryCategery,how='left',on=['公司简称'])
+        columnsName = self._get_merged_columns(tableName)
+        dataFrameMerged = dataFrameMerged[columnsName]
+        self._write_to_sqlite3(dataFrameMerged,tableName)
+
+
+    def _write_to_sqlite3(self,dataFrame:DataFrame, tableName):
+        conn = self._get_connect()
+        sql_df = dataFrame
+        companyCodeList = self._get_company_code_list(conn, tableName)
+        if companyCodeList is not None:
+            companyCodeNew = sql_df['公司代码'].values.tolist()
+            companyCodeDiff = set(companyCodeNew).difference(set(companyCodeList))
+            if len(companyCodeDiff) > 0:
+                #sql_df = sql_df[sql_df['公司代码'] in companyCodeDiff]
+                sql_df = sql_df[sql_df['公司代码'].isin(companyCodeDiff)]
+                if not sql_df.empty:
+                    sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+                    conn.commit()
+                    self.logger.info("insert into {} at {}!".format(tableName, self._get_time_now()))
+        else:
+            sql_df.to_sql(name=tableName, con=conn, if_exists='replace', index=False)
+            conn.commit()
+            self.logger.info("insert into {} at {}!".format(tableName, self._get_time_now()))
+        conn.close()
+
+
+    def _get_company_code_list(self,conn,tableName):
+        companyCodeList = None
+        sql = "select distinct 公司代码 from {}".format(tableName)
+        try:
+            result = conn.execute(sql).fetchall()
+            if len(result) > 0 and len(result[0]) > 0:
+                #companyCodeList = result[0]
+                companyCodeList = [code[0] for code in result]
+        except Exception as e:
+            print(e)
+            self.logger.error('failed to get max & min trading data from sql:%s' % sql)
+        return companyCodeList
 
 
     def _process_parse(self,scale,isForced = False):
