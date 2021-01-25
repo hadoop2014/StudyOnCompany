@@ -188,7 +188,7 @@ class getFinanceDataH(getdataBase):
             if len(group) <= 1:
                 pass
             keyfields += [group.iloc[:, :fieldStart]]
-            features += [torch.Tensor(np.array(group.iloc[:, fieldStart:], dtype=np.float32))]
+            features += [torch.tensor(np.array(group.iloc[:, fieldStart:], dtype=np.float32))]
         return keyfields,features
 
 

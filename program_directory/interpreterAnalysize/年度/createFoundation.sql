@@ -151,24 +151,29 @@ select
     case when c.流动资产合计 is not NULL then replace(c.流动资产合计,',','')
         -- 解决国金证券 没有 流动资产合计 字段
         else replace(c.资产总计,',','')
-            - iif(c.可供出售金融资产 != '', replace(c.可供出售金融资产,',',''),0)
-            - iif(c.持有至到期投资 != '', replace(c.持有至到期投资,',',''),0)
-            - iif(c.长期股权投资 != '', replace(c.长期股权投资,',',''),0)
-            - iif(c.投资性房地产 != '', replace(c.投资性房地产,',',''),0)
-            - iif(c.固定资产 != '', replace(c.固定资产,',',''),0)
-            - iif(c.在建工程 != '', replace(c.在建工程,',',''),0)
-            - iif(c.无形资产 != '', replace(c.无形资产,',',''),0)
-            - iif(c.商誉 != '', replace(c.商誉,',',''),0)
-            - iif(c.长期待摊费用 != '' and c.长期待摊费用 is not NULL, replace(c.长期待摊费用,',',''),0)
-            - iif(c.递延所得税资产 != '', replace(c.递延所得税资产,',',''),0)  end
+            - case when c.可供出售金融资产 != '' then replace(c.可供出售金融资产,',','') else 0 end
+            - case when c.持有至到期投资 != '' then replace(c.持有至到期投资,',','') else 0 end
+            - case when c.长期股权投资 != '' then replace(c.长期股权投资,',','') else 0 end
+            - case when c.投资性房地产 != '' then replace(c.投资性房地产,',','') else 0 end
+            - case when c.固定资产 != '' then replace(c.固定资产,',','') else 0 end
+            - case when c.在建工程 != '' then replace(c.在建工程,',','') else 0 end
+            - case when c.无形资产 != '' then replace(c.无形资产,',','') else 0 end
+            - case when c.商誉 != '' then replace(c.商誉,',','') else 0 end
+            - case when c.长期待摊费用 != '' and c.长期待摊费用 is not NULL then replace(c.长期待摊费用,',','') else 0 end
+            - case when c.递延所得税资产 != '' then replace(c.递延所得税资产,',','') else 0 end
+        end
         as 流动资产合计,
     c.负债合计,
     case when c.流动负债合计 is not NULL then replace(c.流动负债合计,',','')
         -- 解决国金证券 没有 流动负债合计 字段
         else replace(c.负债合计,',','')
-            - iif(c.长期借款 != '', replace(c.长期借款,',',''),0)
-            - iif(c.应付债券 != '', replace(c.应付债券,',',''),0)
-            - iif(c.递延所得税负债 != '' , replace(c.递延所得税负债,',',''),0) end
+            - case when c.长期借款 != '' then replace(c.长期借款,',','') else 0 end
+            - case when c.应付债券 != '' then replace(c.应付债券,',','') else 0 end
+            - case when c.递延所得税负债 != '' then replace(c.递延所得税负债,',','') else 0 end
+        --    - iif(c.长期借款 != '', replace(c.长期借款,',',''),0)
+        --    - iif(c.应付债券 != '', replace(c.应付债券,',',''),0)
+        --    - iif(c.递延所得税负债 != '' , replace(c.递延所得税负债,',',''),0)
+        end
         as 流动负债合计,
     case when c.存货 != '' then c.存货 else 0 end as 存货,
     c.货币资金,
