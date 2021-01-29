@@ -273,8 +273,8 @@ class CrawlFinance(CrawlBase):
         companysRequired = self._remove_companys_in_checkpoint(companysConstruct, website)
         companysDiff = set(companysConstruct).difference(set(companysRequired))
         if len(companysDiff) > 0:
-            self.logger.info('these companys is already fetched from %s, no need to process: \n%s'
-                             % (website, '\n\t'.join(list(sorted(companysDiff)))))
+            self.logger.info('%d companys is already fetched from %s, no need to process!'
+                             % (len(companysDiff),website))
         # 只留下公司,上报类型, 比如: 千禾味业 年度报告. 并且做去重处理
         companysResult = [','.join([item.split(',')[0],item.split(',')[-1]]) for item in companysRequired]
         companysResult = [item.split(',') for item in set(companysResult)]

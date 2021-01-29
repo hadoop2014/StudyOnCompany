@@ -163,9 +163,9 @@ class rnnModel(ModelBaseH):
         y_columns = getdataClass.get_y_columns()
         y_predict_columns = getdataClass.get_y_predict_columns()
         dataFrame_keyfields = pd.concat(keyfields, axis=0).reset_index(drop=True)
-        dataFrame_X = pd.DataFrame(X_raw.cpu().numpy().reshape(-1, X_raw.shape[-1]), columns=X_columns)
-        dataFrame_y = pd.DataFrame(y.cpu().numpy().reshape(-1,1), columns=y_columns)
-        dataFrame_y_predict = pd.DataFrame(y_predict.cpu().numpy().reshape(-1,1), columns=y_predict_columns)
+        dataFrame_X = pd.DataFrame(X_raw.cpu().numpy().reshape(-1, X_raw.shape[-1]).tolist(), columns=X_columns)
+        dataFrame_y = pd.DataFrame(y.cpu().numpy().reshape(-1,1).tolist(), columns=y_columns)
+        dataFrame_y_predict = pd.DataFrame(y_predict.cpu().numpy().reshape(-1,1).tolist(), columns=y_predict_columns)
         dataFrame_merged = pd.concat([dataFrame_keyfields, dataFrame_X, dataFrame_y, dataFrame_y_predict], axis=1)
         return dataFrame_merged
 

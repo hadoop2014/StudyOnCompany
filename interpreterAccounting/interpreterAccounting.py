@@ -99,7 +99,7 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional time optional unit finis
                           | TABLE optional time optional HEADER unit
                           | TABLE optional time optional HEADER HEADER
-                          | TABLE optional HEADER TIME TIME
+                          | TABLE optional HEADER TIME
                           | TABLE optional HEADER optional HEADER
                           | TABLE optional HEADER optional time unit
                           | TABLE optional HEADER optional unit finis'''
@@ -364,7 +364,8 @@ class InterpreterAccounting(InterpreterBase):
                         | '(' content '）'
                         | '（' content '）'
                         | '（' content ')'
-                        | '（' '）' '''
+                        | '（' '）'
+                        | '(' ')' '''
             # 专门用于处理括号里的内容
             p[0] = p[2]
 
