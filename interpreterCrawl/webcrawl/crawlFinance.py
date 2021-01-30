@@ -146,7 +146,7 @@ class CrawlFinance(CrawlBase):
                 filePath = os.path.join(path,filename)
                 publishingTime = self._get_publishing_time(url)
                 reportType = os.path.split(path)[-1]
-                company, time, type, code = self._get_time_type_company_code_by_name(filename)
+                company, time, type, code = self._get_company_time_type_code_by_name(filename)
                 resultPaths.append([time, code, company, reportType, publishingTime, filename, url])
                 if os.path.exists(filePath):
                     self.logger.info("File %s is already exists!" % filename)
@@ -169,14 +169,23 @@ class CrawlFinance(CrawlBase):
         assert isinstance(downloadPaths,list),'download paths (%s) is not a list!'%downloadPaths
         download_path = self.dictWebsites[website]['download_path']
         standardPaths = dict()
+        dictPathSize = dict()
         for path in downloadPaths:
             urlPath = download_path + path["adjunctUrl"]
             filename = '（' + path["secCode"] + '）' + self._secname_transfer(path['secName']) + '：' \
                        + self._title_transfer(path['announcementTitle']) + '.PDF'
+            adjunctSize = path['adjunctSize']
             if '*' in filename:
                 filename = filename.replace('*', NULLSTR)
             if self._is_file_needed(filename,website):
-                standardPaths.update({filename:urlPath})
+                if filename in dictPathSize.keys():
+                    if adjunctSize > dictPathSize[filename]:
+                        # （603886）元祖股份：2020年第一季度报告.PDF 有两个第一季度报告,取字节数大的
+                        standardPaths.update({filename: urlPath})
+                        dictPathSize.update({filename: adjunctSize})
+                else:
+                    standardPaths.update({filename:urlPath})
+                    dictPathSize.update({filename: adjunctSize})
         return standardPaths
 
 
@@ -254,7 +263,7 @@ class CrawlFinance(CrawlBase):
         dictTimToMarkets = dict()
         if len(urllists) == 0:
             return dictTimToMarkets
-        urllists = [list(self._get_time_type_company_code_by_name(filename)) for filename,_ in urllists.items()]
+        urllists = [list(self._get_company_time_type_code_by_name(filename)) for filename, _ in urllists.items()]
         dataFrame = pd.DataFrame(urllists,columns=['company', 'time', 'type', 'code'])
         dataFrame = dataFrame.groupby(['code','type'])['time'].min()
         dictTimToMarkets = dict(dataFrame)
@@ -363,6 +372,7 @@ class CrawlFinance(CrawlBase):
 
     def _title_transfer(self,title):
         timereport = NULLSTR
+        title = re.sub('<.*>([\\u4E00-\\u9FA5])<.*>', '\g<1>', title)  # 内蒙一机2020年第一季度报告, title中出现 '2020年第<em>一</em>季度'
         pattern = self.gJsonInterpreter['TIME']+self.gJsonInterpreter['VALUE']+ '(（[\\u4E00-\\u9FA5]+）)*'
         matched = self._standardize(pattern,title)
         if matched is not None:

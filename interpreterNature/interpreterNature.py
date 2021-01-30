@@ -368,7 +368,8 @@ class InterpreterNature(InterpreterBase):
             ,"报告时间,报告类型为空,必须在参数配置中明确配置!"
         self.gConfig.update(self.names_global)
         # 爬取时在时间上少设置1年,因为2020年的时间本来就会爬取2019年的数据
-        self.gConfig.update({'报告时间': self.names_global['报告时间'][1:]})
+        if len(self.gConfig['报告时间']) > 1:
+            self.gConfig.update({'报告时间': self.names_global['报告时间'][1:]})
         self.interpreterCrawl.initialize(self.gConfig)
         self.interpreterCrawl.doWork(command)
 
@@ -519,6 +520,9 @@ class InterpreterNature(InterpreterBase):
         dictDuplicate = dict()
         for sourcefile in sourcefiles:
             standardizedName = self._standardize(filenameStandardize,sourcefile)
+            company,time, reportType,code = self._get_company_time_type_code_by_name(standardizedName) #解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
+            if company is not NaN and time is not NaN and reportType is not NaN:
+                standardizedName = company + '：'+time + reportType
             if standardizedName is NaN:
                 self.logger.warning('Filename %s is invalid!'%sourcefile)
                 continue

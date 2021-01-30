@@ -188,7 +188,7 @@ class BaseClass():
         return type
 
 
-    def _get_time_type_company_code_by_name(self,filename):
+    def _get_company_time_type_code_by_name(self, filename):
         timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
         #time = self._standardize('\\d+年',filename)
         time = self._standardize(timeStandardize, filename)
@@ -233,6 +233,8 @@ class BaseClass():
     def _get_path_by_report_type(self, type):
         #reportTypes = self.gJsonBase['报告类型']
         assert type in self.reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,self.reportTypes)
+        #if type not in self.reportTypes:
+        #    self.logger.error("type(%s) is invalid ,which not in [%s] "%(type,self.reportTypes))
         path = os.path.join(self.data_directory,type)
         if not os.path.exists(path):
             os.mkdir(path)

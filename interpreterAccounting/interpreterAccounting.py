@@ -219,11 +219,15 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '（' LABEL '）'
                         | optional '（' TIME '）'
                         | optional '（' TIME DISCARD '）'
+                        | optional '(' AUDITTYPE ')'
+                        | optional '（' AUDITTYPE '）'
+                        | optional '(' ')'
                         | optional NAME
                         | optional NAME NUMERIC
                         | optional '-'
                         | NUMERIC
                         | empty '''
+            # optional '（' AUDITTYPE '）' 解决（600332）白云山：2020年第一季度报告全文.PDF 的 主要会计数据搜索不到问题
             # optional NAME NUMERIC 解决 赣锋锂业2019年报,主要会计数据 出现在页尾,且出现一大段文字,包含有数字
             # optional '(' NUMERO ')' 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
             # optional '（' TIME DISCARD '）'解决沪电股份：2014年报出现,合并现金流量表 （2014 年 12 月 31 日止年度） 单位：人民
@@ -484,10 +488,13 @@ class InterpreterAccounting(InterpreterBase):
                     | CURRENCY DISCARD UNIT
                     | '（' UNIT '）'
                     | '(' DISCARD CURRENCY UNIT ')'
-                    | '(' CURRENCY UNIT ')'
                     | '（' DISCARD CURRENCY UNIT '）'
+                    | '(' DISCARD CURRENCY UNIT DISCARD ')'
+                    | '（' DISCARD CURRENCY UNIT DISCARD '）'
+                    | '(' CURRENCY UNIT ')'
                     | UNIT CURRENCY AUDITTYPE
                     | UNIT CURRENCY '）' '''
+            # '（' DISCARD CURRENCY UNIT DISCARD '）' 解决招商银行 2020年第一季度报告,主要会计数据的搜索问题: 未经审计合并资产负债表 （除特别注明外，货币单位均以人民币百万元列示）
             # UNIT CURRENCY '）'解决生益科技2019年报 合并所有权益变动表,P90页碰到了 '）专项储备'.
             #  UNIT CURRENCY AUDITTYPE解决鲁商发展：2015年第三季度报告 出现 单位：元 币种:人民币 审计类型：未经审计
             # '（' DISCARD CURRENCY UNIT '）' 解决尚荣医疗 2019年报中出现 （除特别注明外，金额单位均为人民币）
@@ -698,7 +705,7 @@ class InterpreterAccounting(InterpreterBase):
             ,"parameter failedTable(%s) must be a list and fileName(%s) must not be NULL!"%(failedTable,fileName)
         notRequired = self.gJsonBase['repair_lists']['notRequired']
         #company,reportTime,reportType,code = self._get_time_type_by_name(fileName)
-        company, reportTime, reportType, code = self._get_time_type_company_code_by_name(fileName)
+        company, reportTime, reportType, code = self._get_company_time_type_code_by_name(fileName)
         notRequiredLists = set()
         for tableName in failedTable:
             if tableName in notRequired.keys():
@@ -797,7 +804,7 @@ class InterpreterAccounting(InterpreterBase):
 
     def _check_table_file(self,company, reportType, reportTime,tableFile):
         #companyCheck,timeCheck,typeCheck,codeCheck = self._get_time_type_by_name(tableFile)
-        companyCheck, timeCheck, typeCheck, codeCheck = self._get_time_type_company_code_by_name(tableFile)
+        companyCheck, timeCheck, typeCheck, codeCheck = self._get_company_time_type_code_by_name(tableFile)
         fileDefault = self.gJsonBase['repair_lists']['fileDefault']
         # 对于某些表确实没有的,可采用 通用数据: 适合所有年报数据.xlxs填充
         isOK = (companyCheck == company and timeCheck == reportTime and typeCheck == reportType) \
@@ -816,7 +823,7 @@ class InterpreterAccounting(InterpreterBase):
 
     def _fill_time_type_by_name(self, filename):
         #company,time,type,code = self._get_time_type_by_name(filename)
-        company, time, type, code = self._get_time_type_company_code_by_name(filename)
+        company, time, type, code = self._get_company_time_type_code_by_name(filename)
         if self.names['报告时间'] == NULLSTR and time is not NaN:
             self.names["报告时间"] = time
         if self.names['报告类型'] == NULLSTR and type is not NaN:
