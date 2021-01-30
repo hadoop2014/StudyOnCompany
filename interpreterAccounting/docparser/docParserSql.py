@@ -302,6 +302,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('^无$', NULLSTR, value) #解决海康威视2015年报,普通股现金分红情况表 最后一列出现 '无'
                     value = re.sub('^增长', NULLSTR, value) #解决荣盛发展2018年报,主营业务分行业经营情况,最后一列数据中出现'增长'
                     value = re.sub('【注.*】',NULLSTR,value) #解决健友股份：2018年 主营业务分行业经营情况 的数据中出现 【注 1】
+                    value = re.sub('注\\d+$',NULLSTR,value) #解决巨人网络：2019年 主要会计数据 的数据中出现 注 1
                     value = re.sub('^不派发现金红利$',NULLSTR,value) #解决沪电股份2014年报 普通股现金分行情况表中出现 '不派发现金红利'
                     value = re.sub('^每\\d+股转增\\d+股',NULLSTR,value) #解决（300033）同花顺：2014年年度报告中,普通股现金分行情况表中出现 每10股转增10股
                     value = re.sub('^货币单位：人民币$',NULLSTR,value) # 解决思源电器2015年报,合并资产负债表的前三行为 : 编制单位：思源电气股份有限公司合并资产负债表2015年12月31日 货币单位：人民
