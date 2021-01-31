@@ -705,7 +705,7 @@ class InterpreterAccounting(InterpreterBase):
             ,"parameter failedTable(%s) must be a list and fileName(%s) must not be NULL!"%(failedTable,fileName)
         notRequired = self.gJsonBase['repair_lists']['notRequired']
         #company,reportTime,reportType,code = self._get_time_type_by_name(fileName)
-        company, reportTime, reportType, code = self._get_company_time_type_code_by_name(fileName)
+        company, reportTime, reportType, code = self._get_company_time_type_code_by_filename(fileName)
         notRequiredLists = set()
         for tableName in failedTable:
             if tableName in notRequired.keys():
@@ -804,7 +804,7 @@ class InterpreterAccounting(InterpreterBase):
 
     def _check_table_file(self,company, reportType, reportTime,tableFile):
         #companyCheck,timeCheck,typeCheck,codeCheck = self._get_time_type_by_name(tableFile)
-        companyCheck, timeCheck, typeCheck, codeCheck = self._get_company_time_type_code_by_name(tableFile)
+        companyCheck, timeCheck, typeCheck, codeCheck = self._get_company_time_type_code_by_filename(tableFile)
         fileDefault = self.gJsonBase['repair_lists']['fileDefault']
         # 对于某些表确实没有的,可采用 通用数据: 适合所有年报数据.xlxs填充
         isOK = (companyCheck == company and timeCheck == reportTime and typeCheck == reportType) \
@@ -823,7 +823,7 @@ class InterpreterAccounting(InterpreterBase):
 
     def _fill_time_type_by_name(self, filename):
         #company,time,type,code = self._get_time_type_by_name(filename)
-        company, time, type, code = self._get_company_time_type_code_by_name(filename)
+        company, time, type, code = self._get_company_time_type_code_by_filename(filename)
         if self.names['报告时间'] == NULLSTR and time is not NaN:
             self.names["报告时间"] = time
         if self.names['报告类型'] == NULLSTR and type is not NaN:

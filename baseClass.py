@@ -50,6 +50,7 @@ class BaseClass():
         self.commonFields = self.gJsonBase['公共表字段定义']
         self.tableNames = self.gJsonBase['TABLE'].split('|')
         self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
+        self.filenameAlias = self.gJsonBase['filenameAlias']
         #self._get_interpreter_keyword()
         #self._create_tables(self.tableNames)
 
@@ -82,6 +83,11 @@ class BaseClass():
         #self.commonFields = self.gJsonBase['公共表字段定义']
         #self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
         ...
+
+
+    def _get_filename_alias(self,filename):
+        aliasedFilename = self._alias(filename, self.filenameAlias)
+        return aliasedFilename
 
 
     def _get_dict_tables(self,tableNames,dictTablesBase):
@@ -154,12 +160,15 @@ class BaseClass():
         assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
         isFileNameValid = False
         #reportTypes = self.gJsonBase['报告类型']
-        pattern = '|'.join(self.reportTypes)
-        if isinstance(pattern, str) and isinstance(fileName, str):
-            if pattern != NULLSTR:
-                matched = re.search(pattern, fileName)
-                if matched is not None:
-                    isFileNameValid = True
+        #pattern = '|'.join(self.reportTypes)
+        type = self._get_report_type_by_filename(fileName)
+        #if isinstance(pattern, str) and isinstance(fileName, str):
+        #    if pattern != NULLSTR:
+        #        matched = re.search(pattern, fileName)
+        #        if matched is not None:
+        #            isFileNameValid = True
+        if type != NULLSTR:
+            isFileNameValid = True
         return isFileNameValid
 
 
@@ -188,13 +197,21 @@ class BaseClass():
         return type
 
 
-    def _get_company_time_type_code_by_name(self, filename):
-        timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
+    def _get_company_time_type_code_by_filename(self, filename):
+        #timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
         #time = self._standardize('\\d+年',filename)
-        time = self._standardize(timeStandardize, filename)
+        #time = self._standardize(timeStandardize, filename)
+        time = self._get_time_by_filename(filename)
         type = self._get_report_type_by_filename(filename)
         company,code = self._get_company_code_by_content(filename)
         return company,time,type,code
+
+
+    def _get_time_by_filename(self,filename):
+        timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
+        #time = self._standardize('\\d+年',filename)
+        time = self._standardize(timeStandardize, filename)
+        return time
 
 
     def _get_company_code_by_content(self,content):
@@ -216,28 +233,31 @@ class BaseClass():
         return tablePrefix + tableName
 
 
-    def _get_report_type_by_filename(self, name):
+    def _get_report_type_by_filename(self, filename):
         #assert,因为repair_table会传进来一个文件 通用数据：适用所有年度报告.xlsx 不符合标准文件名
         #assert self._is_matched('\\d+年',name),"name(%s) is invalid"%name
-        type = name
+        #type = filename
+        reportType = NULLSTR
         #pattern = "\\d+年([\\u4E00-\\u9FA5]+)"
         reportTypeStandardize = self.gJsonBase['reportTypeStandardize']  # "\\d+年([\\u4E00-\\u9FA5]+)"
-        matched = re.findall(reportTypeStandardize,name)
+        matched = re.findall(reportTypeStandardize, filename)
         if matched is not None and len(matched) > 0:
             type = matched.pop()
-        #reportType = self._alias(type, self.reportTypeAlias)
-        reportType = self._get_report_type_alias(type)
+            #reportType = self._alias(type, self.reportTypeAlias)
+            reportType = self._get_report_type_alias(type)
         return reportType
 
 
     def _get_path_by_report_type(self, type):
         #reportTypes = self.gJsonBase['报告类型']
-        assert type in self.reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,self.reportTypes)
-        #if type not in self.reportTypes:
-        #    self.logger.error("type(%s) is invalid ,which not in [%s] "%(type,self.reportTypes))
-        path = os.path.join(self.data_directory,type)
-        if not os.path.exists(path):
-            os.mkdir(path)
+        #assert type in self.reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,self.reportTypes)
+        path = NULLSTR
+        if type in self.reportTypes:
+            path = os.path.join(self.data_directory,type)
+            if not os.path.exists(path):
+                os.mkdir(path)
+        else:
+            self.logger.error("type(%s) is invalid ,which not in [%s] " % (type, self.reportTypes))
         return path
 
 
@@ -302,7 +322,10 @@ class BaseClass():
 
 
     def _get_report_type_alias(self, reportType):
-        aliasedReportType = self._alias(reportType, self.reportTypeAlias)
+        aliasedReportType = NULLSTR
+        reportTypeTotal = set(list(self.reportTypeAlias.keys()) + self.reportTypes)
+        if reportType in reportTypeTotal:
+            aliasedReportType = self._alias(reportType, self.reportTypeAlias)
         return aliasedReportType
 
 

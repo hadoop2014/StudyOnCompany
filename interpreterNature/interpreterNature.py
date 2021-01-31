@@ -432,7 +432,8 @@ class InterpreterNature(InterpreterBase):
             else:
                 for type  in self.names_global['报告类型']:
                     source_directory = self._get_path_by_report_type(type)
-                    sourcefiles = sourcefiles + os.listdir(source_directory)
+                    if source_directory != NULLSTR:
+                        sourcefiles = sourcefiles + os.listdir(source_directory)
             sourcefilesValid = [sourcefile for sourcefile in sourcefiles if self._is_file_name_valid(sourcefile)]
             sourcefilesInvalid = set(sourcefiles).difference(set(sourcefilesValid))
             if len(sourcefilesInvalid) > 0:
@@ -520,7 +521,7 @@ class InterpreterNature(InterpreterBase):
         dictDuplicate = dict()
         for sourcefile in sourcefiles:
             standardizedName = self._standardize(filenameStandardize,sourcefile)
-            company,time, reportType,code = self._get_company_time_type_code_by_name(standardizedName) #解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
+            company,time, reportType,code = self._get_company_time_type_code_by_filename(standardizedName) #解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
             if company is not NaN and time is not NaN and reportType is not NaN:
                 standardizedName = company + '：'+time + reportType
             if standardizedName is NaN:
