@@ -198,7 +198,6 @@ class CrawlFinance(CrawlBase):
                 print(e)
                 self.logger.error("something is error:urlPath(%s),secCode(%s),secName(%s),announcementTitle(%s)"
                                   %(path["adjunctUrl"], path["secCode"], path['secName'], path['announcementTitle']))
-
         return standardPaths
 
 
@@ -404,11 +403,11 @@ class CrawlFinance(CrawlBase):
         matched = self._standardize(pattern,title)
         if matched is not NaN:
             timereport = matched
-            time = self._get_time_by_filename(timereport)
-            reportType = self._get_report_type_by_filename(timereport) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
+            #time = self._get_time_by_filename(timereport)
+            #reportType = self._get_report_type_by_filename(timereport) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
             #reportType = self._get_report_type_alias(reportType)
-            if reportType != NULLSTR:
-                timereport = time + reportType # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
+            #if reportType != NULLSTR:
+            #    timereport = time + reportType # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
         else:
             self.logger.error('title(%s) is error,the right one must like 2020年第一季度报告!'%title)
         return timereport

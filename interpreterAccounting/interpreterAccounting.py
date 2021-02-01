@@ -221,12 +221,14 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '（' TIME DISCARD '）'
                         | optional '(' AUDITTYPE ')'
                         | optional '（' AUDITTYPE '）'
-                        | optional '(' ')'
                         | optional NAME
                         | optional NAME NUMERIC
+                        | optional '(' ')'
+                        | optional '(' ')' NUMERIC NUMERIC NUMERIC
                         | optional '-'
                         | NUMERIC
                         | empty '''
+            # optional '(' ')' NUMERIC NUMERIC NUMERIC 解决白云山 2020年第三季度报告, 主要会计数据 搜索不到的问题
             # optional '（' AUDITTYPE '）' 解决（600332）白云山：2020年第一季度报告全文.PDF 的 主要会计数据搜索不到问题
             # optional NAME NUMERIC 解决 赣锋锂业2019年报,主要会计数据 出现在页尾,且出现一大段文字,包含有数字
             # optional '(' NUMERO ')' 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
