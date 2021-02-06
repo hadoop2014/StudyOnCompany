@@ -31,8 +31,7 @@
 
   "filenameAlias": {
     "（688139）海尔生物：2020年季报全文.PDF": "（688139）海尔生物：2020年第三季度报告全文.PDF",
-    "（688598）金博股份：2020年三季度报告全文.PDF" : "（688598）金博股份：2020年第三季度报告全文.PDF",
-    "（600687）ST刚泰：2020年三季度报告.PDF": "（600687）ST刚泰：2020年第三季度报告.PDF"
+    "#（688598）金博股份：2020年三季度报告全文.PDF" : "（688598）金博股份：2020年第三季度报告全文.PDF"
   },
 
   "companyAlias": {
@@ -41,7 +40,7 @@
     "民盛金科": "仁东控股"
   },
 
-  "TABLE": "股票交易数据|财报发布信息|行业分类数据",
+  "TABLE": "股票交易数据|财报发布信息|行业分类数据|公司价格分析表",
 
   "#公共字段表": "在所有的股票数据前都会增加这几个字段",
   "公共表字段定义": {
@@ -99,6 +98,76 @@
     "fieldFromHeader": [],
     "order": []
   },
+
+
+  "公司价格分析表": {
+    "#note": "仅用于datafetch.getFinance.py中用于读取 公司价格分析表 的数据(不用于建表),_preprocessing函数会读取这些配置.",
+    "fieldName": [],
+    "fieldAlias": {},
+    "parent": "",
+    "fieldType": {},
+    "fieldFromHeader": [],
+    "order": [],
+    "#preprocessing": "该节配置只用于训练数据中的预处理",
+    "preprocessing": {
+      "起始周总市值": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "transform",
+        "dependent": "报告周总市值"
+      },
+      "报告周总市值": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "结束周总市值": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "transform",
+        "dependent": "报告周总市值"
+      },
+      "起始周指数": {
+        "scaler": "MaxAbsScaler",
+        "scale": "whole",
+        "method": "transform",
+        "dependent": "报告周指数"
+      },
+      "报告周指数": {
+        "scaler": "MaxAbsScaler",
+        "scale": "whole",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "营业收入": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "归属于上市公司股东的净利润": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "归属于上市公司股东的扣除非经常性损益的净利润": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "经营活动产生的现金流量净额": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      }
+
+    }
+  },
+
 
   "stockcodeHeader": ["公司简称","公司代码","类型"],
 
@@ -661,7 +730,7 @@
       "年度报告": ["2014年","2015年","2016年","2017年","2018年","2019年"]
     },
     "上海家化": {
-      "年度报告": ["2015年","2016年","2017年"]
+      "年度报告": ["2014年","2015年","2016年","2017年"]
     },
     "白云山": {
       "年度报告": ["2014年","2015年","2016年","2017年","2018年","2019年"]
@@ -1550,7 +1619,7 @@
     "dataset": {
       "#finance": "为公司财务数据和股票交易数据的组合,用来训练rnnregression模型",
       "finance": {
-        "tableName": "年度公司价格分析表",
+        "tableName": "公司价格分析表",
         "fieldStart": 12,
         "fieldEnd": -2,
         "predictColumnsName": "预测市值增长率",

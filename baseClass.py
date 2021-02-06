@@ -136,7 +136,7 @@ class BaseClass():
             if isinstance(value, list):
                 # 如果子表的值是列表,则追加到父表
                 if len(value) != 0:
-                    dictTableMerged.setdefault(key,[]).append(*value)
+                    dictTableMerged.setdefault(key,[]).extend(value)
             elif isinstance(value, dict):
                 # 如果子表的值是dict, 则进行递归
                 dictTableMergedChild = self._merged_dict_table(value, dictTableMerged[key])

@@ -144,7 +144,7 @@ class CrawlFinance(CrawlBase):
             try:
                 path = self._get_path_by_filename(filename)
                 if path == NULLSTR:
-                    self.logger.info('then filename (%s) is invalid!'% filename)
+                    self.logger.info('the filename (%s) is invalid!'% filename)
                     continue
                 #source_directory = os.path.join(self.source_directory,path)
                 filePath = os.path.join(path,filename)
@@ -191,6 +191,11 @@ class CrawlFinance(CrawlBase):
                             # （603886）元祖股份：2020年第一季度报告.PDF 有两个第一季度报告,取字节数大的
                             standardPaths.update({filename: urlPath})
                             dictPathSize.update({filename: adjunctSize})
+                            self.logger.info('filename(%s) has adjuctSize(%d) is replaced by whitch has adjuctSize(%s)!'
+                                             % (filename,dictPathSize[filename],adjunctSize))
+                        else:
+                            self.logger.info('filename(%s) has adjuctSize(%d) is discarded by whitch has adjuctSize(%s)!'
+                                             % (filename,adjunctSize, dictPathSize[filename]))
                     else:
                         standardPaths.update({filename:urlPath})
                         dictPathSize.update({filename: adjunctSize})
@@ -398,7 +403,9 @@ class CrawlFinance(CrawlBase):
     def _title_transfer(self,title):
         timereport = title
         title = re.sub('<.*>([\\u4E00-\\u9FA5])<.*>', '\g<1>', title)  # 内蒙一机2020年第一季度报告, title中出现 '2020年第<em>一</em>季度'
-        title = title.replace('_',NULLSTR) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
+        #title = title.replace('_',NULLSTR) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
+        title = re.sub('(\\d{4}年)_三季度报告','\g<1>第三季度报告',title) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
+        title = re.sub('(?!第)三季度报告全文','第三季度报告全文',title) #解决 金博股份：三季度报告全文.PDF
         pattern = self.gJsonInterpreter['TIME']+self.gJsonInterpreter['VALUE']+ '(（[\\u4E00-\\u9FA5]+）)*'
         matched = self._standardize(pattern,title)
         if matched is not NaN:
@@ -409,7 +416,7 @@ class CrawlFinance(CrawlBase):
             #if reportType != NULLSTR:
             #    timereport = time + reportType # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
         else:
-            self.logger.error('title(%s) is error,the right one must like 2020年第一季度报告!'%title)
+            self.logger.error('title(%s) is error,the right one must like XXXX年(年度报告|第一季度报告|半年度报告|第三季度报告)!'%title)
         return timereport
 
 

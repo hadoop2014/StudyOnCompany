@@ -156,6 +156,8 @@ class InterpreterAnalysize(InterpreterBase):
         framework = dictModel['framework']
         if handle == '应用':
             dictModel.update({'mode': "apply"}) # 如果是应用模型来做预测,则把 mode 设置为 apply
+        # 当前只支持针对年度报告的预测功能,针对季报的预测功能待开发
+        dictModel.update({'报告类型': ['年度报告']})
         gConfig = self.gConfig
         gConfig.update(dictModel)
         getdataClass = InterpreterAssemble().get_data_class(gConfig,dataset)
