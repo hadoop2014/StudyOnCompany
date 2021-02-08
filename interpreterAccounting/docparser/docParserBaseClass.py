@@ -29,6 +29,16 @@ class DocParserBase(InterpreterBase):
 
 
     def _is_header_in_row(self,row,tableName):
+        """
+        args:
+            row - dataFrame数据中的一行
+            tableName - 表名, 用于从interpreterAccounting.Json中获取参数的索引
+        return:
+            isHeaderInRow - True or False, True 表示在本行中有表头字段. 判断原则:
+            1) 如果 row不是表格,且少于一个字段,返回 False
+            2) 如果地一个字段不为空,且第一个字段在firstHeader配置中,则返回True
+            3) 如果是转置表(isHorizontalTable=True),则用fieldStandardize,否则用headerStandardize对row中内容进行检索,检索到了返回True
+        """
         isHeaderInRow = False
         if isinstance(row,list) == False:
             return isHeaderInRow

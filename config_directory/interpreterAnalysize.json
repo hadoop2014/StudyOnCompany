@@ -396,7 +396,7 @@
       "k" : 5,
       "clip_gradient" : 1e-2,
       "train_num_epoch" : 600,
-      "learning_rate" : 5e-3,
+      "learning_rate" : 1e-2,
       "learning_rate_decay_factor" : 0.8,
       "learning_rate_decay_step": 500,
       "test_percent" : 0.1,

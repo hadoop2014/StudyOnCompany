@@ -236,6 +236,7 @@ class getFinanceDataH(getdataBase):
                     np.squeeze(getattr(dictScaler,method)(np.expand_dims(group,axis=1))),index=group.index
                 ))
                 dataFrameResult[key] = dataFrameScaled
+            dataFrameResult = dataFrameResult.sort_values(by=['公司代码', '报告时间'], ascending=True)
         return dataFrameResult
 
 

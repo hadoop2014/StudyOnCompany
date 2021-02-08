@@ -283,7 +283,7 @@ class DocParserSql(DocParserBase):
             if isinstance(value,str):
                 if value != NONESTR and value != NULLSTR:
                     value = re.sub('不适用$',NULLSTR,value)
-                    value = re.sub('^附\\s*注',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"
+                    value = re.sub('^附\\s*注[一二三四五六七八九十〇]*',NULLSTR,value)#解决隆基股份2017年报中,合并资产负债表中的出现"附注六、1"； 解决海通证券：2020年半年度报告 合并资产负债表 出现 附注五
                     value = re.sub('元$',NULLSTR,value)#解决海螺水泥2018年报中,普通股现金分红情况表中出现中文字符,导致_process_field_merge出错
                     value = re.sub('^上升了', NULLSTR, value)  # 解决圣农发展2016年报,主营业务分行业经营情况出现 "上升 了0.49个百分点"
                     value = re.sub('^上升',NULLSTR,value)#解决京新药业2017年年报,主要会计数据的一列数据中出现"上升 0.49个百分点"
@@ -329,7 +329,18 @@ class DocParserSql(DocParserBase):
         #采用正则表达式替换空字符,对一个字段中包含两个数字字符串的进行拆分
         #解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景.
         #东材科技2018年年报,普通股现金分红流量表,表头有很多空格,影响_process_header_discard,需要去掉
-        dataFrame.iloc[1:,1:]  = dataFrame.iloc[1:,1:].apply(self._rowPretreat,axis=1)
+        # （600837）海通证券：2020年半年度报告.PDF 合并资产负债表, 表头分布在第二行, 第二行有两个字段是 附注, 需要保留
+        index = 0
+        currentRow = dataFrame.iloc[index]
+        self.lastValue = None
+        while dataFrame.shape[0] > 0 and (self._is_row_all_invalid(currentRow.tolist())
+            or self._is_header_in_row(currentRow.tolist(),tableName) == True):
+            self.logger.info('skip all invalid row or no header row: %s' % currentRow.tolist())
+            index = index + 1
+            currentRow = dataFrame.iloc[index]
+            currentRow = currentRow.apply(self._valuePretreat)
+        dataFrame.iloc[index:,1:] = dataFrame.iloc[index:,1:].apply(self._rowPretreat, axis=1)
+        #dataFrame.iloc[1:,1:]  = dataFrame.iloc[1:,1:].apply(self._rowPretreat,axis=1)
         dataFrame.iloc[:,:] = dataFrame.iloc[:,:].apply(lambda row:row.apply(self._replace_value))
         return dataFrame
 
@@ -570,7 +581,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub(r'（([\d.,]+)）','-\g<1>',value)
                     value = value.replace('）',NULLSTR).replace('（',NULLSTR)
                     #解决迪安诊断2018年财报主要会计数据中,把最后一行拆为"归属于上市公司股东的净资产（元"和"）"
-                    #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充
+                    #高德红外2018年报,无效值用'--'填充,部分年报无效值用'-'填充,万科A 2020年半年报,合并所有者权益变动表中的无效值用 '---'填充
                     value = re.sub('.*-$',NULLSTR,value)
                     #尚荣医疗2017年年报,现金流量表补充资料中的无效值用 '一'填充
                     value = re.sub('^一$',NULLSTR,value)

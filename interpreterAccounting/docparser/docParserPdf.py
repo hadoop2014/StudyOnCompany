@@ -148,9 +148,11 @@ class DocParserPdf(DocParserBase):
             self.interpretPrefix = NULLSTR
             return dictTable
         if isinstance(savedTable, list):
-            if tableStartScore > dictTable['tableStartScore']:
-                # 如果第二次搜索到同一张表, 而且tableStartScore更高, 则认为是正确的表, 则重新开始拼接表
+            if tableStartScore >= dictTable['tableStartScore'] and dictTable['tableEnd'] == False:
+                # 如果第二次搜索到同一张表, 而且tableStartScore更高, 且isTableEnd = False,则认为是正确的表, 则重新开始拼接表
                 # 解决国城矿业：2019年年度报告, 合并资产负债表出现两次, 后面一次是正确的
+                # 华侨城A：2020年半年度报告, 合并所有者权益变动表 P83页第一次出现 tableStartScore = 2, 但是P85页再次出现的表 tableStartScore = 3
+                #（600109）国金证券：2020年半年度报告.PDF,P43页第一次出现合并资产负债表,P57页出现真正的合并资产负债表
                 savedTable = processedTable
                 self.logger.info('second searched table %s at page %d, whitch tableStartScore(%d) > last one(%d)'
                                  %(tableName, page_numbers[-1], tableStartScore, dictTable['tableStartScore']))
@@ -180,6 +182,8 @@ class DocParserPdf(DocParserBase):
             #processedTable = NULLSTR
             #return processedTable, isTableEnd, isTableStart
             fieldList = [row[0] for row in processedTable]
+            if self._is_row_all_invalid(fieldList):
+                self.logger.warning('the first row of tables is all invalid:%s'% processedTable)
             headerList = processedTable[0]
             #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
             tableStartScore = 0
@@ -214,9 +218,11 @@ class DocParserPdf(DocParserBase):
             tableStartScore = self._is_table_start_simple(tableName, fieldList, secondFieldList, headerList)
             if len(page_numbers) == 1:
                 #len(page_numers) == 1表示本表所在的第一页,需要明确判断出isTabletart = True 才能使得isTableEnd生效
-                if (isTableEnd and tableStartScore > 0) \
+                if (isTableEnd and tableStartScore > 0 and maxTableEnd == False) \
                     or (isTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0):
-                    # (isTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0) 解决片仔癀：2016年年度报告,分季度财务数据的解析问题
+                    # (isTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0)
+                    # 解决片仔癀：2016年年度报告,分季度财务数据的解析问题
+                    # and maxTableEnd == False 解决（601878）浙商证券：2020年半年度报告,主要会计数据的解析问题
                     processedTable = table
                     maxTableStartScore = tableStartScore
                     maxTableEnd = isTableEnd
