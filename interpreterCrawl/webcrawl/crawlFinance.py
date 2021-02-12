@@ -215,6 +215,7 @@ class CrawlFinance(CrawlBase):
         if time is NaN:
             time = str(strptime(publishingTime,'%Y-%m-%d').tm_year) + '年'
             code, name = filename.split('：')
+            #name = self._get_report_type_alias(name)
             adjustedFilename = code +  '：' + time + name
         return adjustedFilename
 

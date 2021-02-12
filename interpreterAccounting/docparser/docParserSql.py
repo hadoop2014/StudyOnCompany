@@ -279,6 +279,14 @@ class DocParserSql(DocParserBase):
 
 
     def _valuePretreat(self,value):
+        """
+        args:
+            value - dataFrame中的某一个字段数据
+        return:
+            value - 经过预处理后的字段数据,处理原则:
+            1) 去掉所有的中文, 避免_is_header_in_row误判.
+            2) 奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景, 把一个字段拆成两个字段.
+        """
         try:
             if isinstance(value,str):
                 if value != NONESTR and value != NULLSTR:
@@ -318,6 +326,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('个百分$', NULLSTR, value)
                 else:
                     if self.lastValue != None and value == NONESTR:
+                        # 解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景
                         value = self.lastValue
                         self.lastValue = None
         except Exception as e:
@@ -326,10 +335,20 @@ class DocParserSql(DocParserBase):
 
 
     def _process_value_pretreat(self,dataFrame:DataFrame,tableName):
+        """
+        args:
+            dataFrame - 待处理的表数据
+            tableName - 表名, 用于从dictTable中作为索引读取配置参数
+        return:
+            dataFrame - 经过预处理后的表数据,处理原则:
+            1) 从第一行开始搜索, 跳过字段全空的行 及 包含表头的行, 从第一行数据开始, 调用_rowPretreat,对数据进行预处理,主要是去除数据中所有的文字,
+               如:附注,百分比等. 针对海通证券2020年半年度报告,合并资产负债表,第二行有个附注, 这个附注必须留着, 采用_process_header_discard整列去除.
+            2) 对所有的数据用_replace_value进行处理, 主要对 () 替换为中文的 （）,去掉全部空格
+        """
         #采用正则表达式替换空字符,对一个字段中包含两个数字字符串的进行拆分
         #解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景.
         #东材科技2018年年报,普通股现金分红流量表,表头有很多空格,影响_process_header_discard,需要去掉
-        # （600837）海通证券：2020年半年度报告.PDF 合并资产负债表, 表头分布在第二行, 第二行有两个字段是 附注, 需要保留
+        # 海通证券：2020年半年度报告.PDF 合并资产负债表, 表头分布在第二行, 第二行有两个字段是 附注, 需要保留
         index = 0
         currentRow = dataFrame.iloc[index]
         self.lastValue = None

@@ -154,7 +154,7 @@ class DocParserPdf(DocParserBase):
                 # 华侨城A：2020年半年度报告, 合并所有者权益变动表 P83页第一次出现 tableStartScore = 2, 但是P85页再次出现的表 tableStartScore = 3
                 #（600109）国金证券：2020年半年度报告.PDF,P43页第一次出现合并资产负债表,P57页出现真正的合并资产负债表
                 savedTable = processedTable
-                self.logger.info('second searched table %s at page %d, whitch tableStartScore(%d) > last one(%d)'
+                self.logger.info('second searched table %s at page %d, whitch tableStartScore(%d) >= last one(%d)'
                                  %(tableName, page_numbers[-1], tableStartScore, dictTable['tableStartScore']))
                 dictTable.update({'page_numbers':[page_numbers[-1]]})
                 dictTable.update({'tableStartScore': tableStartScore})
