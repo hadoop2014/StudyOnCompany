@@ -177,8 +177,11 @@ class CrawlFinance(CrawlBase):
         for path in downloadPaths:
             try:
                 urlPath = download_path + path["adjunctUrl"]
-                filename = '（' + path["secCode"] + '）' + self._secname_transfer(path['secName']) + '：' \
-                           + self._title_transfer(path['announcementTitle']) + '.PDF'
+                code = path["secCode"]
+                company = self._secname_transfer(path['secName'])
+                type = self._title_transfer(path['announcementTitle'],company)
+                filename = '（' + code + '）' + company + '：' \
+                           + type + '.PDF'
                 publishingTime = self._get_publishing_time(path["adjunctUrl"])
                 filename = self._adjust_filename(filename,publishingTime)
                 filename = self._get_filename_alias(filename)
@@ -357,6 +360,7 @@ class CrawlFinance(CrawlBase):
         dataFrameCompanysRequired = pd.merge(dataFrameCompanysRequired,dataFrameTimeToMarket,how='left',on=['公司简称','报告类型'])
         # 对于没有关联上的记录, 上市时间为 NaN,需要替换为NULLSTR,使得下一句的条件判断生效
         dataFrameCompanysRequired = dataFrameCompanysRequired.fillna(value=NULLSTR)
+        dataFrameCompanysRequired['上市时间'].replace('nan',NULLSTR,inplace=True)
         dataFrameCompanysRequired = dataFrameCompanysRequired[dataFrameCompanysRequired['报告时间'] > dataFrameCompanysRequired['上市时间']]
         companysRequired = set([','.join(item) for item in dataFrameCompanysRequired[['公司简称','报告时间','报告类型']].values.tolist()])
         return companysRequired
@@ -401,12 +405,15 @@ class CrawlFinance(CrawlBase):
         return query_response
 
 
-    def _title_transfer(self,title):
+    def _title_transfer(self,title,company):
         timereport = title
-        title = re.sub('<.*>([\\u4E00-\\u9FA5])<.*>', '\g<1>', title)  # 内蒙一机2020年第一季度报告, title中出现 '2020年第<em>一</em>季度'
+        #title = re.sub('<.*>([\\u4E00-\\u9FA5])<.*>', '\g<1>', title)  # 内蒙一机2020年第一季度报告, title中出现 '2020年第<em>一</em>季度'
+        title = re.sub('<em>',NULLSTR,title)
+        title = re.sub('</em>',NULLSTR,title)
         #title = title.replace('_',NULLSTR) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
         title = re.sub('(\\d{4}年)_三季度报告','\g<1>第三季度报告',title) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
-        title = re.sub('(?!第)三季度报告全文','第三季度报告全文',title) #解决 金博股份：三季度报告全文.PDF
+        title = re.sub('(\\d{4}年)_第三季度报告','\g<1>第三季度报告',title) # 解决 （600436）片仔癀：2020年第三季度报告,出现:2020年_第三季度报告
+        #title = re.sub('(?!第)三季度报告全文','第三季度报告全文',title) #解决 金博股份：三季度报告全文.PDF
         pattern = self.gJsonInterpreter['TIME']+self.gJsonInterpreter['VALUE']+ '(（[\\u4E00-\\u9FA5]+）)*'
         matched = self._standardize(pattern,title)
         if matched is not NaN:
@@ -417,7 +424,8 @@ class CrawlFinance(CrawlBase):
             #if reportType != NULLSTR:
             #    timereport = time + reportType # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
         else:
-            self.logger.error('title(%s) is error,the right one must like XXXX年(年度报告|第一季度报告|半年度报告|第三季度报告)!'%title)
+            self.logger.error('%s title(%s) is error,the right one must like XXXX年(年度报告|第一季度报告|半年度报告|第三季度报告)!'
+                              %(company, title))
         return timereport
 
 

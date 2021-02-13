@@ -34,7 +34,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def t_TIME(t):
-            "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+\\s*[—|-]\\s*\\d+\\s*月|\\d+\\s*(年|月|日)*\\s*[—|-]\\s*\\d+\\s*(年|月|日)|\\d+\\s*年\\s*\\d+\\s*月|\\d+\\s*年|[○一二三四五六七八九〇]{4}\\s*年|\\d\\s*\\d\\s*\\d\\s*\\d\\s*年"
+            "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+\\s*[—|-|－]\\s*\\d+\\s*月|\\d+\\s*(年|月|日)*\\s*[—|-]\\s*\\d+\\s*(年|月|日)|\\d+\\s*年\\s*\\d+\\s*月|\\d+\\s*年|[○一二三四五六七八九〇]{4}\\s*年|\\d\\s*\\d\\s*\\d\\s*\\d\\s*年"
             #该函数会覆盖interpreterAccounting.json中定义的TIME的正则表达式,所以必须使得函数中的正则表达式和.json文件中配置的相同
             return t
 
@@ -99,10 +99,12 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional time optional unit finis
                           | TABLE optional time optional HEADER unit
                           | TABLE optional time optional HEADER HEADER
+                          | TABLE optional time optional HEADER TIME
                           | TABLE optional HEADER TIME
                           | TABLE optional HEADER optional HEADER
                           | TABLE optional HEADER optional time unit
                           | TABLE optional HEADER optional unit finis'''
+            # TABLE optional time optiona HEADER TIME 解决 艾迪精密：2019年第一季度报告, 合并利润表的搜索问题
             # TABLE optional time optional HEADER HEADER 解决 古井贡酒2018年, 现金流量表补充资料出现在页尾, 然后在搜索第二页时出错
             # TABLE optional time optional HEADER unit 解决凯利泰：2016年 合并所有者权益变动表出现在页尾的情况
             # TABLE optional HEADER optional HEADER解决鱼跃医疗：2014年年度 主营业务分行业经营情况,搜索不到问题
@@ -205,7 +207,8 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info(' '.join([str(word.type) for word in p.slice]))
             self.logger.warning("fetchtable in wrong mode,prefix: %s page %d"%(interpretPrefix.replace('\n','\t'),self.currentPageNumber))
             #针对上一页fetchtable reatch tail时,下一页搜索到错误的TABLE,不再继续往下搜索
-            self.docParser.interpretPrefix = NULLSTR
+            # 解决 片仔癀：2019年第三季度报告,主要会计数据 分成了两页, 第一页中出现fetchtablewrong,导致第二页无法搜索
+            #self.docParser.interpretPrefix = NULLSTR
             p[0] = p[1] + p[2]
 
 
@@ -214,6 +217,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional COMPANY
                         | optional LOCATION
                         | optional NUMERO
+                        | optional NUMERO NUMERO NUMERO
                         | optional '(' NUMERO ')'
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
@@ -225,15 +229,15 @@ class InterpreterAccounting(InterpreterBase):
                         | optional NAME NUMERIC
                         | optional '(' ')'
                         | optional '(' ')' NUMERIC NUMERIC NUMERIC
-                        | optional '-'
                         | NUMERIC
                         | empty '''
+            # optional NUMERO NUMERO NUMERO 解决 华测导航：2018年第一季度报告全文,合并资产负债表,解析出 合并资产负债表 ...  2018 03 31
             # optional '(' ')' NUMERIC NUMERIC NUMERIC 解决白云山 2020年第三季度报告, 主要会计数据 搜索不到的问题
             # optional '（' AUDITTYPE '）' 解决（600332）白云山：2020年第一季度报告全文.PDF 的 主要会计数据搜索不到问题
             # optional NAME NUMERIC 解决 赣锋锂业2019年报,主要会计数据 出现在页尾,且出现一大段文字,包含有数字
             # optional '(' NUMERO ')' 解决宝信软件 2014年报, p101,现金流量表补充资料的搜索问题
             # optional '（' TIME DISCARD '）'解决沪电股份：2014年报出现,合并现金流量表 （2014 年 12 月 31 日止年度） 单位：人民
-            # optional '-' 解决爱朋医疗2014年 主营业务分行业经营情况 出现在页尾的情况: 以上的行业、产品或地区情况 √ 适用 □ 不适用 - 31-
+            # optional '-' 解决爱朋医疗2014年 主营业务分行业经营情况 出现在页尾的情况: 以上的行业、产品或地区情况 √ 适用 □ 不适用 - 31-, 去掉该语句,用 tail : '-' NUMERO TAIL取代
             # optional HEADER可解决海螺水泥2014年合并所有者权限变动表的搜索问题,但是采用TABLE optional HEADER optional unit
             # optional '（' TIME '）'解决三诺生物2014年报中出现 : 合并资产负债表 编制单位：三诺生物传感股份有限公司（2014 年 12 月 31 日） 单位：元
             # optional : discard 去掉，减少语法冲突
@@ -254,7 +258,7 @@ class InterpreterAccounting(InterpreterBase):
                     self.names['company'] = self._eliminate_duplicates(slice.value)
                 if slice.type == 'LOCATION':
                     self.names['address'] = self._eliminate_duplicates(slice.value)
-            prefix = ''.join([str(slice) for slice in p if slice is not None])
+            prefix = ''.join([str(slice.value) + ' ' if slice.type == 'NUMERO' else str(slice.value) for slice in p.slice if slice.value is not None])
             p[0] = prefix
 
 
@@ -538,8 +542,10 @@ class InterpreterAccounting(InterpreterBase):
         def p_tail(p):
             '''tail : TAIL
                     | NUMERO TAIL
+                    | '-' NUMERO TAIL
                     | NUMERO NUMERO TAIL
                     | SPECIALWORD NUMERO NUMERO TAIL'''
+            # -' NUMERO TAIL 解决 爱朋医疗：2019年第三季度报告全文 ,合并利润表出现在页尾, 合并年初到报告期末利润表 单位：元 - 18 -
             # tail : TAIL 解决三全食品2019年报, 主营业务分行业经营情况出现在页尾,但是没有页码的情况
             # SPECIALWORD NUMERO NUMERO TAIL 解决苏博特：2018年年度,主营业务分行业经营情况出现在页尾,且只有一行表头: 主营业务分行业情况
             # tail : TAIL 解决华侨城A 2016年, 无形资产情况出现在页尾,但是没有页码
@@ -579,6 +585,7 @@ class InterpreterAccounting(InterpreterBase):
             text = self.docParser._get_text(data)
             self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
         self._process_critical_table()
+        firstRowAllInvalid = self._get_first_row_all_invalid()
         sourceFile = os.path.split(self.docParser.sourceFile)[-1]
         self.logger.info('%s\tcritical:'%sourceFile + ','.join([self.names['公司名称'],self.names['报告时间'],self.names['报告类型']
                          ,str(self.names['公司代码']),self.names['公司简称'],self.names['公司地址']
@@ -604,7 +611,8 @@ class InterpreterAccounting(InterpreterBase):
             else:
                 self.logger.info("all table is success processed %s!\n" % (sourceFile))
                 self.docParser.save_checkpoint(fileName)
-            resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time),'failedTable': failedTableAgain})
+            resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time)
+                              ,'failedTable': failedTableAgain})
         else:
             self.logger.info('failed to fetch %s\t tables:%s!\n' % (sourceFile, failedTable))
             #通过repair_list对表进行恢复,返回可能回恢复的列表
@@ -634,6 +642,7 @@ class InterpreterAccounting(InterpreterBase):
                 self.logger.info("all table is success processed %s!\n" % (sourceFile))
                 self.docParser.save_checkpoint(fileName)
             resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time)
+                              ,'firstRowAllInvalid': firstRowAllInvalid
                               ,'failedTable': list([(tableName,self.names[tableName]['page_numbers']) for tableName in failedTable])})
         self.docParser._close()
         self.logger.info('parse %s file end, time used %.4f\n\n' % (fileName,(time.time() - start_time)))
@@ -654,6 +663,7 @@ class InterpreterAccounting(InterpreterBase):
     def _process_critical_table(self,tableName = '关键数据表'):
         assert tableName is not None and tableName != NULLSTR,"tableName must not be None"
         table = self._construct_table(tableName)
+        #isFirstRowAllInvalid = self._get_first_row_all_invalid()
         self.names[tableName].update({'tableName': tableName,'table':table, 'tableBegin': True,"tableEnd":True})
         self._parse_table(tableName)
 
@@ -700,6 +710,18 @@ class InterpreterAccounting(InterpreterBase):
                                          , '货币名称': self.names['货币名称'] })
         self.excelParser.writeToStore(self.names[tableName])
         self.sqlParser.writeToStore(self.names[tableName])
+
+
+    def _get_first_row_all_invalid(self):
+        #isFirstRowAllInvalid = False
+        if self.names['报告类型'] in self.dictReportType.keys():
+            tableNames = self.dictReportType[self.names['报告类型']]
+        else:
+            tableNames = self.tableNames
+        sumFirstRowAllInvalid = sum([self.names[tableName]['firstRowAllInvalid'] for tableName in tableNames])
+        #if sumFirstRowAllInvalid > 0:
+        #    isFirstRowAllInvalid = True
+        return sumFirstRowAllInvalid
 
 
     def _remove_not_required(self,failedTable,fileName):
@@ -937,6 +959,7 @@ class InterpreterAccounting(InterpreterBase):
                                           ,'货币名称': NULLSTR
                                           ,"注册地址": NULLSTR
                                           ,'table':NULLSTR,'tableStartScore': 0,'tableBegin':False,'tableEnd':False
+                                          ,'firstRowAllInvalid': False
                                           ,"page_numbers":list(),"interpretPrefix": NULLSTR}})
         self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR,'address':NULLSTR})
         for commonField,_ in self.commonFields.items():

@@ -134,8 +134,9 @@ class DocParserPdf(DocParserBase):
         tableName = dictTable['tableName']
         fetchTables = self._get_tables(dictTable)
         page_numbers = dictTable['page_numbers']
-        processedTable, isTableEnd, tableStartScore = self._process_table(page_numbers, fetchTables, tableName)
+        processedTable, isTableEnd, tableStartScore, isFirstRowAllInvalid = self._process_table(page_numbers, fetchTables, tableName)
         dictTable.update({'tableEnd':isTableEnd})
+        dictTable.update({'firstRowAllInvalid': isFirstRowAllInvalid})
         if len(page_numbers) == 1 and tableStartScore == 0 and processedTable == NULLSTR:
             #这种情况下表明解释器在搜索时出现了误判,需要重置搜索条件,解决三诺生物2019年年报第60,61页出现了错误的合并资产负责表,真正的在第100页.
             #这种情况下还需要判断processedTable是否有效,如果有效,说明已经搜索到了,此时忽略isTableStart
@@ -170,11 +171,11 @@ class DocParserPdf(DocParserBase):
 
 
     def _process_table(self,page_numbers,tables,tableName):
-        processedTable, isTableEnd, tableStartScore = NULLSTR , False, 0
+        processedTable, isTableEnd, tableStartScore, isFirstRowAllInvalid = NULLSTR , False, 0, False
         assert isinstance(page_numbers,list) and len(page_numbers) > 0,"page_number(%s) must not be NULL"%page_numbers
         if tables is None or len(tables) == 0:
             #tables = None是从interpreterAccountingUnittest.py调用时出现的情景
-            return processedTable, isTableEnd, tableStartScore
+            return processedTable, isTableEnd, tableStartScore,isFirstRowAllInvalid
         processedTable = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in tables[-1]]
         processedTable = self._discard_last_row(processedTable,tableName)
         if len(processedTable) > 0:
@@ -183,6 +184,7 @@ class DocParserPdf(DocParserBase):
             #return processedTable, isTableEnd, isTableStart
             fieldList = [row[0] for row in processedTable]
             if self._is_row_all_invalid(fieldList):
+                isFirstRowAllInvalid = True
                 self.logger.warning('the first row of tables is all invalid:%s'% processedTable)
             headerList = processedTable[0]
             #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
@@ -196,12 +198,14 @@ class DocParserPdf(DocParserBase):
             if len(page_numbers) == 1 and tableStartScore == 0:
                 self.logger.warning('failed to fetch %s whitch has invalid data:%s'%(tableName,processedTable))
                 processedTable = NULLSTR
-            return processedTable, isTableEnd, tableStartScore
+            return processedTable, isTableEnd, tableStartScore, isFirstRowAllInvalid
         processedTable = NULLSTR
         # 引入maxTableStart 解决鲁商发展 2020年半年报P12页主营业务分行业经营情况表 出现了两张表头几乎一样的表,使得之前的isTableStart判断失效,改为置信度算法
         maxTableStartScore = 0
         maxTableEnd = False
+        maxFirstRowAllInvalid = False
         for index,table in enumerate(tables):
+            isFirstRowAllInvalid = False
             table = [list(map(lambda x: str(x).replace('\n', NULLSTR), row)) for row in table ]
             table = self._discard_last_row(table,tableName)
             if len(table) == 0 or len(table[0]) <= 1:
@@ -210,6 +214,7 @@ class DocParserPdf(DocParserBase):
                 continue
             fieldList = [row[0] for row in table]
             if self._is_row_all_invalid(fieldList):
+                isFirstRowAllInvalid = True
                 self.logger.warning('the first row of tables is all invalid:%s'%table)
             secondFieldList = [row[1] for row in table]
             headerList = table[0]
@@ -226,10 +231,13 @@ class DocParserPdf(DocParserBase):
                     processedTable = table
                     maxTableStartScore = tableStartScore
                     maxTableEnd = isTableEnd
+                    maxFirstRowAllInvalid = isFirstRowAllInvalid
                     #break
                 elif tableStartScore > maxTableStartScore:
                     processedTable = table
                     maxTableStartScore = tableStartScore
+                    maxTableEnd = isTableEnd
+                    maxFirstRowAllInvalid = isFirstRowAllInvalid
                 else:
                     #在第一页,没有搜索到表字段头的情况下搜索到了表尾,则是非法的: 荣盛发展2017年报P63 普通股现金分红情况表 出现了这种情况
                     #if maxTableStart == 0:
@@ -239,12 +247,14 @@ class DocParserPdf(DocParserBase):
                 if isTableEnd == True:
                     processedTable = table
                     maxTableEnd = isTableEnd
+                    maxFirstRowAllInvalid = isFirstRowAllInvalid
                     #if isTableStart == False:
                         #解决（002812）恩捷股份：2018年年度报告.PDF,只能通过repair_list解决.主要会计数据分成两样,第二页出现一张统一控制下企业合并,和主要会计数据表字段完全一样,导致误判
                     break
                 elif tableStartScore > maxTableStartScore:
                     processedTable = table
                     maxTableStartScore = tableStartScore
+                    maxFirstRowAllInvalid = isFirstRowAllInvalid
                 else:
                     #正对华侨城A 2018年年报, 合并资产负债表 的 中间表出现在某一页,但是被拆成了两个表,需要被重新组合成一张新的表
                     if processedTable == NULLSTR:
@@ -252,7 +262,7 @@ class DocParserPdf(DocParserBase):
                     else:
                         processedTable.extend(table)
                         self.logger.warning('%s 的中间页出现的表被拆成多份,在此对表进行合并,just for debug!'%tableName)
-        return processedTable, maxTableEnd, maxTableStartScore
+        return processedTable, maxTableEnd, maxTableStartScore, maxFirstRowAllInvalid
 
 
     def _discard_last_row(self,table,tableName):

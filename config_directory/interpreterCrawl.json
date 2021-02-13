@@ -90,7 +90,7 @@
     "nameStandardize": "(（\\d+）)*[\\u4E00-\\u9FA5|：]+\\d+[\\u4E00-\\u9FA5]+(（[\\u4E00-\\u9FA5]+）)*",
     "nameDiscard": ["摘要","英文","正文","公告"],
     "RESPONSE_TIMEOUT": 10,
-    "WAIT_TIME": 3,
+    "WAIT_TIME": 4,
     "exception": {
       "通策医疗": {
         "stock": "600763",
@@ -330,6 +330,11 @@
       "光弘科技": {
         "stock": "300735",
         "secid": "9900034588",
+        "searchkey": ""
+      },
+      "竟业达": {
+        "stock": "003005",
+        "secid": "9900039784",
         "searchkey": ""
       }
     }

@@ -168,6 +168,7 @@ class DocParserSql(DocParserBase):
             return
 
         self.process_info.update({tableName:{'processtime':time.time()}})
+        self.process_info.update({'firstRowAllInvalid': dictTable['firstRowAllInvalid']})
         dataframe,countTotalFields = self._table_to_dataframe(table,tableName)#pd.DataFrame(table[1:],columns=table[0],index=None)
 
         #对数据进行预处理,两行并在一行的分开,去掉空格等
@@ -749,6 +750,19 @@ class DocParserSql(DocParserBase):
                     else:
                         dataFrame.iloc[ - 2] = NaN
                     dataFrame = dataFrame.dropna(axis = 0).copy()
+                elif self._is_third_quarter_profit_data(tableName):
+                    if '本报告期金额' in dataFrame.index.values:
+                        # 解决恒顺醋业,第三季度报告,合并利润表,中有四列数据, 取倒数第二列数据,为年初至报告期的数据
+                        dataFrame.loc['本期金额'] = dataFrame.loc['本报告期金额']
+                    elif len(dataFrame.index.values) == 5:
+                        dataFrame.loc['本期金额'] = dataFrame.iloc[-2]
+                    else:
+                        self.logger.error('dataFrame has no columns 本报告期金额, whitch is %s'% dataFrame.index.values)
+                    self.logger.warning(
+                        "%s has %d row,only %s is needed,last row %s had discarded!"%(tableName,maxRows,maxHeaders
+                                                                                      ,dataFrame.index[-1]))
+                    dataFrame.iloc[maxHeaders:maxRows] = NaN
+                    dataFrame = dataFrame.dropna(axis=0).copy()
                 else:
                     #对于超出最大头长度的行进行拆解,解决华侨城A 2018年包中,合并资产负债表 有三列数据,其中最后一列数据是不需要的
                     self.logger.warning(
@@ -807,6 +821,13 @@ class DocParserSql(DocParserBase):
         #如果是第三季度报告,主要会计数据,则返回Ture,这个数据需要特殊处理
         reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
         isThirdQuarterAccountingData = (reportType == '第三季度报告' and tableName == '主要会计数据')
+        return isThirdQuarterAccountingData
+
+
+    def _is_third_quarter_profit_data(self,tableName):
+        #如果是第三季度报告,合并利润表,则返回Ture,这个数据需要特殊处理
+        reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
+        isThirdQuarterAccountingData = (reportType == '第三季度报告' and tableName == '合并利润表')
         return isThirdQuarterAccountingData
 
 
