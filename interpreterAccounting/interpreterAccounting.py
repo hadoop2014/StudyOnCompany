@@ -34,7 +34,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def t_TIME(t):
-            "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+\\s*[—|-|－]\\s*\\d+\\s*月|\\d+\\s*(年|月|日)*\\s*[—|-]\\s*\\d+\\s*(年|月|日)|\\d+\\s*年\\s*\\d+\\s*月|\\d+\\s*年|[○一二三四五六七八九〇]{4}\\s*年|\\d\\s*\\d\\s*\\d\\s*\\d\\s*年"
+            "\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日|\\d+\\s*年\\s*\\d+\\s*月*(—|-|－)\\s*\\d+\\s*月*|\\d+\\s*(年|月|日)*\\s*[—|-]\\s*\\d+\\s*(年|月|日)|\\d+\\s*年\\s*\\d+\\s*月|\\d+\\s*年|[○一二三四五六七八九〇]{4}\\s*年|\\d\\s*\\d\\s*\\d\\s*\\d\\s*年"
             #该函数会覆盖interpreterAccounting.json中定义的TIME的正则表达式,所以必须使得函数中的正则表达式和.json文件中配置的相同
             return t
 
@@ -98,12 +98,13 @@ class InterpreterAccounting(InterpreterBase):
                           | TABLE optional time optional TIME
                           | TABLE optional time optional unit finis
                           | TABLE optional time optional HEADER unit
-                          | TABLE optional time optional HEADER HEADER
+                          | TABLE optional time optional HEADER optional HEADER
                           | TABLE optional time optional HEADER TIME
                           | TABLE optional HEADER TIME
                           | TABLE optional HEADER optional HEADER
                           | TABLE optional HEADER optional time unit
                           | TABLE optional HEADER optional unit finis'''
+            # TABLE optional time optional HEADER 解决 宝莱特：2019年半年度报告 主要会计数据 的搜索问题
             # TABLE optional time optiona HEADER TIME 解决 艾迪精密：2019年第一季度报告, 合并利润表的搜索问题
             # TABLE optional time optional HEADER HEADER 解决 古井贡酒2018年, 现金流量表补充资料出现在页尾, 然后在搜索第二页时出错
             # TABLE optional time optional HEADER unit 解决凯利泰：2016年 合并所有者权益变动表出现在页尾的情况
@@ -263,8 +264,8 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchdata_referencedouble(p):
-            '''fetchdata : REFERENCE DISCARD REFERENCE NUMERIC
-                         | REFERENCE NUMERIC REFERENCE DISCARD '''
+            '''fetchdata : REFERENCE DISCARD REFERENCE NUMERO
+                         | REFERENCE NUMERO REFERENCE DISCARD '''
             if self.names[self._get_reference_alias(p[1])] == NULLSTR :
                 self.names.update({self._get_reference_alias(p[1]):p[2]})
             if self.names[self._get_reference_alias(p[3])] == NULLSTR:
@@ -274,7 +275,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchdata_referencetriple(p):
-            '''fetchdata : REFERENCE NUMERIC NUMERIC REFERENCE DISCARD DISCARD'''
+            '''fetchdata : REFERENCE NUMERO NUMERO REFERENCE DISCARD DISCARD'''
             # 解决华新水泥2018年报中,股票简称不能识别的问题
             if self.names[self._get_reference_alias(p[1])] == NULLSTR :
                 self.names.update({self._get_reference_alias(p[1]):p[2]})
@@ -307,10 +308,10 @@ class InterpreterAccounting(InterpreterBase):
 
 
         def p_fetchdata_wrong(p):
-            '''fetchdatawrong : REFERENCE NUMERIC NAME
-                         | REFERENCE NUMERIC TIME
-                         | REFERENCE NUMERIC DISCARD
-                         | REFERENCE NUMERIC LOCATION
+            '''fetchdatawrong : REFERENCE NUMERO NAME
+                         | REFERENCE NUMERO TIME
+                         | REFERENCE NUMERO DISCARD
+                         | REFERENCE NUMERO LOCATION
                          | REFERENCE REFERENCE
                          | REFERENCE DISCARD
                          | REFERENCE LABEL'''
@@ -320,7 +321,9 @@ class InterpreterAccounting(InterpreterBase):
         def p_fetchtitle(p):
             '''fetchtitle : TIME REPORT
                           | company TIME REPORT
-                          | company selectable TIME REPORT'''
+                          | company selectable TIME REPORT
+                          | TIME REPORT REFERENCE NUMERO'''
+            # TIME REPORT REFERENCE NUMERIC 解决东方电缆：2017年半年度报告, 合并所有者权益变动表,出现 2017 年半年度报告 股票代码：603606 合并所有者权益变动表
             # TIME REPORT COMPANY没有必要，用TIME REPORT生效即可，COMPANY可以通过CRITICAL COMPANY获取
             # COMPANY selectable TIME REPORT 解决海螺水泥2018年报第1页title的识别问题
             for slice in p.slice:
@@ -545,6 +548,7 @@ class InterpreterAccounting(InterpreterBase):
                     | '-' NUMERO TAIL
                     | NUMERO NUMERO TAIL
                     | SPECIALWORD NUMERO NUMERO TAIL'''
+            # DISCARD NUMERO TAIL 解决 郑煤机：2016年半年度报告, 无形资产情况表出现在页尾的情况,如: 无形资产情况 单位：元 币种：人民币 附注第 40 页, 采用 CURRENCY来解决
             # -' NUMERO TAIL 解决 爱朋医疗：2019年第三季度报告全文 ,合并利润表出现在页尾, 合并年初到报告期末利润表 单位：元 - 18 -
             # tail : TAIL 解决三全食品2019年报, 主营业务分行业经营情况出现在页尾,但是没有页码的情况
             # SPECIALWORD NUMERO NUMERO TAIL 解决苏博特：2018年年度,主营业务分行业经营情况出现在页尾,且只有一行表头: 主营业务分行业情况

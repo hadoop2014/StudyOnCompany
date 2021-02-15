@@ -268,7 +268,8 @@ class DocParserPdf(DocParserBase):
     def _discard_last_row(self,table,tableName):
         #引入maxFieldLen是为了解决（002555）三七互娱：2018年年度报告.PDF,主要会计数据,在最后一个字段'归属于上市公司股东的净资产（元）'后面又加了一段无用的话,直接去掉
         maxFieldLen = self.dictTables[tableName]['maxFieldLen']
-        if isinstance(table[-1][0],str) and len(table[-1][0]) > 2 * maxFieldLen:
+        # 广济药业：2019年半年度报告,合并现金流量表,最后一行为 法定代表人：安靖 主管会计工作负责人:胡明峰 会计机构负责人：王琼,长度为 33,因此把此处从2改为1.3
+        if isinstance(table[-1][0],str) and len(table[-1][0]) > 1.3 * maxFieldLen:
             #去掉最后一个超长且无用的字段
             table = table[:-1]
         if len(table) > 0:

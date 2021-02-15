@@ -16,13 +16,14 @@ on a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报
 UPDATE 年度公司价值分析表
 SET 公司投资等级 =
 (
-    select round(a.预测市值增长率,2) as 预测市值增长率
+    select round(a.预测市值增长率,2) - round(a.市值增长率,2) as 预测市值增长率
     from
     (
         select x.公司代码,
             x.报告类型,
             x.报告时间,
-            x.预测市值增长率
+            x.预测市值增长率,
+            x.市值增长率
         from 年度公司价格预测表 x
         left join
         (

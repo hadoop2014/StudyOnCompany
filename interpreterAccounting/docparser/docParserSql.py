@@ -353,8 +353,8 @@ class DocParserSql(DocParserBase):
         index = 0
         currentRow = dataFrame.iloc[index]
         self.lastValue = None
-        while dataFrame.shape[0] > 0 and (self._is_row_all_invalid(currentRow.tolist())
-            or self._is_header_in_row(currentRow.tolist(),tableName) == True):
+        while (dataFrame.shape[0] > 0 and index + 1 < dataFrame.shape[0]) \
+            and (self._is_row_all_invalid(currentRow.tolist()) or self._is_header_in_row(currentRow.tolist(),tableName)):
             self.logger.info('skip all invalid row or no header row: %s' % currentRow.tolist())
             index = index + 1
             currentRow = dataFrame.iloc[index]
@@ -385,7 +385,7 @@ class DocParserSql(DocParserBase):
         if dataFrame.shape[0] == 0:
             return dataFrame
         for index, field in enumerate(dataFrame.iloc[:, 0]):
-            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
+            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index],tableName)
             isHeaderInRow = self._is_header_in_row(dataFrame.iloc[index].tolist(),tableName)
             isHeaderInMergedRow = self._is_header_in_row(mergedRow,tableName)
             isRowAllInvalid = self._is_row_all_invalid_exclude_blank(dataFrame.iloc[index])
@@ -478,7 +478,7 @@ class DocParserSql(DocParserBase):
         lastIndex = 0
         lexPos = dictFieldPos[posIndex]['lexpos']
         for index,field in enumerate(dataFrame.iloc[:,0].tolist()):
-            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index])
+            isRowNotAnyNone = self._is_row_not_any_none(dataFrame.iloc[index],tableName)
             while fieldPos > lexPos and lexPos < countTotal:
                 # 字段位置超前了,lexPos追平
                 posIndex = posIndex + 1
@@ -508,8 +508,9 @@ class DocParserSql(DocParserBase):
                     #开始搜寻下一个字段
                     posIndex = posIndex + 1
                 else:
-                    #正对字段名是None和NULLSTR的处理,这两种情况下,该字段不占用字符串长度
-                    if field == NULLSTR and isRowNotAnyNone:
+                    # 正对字段名是None和NULLSTR的处理,这两种情况下,该字段不占用字符串长度
+                    # field == 'None' 解决 天山股份：2018年半年度报告,合并所有者权益变动表, 数据起始行第一个字段为None: None 1,048,722 4,054,364,3	180,102,29	39,200,830.	271,961,81	1,756,703,4	915,452,04	8,266,507,7
+                    if (field == NULLSTR or field == 'None') and isRowNotAnyNone:
                         #如果是空字段,而且没有一个是None,说明是全空白字段,或者带有数值,该段要向下一个字段合并,并且把前面的mergedRow清空
                         if index > lastIndex + 1 and mergedRow is not None:
                             # 把前期合并的行赋值到dataframe的上一行
@@ -782,6 +783,9 @@ class DocParserSql(DocParserBase):
            elif re.search('\\d{4}[.]\\d+[.]\\d{2}',year) is not None:
                # 国金证券2016年报,丽珠集团：2014年年度报告, 合并资产负债表的表头出现 : 2015.12.31  2014.12.31
                year = re.sub("(\\d{4})[.]\\d+[.]\\d{2}","\g<1>年",year)
+           elif re.search('\\d{4}[-]\\d+[-]\\d{2}',year) is not None:
+               # 尚荣医疗2015年半年度报告, 合并资产负债表,表头出现: 2015-6-30 2014-12-31
+               year = re.sub("(\\d{4})[-]\\d+[-]\\d{2}","\g<1>年",year)
         return year
 
 
@@ -895,8 +899,26 @@ class DocParserSql(DocParserBase):
         return isRowAllInvalid
 
 
-    def _is_row_not_any_none(self,row:DataFrame):
-        return (row != NONESTR).all()
+    def _is_row_not_any_none(self,row:DataFrame,tableName):
+        """
+        args:
+            row - dataFrame数据中的一行
+            tableName - 表名, 用于从interpreterAccounting.Json中获取参数的索引
+        return:
+            isRowNotAnyNone - True or False, True 表示在本行中没有任何一个None. 判断原则:
+            1) 如果是合并所有者权益变动表,数据的起始行的第一个字段为None,需要去掉, 否则会误判. 去掉后判断剩下的字段,如果没有一个None,返回True,否则返回False
+            2) 对于其他表,只要一行中出现一个None,返回False
+        """
+        isRowNotAnyNone = False
+        if len(row.values) <= 1:
+            return isRowNotAnyNone
+        # 解决 天山股份：2018年半年度报告,合并所有者权益变动表, 数据起始行第一个字段为None, 需要把第一个字段去掉: None 1,048,722 4,054,364,3	180,102,29	39,200,830.	271,961,81	1,756,703,4	915,452,04	8,266,507,7
+        if tableName == '合并所有者权益变动表':
+            cutedRow = row[1:]
+        else:
+            cutedRow = row
+        isRowNotAnyNone = (cutedRow != NONESTR).all()
+        return isRowNotAnyNone
 
 
     def _create_tables(self):
