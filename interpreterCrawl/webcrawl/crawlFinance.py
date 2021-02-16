@@ -18,6 +18,19 @@ class CrawlFinance(CrawlBase):
         super(CrawlFinance, self).__init__(gConfig)
 
 
+    def import_finance_data(self,tableName,scale):
+        assert tableName in self.tableNames,"website(%s) is not in valid set(%s)"%(tableName,self.tableNames)
+        if scale == '批量':
+            assert ('公司简称' in self.gConfig.keys() and self.gConfig['公司简称'] != NULLSTR) \
+                   and ('报告时间' in self.gConfig.keys() and self.gConfig['报告时间'] != NULLSTR) \
+                   and ('报告类型' in self.gConfig.keys() and self.gConfig['报告类型'] != NULLSTR) \
+                , "parameter 公司简称(%s) 报告时间(%s) 报告类型(%s) is not valid parameter" \
+                  % (self.gConfig['公司简称'], self.gConfig['报告时间'], self.gConfig['报告类型'])
+            self._process_import_to_sqlite3(tableName)
+        else:
+            self.logger.error('now only support scale 批量, but scale(%s) is finded'%scale)
+
+
     def crawl_finance_data(self,website,scale):
         assert website in self.dictWebsites.keys(),"website(%s) is not in valid set(%s)"%(website,self.dictWebsites.keys())
         if scale == '批量':
@@ -40,6 +53,29 @@ class CrawlFinance(CrawlBase):
         self.close_checkpoint()
 
 
+    def _process_import_to_sqlite3(self, tableName, encoding = 'utf-8'):
+        assert tableName in self.tableNames, "tableName(%s) must be in table list(%s)" % (tableName, self.tableNames)
+        checkpoint = self.get_checkpoint()
+        if len(checkpoint) == 0:
+            return
+
+        #checkpointHeader = self.dictWebsites[website]['checkpointHeader']
+        checkpoint = [item.split(',') for item in checkpoint]
+        columnsName = self._get_merged_columns(tableName)
+        dataFrame = pd.DataFrame(checkpoint, columns=columnsName)
+        #dataFrame.columns = self._get_merged_columns(tableName)
+        companys = self.gConfig['公司简称']
+        reportTypes = self.gConfig['报告类型']
+        dataFrameNeeded = dataFrame[dataFrame['公司简称'].isin(companys)]
+        dataFrameNeeded = dataFrameNeeded[dataFrameNeeded['报告类型'].isin(reportTypes)]
+        #website = '巨潮资讯网'
+        #dictCompanys = self._get_deduplicate_companys(companys, self.gConfig['报告时间'], self.gConfig['报告类型'],website)
+        for reportType in self.gConfig['报告类型']:
+            dataFrameReportType = dataFrameNeeded[dataFrameNeeded['报告类型'] == reportType]
+            self._write_to_sqlite3(dataFrameReportType, tableName)
+        return
+
+
     def _process_save_to_sqlite3(self,fileList, website, encoding = 'utf-8'):
         assert isinstance(fileList,list),"fileList must be a list!"
         tableName = self.dictWebsites[website]['tableName']
@@ -47,17 +83,21 @@ class CrawlFinance(CrawlBase):
         if len(fileList) > 0:
             dataFrame = pd.DataFrame(fileList)
             dataFrame.columns = self._get_merged_columns(tableName)
-            self._write_to_sqlite3(dataFrame, tableName)
+            for reportType in self.gConfig['报告类型']:
+                dataFrameReportType = dataFrame[dataFrame['报告类型'] == reportType]
+                self._write_to_sqlite3(dataFrameReportType,tableName)
 
 
     def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
+        if dataFrame.shape[0] == 0:
+            return
         conn = self._get_connect()
         sql_df = dataFrame
         # 对于财报发布信息, 必须用报告时间, 报告类型作为过滤关键字
-        specialKeys = ['发布时间', '报告类型']
+        specialKeys = ['报告类型','发布时间']
         isRecordExist = self._is_record_exist(conn, tableName, sql_df, specialKeys=specialKeys)
         if isRecordExist:
-            condition = self._get_condition(sql_df)
+            condition = self._get_condition(sql_df,specialKeys=specialKeys)
             sql = ''
             sql = sql + 'delete from {}'.format(tableName)
             sql = sql + '\n where ' + condition

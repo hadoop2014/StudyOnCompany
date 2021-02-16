@@ -114,8 +114,11 @@ class InterpreterCrawl(InterpreterBase):
         if tableName == '股票交易数据':
             self.crawlStock.initialize(self.gConfig)
             self.crawlStock.import_stock_data(tableName, scale)
+        elif tableName == '财报发布信息':
+            self.crawlFinance.initialize(self.gConfig)
+            self.crawlFinance.import_finance_data(tableName,scale)
         else:
-            self.logger.info('the table %s is not support,now only support table \'股票交易数据\''% tableName)
+            self.logger.info('the table %s is not support,now only support table \'股票交易数据\' and \'财报发布信息\' '% tableName)
 
 
     def _is_file_selcted(self,sourcefile):

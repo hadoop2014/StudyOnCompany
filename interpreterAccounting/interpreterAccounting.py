@@ -291,19 +291,25 @@ class InterpreterAccounting(InterpreterBase):
                          | CRITICAL '-'
                          | CRITICAL empty
                          | CRITICAL LOCATION
-                         | CRITICAL COMPANY'''
+                         | CRITICAL company'''
             critical = self._get_critical_alias(p[1])
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})
                 if critical == '公司地址':
-                    if p[2] != NULLSTR:
+                    if p[2] != NULLSTR and p.slice[2].type == 'LOCATION':
                         self.names.update({critical:self._eliminate_duplicates(p[2])})
                     else:
-                        self.names.update({critical:self.names['注册地址']})
-                elif critical == '公司名称' and p[2] != NULLSTR :
+                        if self.names['注册地址'] != NULLSTR:
+                            self.names.update({critical:self.names['注册地址']})
+                        elif self.names['address'] != NULLSTR:
+                            self.names.update({critical: self.names['address']})
+                elif critical == '公司名称' and p[2] != NULLSTR and p.slice[2].type == 'company':
                     self.names.update({critical:self._eliminate_duplicates(p[2])})
-                elif critical == '注册地址' and p[2] != NULLSTR:
-                    self.names.update({critical: self._eliminate_duplicates(p[2])})
+                elif critical == '注册地址' :
+                    if p[2] != NULLSTR and p.slice[2].type == 'LOCATION':
+                        self.names.update({critical: self._eliminate_duplicates(p[2])})
+                    elif self.names['address'] != NULLSTR:
+                        self.names.update({critical: self.names['address']})
             self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
 
 
@@ -330,8 +336,8 @@ class InterpreterAccounting(InterpreterBase):
                 if slice.type == 'company':
                     if self.names['公司名称'] == NULLSTR :
                         self.names.update({'公司名称':self.names['company']})
-                    if self.names['公司地址'] == NULLSTR:
-                        self.names.update({'公司地址': self.names['address']})
+                    #if self.names['公司地址'] == NULLSTR:
+                    #    self.names.update({'公司地址': self.names['address']})
                 if self.names['报告时间'] == NULLSTR and slice.type == 'TIME':
                     years = self._time_transfer(slice.value)
                     self.names.update({'报告时间':years})
@@ -483,7 +489,7 @@ class InterpreterAccounting(InterpreterBase):
             self.names['address'] = NULLSTR
             for slice in p.slice:
                 if slice.type == 'COMPANY':
-                    self.names['company'] = self._eliminate_duplicates(slice.value)
+                    self.names['company'] = self.names['address'] + self._eliminate_duplicates(slice.value)
                 if slice.type == 'LOCATION':
                     self.names['address'] = self._eliminate_duplicates(slice.value)
             prefix = ' '.join([str(slice) for slice in p if slice is not None])
