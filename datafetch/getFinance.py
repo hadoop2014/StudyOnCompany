@@ -79,7 +79,7 @@ class Collate:
                 if isinstance(v, torch.Tensor):
                     return v[resLength:]
                 elif isinstance(v, pd.DataFrame):
-                    return v.loc[resLength:]
+                    return v.iloc[resLength:]
                 else:
                     raise ValueError('type(%s) of v is not supported, it must be torch.Tensor or pd.DataFrame' % type(v))
             else:

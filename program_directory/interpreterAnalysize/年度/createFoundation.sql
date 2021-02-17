@@ -8,6 +8,7 @@ create table if not exists 年度财务分析基础表 (
     公司名称 CHAR(50),
     公司地址 CHAR(10),
     行业分类 CHAR(10),
+    发布时间 DATE,
     在职员工的数量合计 REAL,
     支付给职工及为职工支付的现金 REAL,
     应付职工薪酬（期末余额） REAL,
@@ -77,6 +78,7 @@ select
     a.公司名称,
     a.公司地址,
     case when a.行业分类 != '' then a.行业分类 else i.行业分类 end as 行业分类,
+    j.发布时间,
     case when a.在职员工的数量合计 != '' then a.在职员工的数量合计 else a.当期领取薪酬员工总人数 end as 在职员工的数量合计,
     f.支付给职工及为职工支付的现金,
     case when c.应付职工薪酬 != '' then replace(c.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期末余额）,
@@ -291,6 +293,13 @@ left join
     on x.报告时间 = y.报告时间 and x.公司代码 = y.公司代码 and x.报告类型 = y.报告类型
 )h
 left join 行业分类数据 i
+left join
+(
+    --同一个公司同一年度可能会发布两次财报, 第二次为第一次发布财报的修正, 但是我们认为第一次发布的财报影响更大, 因此取第一次发布的时间为准
+    select 公司代码, 报告时间, 报告类型, min(发布时间) as 发布时间
+    from 财报发布信息
+    group by 公司代码, 报告时间, 报告类型
+)j
 where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报告类型 = b.报告类型)
     and (a.报告时间 = c.报告时间 and a.公司代码 = c.公司代码 and a.报告类型 = c.报告类型)
     and (a.报告时间 = d.报告时间 and a.公司代码 = d.公司代码 and a.报告类型 = d.报告类型)
@@ -299,6 +308,7 @@ where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a
     and (a.报告时间 = g.报告时间 and a.公司代码 = g.公司代码 and a.报告类型 = g.报告类型)
     and (a.报告时间 = h.报告时间 and a.公司代码 = h.公司代码 and a.报告类型 = h.报告类型)
     and (a.公司代码 = i.公司代码)
+    and (a.报告时间 = j.报告时间 and a.公司代码 = j.公司代码 and a.报告类型 = j.报告类型)
     and (a.报告时间 != '' and a.公司代码 != '' and a.报告类型 != '')
 order by a.报告时间,a.公司代码,a.报告类型;
 
