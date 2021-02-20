@@ -1,17 +1,25 @@
 {
-  "#tokens": ["操作",   "表",   "展示",     "处理规模","模型", "操作" ],
-  "tokens":  ["MANIPULATE","TABLE","VISUALIZE","SCALE","MODEL","HANDLE"],
+  "#tokens": ["操作",       "表",   "展示",     "处理规模","模型", "操作",   "数据分析",   "执行"],
+  "tokens":  ["MANIPULATE","TABLE","VISUALIZE","SCALE", "MODEL","HANDLE","ANALYSIZE","EXECUTE"],
 
   "SCALE" : "全量|批量|单次",
   "MANIPULATE": "创建|更新",
   "VISUALIZE": "展示",
-  "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表",
+  "EXECUTE": "运行|强制运行",
+  "ANALYSIZE": "指数趋势分析",
+  "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表|指数趋势分析表",
   "HANDLE": "训练|应用",
   "MODEL": "公司价格预测模型",
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
 
   "ignores": "\t ",
+
+
+  "analysizeTable": {
+    "指数趋势分析": "指数趋势分析表"
+  },
+
 
   "#公共字段表": "在所有的财务报表前都会增加这几个字段",
   "公共表字段定义": {
@@ -43,8 +51,10 @@
     "fieldDiscard": [],
     "parent": "",
     "create": "createFoundation.sql",
+    "generate": "",
     "update": "",
     "visualize": "",
+    "sourceTable": "",
     "order": [],
     "startrow": 0,
     "font_settings": {
@@ -80,8 +90,10 @@
     "fieldDiscard": ["报告类型","公司代码","公司名称"],
     "parent": "",
     "create": "createComprehensive.sql",
+    "generate": "",
     "update": "",
     "visualize": "FinanceAnalysis v1.0.xlsx",
+    "sourceTable": "",
     "order": ["公司投资等级 desc","公司简称","报告时间 desc"],
     "startrow": 1,
     "freezecol": 4,
@@ -349,8 +361,10 @@
     "fieldDiscard": [],
     "parent": "财务分析综合表",
     "create": "createValueAnalysize.sql",
+    "generate": "",
     "update": "",
     "visualize": "FinanceAnalysis v1.0.xlsx",
+    "sourceTable": "",
     "order": [],
     "startrow": 1
   },
@@ -361,8 +375,10 @@
     "fieldDiscard": [],
     "parent": "",
     "create": "createPriceAnalysize.sql",
+    "generate": "",
     "update": "",
     "visualize": "",
+    "sourceTable": "",
     "order": [],
     "startrow": 0,
     "font_settings": {
@@ -375,6 +391,63 @@
     }
   },
 
+  "指数趋势分析表": {
+    "#note" : "分析上证指数,深证成指等指数的短期,中期,长期的涨跌趋势.",
+    "fieldName": ["报告时间","公司简称","公司代码","收盘价","趋势简称","趋势类型","趋势持续时长","趋势涨幅","趋势交易天数","结束收盘价"],
+    "fieldDiscard": [],
+    "parent": "",
+    "create": "",
+    "generate": "",
+    "update": "",
+    "visualize": "",
+    "sourceTable": "股票交易数据",
+    "order": ["公司代码","报告时间 desc"],
+    "startrow": 0,
+    "font_settings": {
+      "name":"宋体",
+      "size":"11",
+      "italic":false,
+      "color":"BLUE",
+      "bold":false,
+      "underline":"doubleAccounting"
+    },
+    "trend_settings": {
+      "#minTermDay": "一个趋势要成立,其持续有效交易天数必须大于该值",
+      "minTermDay": 5,
+      "#minorTerm" : "定义指数短期趋势的时间长度",
+      "minorTerm": 14,
+      "#medianTerm" : "定义指数中期趋势的时间长度",
+      "medianTerm": 36,
+      "#longTerm": "定义指数长期趋势的时间长度",
+      "longTerm": 400,
+      "#longTermDay" : "定义指数长期趋势的交易日个数",
+      "longTermDay": 560,
+      "#longTermDJI": "用于搜索道琼斯工业指数的长期趋势",
+      "LongTermDJI": 700,
+      "#minMinorTermRate": "一个短期趋势要成立, 其持续涨幅必须大于该值",
+      "minMinorTermRate": 3,
+      "#minMinorTermRateDJI": "一个短期趋势要成立,其持续涨幅必须大于该值,对于道琼斯指数来说,其门限比A股要放低",
+      "minMinorTermRateDJI": 1.2,
+      "#minMedianTermRate": "一个中期趋势要成立,其持续涨幅必须大于该值",
+      "minMedianTermRate": 7.3,
+      "#minLongTermRate": "一个长期趋势要成立,其持续涨幅必须大于该值",
+      "minLongTermRate": 60,
+
+      "#minorMovingAvgTerm": "定义短期移动平均线的时长",
+      "minorMovingAvgTerm": 30,
+      "#medianMovingAvgTerm": "定义中期移动平均线的时长",
+      "medianMovingAvgTerm": 150,
+      "#longMovingAvgTerm": "定义长期移动平均线的时长",
+      "longMovingAvgTerm": 250,
+
+      "#comparePrecision": "定义两个浮点数比较精度, 对基金和股价来说, 0.00001已足够",
+      "comparePrecision": 0.00001,
+
+      "#minIndexYear": "大于该年份的指数数据才导入数据库",
+      "minIndexYear": "1991年"
+    }
+  },
+
 
   "公司价格预测模型": {
     "environment": {
@@ -383,6 +456,7 @@
       "framework": "pytorch",
       "dataset": "finance",
       "model": "rnnregression",
+      "#tableName": "应用 公司价格预测模型, 结果数据写入 公司价格预测表",
       "tableName": "公司价格预测表",
       "ckpt_used": false,
       "viewIsOn" : true

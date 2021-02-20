@@ -1,9 +1,9 @@
 #!/usr/bin/env Python
 # coding   : utf-8
-# @Time    : 1/16/2021 5:03 PM
+# @Time    : 2/16/2021 5:03 PM
 # @Author  : wu.hao
-# @File    : getFinance.py
-# @Note    : 用于获取公司财务数据和股票价格数据, 最终用于股票价格预测
+# @File    : getStockIndex.py
+# @Note    : 用于获取股票指数数据和股票数据, 最终用于趋势分析
 from datafetch.getBaseClassH import *
 import torch
 import pandas as pd
@@ -132,9 +132,9 @@ class Collate:
         return self._collate(batch)
 
 
-class getFinanceDataH(getdataBase):
+class getStockDataH(getdataBase):
     def __init__(self,gConfig):
-        super(getFinanceDataH,self).__init__(gConfig)
+        super(getStockDataH, self).__init__(gConfig)
         self.data_path = self.gConfig['data_directory']
         self.filename = self.gConfig['lybric_filename']
         self.resize = self.gConfig['resize']
@@ -358,8 +358,8 @@ class getFinanceDataH(getdataBase):
 
 
 class_selector = {
-    "mxnet":getFinanceDataH,
-    "pytorch":getFinanceDataH
+    "mxnet":getStockDataH,
+    "pytorch":getStockDataH
 }
 
 

@@ -13,7 +13,8 @@ import re
 import sqlite3 as sqlite
 import pysnooper
 import time
-from datetime import date,timedelta
+from dateutil import rrule
+from datetime import date,timedelta,datetime
 from pandas import DataFrame
 import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
@@ -124,11 +125,11 @@ class BaseClass():
             dictTableParent - 父表的配置参数
         reutrn:
             dictTableMerged - 当前表和父表融合后的配置, 融合的规则:
-                '''
-                1) 当前表的value是一个值, 则覆盖父表;
-                2) 当前表的value是一个list,则追加到父表；
-                3) 当前表的value是一个dict,则进行递归调用;
-                '''
+            '''
+            1) 当前表的value是一个值, 则覆盖父表;
+            2) 当前表的value是一个list,则追加到父表；
+            3) 当前表的value是一个dict,则进行递归调用;
+            '''
         """
         dictTableMerged = dictTableParent.copy()
         for key,value in dictTable.items():
@@ -373,6 +374,38 @@ class BaseClass():
 
     def _get_time_now(self):
         return time.strftime('%Y%m%d')
+
+
+    def _time_difference(self,unit,  startTime, endTime):
+        # 支持两种日期格式, 2020-1-30, 2020/1/30
+        try:
+            endTime = datetime.strptime(endTime,'%Y-%m-%d')
+        except:
+            endTime = datetime.strptime(endTime,'%Y/%m/%d')
+        try:
+            startTime = datetime.strptime(startTime,'%Y-%m-%d')
+        except:
+            startTime = datetime.strptime(startTime, '%Y/%m/%d')
+        #if unit == 'year':
+        #    timeInterval = rrule.rrule(freq=rrule.YEARLY, dtstart=startTime, until=endTime).count()
+        #elif unit == 'month':
+        #    timeInterval = rrule.rrule(freq=rrule.MONTHLY, dtstart=startTime, until=endTime).count()
+        #elif unit == 'week':
+        #    timeInterval = rrule.rrule(freq=rrule.WEEKLY, dtstart=startTime, until=endTime).count()
+        if unit == 'day':
+            timeInterval = (endTime - startTime).days
+            #timeInterval = rrule.rrule(freq=rrule.DAILY, dtstart=startTime, until=endTime).count()
+        #elif unit == 'hour':
+        #    timeInterval = rrule.rrule(freq=rrule.HOURLY, dtstart=startTime, until=endTime).count()
+        #elif unit == 'minute':
+        #    timeInterval = rrule.rrule(freq=rrule.MINUTELY, dtstart=startTime, until=endTime).count()
+        elif unit == 'second':
+            # total_seconds是包含天数差,转化过来的秒差
+            timeInterval = (endTime - startTime).total_seconds()
+            #timeInterval = rrule.rrule(freq=rrule.SECONDLY,dtstart=startTime, until=endTime).count()
+        else:
+            raise ValueError('unit(%s) is not supported, now only support unit: year,month,week,day,hour,minute,second')
+        return timeInterval
 
 
     def _get_last_week_day(self):

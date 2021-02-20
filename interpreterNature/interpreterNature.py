@@ -65,10 +65,10 @@ class InterpreterNature(InterpreterBase):
 
 
         def t_VALUE(t):
-            r'[\u4E00-\u9FA5|A-Z]+'
+            r'[\u4E00-\u9FA5|A-Z|0-9]+'
             typeList = [key for key in local_name.keys() if key.startswith('t_')
                         and not key.startswith('t_multiLineComment')
-                        and key not in ['t_VALUE','t_ignore','t_ignore_COMMENT','t_newline','t_error']]
+                        and key not in ['t_VALUE','t_ignore','t_ignore_COMMENT','t_newline','t_error','t_NUMERIC']]
             t.type = self._get_token_type(local_name, t.value,typeList,defaultType='VALUE')
             return t
 
@@ -103,6 +103,13 @@ class InterpreterNature(InterpreterBase):
             scale = p[1]
             isForced = (p[2] == '强制运行')
             self._process_parse(scale,isForced)
+
+
+        def p_expression_batch_analysize(p):
+            '''expression : SCALE EXECUTE ANALYSIZE'''
+            command = ' '.join([slice.value for slice in p.slice if slice.value is not None])
+            self.logger.info(command)
+            self._process_analysize(command)
 
 
         def p_expression_manipulate_table(p):
@@ -300,7 +307,45 @@ class InterpreterNature(InterpreterBase):
         return companyCodeList
 
 
+    def _process_analysize(self,command):
+        """
+        explain:
+            用于执行股票分析/指数分析的功能, 根据 .nature文件中 参数配置{} 中配置的指数简称, 从sqlite3中读取 股票交易数据, 最终调用
+            interpreterAnalysize.stockAnalysize.py进行股票交易数据的处理,处理结果写入 指数趋势分析表,... 等数据表中
+        Example:
+            批量 执行 指数趋势分析
+            全量 执行 指数趋势分析(暂不支持)
+            单次 执行 指数趋势分析(暂不支持)
+        args:
+            commond - 待执行语句,示例: 批量 执行 指数趋势分析
+        return:
+            无
+        """
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
+            return
+        # 把行业分类中的公司和公司简称中的公司进行合并
+        self.gConfig.update(self.names_global)
+        self.interpreterAnalysize.initialize(self.gConfig)
+        self.interpreterAnalysize.doWork(command)
+
+
     def _process_parse(self,scale,isForced = False):
+        """
+        explain:
+            用于执行财务报表解析的功能, 根据 .nature文件中 参数配置{} 中配置的公司简称, 报告类型, 报告时间, 从 data_directory中读取指定
+            的财报文件, 根据interpreterBase.Json的black_lists的配置移除无需处理的文件,然后由_process_single_parse进行财报解析.
+        Example:
+            批量 执行 财务报表解析
+            全量 执行 财务报表解析
+            单次 执行 财务报表解析
+            单次 强制执行 财务报表解析
+        args:
+            scale - 执行规模,为: 全量, 批量, 单次
+            isForced - 是否强制执行的标识, True: 本次为强制执行, 会清空checkpoint中问记录, 重新执行指定的财报解析
+        return:
+            无
+        """
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
             return
@@ -492,11 +537,11 @@ class InterpreterNature(InterpreterBase):
             sourcefiles - 带进行财务报表解析的文件列表:
         reutrn:
             sourcefiles - 将符合在interpreterBase.json:'black_lists':'例外文件' 和 '例外文件特征'定义的文件移除:
-                '''
-                1) interpreterBase.json:'black_lists':'例外文件',这些文件是错误的,可以用其他文件取代;
-                2) interpreterBase.json:'black_lists':'例外文件特征',具有这些特征的文件是不用解析的,可以用其他文件取代,示例:
-                    （603707）健友股份：2018年年度报告（已取消）.PDF)
-                '''
+            '''
+            1) interpreterBase.json:'black_lists':'例外文件',这些文件是错误的,可以用其他文件取代;
+            2) interpreterBase.json:'black_lists':'例外文件特征',具有这些特征的文件是不用解析的,可以用其他文件取代,示例:
+                （603707）健友股份：2018年年度报告（已取消）.PDF)
+            '''
         """
         assert isinstance(sourcefiles,list),"Parameter sourcefiles must be list!"
         excludeFiles = self.gJsonBase['black_lists']['例外文件']
@@ -558,7 +603,12 @@ class InterpreterNature(InterpreterBase):
         if key == '行业分类':
             for category in self.names_global[key].keys():
                 isCheckOk =  category in categorys.keys()
-                assert isCheckOk, "行业(%s) is invalid,it must in 行业分类 %s" % (category, categorys)
+                assert isCheckOk, "行业(%s) is invalid,it must in 行业分类 %s" % (category, categorys.keys())
+        stockIndexes = self.gJsonBase['stockindex']
+        if key == '指数简称':
+            for stockIndex in self.names_global[key]:
+                isCheckOk = stockIndex in stockIndexes.keys()
+                assert isCheckOk, "指数(%s) is invalid,it must in stockindex %s" %(stockIndex, stockIndexes.keys())
         parametercheck = self.gJsonInterpreter['parametercheck']
         for value in values:
             if key in parametercheck.keys():
@@ -571,6 +621,7 @@ class InterpreterNature(InterpreterBase):
         self.names_global['公司简称'] = []
         self.names_global['报告时间'] = NULLSTR
         self.names_global['报告类型'] = NULLSTR
+        self.names_global['指数简称'] = []
         self.names_global['行业分类'] = {}
         self.names_local['timelist'] = NULLSTR
         self.names_local['valuelist'] = NULLSTR

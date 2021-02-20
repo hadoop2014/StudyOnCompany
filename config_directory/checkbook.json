@@ -17,7 +17,7 @@
     "program_directory": "program_directory/interpreterAnalysize/",
     "member_modules": {
       "excelVisualization":"interpreterAnalysize.excelVisualization",
-      "companyEvaluate": "interpreterAnalysize.companyEvaluate",
+      "stockAnalysize": "interpreterAnalysize.stockAnalysize",
       "modelLenetH": "interpreterAnalysize.modelSets.lenetModelH",
       "modelLenetM": "interpreterAnalysize.modelSets.lenetModelM",
       "modelRnnM": "interpreterAnalysize.modelSets.rnnModelM",

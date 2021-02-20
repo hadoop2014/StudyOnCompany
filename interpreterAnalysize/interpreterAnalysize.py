@@ -16,7 +16,7 @@ class InterpreterAnalysize(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterAnalysize, self).__init__(gConfig)
         self.excelVisualization = memberModuleDict['excelVisualization']
-        self.companyEvaluate = memberModuleDict['companyEvaluate']
+        self.stockAnalysize = memberModuleDict['stockAnalysize']
         self.modelLenetH = memberModuleDict['modelLenetH']
         self.modelLenetM = memberModuleDict['modelLenetM']
         self.modelRnnM = memberModuleDict['modelRnnM']
@@ -74,6 +74,13 @@ class InterpreterAnalysize(InterpreterBase):
             self._process_manipulate_table(tableName, manipulate)
 
 
+        def p_expression_batch_analysize(p):
+            '''expression : SCALE EXECUTE ANALYSIZE'''
+            scale = p[1]
+            analysize = p[3]
+            self._process_stock_analysize(scale,analysize)
+
+
         def p_expression_visualize_table(p):
             '''expression : SCALE VISUALIZE TABLE'''
             tableName = p[3]
@@ -103,6 +110,22 @@ class InterpreterAnalysize(InterpreterBase):
     def doWork(self,commond,lexer=None,debug=False,tracking=False):
         text = commond
         self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
+
+
+    def _process_stock_analysize(self,scale, analysize):
+        if self.unitestIsOn:
+            self.logger.info('Now in unittest mode,do nothing in _process_manipulate_table!')
+            return
+        # 获取分析结果所保存的表
+        tableName = self.gJsonInterpreter['analysizeTable'][analysize]
+        assert tableName in self.tableNames, 'tableName(%s) is invalid ,it must be in %s' % self.tableNames
+        if scale != '批量':
+            self.logger.warning('the scale %s is not support,now only support scale \'批量\'' % p[1])
+        if analysize == '指数趋势分析':
+            self.stockAnalysize.initialize(self.gConfig)
+            self.stockAnalysize.stock_index_trend_analysize(tableName,scale)
+        else:
+            self.logger.warning('the analysize %s is not supporte, now only support analysize \' 指数趋势分析 \'')
 
 
     def _process_manipulate_table(self, tableName,manipulate):

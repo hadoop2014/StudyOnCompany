@@ -30,13 +30,13 @@ class RNN(nn.Module):
         return (torch.zeros((batch_size, num_hiddens), device=device),)
 
 
-class rnnregressionModel(ModelBaseH):
+class rnndetectionModel(ModelBaseH):
     def __init__(self,gConfig):
-        super(rnnregressionModel,self).__init__(gConfig)
+        super(rnndetectionModel,self).__init__(gConfig)
 
 
     def _init_parameters(self):
-        super(rnnregressionModel, self)._init_parameters()
+        super(rnndetectionModel, self)._init_parameters()
         #self.loss = nn.CrossEntropyLoss().to(self.ctx)
         self.loss = nn.MSELoss().to(self.ctx)
         getdataClass = self.gConfig['getdataClass']
@@ -215,5 +215,5 @@ class rnnregressionModel(ModelBaseH):
 
 def create_object(gConfig):
     #用cnnModel实例化一个对象model
-    model=rnnregressionModel(gConfig=gConfig)
+    model=rnndetectionModel(gConfig=gConfig)
     return model
