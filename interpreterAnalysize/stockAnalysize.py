@@ -45,6 +45,8 @@ class StockAnalysize(InterpreterBase):
         dataFrame['趋势简称'] = NULLSTR
         dataFrame['是否上升趋势'] = None
         dataFrame['isUtmost'] = False   # 用于搜索中期趋势,长期趋势的极点
+        # 计算短期,中期,长期移动平均线
+        indexMovingAverage = self._compute_moving_average(dataFrame, tableName, indexName)
         # 寻找微趋势, 即连续上涨或连续下跌的天数
         #indexTrendMini = self._find_tiny_trend(dataFrame,indexName)
         # 寻找短期趋势, 即由搜索区间minorTerm设定的值所找到的上涨或下跌趋势
@@ -81,12 +83,13 @@ class StockAnalysize(InterpreterBase):
         # 整理所有长期趋势
         trendInfoLong = self._find_index_trend(indexTrendLong, tableName, indexName, trendName)
         # 最后一个长期趋势修正
-        trendInfoLong = self._judge_last_long_trend(trendInfoLong,tableName, indexName, trendName)
+        trendInfoLong = self._judge_last_long_trend(trendInfoLong, indexMovingAverage, tableName, indexName, trendName)
 
-        pass
+        trendInfoMerged = pd.concat([trendInfoMedian,trendInfoLong], axis=0)
+        self._write_to_sqlite3(trendInfoMerged, tableName)
 
 
-    def _judge_last_long_trend(self, trendInfo,tableName, indexName, trendName):
+    def _judge_last_long_trend(self, trendInfo, indexMovingAverage, tableName, indexName, trendName):
         """
         explain:
             根据整理后的趋势数据, 对最后一个长期趋势进行适配,算法:
@@ -108,11 +111,70 @@ class StockAnalysize(InterpreterBase):
         if trendInfo.shape[0] <= 1:
             self.logger.warning('indexTrend may be empty:%s' % trendInfo)
             return trendInfoLocal
+        # longTermDay定义长期趋势的最大持续时长
+        longTermDay = self.dictTables[tableName]['trend_settings']['longTermDay']
+
+        lastTrendType = NULLSTR
+        #iDimension = 0
+        today = datetime.now().strftime('%Y-%m-%d')
+        for iLoop in range(trendInfo.shape[0]):
+            if self._time_difference('days', trendInfo['报告时间'].iloc[iLoop], today) <= longTermDay:
+                if lastTrendType == NULLSTR:
+                    # 记录满足条件的最后一个趋势类型
+                    lastTrendType = trendInfo['趋势类型'].iloc[iLoop]
+                    # 放入本地数据结构trendInfoLocal
+                    trendInfoLocal = trendInfoLocal.append(trendInfo.iloc[iLoop].copy())
+                    #iDimension += 1
+                else:
+                    # 最后一个长期趋势的归并
+                    # 读取长期移动平均数
+                    lastDate = self._time_add('days',trendInfo['报告时间'].iloc[iLoop], trendInfo['趋势时长'].iloc[iLoop])
+                    lastDate = lastDate.strftime('%Y-%m-%d')
+                    lastIndexMovingAvgLong = indexMovingAverage.loc[indexMovingAverage['报告时间'] == lastDate,'长期移动平均线']
+                    if lastTrendType == '上升':
+                        if trendInfo['结束收盘价'].iloc[iLoop] >= lastIndexMovingAvgLong:
+                            # 如果最后一个参考趋势为上升趋势, 且趋势结束日期收盘价在长期趋势线的上方, 则进行归并
+                            iDimension = trendInfoLocal.index[-1]
+                            trendInfoLocal.loc[iDimension, '结束收盘价'] = trendInfo['结束收盘价'].iloc[iLoop]
+                            trendInfoLocal.loc[iDimension, '趋势涨幅'] = round((trendInfoLocal['结束收盘价'].iloc[iDimension]
+                                                                            - trendInfoLocal['收盘价'].iloc[iDimension])
+                                                                            / trendInfoLocal['收盘价'].iloc[iDimension],2)
+                            trendInfoLocal.loc[iDimension, '趋势交易天数'] = trendInfoLocal['趋势交易天数'].iloc[iDimension] \
+                                                                         + trendInfo['趋势交易天数'].iloc[iLoop]
+                            trendInfoLocal.loc[iDimension, '趋势持续时长'] = trendInfoLocal['趋势持续时长'].iloc[iDimension] \
+                                                                         + trendInfo['趋势持续时长'].iloc[iLoop]
+                        else:
+                            # 说明趋势发生变化
+                            # 放入trendInfoLocal
+                            lastTrendType = '下降'
+                            trendInfoLocal = trendInfoLocal.append(trendInfo.iloc[iLoop].copy())
+                            #iDimension += 1
+                    else:
+                        # 如果最后一个参考趋势是下降趋势
+                        if trendInfo['结束收盘价'].iloc[iLoop] <= lastIndexMovingAvgLong:
+                            # 如果最后一个参考趋势是下降趋势, 且趋势结束日收盘价在长期趋势线的上方,则进行归并
+                            iDimension = trendInfoLocal.index[-1]
+                            trendInfoLocal.loc[iDimension, '结束收盘价'] = trendInfo['结束收盘价'].iloc[iLoop]
+                            trendInfoLocal.loc[iDimension, '趋势涨幅'] = round((trendInfoLocal['结束收盘价'].iloc[iDimension]
+                                                                            - trendInfoLocal['收盘价'].iloc[iDimension])
+                                                                            / trendInfoLocal['收盘价'].iloc[iDimension],2)
+                            trendInfoLocal.loc[iDimension, '趋势交易天数'] = trendInfoLocal['趋势交易天数'].iloc[iDimension] \
+                                                                         + trendInfo['趋势交易天数'].iloc[iLoop]
+                            trendInfoLocal.loc[iDimension, '趋势持续时长'] = trendInfoLocal['趋势持续时长'].iloc[iDimension] \
+                                                                         + trendInfo['趋势持续时长'].iloc[iLoop]
+                        else:
+                            # 说明趋势发生变化
+                            lastTrendType = '上升'
+                            trendInfoLocal = trendInfoLocal.append(trendInfo.iloc[iLoop].copy())
+                            #iDimension += 1
+            else:
+                # 记入本地数据结构
+                trendInfoLocal = trendInfoLocal.append(trendInfo.iloc[iLoop].copy())
+                #iDimension += 1
 
         self.logger.info('success to judge last trend info %s of %s : processtime %.4f'
                          % (trendName,indexName, time.time() - startTime))
-        return trendInfo
-
+        return trendInfoLocal
 
 
     def _find_index_trend(self,indexTrend,tableName, indexName, trendName):
@@ -139,6 +201,7 @@ class StockAnalysize(InterpreterBase):
         trendInfo.loc[0, '公司简称'] = indexTrend['公司简称'].iloc[0]
         trendInfo.loc[0, '收盘价'] = indexTrend['收盘价'].iloc[0]
         trendInfo.loc[0, '趋势简称'] = indexTrend['趋势简称'].iloc[0]
+        trendInfo.loc[0, '趋势起始点'] = indexTrend['recordId'].iloc[0]
         trendInfo.loc[0, '趋势交易天数'] = indexTrend['recordId'].iloc[0]
         trendInfo.loc[0, '趋势类型'] = NULLSTR
         trendInfo.loc[0, '趋势持续时长'] = 0
@@ -161,7 +224,7 @@ class StockAnalysize(InterpreterBase):
                 trendInfo.loc[iDimension,'趋势类型'] = trendType
             elif trendType != trendInfo['趋势类型'].iloc[-1]:
                 trendInfo.loc[iDimension,'结束收盘价'] = indexTrend['收盘价'].iloc[iLoop - 1]
-                trendInfo.loc[iDimension,'趋势持续时长'] = self._time_difference('day',trendInfo['报告时间'].iloc[iDimension]
+                trendInfo.loc[iDimension,'趋势持续时长'] = self._time_difference('days',trendInfo['报告时间'].iloc[iDimension]
                                                                          , indexTrend['报告时间'].iloc[iLoop - 1])
                 trendInfo.loc[iDimension,'趋势涨幅'] = round((trendInfo['结束收盘价'].iloc[iDimension] - trendInfo['收盘价'].iloc[iDimension])
                                                          /trendInfo['收盘价'].iloc[iDimension],2)
@@ -174,11 +237,12 @@ class StockAnalysize(InterpreterBase):
                 trendInfo.loc[iDimension,'公司简称'] = indexTrend['公司简称'].iloc[iLoop - 1]
                 trendInfo.loc[iDimension,'趋势简称'] = indexTrend['趋势简称'].iloc[iLoop - 1]
                 trendInfo.loc[iDimension,'趋势类型'] = trendType
+                trendInfo.loc[iDimension,'趋势起始点'] = indexTrend['recordId'].iloc[iLoop - 1]
                 trendInfo.loc[iDimension,'趋势交易天数'] = indexTrend['recordId'].iloc[iLoop - 1]
 
         # 处理最后一点
         trendInfo.loc[iDimension, '结束收盘价'] = indexTrend['收盘价'].iloc[-1]
-        trendInfo.loc[iDimension, '趋势持续时长'] = self._time_difference('day', trendInfo['报告时间'].iloc[iDimension]
+        trendInfo.loc[iDimension, '趋势持续时长'] = self._time_difference('days', trendInfo['报告时间'].iloc[iDimension]
                                                                   , indexTrend['报告时间'].iloc[-1])
         trendInfo.loc[iDimension, '趋势涨幅'] = round((trendInfo['结束收盘价'].iloc[iDimension] - trendInfo['收盘价'].iloc[iDimension])
                                                      / trendInfo['收盘价'].iloc[iDimension], 2)
@@ -281,22 +345,22 @@ class StockAnalysize(InterpreterBase):
         for iCount in range(indexTrendLocal.shape[0]):
             if indexName == '上证指数':
                 # 上证指数修正, 1992/9/25日算极点
-                if self._time_difference('day', indexTrendLocal['报告时间'].iloc[iCount], '1992/5/25') == 0:
+                if self._time_difference('days', indexTrendLocal['报告时间'].iloc[iCount], '1992/5/25') == 0:
                     indexTrendLocal.loc[iCount, ['isUtmost']] = True
-                elif self._time_difference('day', indexTrendLocal['报告时间'].iloc[iCount], '1999/5/18') == 0:
+                elif self._time_difference('days', indexTrendLocal['报告时间'].iloc[iCount], '1999/5/18') == 0:
                     indexTrendLocal.loc[iCount, ['isUtmost']] = True
-                elif self._time_difference('day', indexTrendLocal['报告时间'].iloc[iCount], '1997/9/23') == 0:
+                elif self._time_difference('days', indexTrendLocal['报告时间'].iloc[iCount], '1997/9/23') == 0:
                     # 例外情况
                     indexTrendLocal.loc[iCount, ['isUtmost']] = False
             elif indexName == '恒生指数':
                 # 恒生指数长期趋势修正
-                if self._time_difference('day', indexTrendLocal['报告时间'].iloc[iCount], '2009/3/9') == 0:
+                if self._time_difference('days', indexTrendLocal['报告时间'].iloc[iCount], '2009/3/9') == 0:
                     indexTrendLocal.loc[iCount, ['isUtmost']] = True
-                elif self._time_difference('day', indexTrendLocal['报告时间'].iloc[iCount], '2008/10/27') == 0:
+                elif self._time_difference('days', indexTrendLocal['报告时间'].iloc[iCount], '2008/10/27') == 0:
                     indexTrendLocal.loc[iCount, ['isUtmost']] = False
             elif indexName == '道琼斯指数':
                 # 道琼斯指数长期趋势修正
-                if self._time_difference('day', indexTrendLocal['报告时间'].iloc[iCount], '1929/9/3') == 0:
+                if self._time_difference('days', indexTrendLocal['报告时间'].iloc[iCount], '1929/9/3') == 0:
                     indexTrendLocal.loc[iCount, ['isUtmost']] = True
 
         # 对数据进行归整
@@ -424,9 +488,9 @@ class StockAnalysize(InterpreterBase):
                     maxIndex = dataFrame.iloc[recordId].copy()
             else:
                 # 已经超出了一个搜索区间, 可以判断上一个区间是一个什么趋势
-                if self._time_difference(unit ='day',startTime = maxIndex['报告时间'], endTime=minIndex['报告时间']) > 0:
+                if self._time_difference(unit ='days',startTime = maxIndex['报告时间'], endTime=minIndex['报告时间']) > 0:
                     # 最大值的时间在前, 最小值的时间在后, 这是一个下降趋势
-                    if self._time_difference('day',indexTrend['报告时间'].iloc[-1],maxIndex['报告时间']) != 0 :
+                    if self._time_difference('days',indexTrend['报告时间'].iloc[-1],maxIndex['报告时间']) != 0 :
                         # 最大值不等于上一次趋势的终点, 表示已经搜索到一个完整周期的上升趋势, 则保留上次搜索到的这个完整趋势
                         if maxIndex['收盘价'] > indexTrend['收盘价'].iloc[-1]:
                             # 上一个趋势修正为上升趋势
@@ -442,9 +506,9 @@ class StockAnalysize(InterpreterBase):
                         indexTrend = indexTrend.append(minIndex.copy())
                         #indexTrend.loc[indexTrend.index[-1], '是否上升趋势'] = False
                     recordId = indexTrend['recordId'].iloc[-1]
-                elif self._time_difference('day',maxIndex['报告时间'], minIndex['报告时间']) < 0:
+                elif self._time_difference('days',maxIndex['报告时间'], minIndex['报告时间']) < 0:
                     # 最小值的时间在前,最大值的时间在后,这是一个上升趋势
-                    if self._time_difference('day', indexTrend['报告时间'].iloc[-1], minIndex['报告时间']) != 0:
+                    if self._time_difference('days', indexTrend['报告时间'].iloc[-1], minIndex['报告时间']) != 0:
                         # 最小值不是上一次趋势终点, 说明已经搜索到一个完整周期的下降趋势, 则保留上次搜索到的这个完整趋势
                         if minIndex['收盘价'] > indexTrend['收盘价'].iloc[-1]:
                             # 上一个趋势修正为上升趋势
@@ -466,9 +530,9 @@ class StockAnalysize(InterpreterBase):
             recordId += 1
 
         # 最后一个趋势的处理
-        if self._time_difference('day',maxIndex['报告时间'], minIndex['报告时间']) > 0 :
+        if self._time_difference('days',maxIndex['报告时间'], minIndex['报告时间']) > 0 :
             # 最大值在前, 最小值在后, 这是一个下降趋势
-            if self._time_difference('day', indexTrend['报告时间'].iloc[-1], maxIndex['报告时间']) != 0:
+            if self._time_difference('days', indexTrend['报告时间'].iloc[-1], maxIndex['报告时间']) != 0:
                 # 最大值不等于上一次趋势的终点, 表示已经搜索到一个完整周期的上升趋势, 则保留上次搜索到的这个完整趋势
                 if maxIndex['收盘价'] > indexTrend['收盘价'].iloc[-1]:
                     # 上一个趋势修正为上升趋势
@@ -482,9 +546,9 @@ class StockAnalysize(InterpreterBase):
                 indexTrend.loc[indexTrend.index[-1], '是否上升趋势'] = False
                 #maxIndex = minIndex.copy()
                 indexTrend = indexTrend.append(minIndex.copy())
-        elif self._time_difference('day',maxIndex['报告时间'], minIndex['报告时间']) < 0:
+        elif self._time_difference('days',maxIndex['报告时间'], minIndex['报告时间']) < 0:
             # 最小值在前, 最大值在后, 这是一个上升趋势
-            if self._time_difference('day', indexTrend['报告时间'].iloc[-1], minIndex['报告时间']) != 0:
+            if self._time_difference('days', indexTrend['报告时间'].iloc[-1], minIndex['报告时间']) != 0:
                 # 最小值不是上一次趋势终点, 说明已经搜索到一个完整周期的下降趋势, 则保留上次搜索到的这个完整趋势
                 if minIndex['收盘价'] > indexTrend['收盘价'].iloc[-1]:
                     # 上一个趋势修正为上升趋势
@@ -503,7 +567,7 @@ class StockAnalysize(InterpreterBase):
             pass
 
         # 把最后一个趋势到最后一天也记录到趋势中
-        if self._time_difference('day',indexTrend['报告时间'].iloc[-1], dataFrame['报告时间'].iloc[-1]) != 0:
+        if self._time_difference('days',indexTrend['报告时间'].iloc[-1], dataFrame['报告时间'].iloc[-1]) != 0:
             if dataFrame['收盘价'].iloc[-1] >= indexTrend['收盘价'].iloc[-1]:
                 # 最后一个趋势到最后一个点是上升趋势
                 indexTrend.loc[indexTrend.index[-1], '是否上升趋势'] = True
@@ -594,6 +658,71 @@ class StockAnalysize(InterpreterBase):
         else:
             self.logger.warning('trend(%s) is invalid, now only support 短期趋势, 中期趋势, 长期趋势!' % trendName)
         return minTermRate
+
+
+    def _compute_moving_average(self, dataFrame: DataFrame, tableName, indexName):
+        """
+        explain:
+            计算指数的移动平均线,算法:
+            1) 根据minorMovingAvgTerm参数,计算短期移动平均线,
+            2) 根据medianMovingAvgTerm参数,计算中期移动平均线,
+            3) 根据longMovingAvgTerm参数,计算长期移动平均线,
+        Example:
+            无
+        args:
+            dataFrame - 保护了indexName指定的所有指数数据
+            tableName - 待写入数据库的表名称,为: 指数趋势分析表
+            indexName - 股票指数名称, 如: 上证指数,深证成值
+        return:
+            indexMovingAverage - 记录指数中期,短期,长期移动平均线.
+        """
+        startTime = time.time()
+        indexMovingAverage = pd.DataFrame(columns=dataFrame.columns.values.tolist() + ['短期移动平均线', '中期移动平均线', '长期移动平均线', '价格震荡指数', '累加值'])
+        if dataFrame.shape[0] <= 1:
+            self.logger.warning('indexTrend may be empty:%s' % dataFrame)
+            return indexMovingAverage
+
+        minorMovingAvgTerm = self.dictTables[tableName]['trend_settings']['minorMovingAvgTerm']
+        medianMovingAvgTerm = self.dictTables[tableName]['trend_settings']['medianMovingAvgTerm']
+        longMovingAvgTerm = self.dictTables[tableName]['trend_settings']['longMovingAvgTerm']
+        for iloop in range(dataFrame.shape[0]):
+            indexMovingAverage.loc[iloop,dataFrame.columns] = dataFrame.iloc[iloop].copy()
+            if iloop == 0:
+                indexMovingAverage.loc[iloop, '累加值'] = dataFrame['收盘价'].iloc[iloop]
+            else:
+                indexMovingAverage.loc[iloop, '累加值'] = indexMovingAverage['累加值'].iloc[iloop - 1] + dataFrame['收盘价'].iloc[iloop]
+
+            # 更新短期(默认30天)移动平均线
+            if iloop < minorMovingAvgTerm:
+                indexMovingAverage.loc[iloop, '短期移动平均线'] = 0
+            else:
+                indexMovingAverage.loc[iloop, '短期移动平均线'] = round((indexMovingAverage['累加值'].iloc[iloop]
+                                                                  - indexMovingAverage['累加值'].iloc[iloop - minorMovingAvgTerm]) / minorMovingAvgTerm,2)
+
+            # 更新中期(默认150天)移动平均线
+            if iloop < medianMovingAvgTerm:
+                indexMovingAverage.loc[iloop, '中期移动平均线'] = 0
+            else:
+                indexMovingAverage.loc[iloop, '中期移动平均线'] = round((indexMovingAverage['累加值'].iloc[iloop]
+                                                                    - indexMovingAverage['累加值'].iloc[iloop - medianMovingAvgTerm]) / medianMovingAvgTerm,2)
+
+            # 更新长期(默认250天)移动平均线
+            if iloop < longMovingAvgTerm:
+                indexMovingAverage.loc[iloop, '长期移动平均线'] = 0
+            else:
+                indexMovingAverage.loc[iloop, '长期移动平均线'] = round((indexMovingAverage['累加值'].iloc[iloop]
+                                                                  - indexMovingAverage['累加值'].iloc[iloop - longMovingAvgTerm]) / longMovingAvgTerm,2)
+
+            # 增加价格震荡指数, 实际含义为当前指数值和短期移动平均线的偏移值
+            if indexMovingAverage['短期移动平均线'].iloc[iloop] == 0:
+                indexMovingAverage.loc[iloop, '价格震荡指数'] = 0
+            else:
+                indexMovingAverage.loc[iloop, '价格震荡指数'] = indexMovingAverage['收盘价'].iloc[iloop] \
+                                                          - indexMovingAverage['短期移动平均线'].iloc[iloop]
+
+        self.logger.info('success to compute moving average of %s : processtime %.4f'
+                         % (indexName, time.time() - startTime))
+        return indexMovingAverage
 
 
     def _sql_to_dataframe(self,tableName,sourceTableName,scale):

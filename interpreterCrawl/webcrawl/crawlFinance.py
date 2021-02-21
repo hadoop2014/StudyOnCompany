@@ -92,7 +92,7 @@ class CrawlFinance(CrawlBase):
         if dataFrame.shape[0] == 0:
             return
         conn = self._get_connect()
-        sql_df = dataFrame
+        sql_df = dataFrame.copy()
         # 大立科技2015年有两个年报,（002214）大立科技：2015年年度报告（更新后）.PDF和（002214）大立科技：2015年年度报告（已取消）.PDF,都在2016-03-26发布,需要去掉一个
         sql_df.drop_duplicates(['公司代码','报告类型','报告时间','发布时间'],keep='first',inplace=True)
         # 对于财报发布信息, 必须用报告时间, 报告类型作为过滤关键字

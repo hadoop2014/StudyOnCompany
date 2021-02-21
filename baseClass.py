@@ -376,6 +376,29 @@ class BaseClass():
         return time.strftime('%Y%m%d')
 
 
+    def _time_add(self,unit, startTime, deltaTime):
+        # 支持两种日期格式, 2020-1-30, 2020/1/30
+        try:
+            startTime = datetime.strptime(startTime, '%Y-%m-%d')
+        except:
+            startTime = datetime.strptime(startTime, '%Y/%m/%d')
+        if unit == 'weeks':
+            timeAdded = startTime + timedelta(weeks=deltaTime)
+        elif unit == 'days':
+            timeAdded = startTime + timedelta(days=deltaTime)
+        elif unit == 'hours':
+            timeAdded = startTime + timedelta(hours=deltaTime)
+        elif unit == 'minutes':
+            timeAdded = startTime + timedelta(minutes=deltaTime)
+        elif unit == 'seconds':
+            timeAdded = startTime + timedelta(seconds=deltaTime)
+        elif unit == 'millliseconds':
+            timeAdded = startTime + timedelta(milliseconds=deltaTime)
+        else:
+            raise ValueError('unit(%s) is not supported, now only support unit: weeks,days,hours,minutes,seconds,milliseoconds')
+        return timeAdded
+
+
     def _time_difference(self,unit,  startTime, endTime):
         # 支持两种日期格式, 2020-1-30, 2020/1/30
         try:
@@ -392,19 +415,19 @@ class BaseClass():
         #    timeInterval = rrule.rrule(freq=rrule.MONTHLY, dtstart=startTime, until=endTime).count()
         #elif unit == 'week':
         #    timeInterval = rrule.rrule(freq=rrule.WEEKLY, dtstart=startTime, until=endTime).count()
-        if unit == 'day':
+        if unit == 'days':
             timeInterval = (endTime - startTime).days
             #timeInterval = rrule.rrule(freq=rrule.DAILY, dtstart=startTime, until=endTime).count()
         #elif unit == 'hour':
         #    timeInterval = rrule.rrule(freq=rrule.HOURLY, dtstart=startTime, until=endTime).count()
         #elif unit == 'minute':
         #    timeInterval = rrule.rrule(freq=rrule.MINUTELY, dtstart=startTime, until=endTime).count()
-        elif unit == 'second':
+        elif unit == 'seconds':
             # total_seconds是包含天数差,转化过来的秒差
             timeInterval = (endTime - startTime).total_seconds()
             #timeInterval = rrule.rrule(freq=rrule.SECONDLY,dtstart=startTime, until=endTime).count()
         else:
-            raise ValueError('unit(%s) is not supported, now only support unit: year,month,week,day,hour,minute,second')
+            raise ValueError('unit(%s) is not supported, now only support unit: days,seconds')
         return timeInterval
 
 
@@ -515,6 +538,16 @@ class BaseClass():
         except Exception as e:
             print(e)
         return cursor.fetchall()
+
+
+    def _is_table_exist(self,conn, tableName):
+        # 判断数据库中该表是否存在
+        isTableExist = False
+        sql = 'SELECT count(*) FROM sqlite_master WHERE type="table" AND name = \'{}\''.format(tableName)
+        result = conn.execute(sql).fetchall()
+        if len(result) > 0:
+            isTableExist = result[0][0] > 0
+        return isTableExist
 
 
     def _is_record_exist(self, conn, tableName, dataFrame:DataFrame,specialKeys = None):

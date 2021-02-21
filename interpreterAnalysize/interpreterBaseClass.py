@@ -81,6 +81,33 @@ class InterpreterBase(ModelBase):
             dictModels.update({model : dictModel})
         return dictModels
 
+    def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
+        conn = self._get_connect()
+        if not self._is_table_exist(conn, tableName):
+            # 如果是第一次写入, 则新建表,调用积累的函数写入
+            super(InterpreterBase,self)._write_to_sqlite3(dataFrame, tableName)
+            return
+        sql_df = dataFrame.copy()
+        isRecordExist = self._is_record_exist(conn, tableName, sql_df)
+        if isRecordExist:
+            condition = self._get_condition(sql_df)
+            sql = ''
+            sql = sql + 'delete from {}'.format(tableName)
+            sql = sql + '\nwhere ' + condition
+            self._sql_executer(sql)
+            self.logger.info("delete from {} where is {}!".format(tableName,sql_df['公司简称'].values[0]))
+            sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+            conn.commit()
+            self.logger.info("insert into {} where is {}!".format(tableName, sql_df['公司简称'].values[0]))
+        else:
+            if sql_df.shape[0] > 0:
+                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
+                conn.commit()
+                self.logger.info("insert into {} where is {}!".format(tableName, sql_df['公司简称'].values[0]))
+            else:
+                self.logger.error('sql_df is empty!')
+        conn.close()
+
 
     def interpretDefine(self):
         #定义一个解释器语言词法
