@@ -1,9 +1,8 @@
-#from interpreterAnalysize.modelSets.modelBaseClassH import *
-from interpreterAnalysize.modelSets.rnnBaseModelH import *
+from interpreterAnalysize.modelSets.modelBaseClassH import *
 from torch import nn
 import torch.nn.functional as F
 
-'''
+
 class RNN(nn.Module):
     def __init__(self,rnn_layer,output_dim,dropout,ctx):
         super(RNN,self).__init__()
@@ -29,21 +28,24 @@ class RNN(nn.Module):
 
     def begin_state(self,batch_size, num_hiddens, device):
         return (torch.zeros((batch_size, num_hiddens), device=device),)
-'''
 
-class rnnregressionModel(rnnBaseModelH):
+
+class rnnBaseModelH(ModelBaseH):
     def __init__(self,gConfig):
-        super(rnnregressionModel,self).__init__(gConfig)
+        super(rnnBaseModelH, self).__init__(gConfig)
 
 
-    #def _init_parameters(self):
-    #    super(rnnregressionModel, self)._init_parameters()
+    def _init_parameters(self):
+        super(rnnBaseModelH, self)._init_parameters()
         #self.loss = nn.CrossEntropyLoss().to(self.ctx)
-    def get_loss(self):
-        return nn.MSELoss().to(self.ctx)
-
-
-    def get_net(self):
+        self.time_steps = self.gConfig['time_steps']
+        self.clip_gradient = self.gConfig['clip_gradient']
+        self.loss = self.get_loss()
+        self.net = self.get_net()
+        self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
+        self.scheduler = self.get_scheduler(self.optimizer,self.learning_rate_decay_step, self.learning_rate_decay_factor)
+        '''
+        self.loss = nn.MSELoss().to(self.ctx)
         getdataClass = self.gConfig['getdataClass']
         self.resizedshape = getdataClass.resizedshape
         self.input_dim = getdataClass.input_dim
@@ -66,25 +68,13 @@ class rnnregressionModel(rnnBaseModelH):
                             bidirectional=self.bidirectional)
         }
         self.randomIterIsOn = self.gConfig['randomIterIsOn']
+        self.get_net()
+        self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer,step_size=self.learning_rate_decay_step
+                                                         ,gamma=self.learning_rate_decay_factor)
         self.input_shape = (self.time_steps, self.batch_size, self.resizedshape[1])
-        #self.get_net()
-        cell = self.get_cell(self.gConfig['cell'])
-        rnn_layer = self.cell_selector[cell]
-        net = RNN(rnn_layer,self.output_dim,self.dropout,self.ctx)
-        return net
+        '''
 
-
-    #def get_optimizer(self,optimizer,parameters):
-    #    optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
-    #    return optimizer
-
-
-    #def get_scheduler(self):
-    #    scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer,step_size=self.learning_rate_decay_step
-    #                                                     ,gamma=self.learning_rate_decay_factor)
-    #    return scheduler
-
-    '''
     def get_cell(self,cell):
         assert cell in self.gConfig['celllist'], 'cell(%s) is invalid,it must one of %s' % \
                                                                (cell, self.gConfig['celllist'])
@@ -93,14 +83,25 @@ class rnnregressionModel(rnnBaseModelH):
 
     def get_batch_size(self,y):
         return y.size()[0] * y.size()[1]
-    '''
 
-    #def get_net(self):
-    #    cell = self.get_cell(self.gConfig['cell'])
-    #    rnn_layer = self.cell_selector[cell]
-    #    self.net = RNN(rnn_layer,self.output_dim,self.dropout,self.ctx)
 
-    '''
+    def get_scheduler(self, optimizer, step_size, gamma):
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size#self.learning_rate_decay_step
+                                        , gamma=gamma) #self.learning_rate_decay_factor)
+        return scheduler
+
+
+    def get_loss(self):
+        raise NotImplementedError('you should implement it!')
+
+
+    def get_net(self):
+        raise NotImplementedError('you should implement it!')
+        #cell = self.get_cell(self.gConfig['cell'])
+        #rnn_layer = self.cell_selector[cell]
+        #self.net = RNN(rnn_layer,self.output_dim,self.dropout,self.ctx)
+
+
     def run_train_loss_acc(self,X,y):
         self.init_state()
         if self.state is not None:
@@ -126,7 +127,7 @@ class rnnregressionModel(rnnBaseModelH):
         if self.get_global_step() == 0 or self.get_global_step() == 1:
             self.debug_info()
         loss = loss.item() * y.shape[0]
-        acc = 0
+        acc = self.get_acc(y_hat,y)
         #acc= (y_hat.argmax(dim=1) == y).sum().item()
         return loss,acc
 
@@ -141,14 +142,25 @@ class rnnregressionModel(rnnBaseModelH):
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
         #acc  = (y_hat.argmax(dim=1) == y).sum().item()
-        acc = 0
-        if y_hat.dim() == 0:
-            y_hat = y_hat.unsqueeze(dim=0)
-        combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
-        end = min(len(combine), self.time_steps)
-        print("(y_hat, y):",combine[:end])
+        acc = self.get_acc(y_hat,y)
+        #if y_hat.dim() == 0:
+        #    y_hat = y_hat.unsqueeze(dim=0)
+        self.output_info(y_hat,y)
         return loss,acc
-    '''
+
+
+    def get_acc(self,y_hat,y):
+        raise NotImplementedError('you should implement it!')
+
+
+    def output_info(self,y_hat,y):
+        raise NotImplementedError('you should implement in children class!')
+        #if y_hat.dim() == 0:
+        ##    y_hat = y_hat.unsqueeze(dim=0)
+        #combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
+        #end = min(len(combine), self.time_steps)
+        #self.logger.info("\n(y_hat, y):",combine[:end])
+
 
     def predict_with_keyfileds(self,net,X,y,keyfields):
         self.init_state()
@@ -161,11 +173,12 @@ class rnnregressionModel(rnnBaseModelH):
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
         acc = 0
-        if y_hat.dim() == 0:
-            y_hat = y_hat.unsqueeze(dim=0)
-        combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
-        end = min(len(combine), self.time_steps)
-        print("(y_hat, y):",combine[:end])
+        #if y_hat.dim() == 0:
+        #    y_hat = y_hat.unsqueeze(dim=0)
+        #combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
+        #end = min(len(combine), self.time_steps)
+        #print("(y_hat, y):",combine[:end])
+        self.output_info(y_hat,y)
         return loss, acc, mergedDataFrame
 
 
@@ -191,22 +204,9 @@ class rnnregressionModel(rnnBaseModelH):
 
 
     def run_matrix(self, loss_train, loss_test):
-        return 0.0, 0.0
+        raise NotImplementedError('you should implement it!')
 
 
-    def get_acc(self,y_hat, y):
-        return 0
-
-
-    def output_info(self,y_hat,y):
-        if y_hat.dim() == 0:
-            y_hat = y_hat.unsqueeze(dim=0)
-        combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
-        end = min(len(combine), self.time_steps)
-        self.logger.info("\n(y_hat, y):",combine[:end])
-
-
-    '''
     def get_learningrate(self):
         return self.optimizer.state_dict()['param_groups'][0]['lr']
 
@@ -230,12 +230,13 @@ class rnnregressionModel(rnnBaseModelH):
     def load_optim_state(self,state_dict):
         self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
         self.optimizer.load_state_dict(state_dict)
-    '''
+
 
     def get_input_shape(self):
-        return self.input_shape
+        raise NotImplementedError('you should implement it!')
+        #return self.input_shape
 
-    '''
+
     def image_record(self,global_step,tag,input_image):
         # 在RNN,LSTM,GRU中使得该函数失效
         pass
@@ -244,9 +245,9 @@ class rnnregressionModel(rnnBaseModelH):
     def summary(self,net):
         summary(net, input_size=self.get_input_shape()[1:], batch_size=self.batch_size,
                 device=re.findall(r'(\w*)', self.ctx.__str__())[0])
-    '''
 
-def create_object(gConfig):
+
+#def create_object(gConfig):
     #用cnnModel实例化一个对象model
-    model=rnnregressionModel(gConfig=gConfig)
-    return model
+#    model=rnnBaseModelH(gConfig=gConfig)
+#    return model

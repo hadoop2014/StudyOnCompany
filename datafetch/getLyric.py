@@ -1,15 +1,15 @@
 from  datafetch.getBaseClass import *
 from datafetch.getBaseClassM import *
-from mxnet import  nd
-import mxnet as mx
+#from mxnet import  nd
+#import mxnet as mx
 import zipfile
 import random
 import numpy as np
 
 
-class getLyricDataM(getdataBase):
+class getLyricData(getdataBase):
     def __init__(self,gConfig):
-        super(getLyricDataM,self).__init__(gConfig)
+        super(getLyricData, self).__init__(gConfig)
         self.data_path = self.gConfig['data_directory']
         self.filename = self.gConfig['lybric_filename']
         self.resize = self.gConfig['resize']
@@ -23,13 +23,14 @@ class getLyricDataM(getdataBase):
 
 
     def get_ctx(self,ctx):
-        assert ctx in self.gConfig['ctxlist'], 'ctx(%s) is invalid,it must one of %s' % \
-                                                               (ctx, self.gConfig['ctxlist'])
-        if ctx == 'gpu':
-            ctx = mx.gpu(0)
-        else:
-            ctx = mx.cpu(0)
-        return ctx
+        raise  NotImplementedError('you should implement it!')
+        #assert ctx in self.gConfig['ctxlist'], 'ctx(%s) is invalid,it must one of %s' % \
+        #                                                       (ctx, self.gConfig['ctxlist'])
+        #if ctx == 'gpu':
+        #    ctx = mx.gpu(0)
+        #else:
+        #    ctx = mx.cpu(0)
+        #return ctx
 
 
     def load_data(self,filename=NULLSTR,root=NULLSTR):
@@ -40,7 +41,7 @@ class getLyricDataM(getdataBase):
                 corpus_chars = f.read().decode('utf-8')
         corpus_chars = corpus_chars.replace('\n', ' ').replace('\r', ' ')
         #corpus_chars = corpus_chars[0:10000]
-        corpus_chars = corpus_chars[0:20000]
+        corpus_chars = corpus_chars[0:10000]
         self.idx_to_char = list(set(corpus_chars))
         self.char_to_idx = dict([(char, i) for i, char in enumerate(self.idx_to_char)])
         self.vocab_size = len(self.char_to_idx)
@@ -51,8 +52,13 @@ class getLyricDataM(getdataBase):
 
 
     def fn_onehot(self,x):
-        x = nd.transpose(x)
-        return nd.one_hot(x,self.vocab_size)
+        raise NotImplementedError('you should implement it!')
+        #x = nd.transpose(x)
+        #return nd.one_hot(x,self.vocab_size)
+
+
+    def get_array(self,x, ctx):
+        raise NotImplementedError('you should implemet it!')
 
 
     def transform(self,reader,transformers):
@@ -91,11 +97,11 @@ class getLyricDataM(getdataBase):
             batch_indices = example_indices[i: i + batch_size]
             X = [_data(j * time_steps) for j in batch_indices]
             Y = [_data(j * time_steps + 1) for j in batch_indices]
-            yield nd.array(X, ctx), nd.array(Y, ctx)
+            yield self.get_array(X, ctx), self.get_array(Y, ctx)
 
 
     def data_iter_consecutive(self, corpus_indices, batch_size, time_steps, ctx=None):
-        corpus_indices = nd.array(corpus_indices, ctx=ctx)
+        corpus_indices = self.get_array(corpus_indices, ctx=ctx)
         data_len = len(corpus_indices)
         batch_len = data_len // batch_size
         indices = corpus_indices[0: batch_size * batch_len].reshape((
@@ -146,12 +152,60 @@ class getLyricDataM(getdataBase):
         return None
 
 
+class getLyricDataM(getLyricData):
+    def __init__(self,gConfig):
+        self.mx = __import__('mxnet')
+        super(getLyricDataM, self).__init__(gConfig)
+
+
+    def fn_onehot(self,x):
+        x = self.mx.nd.transpose(x)
+        return self.mx.nd.one_hot(x,self.vocab_size)
+
+
+    def get_ctx(self, ctx):
+        assert ctx in self.gConfig['ctxlist'], 'ctx(%s) is invalid,it must one of %s' % \
+                                               (ctx, self.gConfig['ctxlist'])
+        if ctx == 'gpu':
+            ctx = self.mx.gpu(0)
+        else:
+            ctx = self.mx.cpu(0)
+        return ctx
+
+
+    def get_array(self,x,ctx):
+        return self.mx.nd.array(x, ctx = ctx)
+
+
+class getLyricDataH(getLyricData):
+    def __init__(self,gConfig):
+        self.torch = __import__('torch')
+        super(getLyricDataH, self).__init__(gConfig)
+
+
+    def fn_onehot(self,x):
+        x = self.torch.transpose(x,0,1)
+        x = self.torch.nn.functional.one_hot(x,self.vocab_size)
+        return self.torch.tensor(x, dtype = self.torch.float)
+
+
+    def get_ctx(self, ctx):
+        assert ctx in self.gConfig['ctxlist'], 'ctx(%s) is invalid,it must one of %s' % \
+                                                               (ctx, self.gConfig['ctxlist'])
+        if ctx == 'gpu':
+            ctx = self.torch.device(type='cuda',index=0) #,index=0)
+        else:
+            ctx = self.torch.device(type='cpu')#,index=0)
+        return ctx
+
+
+    def get_array(self,x,ctx):
+        return self.torch.tensor(x, device = ctx)
+
+
 class_selector = {
     "mxnet":getLyricDataM,
-    #"tensorflow":getLyricDataM,
-    "pytorch":getLyricDataM,
-    #"paddle":getLyricDataM,
-    #"keras": getLyricDataM
+    "pytorch":getLyricDataH
 }
 
 

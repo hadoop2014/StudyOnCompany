@@ -20,6 +20,10 @@ class StockAnalysize(InterpreterBase):
                 ,'parameter 指数简称(%s) is not valid!' % self.gConfig['指数简称']
             sourceTableName = self.dictTables[tableName]['sourceTable']
             dataFrame = self._sql_to_dataframe(tableName, sourceTableName,scale)
+            conn = self._get_connect()
+            if self._is_table_exist(conn, tableName):
+                self._drop_table(conn, tableName)
+            conn.close()
             for indexName in self.gConfig['指数简称']:
                 self._index_trend_analysize(dataFrame, indexName,tableName)
 
@@ -199,7 +203,7 @@ class StockAnalysize(InterpreterBase):
         trendInfo.loc[0, '报告时间'] = indexTrend['报告时间'].iloc[0]
         trendInfo.loc[0, '公司代码'] = indexTrend['公司代码'].iloc[0]
         trendInfo.loc[0, '公司简称'] = indexTrend['公司简称'].iloc[0]
-        trendInfo.loc[0, '收盘价'] = indexTrend['收盘价'].iloc[0]
+        trendInfo.loc[0, '收盘价'] = round(indexTrend['收盘价'].iloc[0],4)
         trendInfo.loc[0, '趋势简称'] = indexTrend['趋势简称'].iloc[0]
         trendInfo.loc[0, '趋势起始点'] = indexTrend['recordId'].iloc[0]
         trendInfo.loc[0, '趋势交易天数'] = indexTrend['recordId'].iloc[0]
@@ -223,7 +227,7 @@ class StockAnalysize(InterpreterBase):
                 # 第一次计算
                 trendInfo.loc[iDimension,'趋势类型'] = trendType
             elif trendType != trendInfo['趋势类型'].iloc[-1]:
-                trendInfo.loc[iDimension,'结束收盘价'] = indexTrend['收盘价'].iloc[iLoop - 1]
+                trendInfo.loc[iDimension,'结束收盘价'] = round(indexTrend['收盘价'].iloc[iLoop - 1],4)
                 trendInfo.loc[iDimension,'趋势持续时长'] = self._time_difference('days',trendInfo['报告时间'].iloc[iDimension]
                                                                          , indexTrend['报告时间'].iloc[iLoop - 1])
                 trendInfo.loc[iDimension,'趋势涨幅'] = round((trendInfo['结束收盘价'].iloc[iDimension] - trendInfo['收盘价'].iloc[iDimension])
@@ -232,7 +236,7 @@ class StockAnalysize(InterpreterBase):
 
                 iDimension += 1
                 trendInfo.loc[iDimension,'报告时间'] = indexTrend['报告时间'].iloc[iLoop - 1]
-                trendInfo.loc[iDimension,'收盘价'] = indexTrend['收盘价'].iloc[iLoop - 1]
+                trendInfo.loc[iDimension,'收盘价'] = round(indexTrend['收盘价'].iloc[iLoop - 1],4)
                 trendInfo.loc[iDimension,'公司代码'] = indexTrend['公司代码'].iloc[iLoop - 1]
                 trendInfo.loc[iDimension,'公司简称'] = indexTrend['公司简称'].iloc[iLoop - 1]
                 trendInfo.loc[iDimension,'趋势简称'] = indexTrend['趋势简称'].iloc[iLoop - 1]
@@ -241,7 +245,7 @@ class StockAnalysize(InterpreterBase):
                 trendInfo.loc[iDimension,'趋势交易天数'] = indexTrend['recordId'].iloc[iLoop - 1]
 
         # 处理最后一点
-        trendInfo.loc[iDimension, '结束收盘价'] = indexTrend['收盘价'].iloc[-1]
+        trendInfo.loc[iDimension, '结束收盘价'] = round(indexTrend['收盘价'].iloc[-1],4)
         trendInfo.loc[iDimension, '趋势持续时长'] = self._time_difference('days', trendInfo['报告时间'].iloc[iDimension]
                                                                   , indexTrend['报告时间'].iloc[-1])
         trendInfo.loc[iDimension, '趋势涨幅'] = round((trendInfo['结束收盘价'].iloc[iDimension] - trendInfo['收盘价'].iloc[iDimension])
@@ -744,6 +748,34 @@ class StockAnalysize(InterpreterBase):
             sql = sql + '\norder by ' + ','.join(order)
         dataframe = pd.read_sql(sql, self._get_connect())
         return dataframe
+
+
+    def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
+        conn = self._get_connect()
+        if not self._is_table_exist(conn, tableName):
+            # 如果是第一次写入, 则新建表,调用积累的函数写入
+            super(InterpreterBase,self)._write_to_sqlite3(dataFrame, tableName)
+            return
+        sql_df = dataFrame.copy()
+        isRecordExist = self._is_record_exist(conn, tableName, sql_df)
+        if isRecordExist:
+            condition = self._get_condition(sql_df)
+            sql = ''
+            sql = sql + 'delete from {}'.format(tableName)
+            sql = sql + '\nwhere ' + condition
+            self._sql_executer(sql)
+            self.logger.info("delete from {} where is {}!".format(tableName,sql_df['公司简称'].values[0]))
+            sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+            conn.commit()
+            self.logger.info("insert into {} where is {}!".format(tableName, sql_df['公司简称'].values[0]))
+        else:
+            if sql_df.shape[0] > 0:
+                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
+                conn.commit()
+                self.logger.info("insert into {} where is {}!".format(tableName, sql_df['公司简称'].values[0]))
+            else:
+                self.logger.error('sql_df is empty!')
+        conn.close()
 
 
     def _get_class_name(self, gConfig):

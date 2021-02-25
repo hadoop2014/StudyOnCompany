@@ -108,7 +108,7 @@ class Collate:
             # 把xs和ys按照序列长度从大到小排序
             seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
             xs = xs[perm_idx].to(self.ctx)
-            ys = ys[perm_idx]
+            ys = ys[perm_idx].to(self.ctx)
             return xs, seq_lengths, ys
         elif isinstance(batch[0], pd.DataFrame):
             xs = batch

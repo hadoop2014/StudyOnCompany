@@ -391,6 +391,10 @@ class rnnModel(ModelBaseM):
         return
 
 
+    def apply_model(self,net):
+        self.logger.info('rnnModelM.apply_model has not be implement!')
+
+
     def summary(self):
         self.init_state()
         self.net.summary(nd.zeros(shape=self.get_input_shape(), ctx=self.ctx),

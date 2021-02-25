@@ -1,9 +1,10 @@
-from interpreterAnalysize.modelSets.modelBaseClassH import *
+#from interpreterAnalysize.modelSets.modelBaseClassH import *
+from interpreterAnalysize.modelSets.rnnBaseModelH import *
 from torch import nn
 import math
 import torch.nn.functional as F
 
-
+'''
 class RNN(nn.Module):
     def __init__(self,rnn_layer,output_dim,ctx):
         super(RNN,self).__init__()
@@ -25,16 +26,21 @@ class RNN(nn.Module):
 
     def begin_state(self,batch_size, num_hiddens, device):
         return (torch.zeros((batch_size, num_hiddens), device=device),)
+'''
 
-
-class rnnModel(ModelBaseH):
+class rnnModel(rnnBaseModelH):
     def __init__(self,gConfig):
         super(rnnModel,self).__init__(gConfig)
 
 
-    def _init_parameters(self):
-        super(rnnModel, self)._init_parameters()
-        self.loss = nn.CrossEntropyLoss().to(self.ctx)
+    #def _init_parameters(self):
+    #    super(rnnModel, self)._init_parameters()
+    def get_loss(self):
+        loss = nn.CrossEntropyLoss().to(self.ctx)
+        return loss
+
+
+    def get_net(self):
         getdataClass = self.gConfig['getdataClass']
         self.resizedshape = getdataClass.resizedshape
         self.vocab_size = getdataClass.vocab_size
@@ -46,6 +52,7 @@ class rnnModel(ModelBaseH):
         self.time_steps = self.resizedshape[0]
         self.rnn_hiddens = self.gConfig['rnn_hiddens']  # 256
         self.num_layers = self.gConfig['num_layers']
+        self.dropout = self.gConfig['dropout']
         self.input_dim = self.vocab_size
         self.output_dim = self.vocab_size
         self.activation = self.get_activation(self.gConfig['activation'])
@@ -60,13 +67,19 @@ class rnnModel(ModelBaseH):
             'lstm': nn.LSTM(input_size=self.input_dim,hidden_size=self.rnn_hiddens,num_layers=self.num_layers)
         }
         self.randomIterIsOn = self.gConfig['randomIterIsOn']
-        self.get_net()
-        self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
-        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer,step_size=self.learning_rate_decay_step
-                                                         ,gamma=self.learning_rate_decay_factor)
         self.input_shape = (self.time_steps, self.batch_size, self.resizedshape[1])
+        #self.get_net()
+        cell = self.get_cell(self.gConfig['cell'])
+        rnn_layer = self.cell_selector[cell]
+        net = RNN(rnn_layer,self.output_dim,self.dropout,self.ctx)
+        return net
+
+        #self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
+        #self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer,step_size=self.learning_rate_decay_step
+        #                                                 ,gamma=self.learning_rate_decay_factor)
 
 
+    '''
     def get_cell(self,cell):
         assert cell in self.gConfig['celllist'], 'cell(%s) is invalid,it must one of %s' % \
                                                                (cell, self.gConfig['celllist'])
@@ -75,14 +88,18 @@ class rnnModel(ModelBaseH):
 
     def get_batch_size(self,y):
         return y.size()[0] * y.size()[1]
+    '''
+
+    #def get_net(self):
+    #    cell = self.get_cell(self.gConfig['cell'])
+    #    rnn_layer = self.cell_selector[cell]
+    #    self.net = RNN(rnn_layer,self.output_dim,self.ctx)
 
 
-    def get_net(self):
-        cell = self.get_cell(self.gConfig['cell'])
-        rnn_layer = self.cell_selector[cell]
-        self.net = RNN(rnn_layer,self.output_dim,self.ctx)
+    def get_acc(self,y_hat,y):
+        return (y_hat.argmax(dim=1) == y).sum().item()
 
-
+    '''
     def run_train_loss_acc(self,X,y):
         if self.randomIterIsOn:
             self.init_state()
@@ -123,7 +140,7 @@ class rnnModel(ModelBaseH):
         loss = loss.item() * y.shape[0]
         acc  = (y_hat.argmax(dim=1) == y).sum().item()
         return loss,acc
-
+    '''
 
     def predict(self, model):
         for prefix in self.prefixes:
@@ -175,6 +192,10 @@ class rnnModel(ModelBaseH):
         return perplexity_train,perplexity_test
 
 
+    def apply_model(self, net):
+        self.logger.info('rnnModel.apply_model has not be implement')
+
+    '''
     def get_learningrate(self):
         return self.optimizer.state_dict()['param_groups'][0]['lr']
 
@@ -199,11 +220,15 @@ class rnnModel(ModelBaseH):
         self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
         self.optimizer.load_state_dict(state_dict)
 
+    '''
+    def output_info(self,y_hat,y):
+        pass
+
 
     def get_input_shape(self):
         return self.input_shape
 
-
+    '''
     def image_record(self,global_step,tag,input_image):
         # 在RNN,LSTM,GRU中使得该函数失效
         pass
@@ -212,7 +237,7 @@ class rnnModel(ModelBaseH):
     def summary(self,net):
         summary(net, input_size=self.get_input_shape()[1:], batch_size=self.batch_size,
                 device=re.findall(r'(\w*)', self.ctx.__str__())[0])
-
+    '''
 
 def create_object(gConfig):
     #用cnnModel实例化一个对象model

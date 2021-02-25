@@ -250,15 +250,22 @@ class ModelBaseH(InterpreterBase):
             try:
                 X = X.asnumpy()
                 y = y.asnumpy()
+                if not isinstance(X, PackedSequence):
+                    X = torch.tensor(X, device=self.ctx)
+                # y = torch.tensor(y, device=self.ctx, dtype=torch.long)
+                y = torch.tensor(y, device=self.ctx)
             except:
-                if not isinstance(X,PackedSequence):
-                    X = np.array(X)
-                y = np.array(y)
+                pass
+                #if not isinstance(X,PackedSequence):
+                    #X = np.array(X)
+                #    X = X.numpy()
+                #y = np.array(y)
+                #y = y.numpy()
             self.image_record(self.get_global_step(), 'input/image', X[0])
-            if not isinstance(X,PackedSequence):
-                X = torch.tensor(X, device=self.ctx)
+            #if not isinstance(X,PackedSequence):
+            #    X = torch.tensor(X, device=self.ctx)
             #y = torch.tensor(y, device=self.ctx, dtype=torch.long)
-            y = torch.tensor(y, device=self.ctx)
+            #y = torch.tensor(y, device=self.ctx)
             loss, acc = self.run_train_loss_acc(X, y)
             loss_sum += loss
             acc_sum += acc
@@ -281,14 +288,21 @@ class ModelBaseH(InterpreterBase):
             try:
                 X = X.asnumpy()
                 y = y.asnumpy()
+                if not isinstance(X, PackedSequence):
+                    X = torch.tensor(X, device=self.ctx)
+                # y = torch.tensor(y,device=self.ctx,dtype=torch.long)
+                y = torch.tensor(y, device=self.ctx)
             except:
-                if not isinstance(X,PackedSequence):
-                    X = np.array(X)
-                y = np.array(y)
-            if not isinstance(X,PackedSequence):
-                X = torch.tensor(X,device=self.ctx)
+                pass
+                #if not isinstance(X,PackedSequence):
+                    #X = np.array(X)
+                #    X = X.numpy()
+                #y = np.array(y)
+                #y = y.numpy()
+            #if not isinstance(X,PackedSequence):
+            #    X = torch.tensor(X,device=self.ctx)
             #y = torch.tensor(y,device=self.ctx,dtype=torch.long)
-            y = torch.tensor(y, device=self.ctx)
+            #y = torch.tensor(y, device=self.ctx)
             loss,acc = self.run_eval_loss_acc(X, y)
             acc_sum += acc
             loss_sum += loss
@@ -329,13 +343,19 @@ class ModelBaseH(InterpreterBase):
             try:
                 X = X.asnumpy()
                 y = y.asnumpy()
+                if not isinstance(X, PackedSequence):
+                    X = torch.tensor(X, device=self.ctx)
+                y = torch.tensor(y, device=self.ctx)
             except:
-                if not isinstance(X,PackedSequence):
-                    X = np.array(X)
-                y = np.array(y)
-            if not isinstance(X,PackedSequence):
-                X = torch.tensor(X,device=self.ctx)
-            y = torch.tensor(y, device=self.ctx)
+                pass
+            #    if not isinstance(X,PackedSequence):
+                    #X = np.array(X)
+            #        X = X.numpy()
+                #y = np.array(y)
+            #    y = y.numpy()
+            #if not isinstance(X,PackedSequence):
+            #    X = torch.tensor(X,device=self.ctx)
+            #y = torch.tensor(y, device=self.ctx)
             loss, acc, dataFrame = self.predict_with_keyfileds(net,X,y,keyfields)
             mergedFields += [dataFrame]
             acc_sum += acc

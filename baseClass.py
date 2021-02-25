@@ -540,6 +540,12 @@ class BaseClass():
         return cursor.fetchall()
 
 
+    def _drop_table(self,conn,tableName):
+        sql = 'drop table if exists \'{}\''.format(tableName)
+        result = conn.execute(sql).fetchall()
+        return result
+
+
     def _is_table_exist(self,conn, tableName):
         # 判断数据库中该表是否存在
         isTableExist = False
