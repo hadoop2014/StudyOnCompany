@@ -492,7 +492,7 @@
       "test_percent" : 0.1,
       "batch_size" : 32,
       "time_steps" : 6,
-      "bidirectional": true
+      "bidirectional": false
     },
     "optimizer": {
       "optimizer" : "adam"

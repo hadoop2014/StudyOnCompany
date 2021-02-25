@@ -241,17 +241,17 @@ class ModelBaseH(InterpreterBase):
 
 
     def train_loss_acc(self, data_iter):
-        acc_sum = 0
-        loss_sum = 0
-        n = 0
+        acc_sum, loss_sum, n = 0, 0, 0
+        #loss_sum = 0
+        #n = 0
         self.init_state()  # 仅用于RNN,LSTM等
         self.net.train()
         for X, y in data_iter:
             try:
                 X = X.asnumpy()
                 y = y.asnumpy()
-                if not isinstance(X, PackedSequence):
-                    X = torch.tensor(X, device=self.ctx)
+                #if not isinstance(X, PackedSequence):
+                X = torch.tensor(X, device=self.ctx)
                 # y = torch.tensor(y, device=self.ctx, dtype=torch.long)
                 y = torch.tensor(y, device=self.ctx)
             except:
@@ -280,16 +280,16 @@ class ModelBaseH(InterpreterBase):
 
 
     def evaluate_loss_acc(self, data_iter):
-        acc_sum = 0
-        loss_sum = 0
-        n = 0
+        acc_sum, loss_sum, n = 0, 0, 0
+        #loss_sum = 0
+        #n = 0
         self.net.eval()
         for X, y in data_iter:
             try:
                 X = X.asnumpy()
                 y = y.asnumpy()
-                if not isinstance(X, PackedSequence):
-                    X = torch.tensor(X, device=self.ctx)
+                #if not isinstance(X, PackedSequence):
+                X = torch.tensor(X, device=self.ctx)
                 # y = torch.tensor(y,device=self.ctx,dtype=torch.long)
                 y = torch.tensor(y, device=self.ctx)
             except:
@@ -335,16 +335,16 @@ class ModelBaseH(InterpreterBase):
         getdataClass = self.gConfig['getdataClass']
         keyfields_iter,valid_iter = getdataClass.getValidData(self.batch_size)
         mergedFields = []
-        acc_sum = 0
-        loss_sum = 0
-        n = 0
+        acc_sum, loss_sum, n = 0, 0, 0
+        #loss_sum = 0
+        #n = 0
         net.eval()
         for (X,y),keyfields in zip(keyfields_iter,valid_iter):
             try:
                 X = X.asnumpy()
                 y = y.asnumpy()
-                if not isinstance(X, PackedSequence):
-                    X = torch.tensor(X, device=self.ctx)
+                #if not isinstance(X, PackedSequence):
+                X = torch.tensor(X, device=self.ctx)
                 y = torch.tensor(y, device=self.ctx)
             except:
                 pass
@@ -393,13 +393,14 @@ class ModelBaseH(InterpreterBase):
             for param in params:
                 param.grad.data *= (theta / norm)
 
-
+    '''
     def set_default_tensor_type(self):
         if self.ctx == torch.device(type='cuda',index=0):
             # 如果设置为cuda的类型，则所有操作都在GPU上进行
             torch.set_default_tensor_type(torch.cuda.FloatTensor)
         else:
             torch.set_default_tensor_type(torch.FloatTensor)
+    '''
 
 
     @staticmethod
