@@ -41,7 +41,7 @@
     "民盛金科": "仁东控股"
   },
 
-  "TABLE": "股票交易数据|财报发布信息|行业分类数据|公司价格分析表",
+  "TABLE": "股票交易数据|财报发布信息|行业分类数据|公司价格分析表|指数趋势分析表",
 
   "#公共字段表": "在所有的股票数据前都会增加这几个字段",
   "公共表字段定义": {
@@ -72,7 +72,7 @@
     "parent": "",
     "fieldType": {},
     "fieldFromHeader": [],
-    "order": ["报告时间"]
+    "orderBy": ["报告时间"]
   },
 
   "财报发布信息": {
@@ -86,7 +86,7 @@
       "上市时间": "DATE"
     },
     "fieldFromHeader": [],
-    "order": ["文件名"]
+    "orderBy": ["文件名"]
   },
 
   "行业分类数据": {
@@ -97,78 +97,8 @@
       "行业分类": "CHAR(50)"
     },
     "fieldFromHeader": [],
-    "order": []
+    "orderBy": []
   },
-
-
-  "公司价格分析表": {
-    "#note": "仅用于datafetch.getFinance.py中用于读取 公司价格分析表 的数据(不用于建表),_preprocessing函数会读取这些配置.",
-    "fieldName": [],
-    "fieldAlias": {},
-    "parent": "",
-    "fieldType": {},
-    "fieldFromHeader": [],
-    "order": [],
-    "#preprocessing": "该节配置只用于训练数据中的预处理",
-    "preprocessing": {
-      "起始周总市值": {
-        "scaler": "MaxAbsScaler",
-        "scale": "group",
-        "method": "transform",
-        "dependent": "报告周总市值"
-      },
-      "报告周总市值": {
-        "scaler": "MaxAbsScaler",
-        "scale": "group",
-        "method": "fit_transform",
-        "dependent": ""
-      },
-      "结束周总市值": {
-        "scaler": "MaxAbsScaler",
-        "scale": "group",
-        "method": "transform",
-        "dependent": "报告周总市值"
-      },
-      "起始周指数": {
-        "scaler": "MaxAbsScaler",
-        "scale": "whole",
-        "method": "transform",
-        "dependent": "报告周指数"
-      },
-      "报告周指数": {
-        "scaler": "MaxAbsScaler",
-        "scale": "whole",
-        "method": "fit_transform",
-        "dependent": ""
-      },
-      "营业收入": {
-        "scaler": "MaxAbsScaler",
-        "scale": "group",
-        "method": "fit_transform",
-        "dependent": ""
-      },
-      "归属于上市公司股东的净利润": {
-        "scaler": "MaxAbsScaler",
-        "scale": "group",
-        "method": "fit_transform",
-        "dependent": ""
-      },
-      "归属于上市公司股东的扣除非经常性损益的净利润": {
-        "scaler": "MaxAbsScaler",
-        "scale": "group",
-        "method": "fit_transform",
-        "dependent": ""
-      },
-      "经营活动产生的现金流量净额": {
-        "scaler": "MaxAbsScaler",
-        "scale": "group",
-        "method": "fit_transform",
-        "dependent": ""
-      }
-
-    }
-  },
-
 
   "stockcodeHeader": ["公司简称","公司代码","类型"],
 
@@ -2097,6 +2027,104 @@
     }
   },
 
+
+  "指数趋势分析表": {
+    "#note": "仅用于datafetch.getStock.py中用于读取 公司价格分析表 的数据(不用于建表),_preprocessing函数会读取这些配置, 另外一份配置放在interpretrAnalysize.json,用于写表",
+    "fieldName": [],
+    "fieldAlias": {},
+    "parent": "",
+    "fieldType": {},
+    "fieldFromHeader": [],
+    "orderBy": ["公司代码","趋势简称","报告时间"],
+    "groupBy": ["公司代码","趋势简称"],
+    "#preprocessing": "该节配置只用于训练数据中的预处理",
+    "preprocessing": {
+      "趋势类型": {
+        "scaler": "LabelBinarizer",
+        "scale": "whole",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "趋势交易天数": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      }
+    }
+  },
+
+
+  "公司价格分析表": {
+    "#note": "仅用于datafetch.getFinance.py中用于读取 公司价格分析表 的数据(不用于建表),_preprocessing函数会读取这些配置.",
+    "fieldName": [],
+    "fieldAlias": {},
+    "parent": "",
+    "fieldType": {},
+    "fieldFromHeader": [],
+    "orderBy": ["公司代码","报告时间"],
+    "groupBy": ["公司代码"],
+    "#preprocessing": "该节配置只用于训练数据中的预处理",
+    "preprocessing": {
+      "起始周总市值": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "transform",
+        "dependent": "报告周总市值"
+      },
+      "报告周总市值": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "结束周总市值": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "transform",
+        "dependent": "报告周总市值"
+      },
+      "起始周指数": {
+        "scaler": "MaxAbsScaler",
+        "scale": "whole",
+        "method": "transform",
+        "dependent": "报告周指数"
+      },
+      "报告周指数": {
+        "scaler": "MaxAbsScaler",
+        "scale": "whole",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "营业收入": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "归属于上市公司股东的净利润": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "归属于上市公司股东的扣除非经常性损益的净利润": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      },
+      "经营活动产生的现金流量净额": {
+        "scaler": "MaxAbsScaler",
+        "scale": "group",
+        "method": "fit_transform",
+        "dependent": ""
+      }
+    }
+  },
+
+
+
   "模型公共参数": {
     "environment": {
       "mode": "train",
@@ -2140,9 +2168,9 @@
     },
     "checklist": {
       "modelist" : ["train","pretrain","apply"],
-      "#modellist" : ["regression","lenet","alexnet","vgg","capsnet","resnet","nin","rnn","ssd","rnnregression"],
+      "#modellist" : ["lenet","alexnet","vgg","capsnet","resnet","rnn","ssd","rnnregression","rnndetection"],
       "optimizerlist" : ["sgd","adam","rmsprop","adagrad","adadelta","momentum"],
-      "datasetlist" : ["mnist","fashionmnist","cifar10","houseprice","lyric","hotdog","pikachu","finance"],
+      "datasetlist" : ["mnist","lyric","finance","stock"],
       "frameworklist" : ["mxnet","tensorflow","paddle","pytorch","keras"],
       "activationlist" : ["sigmoid","relu","tanh"],
       "initializerlist" : ["normal","xavier","kaiming","constant","uniform"],
@@ -2150,6 +2178,15 @@
       "celllist" : ["rnn","gru","lstm"]
     },
     "dataset": {
+      "#stock": "为指数数据,用来训练rnndetection模型",
+      "stock": {
+        "#tableName": "getStock数据从 指数趋势分析表 中读取数据,用于 指数趋势预测模型 的训练",
+        "tableName": "指数趋势分析表",
+        "fieldStart": 8,
+        "fieldEnd": -2,
+        "predictColumnsName": "预测趋势类型",
+        "dim": 1
+      },
       "#finance": "为公司财务数据和股票交易数据的组合,用来训练rnnregression模型",
       "finance": {
         "#tableName": "getFinance数据从 公司价格分析表 中读取数据,用于 公司价格预测模型 的训练",

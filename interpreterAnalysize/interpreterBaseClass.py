@@ -43,26 +43,24 @@ class InterpreterBase(ModelBase):
         """
         args:
             models - 当前解释器配置文件下的所有模型名称,定义在文件interpreterAnalysize.json,如:
-                '''
-                公司价格预测模型
-                '''
+            公司价格预测模型
         reutrn:
             dictModels - 把interpreterAnalysize.json中的模型配置参数和interpreterBase.json中的"模型公共参数"进行融合, 融合的规则:
-                '''
-                1) interpreterAnalysize.json中的模型配置参数 更新到 "模型公共参数" 中;
-                2) 模型配置参数model所指定的子模型配置参数 更新到 interpreterAnalysize.json中的模型配置参数中;
-                '''
+            1) interpreterAnalysize.json中的模型配置参数 更新到 "模型公共参数" 中;
+            2) 模型配置参数model所指定的子模型配置参数 更新到 interpreterAnalysize.json中的模型配置参数中;
         """
         assert isinstance(models,list) and len(models) > 0,"models(%s) must be a list and not be NULL!"% models
         dictModels = {}
-        dictModel = {}
+        #dictModel = {}
+        dictModelCommon = {}
         for key, value in self.gJsonBase['模型公共参数'].items():
             # 把模型公共参数进行展开, 放到一个dict中
             if isinstance(value, dict):
-                dictModel.update(value)
+                dictModelCommon.update(value)
             else:
-                dictModel.update({key: value})
+                dictModelCommon.update({key: value})
         for model in models:
+            dictModel = dictModelCommon.copy()
             for key, value in self.gJsonInterpreter[model].items():
                 if isinstance(value, dict):
                     dictModel.update(value)

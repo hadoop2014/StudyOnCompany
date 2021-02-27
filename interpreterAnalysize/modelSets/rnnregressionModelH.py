@@ -53,12 +53,13 @@ class rnnregressionModel(rnnBaseModelH):
         y_hat = y_hat.squeeze()
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
-        acc = 0
-        if y_hat.dim() == 0:
-            y_hat = y_hat.unsqueeze(dim=0)
-        combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
-        end = min(len(combine), self.time_steps)
-        print("(y_hat, y):",combine[:end])
+        acc = self.get_acc(y_hat, y)
+        self.output_info(y_hat, y)
+        #if y_hat.dim() == 0:
+        #    y_hat = y_hat.unsqueeze(dim=0)
+        #combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
+        #end = min(len(combine), self.time_steps)
+        #print("(y_hat, y):",combine[:end])
         return loss, acc, mergedDataFrame
 
 

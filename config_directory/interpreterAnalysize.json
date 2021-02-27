@@ -9,7 +9,7 @@
   "ANALYSIZE": "指数趋势分析",
   "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表|指数趋势分析表",
   "HANDLE": "训练|应用",
-  "MODEL": "公司价格预测模型",
+  "MODEL": "公司价格预测模型|指数趋势预测模型",
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
 
@@ -56,7 +56,7 @@
     "update": "",
     "visualize": "",
     "sourceTable": "",
-    "order": [],
+    "orderBy": [],
     "startrow": 0,
     "font_settings": {
       "name":"宋体",
@@ -95,7 +95,7 @@
     "update": "",
     "visualize": "FinanceAnalysis v1.0.xlsx",
     "sourceTable": "",
-    "order": ["公司投资等级 desc","公司简称","报告时间 desc"],
+    "orderBy": ["公司投资等级 desc","公司简称","报告时间 desc"],
     "startrow": 1,
     "freezecol": 4,
     "maxrow": 1000,
@@ -366,7 +366,7 @@
     "update": "",
     "visualize": "FinanceAnalysis v1.0.xlsx",
     "sourceTable": "",
-    "order": [],
+    "orderBy": [],
     "startrow": 1
   },
 
@@ -380,7 +380,7 @@
     "update": "",
     "visualize": "",
     "sourceTable": "",
-    "order": [],
+    "orderBy": [],
     "startrow": 0,
     "font_settings": {
       "name":"宋体",
@@ -394,7 +394,7 @@
 
   "指数趋势分析表": {
     "#note" : "分析上证指数,深证成指等指数的短期,中期,长期的涨跌趋势.",
-    "fieldName": ["报告时间","公司代码","公司简称","趋势简称","趋势持续时长","收盘价","趋势起始点","趋势交易天数","趋势涨幅","结束收盘价","趋势类型"],
+    "fieldName": ["报告时间","公司代码","公司简称","趋势简称","趋势持续时长","收盘价","结束收盘价","趋势起始点","趋势交易天数","趋势涨幅","趋势类型","训练标识"],
     "fieldDiscard": [],
     "parent": "",
     "create": "",
@@ -402,7 +402,7 @@
     "update": "",
     "visualize": "",
     "sourceTable": "股票交易数据",
-    "order": ["公司代码","报告时间 desc"],
+    "orderBy": ["公司代码","报告时间 desc"],
     "startrow": 0,
     "font_settings": {
       "name":"宋体",
@@ -457,8 +457,8 @@
       "framework": "pytorch",
       "dataset": "stock",
       "model": "rnndetection",
-      "#tableName": "应用 公司价格预测模型, 结果数据写入 公司价格预测表",
-      "tableName": "指数趋势分析表",
+      "#tableName": "应用 公司价格预测模型, 结果数据写入 指数趋势预测表",
+      "tableName": "指数趋势预测表",
       "ckpt_used": false,
       "viewIsOn" : true
     }
@@ -514,6 +514,40 @@
     }
   },
 
+  "rnndetection": {
+    "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",
+    "randomIterIsOn" : false,
+    "trainer": {
+      "k" : 5,
+      "clip_gradient" : 2e-2,
+      "train_num_epoch" : 200,
+      "learning_rate" : 1e-2,
+      "learning_rate_decay_factor" : 0.8,
+      "learning_rate_decay_step": 500,
+      "test_percent" : 0.1,
+      "batch_size" : 32,
+      "time_steps" : 6,
+      "bidirectional": false
+    },
+    "optimizer": {
+      "optimizer" : "adam"
+    },
+    "initializer": {
+      "initializer" : "xavier",
+      "init_sigma": 0.01,
+      "init_bias" : 0.0
+    },
+    "net": {
+      "cell": "lstm",
+      "activation": "relu",
+      "dropout" : 0.3,
+      "resize" : 0,
+      "input_dim" :  1,
+      "rnn_hiddens" : 64,
+      "num_layers" : 1,
+      "output_dim" : 2
+    }
+  },
 
   "rnn": {
     "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",

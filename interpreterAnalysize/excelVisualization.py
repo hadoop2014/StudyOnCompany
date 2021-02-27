@@ -125,7 +125,7 @@ class ExcelVisualization(InterpreterBase):
             sql = ''
             sql = sql + '\nselect * '
             sql = sql + '\nfrom %s' % (sourceTableName)
-        order = self.dictTables[tableName]["order"]
+        order = self.dictTables[tableName]["orderBy"]
         if isinstance(order,list) and len(order) > 0:
             sql = sql + '\norder by ' + ','.join(order)
         dataframe = pd.read_sql(sql, self._get_connect())

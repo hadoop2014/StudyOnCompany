@@ -22,7 +22,8 @@
       "modelLenetM": "interpreterAnalysize.modelSets.lenetModelM",
       "modelRnnM": "interpreterAnalysize.modelSets.rnnModelM",
       "modelRnnH": "interpreterAnalysize.modelSets.rnnModelH",
-      "modelRnnregressionH": "interpreterAnalysize.modelSets.rnnregressionModelH"
+      "modelRnnregressionH": "interpreterAnalysize.modelSets.rnnregressionModelH",
+      "modelRnndetectionH": "interpreterAnalysize.modelSets.rnndetectionModelH"
     }
   },
   "crawl": {
@@ -47,13 +48,9 @@
   },
 
   "datafetch": {
-    "cifar10": "datafetch.getCifar10",
     "mnist": "datafetch.getMnist",
-    "fashionmnist": "datafetch.getFashionMnist",
-    "houseprice": "datafetch.getHouseprice",
     "lyric": "datafetch.getLyric",
-    "hotdog": "datafetch.getHotdog",
-    "pikachu": "datafetch.getPikachu",
-    "finance": "datafetch.getFinance"
+    "finance": "datafetch.getFinance",
+    "stock": "datafetch.getStock"
   }
 }

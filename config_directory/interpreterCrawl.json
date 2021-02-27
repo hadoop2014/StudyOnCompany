@@ -42,7 +42,7 @@
   "巨潮资讯网": {
     "tableName": "财报发布信息",
     "checkpointHeader": ["报告时间","公司代码","公司简称","报告类型","发布时间","文件名","网址","上市时间"],
-    "order": ["公司代码","报告类型","发布时间"],
+    "orderBy": ["公司代码","报告类型","发布时间"],
     "drop_duplicate": "文件名",
     "query_path": "http://www.cninfo.com.cn/new/hisAnnouncement/query",
     "download_path": "http://static.cninfo.com.cn/",
@@ -349,7 +349,7 @@
   "网易财经": {
     "tableName": "股票交易数据",
     "checkpointHeader": ["文件名","公司简称","公司代码","截止时间"],
-    "order": ["文件名"],
+    "orderBy": ["文件名"],
     "drop_duplicate": "文件名",
     "#query_path": "http://quote.eastmoney.com/stocklist.html",
     "query_path" : "https://hq.gucheng.com/gpdmylb.html",

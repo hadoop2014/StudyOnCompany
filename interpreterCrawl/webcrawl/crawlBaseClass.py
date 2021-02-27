@@ -166,7 +166,7 @@ class CrawlBase(InterpreterBase):
         dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader,dtype=str))
         # 根据数据第一列去重
         dataFrame = dataFrame.drop_duplicates(self.dictWebsites[website]['drop_duplicate'], keep= 'last')
-        order = self.dictWebsites[website]['order']
+        order = self.dictWebsites[website]['orderBy']
         dataFrame = dataFrame.sort_values(by=order, ascending=False)
         resultContent = dataFrame.values.tolist()
         return resultContent

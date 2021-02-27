@@ -22,7 +22,7 @@ class StockAnalysize(InterpreterBase):
             dataFrame = self._sql_to_dataframe(tableName, sourceTableName,scale)
             conn = self._get_connect()
             if self._is_table_exist(conn, tableName):
-                self._drop_table(conn, tableName)
+               self._drop_table(conn, tableName)
             conn.close()
             for indexName in self.gConfig['指数简称']:
                 self._index_trend_analysize(dataFrame, indexName,tableName)
@@ -211,6 +211,7 @@ class StockAnalysize(InterpreterBase):
         trendInfo.loc[0, '趋势持续时长'] = 0
         trendInfo.loc[0, '趋势涨幅'] = 0
         trendInfo.loc[0, '结束收盘价'] = 0
+        trendInfo.loc[0, '训练标识'] = 1
 
         #trendType = NULLSTR
         iDimension = 0
@@ -243,6 +244,7 @@ class StockAnalysize(InterpreterBase):
                 trendInfo.loc[iDimension,'趋势类型'] = trendType
                 trendInfo.loc[iDimension,'趋势起始点'] = indexTrend['recordId'].iloc[iLoop - 1]
                 trendInfo.loc[iDimension,'趋势交易天数'] = indexTrend['recordId'].iloc[iLoop - 1]
+                trendInfo.loc[iDimension,'训练标识'] = 1
 
         # 处理最后一点
         trendInfo.loc[iDimension, '结束收盘价'] = round(indexTrend['收盘价'].iloc[-1],4)
@@ -251,6 +253,9 @@ class StockAnalysize(InterpreterBase):
         trendInfo.loc[iDimension, '趋势涨幅'] = round((trendInfo['结束收盘价'].iloc[iDimension] - trendInfo['收盘价'].iloc[iDimension])
                                                      / trendInfo['收盘价'].iloc[iDimension], 2)
         trendInfo.loc[iDimension, '趋势交易天数'] = indexTrend['recordId'].iloc[-1] - trendInfo['趋势交易天数'].iloc[iDimension]
+        #if trendName == "中期趋势":
+            # 最后一个中期趋势点可能还不是定论,需要通过模型来预测
+        trendInfo.loc[iDimension, '训练标识'] = 0
         self.logger.info('success to find trend info %s of %s : processtime %.4f'
                          % (trendName,indexName, time.time() - startTime))
         return trendInfo
@@ -743,7 +748,7 @@ class StockAnalysize(InterpreterBase):
             sql = sql + '\nselect * '
             sql = sql + '\nfrom %s' % (sourceTableName)
             sql = sql + '\nwhere ' + condition
-        order = self.dictTables[tableName]["order"]
+        order = self.dictTables[tableName]["orderBy"]
         if isinstance(order,list) and len(order) > 0:
             sql = sql + '\norder by ' + ','.join(order)
         dataframe = pd.read_sql(sql, self._get_connect())

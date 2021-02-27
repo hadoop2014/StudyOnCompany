@@ -363,17 +363,26 @@ class ModelBaseH(InterpreterBase):
             n += self.get_batch_size(y)
         mergedDataFrame = pd.concat(mergedFields, axis=0)
         mergedDataFrame = mergedDataFrame.dropna(axis=0).reset_index(drop=True)
+        #for reportType in self.gConfig['报告类型']:
+        #    tablePrefix = self._get_tableprefix_by_report_type(reportType)
+        #    tableName = tablePrefix + self.gConfig['tableName']
+        #    self._write_to_sqlite3(mergedDataFrame, tableName)
+        #    self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'
+        #                     %(self.gConfig['model'], tableName))
+        self.process_write_to_sqlite3(mergedDataFrame)
+        if n != 0:
+            loss_sum /= n
+            acc_sum /= n
+        return loss_sum, acc_sum
+
+
+    def process_write_to_sqlite3(self, mergedDataFrame):
         for reportType in self.gConfig['报告类型']:
             tablePrefix = self._get_tableprefix_by_report_type(reportType)
             tableName = tablePrefix + self.gConfig['tableName']
             self._write_to_sqlite3(mergedDataFrame, tableName)
             self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'
                              %(self.gConfig['model'], tableName))
-        if n != 0:
-            loss_sum /= n
-            acc_sum /= n
-        return loss_sum, acc_sum
-        #return loss_sum / n, acc_sum / n
 
 
     def predict_with_keyfileds(self,net,keyfields,X,y):
