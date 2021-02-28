@@ -89,12 +89,31 @@ class getStockDataH(getdataBaseH):
         return transform_reader
 
 
+    def data_iter_consecutive(self, corpus_indices, batch_size, time_steps, ctx=None):
+        corpus_indices = self.get_array(corpus_indices, ctx=ctx)
+        data_len = len(corpus_indices)
+        batch_len = data_len // batch_size
+        indices = corpus_indices[0: batch_size * batch_len].reshape((
+            batch_size, batch_len))
+        epoch_size = (batch_len - 1) // time_steps
+        for i in range(epoch_size):
+            i = i * time_steps
+            X = indices[:, i: i + time_steps]
+            Y = indices[:, i + 1: i + time_steps + 1]
+            yield X, Y
+
+
     @getdataBase.getdataForUnittest
     def getTrainData(self,batch_size):
         self.train_data,self.test_data = self.get_k_fold_data(self.k,self.features)
-        #self.train_data = self.features
-        train_iter = DataLoader(dataset=self.train_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
+        if self.randomIterIsOn == False:
+            #train_data = self.data_iter_consecutive(self.train_data, self.batch_size, self.time_steps, self.ctx)
+            train_data = self.train_data
+        else:
+            # train_data = self.data_iter_random(self.train_data, self.batch_size, self.time_steps, self.ctx)
+            raise ValueError(f'getStock get data must be in consecutive, but received randomIterIsOn({self.randomIterIsOn})')
+        train_iter = DataLoader(dataset=train_data, batch_size=self.batch_size, num_workers=self.cpu_num
+                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         self.train_iter = self.transform(train_iter,self.transformers)
         return self.train_iter()
 
@@ -103,8 +122,14 @@ class getStockDataH(getdataBaseH):
     def getTestData(self,batch_size):
         self.test_data = self.featuresTest
         #_, self.test_data = self.get_k_fold_data(self.k, self.featuresTest)
-        test_iter = DataLoader(dataset=self.test_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
+        if self.randomIterIsOn == False:
+            #test_data = self.data_iter_consecutive(self.test_data, self.batch_size, self.time_steps, self.ctx)
+            test_data = self.test_data
+        else:
+            # test_data = self.data_iter_random(self.train_data, self.batch_size, self.time_steps, self.ctx)
+            raise ValueError(f'getStock get data must be in consecutive, but received randomIterIsOn({self.randomIterIsOn})')
+        test_iter = DataLoader(dataset=test_data, batch_size=self.batch_size, num_workers=self.cpu_num
+                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         self.test_iter = self.transform(test_iter,self.transformers)
         return self.test_iter()
 
@@ -112,9 +137,9 @@ class getStockDataH(getdataBaseH):
     @getdataBase.getdataForUnittest
     def getValidData(self,batch_size):
         keyfields_iter = DataLoader(dataset=self.keyfieldsValid, batch_size=self.batch_size, num_workers=self.cpu_num
-                                    ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
+                                    ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         valid_iter = DataLoader(dataset=self.featuresValid, batch_size=self.batch_size, num_workers=self.cpu_num
-                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
+                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         self.valid_iter = self.transform(valid_iter,self.transformers)
         return self.valid_iter(),keyfields_iter
 

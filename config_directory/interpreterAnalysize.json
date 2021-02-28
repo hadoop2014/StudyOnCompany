@@ -481,7 +481,7 @@
 
   "rnnregression": {
     "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",
-    "randomIterIsOn" : false,
+    "randomIterIsOn" : true,
     "trainer": {
       "k" : 5,
       "clip_gradient" : 1e-2,
@@ -491,8 +491,7 @@
       "learning_rate_decay_step": 500,
       "test_percent" : 0.1,
       "batch_size" : 32,
-      "time_steps" : 6,
-      "bidirectional": false
+      "time_steps" : 6
     },
     "optimizer": {
       "optimizer" : "adam"
@@ -505,6 +504,8 @@
     "net": {
       "cell": "lstm",
       "activation": "relu",
+      "bidirectional": false,
+      "batch_first": false,
       "dropout" : 0.2,
       "resize" : 0,
       "input_dim" :  1,
@@ -515,10 +516,10 @@
   },
 
   "rnndetection": {
-    "#randomIterIsOn": "#当randomIterIsOn=True时读取数据时采用shuffle方式",
+    "#randomIterIsOn": "#当randomIterIsOn=False时读取数据时采用顺序方式, 针对rnndetection模型,处理指数趋势分析时, 只能为false",
     "randomIterIsOn" : false,
     "trainer": {
-      "k" : 5,
+      "k" : 4,
       "clip_gradient" : 2e-2,
       "train_num_epoch" : 200,
       "learning_rate" : 1e-2,
@@ -526,8 +527,7 @@
       "learning_rate_decay_step": 500,
       "test_percent" : 0.1,
       "batch_size" : 32,
-      "time_steps" : 6,
-      "bidirectional": false
+      "time_steps" : 20
     },
     "optimizer": {
       "optimizer" : "adam"
@@ -540,6 +540,8 @@
     "net": {
       "cell": "lstm",
       "activation": "relu",
+      "bidirectional": false,
+      "batch_first": false,
       "dropout" : 0.3,
       "resize" : 0,
       "input_dim" :  1,
@@ -577,13 +579,14 @@
     "net": {
       "cell": "gru",
       "activation": "relu",
+      "bidirectional": false,
+      "batch_first": false,
       "dropout": 0.0,
       "resize" : 0,
       "input_dim" :  1,
       "rnn_hiddens" : 256,
       "num_layers" : 1,
-      "output_dim" : 1,
-      "bidirectional": false
+      "output_dim" : 1
     }
   },
 

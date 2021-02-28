@@ -142,7 +142,7 @@ class getFinanceDataH(getdataBaseH):
         self.train_data,self.test_data = self.get_k_fold_data(self.k,self.features)
         #self.train_data = self.features
         train_iter = DataLoader(dataset=self.train_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
+                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         self.train_iter = self.transform(train_iter,self.transformers)
         return self.train_iter()
 
@@ -152,7 +152,7 @@ class getFinanceDataH(getdataBaseH):
         self.test_data = self.featuresTest
         #_, self.test_data = self.get_k_fold_data(self.k, self.featuresTest)
         test_iter = DataLoader(dataset=self.test_data, batch_size=self.batch_size, num_workers=self.cpu_num
-                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
+                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         self.test_iter = self.transform(test_iter,self.transformers)
         return self.test_iter()
 
@@ -160,9 +160,9 @@ class getFinanceDataH(getdataBaseH):
     @getdataBase.getdataForUnittest
     def getValidData(self,batch_size):
         keyfields_iter = DataLoader(dataset=self.keyfieldsValid, batch_size=self.batch_size, num_workers=self.cpu_num
-                                    ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
+                                    ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         valid_iter = DataLoader(dataset=self.featuresValid, batch_size=self.batch_size, num_workers=self.cpu_num
-                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd']))
+                              ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         self.valid_iter = self.transform(valid_iter,self.transformers)
         return self.valid_iter(),keyfields_iter
 

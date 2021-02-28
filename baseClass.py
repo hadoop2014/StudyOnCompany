@@ -13,6 +13,7 @@ import re
 import sqlite3 as sqlite
 import pysnooper
 import time
+from typing import Type
 from dateutil import rrule
 from datetime import date,timedelta,datetime
 from pandas import DataFrame
@@ -335,7 +336,7 @@ class BaseClass():
         return aliasedCompany
 
 
-    def _alias(self, name, dictAlias):
+    def _alias(self, name, dictAlias: dict):
         alias = name
         aliasKeys = dictAlias.keys()
         if len(aliasKeys) > 0:

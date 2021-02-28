@@ -44,7 +44,8 @@ class rnnregressionModel(rnnBaseModelH):
 
 
     def predict_with_keyfileds(self,net,X,y,keyfields):
-        self.init_state()
+        if self.randomIterIsOn == True:
+            self.init_state()
         with torch.no_grad():
             # 解决GPU　out memory问题
             y_hat, self.state = net(X, self.state)

@@ -52,10 +52,11 @@ class Collate:
     a batch of sequences
     """
 
-    def __init__(self,ctx,time_steps,fieldEnd):
+    def __init__(self,ctx,time_steps,fieldEnd,batch_first):
         self.ctx = ctx
         self.time_steps = time_steps
         self.fieldEnd = fieldEnd
+        self.batch_first = batch_first
 
     def _collate(self, batch):
         """
@@ -133,6 +134,7 @@ class getdataBaseH(getdataBase):
         self.resize = self.gConfig['resize']
         self.test_percent = self.gConfig['test_percent']
         self.batch_size = self.gConfig['batch_size']
+        self.batch_first = self.gConfig['batch_first'],
         from torchvision import datasets
         self.dataset_selector={
             'mnist':datasets.MNIST,
@@ -255,6 +257,10 @@ class getdataBaseH(getdataBase):
         else:
             ctx = torch.device(type='cpu')#,index=0)
         return ctx
+
+
+    def get_array(self,x,ctx):
+        return torch.tensor(x, device = ctx)
 
 
     def get_rawshape(self,gConfig):
