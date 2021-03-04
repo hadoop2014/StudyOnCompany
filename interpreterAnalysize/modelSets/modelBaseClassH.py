@@ -7,6 +7,18 @@ import torch
 from tensorboardX import SummaryWriter
 from torchsummary import summary # 该1.8版本在pytorch 1.2.0版本下使用, add_graph函数存在异常
 import re
+from typing import Callable, Any
+
+
+class LossBaseH:
+    def __init__(self,ctx):
+        self.ctx = ctx
+
+    def _call_implement(self):
+        return nn.CrossEntropyLoss().to(self.ctx)
+
+    __call__ : Callable[..., Any] = _call_implement
+
 
 #深度学习模型的基类
 class ModelBaseH(InterpreterBase):

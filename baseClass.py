@@ -337,11 +337,12 @@ class BaseClass():
 
 
     def _alias(self, name, dictAlias: dict):
-        alias = name
-        aliasKeys = dictAlias.keys()
-        if len(aliasKeys) > 0:
-            if name in aliasKeys:
-                alias = dictAlias[name]
+        #alias = name
+        #aliasKeys = dictAlias.keys()
+        #if len(aliasKeys) > 0:
+        #    if name in aliasKeys:
+        #        alias = dictAlias[name]
+        alias = dictAlias.get(name, name)
         return alias
 
 

@@ -517,7 +517,7 @@
 
   "rnndetection": {
     "#randomIterIsOn": "#当randomIterIsOn=False时读取数据时采用顺序方式, 针对rnndetection模型,处理指数趋势分析时, 只能为false",
-    "randomIterIsOn" : false,
+    "randomIterIsOn" : true,
     "trainer": {
       "k" : 4,
       "clip_gradient" : 2e-2,
@@ -526,8 +526,8 @@
       "learning_rate_decay_factor" : 0.8,
       "learning_rate_decay_step": 500,
       "test_percent" : 0.1,
-      "batch_size" : 32,
-      "time_steps" : 20
+      "batch_size" : 16,
+      "time_steps" : 150
     },
     "optimizer": {
       "optimizer" : "adam"
@@ -547,7 +547,8 @@
       "input_dim" :  1,
       "rnn_hiddens" : 64,
       "num_layers" : 1,
-      "output_dim" : 2
+      "output_dim": 2,
+      "#output_dim" : [2,1,1]
     }
   },
 

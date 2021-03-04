@@ -28,16 +28,14 @@ class getStockDataH(getdataBaseH):
 
     def load_data(self,*args):
         tableName = self.dictSourceData['tableName']
-        dataFrame = self._table_to_dataFrame(tableName, prefixNeeded=False)
-        dataFrame = self._preprocessing(dataFrame,tableName)
-        dataFrameTest = dataFrame
-        dataFrameValid = dataFrame
-        # 最后一个年度的间隔时长在训练时不为1, 在预测时设置为1, 表示预测一整年的增长率
-        #dataFrameValid.loc[dataFrameValid['训练标识'] == 0,'间隔时长'] = 1.0
-        # 把最后一个年度的数据排除在训练数据之外,因为这个时候还没有标签数据
-        dataFrame = dataFrame[dataFrame['训练标识'] == 1]
         fieldStart = self.dictSourceData['fieldStart']
         fieldEnd = self.dictSourceData['fieldEnd']
+        dataFrame = self._table_to_dataFrame(tableName, prefixNeeded=False)
+        dataFrame = self._preprocessing(dataFrame,tableName,fieldStart)
+        dataFrameTest = dataFrame
+        dataFrameValid = dataFrame
+        # 把最后一个年度的数据排除在训练数据之外,因为这个时候还没有标签数据
+        dataFrame = dataFrame[dataFrame['训练标识'] == 1]
         self.keyfields,self.features = self._get_keyfields_features(dataFrame,fieldStart,tableName)
         self.keyfieldsTest,self.featuresTest = self._get_keyfields_features(dataFrameTest, fieldStart,tableName)
         self.keyfieldsValid,self.featuresValid = self._get_keyfields_features(dataFrameValid,fieldStart,tableName)
@@ -48,19 +46,24 @@ class getStockDataH(getdataBaseH):
         self.transformers = [self.fn_transpose]
         self.resizedshape = [self.time_steps,self.input_dim]
 
-    '''
-    def _get_keyfields_features(self,dataFrame:DataFrame,fieldStart):
-        dataGroups = dataFrame.groupby(dataFrame['公司代码'])
+
+    def _get_keyfields_features(self,dataFrame:DataFrame,fieldStart,tableName):
+        groupBy = self.dictTables[tableName]['groupBy']
+        dataGroups = dataFrame.groupby(by=groupBy) #
         keyfields = []
         features = []
+        sortBy = self.dictTables[tableName]['orderBy']
         for _, group in dataGroups:
-            group = group.sort_values(by=['报告时间'], ascending=True)
+            group = group.sort_values(by=sortBy[-1], ascending=True) # 公司价格分析表和指数趋势分析表,都用的是 ['报告时间']
             if len(group) <= 1:
                 pass
             keyfields += [group.iloc[:, :fieldStart]]
             features += [torch.tensor(np.array(group.iloc[:, fieldStart:], dtype=np.float32))]
+        #maxLen = max(dataGroups.apply(lambda group: len(group.values)).tolist())
+        #keyfields = [pad_tensor(keyfield, maxLen) for keyfield in keyfields]
+        #features = [pad_tensor(feature,maxLen) for feature in features]
         return keyfields,features
-    '''
+
 
     def fn_transpose(self,X,seq_lengths):
         X = torch.transpose(X,0,1)
@@ -111,7 +114,8 @@ class getStockDataH(getdataBaseH):
             train_data = self.train_data
         else:
             # train_data = self.data_iter_random(self.train_data, self.batch_size, self.time_steps, self.ctx)
-            raise ValueError(f'getStock get data must be in consecutive, but received randomIterIsOn({self.randomIterIsOn})')
+            train_data = self.train_data
+            #raise ValueError(f'getStock get data must be in consecutive, but received randomIterIsOn({self.randomIterIsOn})')
         train_iter = DataLoader(dataset=train_data, batch_size=self.batch_size, num_workers=self.cpu_num
                                ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         self.train_iter = self.transform(train_iter,self.transformers)
@@ -127,7 +131,8 @@ class getStockDataH(getdataBaseH):
             test_data = self.test_data
         else:
             # test_data = self.data_iter_random(self.train_data, self.batch_size, self.time_steps, self.ctx)
-            raise ValueError(f'getStock get data must be in consecutive, but received randomIterIsOn({self.randomIterIsOn})')
+            test_data = self.test_data
+            #raise ValueError(f'getStock get data must be in consecutive, but received randomIterIsOn({self.randomIterIsOn})')
         test_iter = DataLoader(dataset=test_data, batch_size=self.batch_size, num_workers=self.cpu_num
                               ,collate_fn=Collate(self.ctx,self.time_steps,self.dictSourceData['fieldEnd'],self.batch_first))
         self.test_iter = self.transform(test_iter,self.transformers)

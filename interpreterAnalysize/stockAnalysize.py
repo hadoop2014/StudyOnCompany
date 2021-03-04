@@ -22,7 +22,7 @@ class StockAnalysize(InterpreterBase):
             dataFrame = self._sql_to_dataframe(tableName, sourceTableName,scale)
             conn = self._get_connect()
             if self._is_table_exist(conn, tableName):
-               self._drop_table(conn, tableName)
+                self._drop_table(conn, tableName)
             conn.close()
             for indexName in self.gConfig['指数简称']:
                 self._index_trend_analysize(dataFrame, indexName,tableName)
@@ -68,10 +68,9 @@ class StockAnalysize(InterpreterBase):
         minMedianTermRate = self._get_min_term_rate(tableName,indexName,trendName)
         medianTerm = self.dictTables[tableName]['trend_settings']['medianTerm']
         indexTrendMedian = self._find_utmost_in_trend(indexTrendMinor, medianTerm, minMedianTermRate, indexName, trendName)
-        #indexTrendMedian = self._find_min_max_date(dataFrame, medianTerm, indexName, trendName)
         indexTrendMedian = self._merge_trend(indexTrendMedian,indexName,trendName)
         indexTrendMedian = self._delete_invalid_trend(indexTrendMedian,minTermDay,minMedianTermRate,indexName,trendName)
-        indexTrendMedian = self._merge_trend(indexTrendMedian, indexName, trendName)
+        #indexTrendMedian = self._merge_trend(indexTrendMedian, indexName, trendName)
         # 整理所有中期趋势
         trendInfoMedian = self._find_index_trend(indexTrendMedian,tableName, indexName, trendName)
 
@@ -80,10 +79,9 @@ class StockAnalysize(InterpreterBase):
         minLongTermRate = self._get_min_term_rate(tableName,indexName,trendName)
         longTerm = self.dictTables[tableName]['trend_settings']['longTerm']
         indexTrendLong = self._find_utmost_in_trend(indexTrendMinor, longTerm, minLongTermRate, indexName, trendName)
-        #indexTrendLong = self._find_min_max_date(dataFrame, longTerm, indexName, trendName)
         indexTrendLong = self._merge_trend(indexTrendLong,indexName,trendName)
         indexTrendLong = self._delete_invalid_trend(indexTrendLong,minTermDay,minLongTermRate,indexName,trendName)
-        indexTrendLong = self._merge_trend(indexTrendLong, indexName, trendName)
+        #indexTrendLong = self._merge_trend(indexTrendLong, indexName, trendName)
         # 整理所有长期趋势
         trendInfoLong = self._find_index_trend(indexTrendLong, tableName, indexName, trendName)
         # 最后一个长期趋势修正
@@ -316,7 +314,7 @@ class StockAnalysize(InterpreterBase):
                             # 说明是延续上一个的下降趋势, 如果这次的高点和上次的低点不是同一个点, 则认为上一个低点和本次高点为极点
                             if maxIndex['index'] != iLoop - 1 \
                                 and abs((indexTrendLocal['收盘价'].iloc[maxIndex['index']] - indexTrendLocal['收盘价'].iloc[iLoop - 1])
-                                        /indexTrendLocal['收盘价'].iloc[iLoop - 1]) > minTermRate:
+                                        /indexTrendLocal['收盘价'].iloc[iLoop - 1]) * 100.0 > minTermRate:
                                 indexTrendLocal.loc[iLoop - 1, ['isUtmost']] = True
                                 indexTrendLocal.loc[maxIndex['index'], 'isUtmost'] = True
                         # 设置当前趋势为下降趋势, 作为下一次搜索的起点
@@ -332,7 +330,7 @@ class StockAnalysize(InterpreterBase):
                             # 说明是上一个上升趋势的延续, 如果这次的低点和上次的高点不是同一个点, 则认为上一个高点是极点
                             if minIndex['index'] != iLoop - 1 \
                                 and abs((indexTrendLocal['收盘价'].iloc[minIndex['index']] - indexTrendLocal['收盘价'].iloc[iLoop - 1])
-                                        /indexTrendLocal['收盘价'].iloc[iLoop - 1]) > minTermRate:
+                                        /indexTrendLocal['收盘价'].iloc[iLoop - 1]) * 100.0 > minTermRate:
                                 indexTrendLocal.loc[iLoop-1,['isUtmost']] = True
                                 indexTrendLocal.loc[minIndex['index'],['isUtmost']] = True
                         lastTrendAscend = True

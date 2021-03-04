@@ -3,13 +3,52 @@ from interpreterAnalysize.modelSets.rnnBaseModelH import *
 from torch import nn
 
 
+class Loss(LossBaseH):
+    def _call_implement(self):
+        return nn.CrossEntropyLoss().to(self.ctx)
+
+
+class RNNMultiOutput(RNN):
+    def __init__(self,rnn_layer,output_dim,dropout,ctx):
+        super(RNNMultiOutput,self).__init__(rnn_layer,output_dim,dropout,ctx)
+        #self.ctx = ctx
+        #self.rnn = rnn_layer
+        #self.hidden_size = rnn_layer.hidden_size * (2 if rnn_layer.bidirectional else 1)
+        #self.dropout = nn.Dropout(dropout)
+        #self.dense = nn.Linear(self.hidden_size, output_dim)
+        #self.state = None
+        self.output_dim = output_dim
+        if isinstance(self.output_dim,list):
+            dims = len(self.output_dim)
+        else:
+            dims = 1
+        for i in range(dims):
+            setattr(self, 'dense%d'%i, nn.Linear(self.hidden_size,self.output_dim[i]))
+
+
+    def forward(self, X, state=None): # inputs: (batch, seq_len)
+        Y, self.state = self.rnn(X, state)
+        # 全连接层会首先将Y的形状变成(num_steps * batch_size, num_hiddens)，它的输出
+        # 形状为(num_steps * batch_size, vocab_size)
+        if isinstance(Y,PackedSequence):
+            Y,seq_lengths = torch.nn.utils.rnn.pad_packed_sequence(Y)
+        Y = Y.reshape(-1,Y.shape[-1])
+        Y = self.dropout(Y)
+        if isinstance(self.output_dim,list):
+            output = tuple([getattr(self,'dense%d'%i)(Y) for i in range(len(self.output_dim))])
+        else:
+            output = self.dense(Y)
+        return output, self.state
+
+
 class rnndetectionModel(rnnBaseModelH):
     def __init__(self,gConfig):
         super(rnndetectionModel, self).__init__(gConfig)
 
 
     def get_loss(self):
-        return nn.CrossEntropyLoss().to(self.ctx)
+        #return nn.CrossEntropyLoss().to(self.ctx)
+        return Loss(self.ctx)()
 
 
     def get_net(self):

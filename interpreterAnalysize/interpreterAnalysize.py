@@ -213,8 +213,8 @@ class InterpreterAnalysize(InterpreterBase):
             losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test = \
                 model.train(model_eval, getdataClass, gConfig, num_epochs)
             getdataClass.endProcess()
-            self.plotLossAcc(losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, modelName)
             self.logger.info('training %s end, time used %.4f' % (modelName, (time.time() - start_time)))
+            self.plotLossAcc(losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, modelName)
         elif handle == '应用':
             self.logger.info("Starting apply %s at (%s %s) to predict ..................................... "
                              % (modelName, framework, dataset))

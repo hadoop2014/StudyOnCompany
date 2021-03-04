@@ -2039,6 +2039,12 @@
     "groupBy": ["公司代码","趋势简称"],
     "#preprocessing": "该节配置只用于训练数据中的预处理",
     "preprocessing": {
+      "趋势简称": {
+        "scaler": "pandas",
+        "scale": "whole",
+        "method": "get_dummies",
+        "dependent": ""
+      },
       "趋势类型": {
         "scaler": "LabelBinarizer",
         "scale": "whole",

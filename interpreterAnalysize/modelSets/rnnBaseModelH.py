@@ -10,7 +10,12 @@ class RNN(nn.Module):
         self.rnn = rnn_layer
         self.hidden_size = rnn_layer.hidden_size * (2 if rnn_layer.bidirectional else 1)
         self.dropout = nn.Dropout(dropout)
-        self.dense = nn.Linear(self.hidden_size, output_dim)
+        self.output_dim = output_dim
+        if isinstance(self.output_dim,list):
+            for i in range(len(self.output_dim)):
+                setattr(self, 'dense%d' % i, nn.Linear(self.hidden_size, self.output_dim[i]))
+        else:
+            self.dense = nn.Linear(self.hidden_size, self.output_dim)
         self.state = None
 
 
@@ -22,7 +27,11 @@ class RNN(nn.Module):
             Y,seq_lengths = torch.nn.utils.rnn.pad_packed_sequence(Y)
         Y = Y.reshape(-1,Y.shape[-1])
         Y = self.dropout(Y)
-        output = self.dense(Y)
+        if isinstance(self.output_dim,list):
+            output = tuple([getattr(self,'dense%d'%i)(Y) for i in range(len(self.output_dim))])
+        else:
+            output = self.dense(Y)
+        #output = self.dense(Y)
         return output, self.state
 
 

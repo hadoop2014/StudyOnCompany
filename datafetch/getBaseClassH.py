@@ -30,9 +30,9 @@ def pad_tensor(vec, pad):
     """
     if isinstance(vec, torch.Tensor):
         if vec.dim() == 1:
-            result =  torch.cat([vec, torch.zeros(pad - len(vec), dtype=torch.float)], dim=0).data.numpy()
+            result =  torch.cat([vec, torch.zeros(pad - len(vec), dtype=torch.float)], dim=0)#.data.numpy()
         else:
-            result = torch.cat([vec, torch.zeros(pad - len(vec),*vec.shape[1:], dtype=torch.float)], dim=0).data.numpy()
+            result = torch.cat([vec, torch.zeros(pad - len(vec),*vec.shape[1:], dtype=torch.float)], dim=0)#.data.numpy()
     elif isinstance(vec, pd.DataFrame):
         if vec.ndim == 1:
             nanRow = np.array([np.nan] * (pad - len(vec)))
@@ -88,19 +88,21 @@ class Collate:
                 return v
 
         if isinstance(batch[0], torch.Tensor):
-            xs = [torch.FloatTensor(v[:,:self.fieldEnd]) for v in batch] #获取特征, T * input_dim
-            ys = [torch.FloatTensor(v[:,self.fieldEnd]) for v in batch] #获取标签, T * 1
+            #xs = [torch.FloatTensor(v[:,:self.fieldEnd]) for v in batch] #获取特征, T * input_dim
+            #ys = [torch.FloatTensor(v[:,self.fieldEnd]) for v in batch] #获取标签, T * 1
+            xs = [v[:, :self.fieldEnd] for v in batch]  # 获取特征, T * input_dim
+            ys = [v[:, self.fieldEnd] for v in batch]  # 获取标签, T * 1
             max_len = max([len(v) for v in xs])
             if max_len > self.time_steps:
                 # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
                 xs = list(map(cut_tensor, xs))
                 ys = list(map(cut_tensor, ys))
                 max_len = self.time_steps
-            # 获得每个样本的序列长度
+            # 获得每个样本的序列长度,必须放在CPU上
             seq_lengths = torch.LongTensor([v for v in map(len, xs)])
             # 每个样本都padding到当前batch的最大长度
-            xs = torch.FloatTensor([pad_tensor(v, max_len) for v in xs])
-            ys = torch.FloatTensor([pad_tensor(v, max_len) for v in ys])
+            xs = torch.stack([pad_tensor(v, max_len) for v in xs],dim=0)
+            ys = torch.stack([pad_tensor(v, max_len) for v in ys],dim=0)
             # 把xs和ys按照序列长度从大到小排序
             seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)
             xs = xs[perm_idx].to(self.ctx)
@@ -182,7 +184,7 @@ class getdataBaseH(getdataBase):
         return dataFrame
 
 
-    def _preprocessing(self,dataFrame:DataFrame,tableName):
+    def _preprocessing(self,dataFrame:DataFrame,tableName,fieldInsert):
         """
         args:
             dataFrame - 从公司价格分析表中读取的数据
@@ -202,6 +204,7 @@ class getdataBaseH(getdataBase):
         # 将dictTablePreprocessin的字段 进行排序, 如果dependent为空, 则优先处理, dependent不为空的字段,因为要用到其指向的字段的scaler,只能后处理.
         sortedField = sorted(dictTablePreprocessing.keys(), key=lambda x: len(dictTablePreprocessing[x]['dependent']))
         modulePreprocessing = __import__('sklearn.preprocessing',fromlist=['preprocessing'])
+        modulePandas = __import__('pandas')
         orderBy = self.dictTables[tableName]["orderBy"]
         dataFrame = dataFrame.sort_values(by=orderBy,ascending=True) # 公司价格分析表采用的是 ['公司代码','报告时间'], 指数趋势分析表用的是 ["公司代码","趋势简称","报告时间"],
         groupBy = self.dictTables[tableName]['groupBy']
@@ -209,27 +212,37 @@ class getdataBaseH(getdataBase):
         dictFieldScaler = dict()
         dictScaler = dict()
         for key in sortedField:
-            if dictTablePreprocessing[key]['dependent'] == NULLSTR:
-                scaler = getattr(modulePreprocessing,dictTablePreprocessing[key]['scaler'])() # 默认copy=True, 必须为该值
-                if dictTablePreprocessing[key]['scale'] == 'group':
-                    dictScaler = dict([(key, copy.deepcopy(scaler)) for key in dataGroups.groups.keys()])
-                elif dictTablePreprocessing[key]['scale'] == 'whole':
-                    dictScaler = copy.deepcopy(scaler)
-                dictFieldScaler.update({key: dictScaler})
+            if dictTablePreprocessing[key]['scaler'] == 'pandas':
+                method = getattr(modulePandas,dictTablePreprocessing[key]['method'])
+                dataFrameScaled = method(dataFrameResult[key])
+                columnsScaled = dataFrameScaled.columns.tolist()
+                columns = dataFrameResult.columns.tolist()
+                for column in columnsScaled:
+                    columns.insert(fieldInsert, column)
+                dataFrameResult = dataFrameResult.reindex(columns = columns)
+                dataFrameResult[columnsScaled] = dataFrameScaled[columnsScaled]
             else:
-                dictScaler = dictFieldScaler[dictTablePreprocessing[key]['dependent']]
-            method = dictTablePreprocessing[key]['method']
-            if dictTablePreprocessing[key]['scale'] == 'group':
-                dataFrameScaled = dataGroups[key].apply(lambda group : pd.Series(
-                    np.squeeze(getattr(dictScaler[group.name],method)(np.expand_dims(group,axis=1))),index=group.index
-                ))
-                dataFrameScaled = dataFrameScaled.swaplevel(0,-1).droplevel(-1)
-                dataFrameResult[key] = dataFrameScaled
-            elif dictTablePreprocessing[key]['scale'] == 'whole':
-                dataFrameScaled = dataFrame[key].transform(lambda group : pd.Series(
-                    np.squeeze(getattr(dictScaler,method)(np.expand_dims(group,axis=1))),index=group.index
-                ))
-                dataFrameResult[key] = dataFrameScaled
+                if dictTablePreprocessing[key]['dependent'] == NULLSTR:
+                    scaler = getattr(modulePreprocessing,dictTablePreprocessing[key]['scaler'])() # 默认copy=True, 必须为该值
+                    if dictTablePreprocessing[key]['scale'] == 'group':
+                        dictScaler = dict([(key, copy.deepcopy(scaler)) for key in dataGroups.groups.keys()])
+                    elif dictTablePreprocessing[key]['scale'] == 'whole':
+                        dictScaler = copy.deepcopy(scaler)
+                    dictFieldScaler.update({key: dictScaler})
+                else:
+                    dictScaler = dictFieldScaler[dictTablePreprocessing[key]['dependent']]
+                method = dictTablePreprocessing[key]['method']
+                if dictTablePreprocessing[key]['scale'] == 'group':
+                    dataFrameScaled = dataGroups[key].apply(lambda group : pd.Series(
+                        np.squeeze(getattr(dictScaler[group.name],method)(np.expand_dims(group,axis=1))),index=group.index
+                    ))
+                    dataFrameScaled = dataFrameScaled.swaplevel(0,-1).droplevel(-1)
+                    dataFrameResult[key] = dataFrameScaled
+                elif dictTablePreprocessing[key]['scale'] == 'whole':
+                    dataFrameScaled = dataFrame[key].transform(lambda group : pd.Series(
+                        np.squeeze(getattr(dictScaler,method)(np.expand_dims(group,axis=1))),index=group.index
+                    ))
+                    dataFrameResult[key] = dataFrameScaled
             dataFrameResult = dataFrameResult.sort_values(by=orderBy, ascending=True) # 公司价格分析表采用的是 ['公司代码','报告时间'], 指数趋势分析表用的是 ["公司代码","趋势简称","报告时间"],
         return dataFrameResult
 
