@@ -394,7 +394,7 @@
 
   "指数趋势分析表": {
     "#note" : "分析上证指数,深证成指等指数的短期,中期,长期的涨跌趋势.",
-    "fieldName": ["报告时间","公司代码","公司简称","趋势简称","趋势持续时长","收盘价","结束收盘价","趋势起始点","趋势交易天数","趋势涨幅","趋势类型","训练标识"],
+    "fieldName": ["报告时间","公司代码","公司简称","趋势简称","趋势持续时长","收盘价","结束收盘价","训练标识","趋势起始点","趋势交易天数","趋势涨幅","趋势类型"],
     "fieldDiscard": [],
     "parent": "",
     "create": "",
@@ -504,14 +504,15 @@
     "net": {
       "cell": "lstm",
       "activation": "relu",
-      "bidirectional": false,
+      "bidirectional": true,
       "batch_first": false,
       "dropout" : 0.2,
       "resize" : 0,
       "input_dim" :  1,
       "rnn_hiddens" : 64,
       "num_layers" : 1,
-      "output_dim" : 1
+      "output_dim" : 1,
+      "output_weight": 1
     }
   },
 
@@ -542,13 +543,14 @@
       "activation": "relu",
       "bidirectional": false,
       "batch_first": false,
-      "dropout" : 0.3,
+      "dropout" : 0.4,
       "resize" : 0,
       "input_dim" :  1,
       "rnn_hiddens" : 64,
       "num_layers" : 1,
-      "output_dim": 2,
-      "#output_dim" : [2,1,1]
+      "#output_dim": 2,
+      "output_dim" : [1,1,2],
+      "output_weight": [1, 3, 1]
     }
   },
 
@@ -587,7 +589,8 @@
       "input_dim" :  1,
       "rnn_hiddens" : 256,
       "num_layers" : 1,
-      "output_dim" : 1
+      "output_dim" : 1,
+      "output_weight": 1
     }
   },
 

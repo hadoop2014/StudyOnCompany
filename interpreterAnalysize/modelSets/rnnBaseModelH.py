@@ -1,6 +1,6 @@
 from interpreterAnalysize.modelSets.modelBaseClassH import *
 from torch import nn
-import torch.nn.functional as F
+
 
 
 class RNN(nn.Module):
@@ -31,7 +31,6 @@ class RNN(nn.Module):
             output = tuple([getattr(self,'dense%d'%i)(Y) for i in range(len(self.output_dim))])
         else:
             output = self.dense(Y)
-        #output = self.dense(Y)
         return output, self.state
 
 
@@ -51,6 +50,7 @@ class rnnBaseModelH(ModelBaseH):
         self.randomIterIsOn = self.gConfig['randomIterIsOn']
         self.batch_first = self.gConfig['batch_first']
         self.loss = self.get_loss()
+        self.criteria = self.get_criteria()
         self.net = self.get_net()
         self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
         self.scheduler = self.get_scheduler(self.optimizer,self.learning_rate_decay_step, self.learning_rate_decay_factor)
@@ -73,7 +73,12 @@ class rnnBaseModelH(ModelBaseH):
 
 
     def get_loss(self):
-        raise NotImplementedError('you should implement it!')
+        #raise NotImplementedError('you should implement it!')
+        return LossBaseH(self.ctx)
+
+
+    def get_criteria(self):
+        return CriteriaBaseH()
 
 
     def get_net(self):
@@ -94,8 +99,15 @@ class rnnBaseModelH(ModelBaseH):
         (y_hat, self.state) = self.net(X, self.state)
         # Y的形状是(batch_size, num_steps)，转置后再变成长度为
         # batch * num_steps 的向量，这样跟输出的行一一对应
-        y = torch.transpose(y, 0, 1).contiguous().view(-1)
-        y_hat = y_hat.squeeze()
+        #y = torch.transpose(y, 0, 1).contiguous().view(-1)
+        if isinstance(y_hat, tuple):
+            # rnndetection模型中,输出的y_hat是一个tuple型, 不能执行squeeze
+            y = torch.transpose(y, 0, 1).contiguous().view(-1, y.shape[-1])
+            y_hat = tuple(y.squeeze() for y in y_hat)
+        else:
+            y = torch.transpose(y, 0, 1).contiguous().view(-1)
+            #y = y.long()
+            y_hat = y_hat.squeeze()
         loss = self.loss(y_hat, y)
         self.optimizer.zero_grad()
         loss.backward()
@@ -106,7 +118,8 @@ class rnnBaseModelH(ModelBaseH):
         if self.get_global_step() == 0 or self.get_global_step() == 1:
             self.debug_info()
         loss = loss.item() * y.shape[0]
-        acc = self.get_acc(y_hat,y)
+        #acc = self.get_acc(y_hat,y)
+        acc = self.criteria(y_hat, y)
         return loss,acc
 
 
@@ -116,17 +129,26 @@ class rnnBaseModelH(ModelBaseH):
         with torch.no_grad():
             #解决GPU　out memory问题
             y_hat, self.state = self.net(X, self.state)
-        y = torch.transpose(y, 0, 1).contiguous().view(-1)
-        y_hat = y_hat.squeeze()
+        #y = torch.transpose(y, 0, 1).contiguous().view(-1)
+        #y_hat = y_hat.squeeze()
+        if isinstance(y_hat, tuple):
+            # rnndetection模型中,输出的y_hat是一个tuple型, 不能执行squeeze
+            y = torch.transpose(y, 0, 1).contiguous().view(-1, y.shape[-1])
+            y_hat = tuple(y.squeeze() for y in y_hat)
+        else:
+            y = torch.transpose(y, 0, 1).contiguous().view(-1)
+            #y = y.long()
+            y_hat = y_hat.squeeze()
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
-        acc = self.get_acc(y_hat,y)
+        #acc = self.get_acc(y_hat,y)
+        acc = self.criteria(y_hat, y)
         self.output_info(y_hat,y)
         return loss,acc
 
 
-    def get_acc(self,y_hat,y):
-        raise NotImplementedError('you should implement it!')
+    #def get_acc(self,y_hat,y):
+    #    raise NotImplementedError('you should implement it!')
 
 
     def output_info(self,y_hat,y):
@@ -167,7 +189,6 @@ class rnnBaseModelH(ModelBaseH):
 
     def get_input_shape(self):
         raise NotImplementedError('you should implement it!')
-        #return self.input_shape
 
 
     def image_record(self,global_step,tag,input_image):

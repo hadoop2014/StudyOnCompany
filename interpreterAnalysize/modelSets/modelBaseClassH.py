@@ -13,11 +13,26 @@ from typing import Callable, Any
 class LossBaseH:
     def __init__(self,ctx):
         self.ctx = ctx
+        self.loss = nn.CrossEntropyLoss().to(self.ctx)
 
-    def _call_implement(self):
-        return nn.CrossEntropyLoss().to(self.ctx)
+    #__call__ : Callable[..., Any] = forward
+    def __call__(self, y_hat, y):
+        return self.forward(y_hat, y)
 
-    __call__ : Callable[..., Any] = _call_implement
+    def forward(self,y_hat,y):
+        return self.loss(y_hat,y)
+
+
+class CriteriaBaseH:
+    def __init__(self):
+        ...
+
+    def __call__(self, y_hat, y):
+        return self.forward(y_hat,y)
+
+    def forward(self,y_hat,y):
+        criteria = (y_hat.argmax(dim=1) == y.long()).sum().item()
+        return criteria
 
 
 #深度学习模型的基类

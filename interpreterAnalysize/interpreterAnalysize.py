@@ -190,7 +190,6 @@ class InterpreterAnalysize(InterpreterBase):
         modelModule = self.modelSets[modelName + framework.title()]
         modelModule.initialize(dictModel)
         self.handleStart(modelModule, modelModule, gConfig, handle)
-        #self.logger.info("Reatch the interpreterAnalysize just for debug : train %s" % modelName)
 
 
     def handleStart(self, model, model_eval, gConfig,handle):

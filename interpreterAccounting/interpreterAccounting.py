@@ -356,8 +356,11 @@ class InterpreterAccounting(InterpreterBase):
                          | company TIME LABEL
                          | company TIME LOCATION
                          | company selectable DISCARD
+                         | company selectable NAME NUMERIC
+                         | company selectable NAME NUMERO
                          | company
                          | TIME '''
+            # company selectable NAME NUMERO 解决华夏幸福 2018年半年度报告 的语法解析错误问题
             # company selectable TAIL  fetchtitlewrong TAIL
             # company DISCARD 去掉
             # company PUNCTUATION 去掉

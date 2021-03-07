@@ -91,7 +91,7 @@ class Collate:
             #xs = [torch.FloatTensor(v[:,:self.fieldEnd]) for v in batch] #获取特征, T * input_dim
             #ys = [torch.FloatTensor(v[:,self.fieldEnd]) for v in batch] #获取标签, T * 1
             xs = [v[:, :self.fieldEnd] for v in batch]  # 获取特征, T * input_dim
-            ys = [v[:, self.fieldEnd] for v in batch]  # 获取标签, T * 1
+            ys = [v[:, self.fieldEnd:] for v in batch]  # 获取标签, T * 1
             max_len = max([len(v) for v in xs])
             if max_len > self.time_steps:
                 # 如果最大长度超出 time_steps,则把早期超出time_steps部分的数据删除掉
@@ -258,7 +258,7 @@ class getdataBaseH(getdataBase):
             if len(group) <= 1:
                 pass
             keyfields += [group.iloc[:, :fieldStart]]
-            features += [torch.tensor(np.array(group.iloc[:, fieldStart:], dtype=np.float32))]
+            features += [torch.tensor(np.array(group.iloc[:, fieldStart:]), dtype=torch.float)]
         return keyfields,features
 
 

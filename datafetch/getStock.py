@@ -28,23 +28,45 @@ class getStockDataH(getdataBaseH):
 
     def load_data(self,*args):
         tableName = self.dictSourceData['tableName']
-        fieldStart = self.dictSourceData['fieldStart']
-        fieldEnd = self.dictSourceData['fieldEnd']
+        #fieldStart = self.dictSourceData['fieldStart']
+        #fieldEnd = self.dictSourceData['fieldEnd']
+        #fieldEndLen = self.dictSourceData['fieldEndLen']
+        self.fieldStart = self.dictSourceData['fieldStart']
+        self.fieldEnd = self.dictSourceData['fieldEnd']
+        #self.fieldEndLen = self.dictSourceData['fieldEndLen']
         dataFrame = self._table_to_dataFrame(tableName, prefixNeeded=False)
-        dataFrame = self._preprocessing(dataFrame,tableName,fieldStart)
-        dataFrameTest = dataFrame
-        dataFrameValid = dataFrame
+        dataFrame = self._preprocessing(dataFrame,tableName,self.fieldStart)
+        #dataFrameTest = dataFrame.drop(columns=['训练标识'], axis=1)
+        dataFrameTest = self._expand_labels(dataFrame,self.fieldEnd, tableName,'outer')
+        dataFrameValid = dataFrameTest#dataFrame.drop(columns=['训练标识'], axis=1)
         # 把最后一个年度的数据排除在训练数据之外,因为这个时候还没有标签数据
         dataFrame = dataFrame[dataFrame['训练标识'] == 1]
-        self.keyfields,self.features = self._get_keyfields_features(dataFrame,fieldStart,tableName)
-        self.keyfieldsTest,self.featuresTest = self._get_keyfields_features(dataFrameTest, fieldStart,tableName)
-        self.keyfieldsValid,self.featuresValid = self._get_keyfields_features(dataFrameValid,fieldStart,tableName)
+        #dataFrame = dataFrame.drop(columns=['训练标识'], axis=1)
+        dataFrame = self._expand_labels(dataFrame,self.fieldEnd, tableName,'inner')
+        self.keyfields,self.features = self._get_keyfields_features(dataFrame,self.fieldStart,tableName)
+        self.keyfieldsTest,self.featuresTest = self._get_keyfields_features(dataFrameTest, self.fieldStart,tableName)
+        self.keyfieldsValid,self.featuresValid = self._get_keyfields_features(dataFrameValid,self.fieldStart,tableName)
         self.columns = dataFrame.columns.values
-        self.fieldStart = fieldStart
-        self.fieldEnd = fieldEnd
-        self.input_dim = len(dataFrame.columns) - fieldStart + fieldEnd
+        self.input_dim = len(dataFrame.columns) - self.fieldStart + self.fieldEnd
         self.transformers = [self.fn_transpose]
         self.resizedshape = [self.time_steps,self.input_dim]
+
+
+    def _expand_labels(self,dataFrame:DataFrame, fieldEnd, tableName, join='inner'):
+        groupBy = self.dictTables[tableName]['groupBy']
+        dataGroups = dataFrame.groupby(by=groupBy)  #
+        #sortBy = self.dictTables[tableName]['orderBy']
+        features = []
+        for _, group in dataGroups:
+            #group = group.sort_values(by=sortBy[-1], ascending=True)  # 公司价格分析表和指数趋势分析表,都用的是 ['报告时间']
+            label = group.iloc[1:,fieldEnd:]
+            label.index -= 1
+            group = pd.concat([group,label],axis=1,join=join)
+            if len(group) <= 1:
+                pass
+            features += [group]
+        dataFrame = pd.concat(features,axis=0)
+        return dataFrame
 
 
     def _get_keyfields_features(self,dataFrame:DataFrame,fieldStart,tableName):
@@ -58,7 +80,7 @@ class getStockDataH(getdataBaseH):
             if len(group) <= 1:
                 pass
             keyfields += [group.iloc[:, :fieldStart]]
-            features += [torch.tensor(np.array(group.iloc[:, fieldStart:], dtype=np.float32))]
+            features += [torch.tensor(np.array(group.iloc[:, fieldStart:]), dtype=torch.float)]
         #maxLen = max(dataGroups.apply(lambda group: len(group.values)).tolist())
         #keyfields = [pad_tensor(keyfield, maxLen) for keyfield in keyfields]
         #features = [pad_tensor(feature,maxLen) for feature in features]
@@ -87,7 +109,7 @@ class getStockDataH(getdataBaseH):
                 for transformer in transformers:
                     X = transformer(X,seq_lengths)
                 # 当y 用于分类是, y 必须是int型
-                y = y.long()
+                #y = y.long()
                 yield (X,y)
         return transform_reader
 
@@ -124,7 +146,7 @@ class getStockDataH(getdataBaseH):
 
     @getdataBase.getdataForUnittest
     def getTestData(self,batch_size):
-        self.test_data = self.featuresTest
+        #self.test_data = self.featuresTest
         #_, self.test_data = self.get_k_fold_data(self.k, self.featuresTest)
         if self.randomIterIsOn == False:
             #test_data = self.data_iter_consecutive(self.test_data, self.batch_size, self.time_steps, self.ctx)
@@ -185,11 +207,11 @@ class getStockDataH(getdataBaseH):
 
 
     def get_y_columns(self):
-        return [self.columns[self.fieldEnd]]
-
+        return ['参考' + column for column in self.columns[self.fieldEnd:]]
+        #return self.columns[self.fieldEnd:]
 
     def get_y_predict_columns(self):
-        return [self.dictSourceData['predictColumnsName']]
+        return self.dictSourceData['predictColumnsName']
 
 
 class_selector = {

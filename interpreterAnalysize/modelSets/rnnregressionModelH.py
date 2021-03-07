@@ -2,6 +2,19 @@
 from interpreterAnalysize.modelSets.rnnBaseModelH import *
 from torch import nn
 
+class Loss(LossBaseH):
+    def __init__(self,ctx):
+        super(Loss, self).__init__(ctx)
+        self.loss = nn.MSELoss().to(self.ctx)
+
+    def forward(self,y_hat,y):
+        return self.loss(y_hat,y)
+
+
+class Criteria(CriteriaBaseH):
+    def forward(self,y_hat,y):
+        return 0
+
 
 class rnnregressionModel(rnnBaseModelH):
     def __init__(self,gConfig):
@@ -9,7 +22,12 @@ class rnnregressionModel(rnnBaseModelH):
 
 
     def get_loss(self):
-        return nn.MSELoss().to(self.ctx)
+        #return nn.MSELoss().to(self.ctx)
+        return Loss(self.ctx)
+
+
+    def get_criteria(self):
+        return Criteria()
 
 
     def get_net(self):
@@ -54,7 +72,8 @@ class rnnregressionModel(rnnBaseModelH):
         y_hat = y_hat.squeeze()
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
-        acc = self.get_acc(y_hat, y)
+        #acc = self.get_acc(y_hat, y)
+        acc = self.criteria(y_hat, y)
         self.output_info(y_hat, y)
         #if y_hat.dim() == 0:
         #    y_hat = y_hat.unsqueeze(dim=0)
@@ -89,8 +108,8 @@ class rnnregressionModel(rnnBaseModelH):
         return 0.0, 0.0
 
 
-    def get_acc(self,y_hat, y):
-        return 0
+    #def get_acc(self,y_hat, y):
+    #    return 0
 
 
     def output_info(self,y_hat,y):

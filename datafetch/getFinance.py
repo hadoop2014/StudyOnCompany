@@ -29,12 +29,15 @@ class getFinanceDataH(getdataBaseH):
         fieldEnd = self.dictSourceData['fieldEnd']
         dataFrame = self._table_to_dataFrame(tableName)
         dataFrame = self._preprocessing(dataFrame,tableName,fieldEnd)
-        dataFrameTest = dataFrame
+        #dataFrameTest = dataFrame
         dataFrameValid = dataFrame
         # 最后一个年度的间隔时长在训练时不为1, 在预测时设置为1, 表示预测一整年的增长率
         dataFrameValid.loc[dataFrameValid['训练标识'] == 0,'间隔时长'] = 1.0
+        dataFrameValid = dataFrameValid.drop(columns=['训练标识'], axis=1)
+        dataFrameTest = dataFrameValid
         # 把最后一个年度的数据排除在训练数据之外,因为这个时候还没有标签数据
         dataFrame = dataFrame[dataFrame['训练标识'] == 1]
+        dataFrame = dataFrame.drop(columns=['训练标识'], axis=1)
         self.keyfields,self.features = self._get_keyfields_features(dataFrame,fieldStart,tableName)
         self.keyfieldsTest,self.featuresTest = self._get_keyfields_features(dataFrameTest, fieldStart,tableName)
         self.keyfieldsValid,self.featuresValid = self._get_keyfields_features(dataFrameValid,fieldStart,tableName)
@@ -135,7 +138,7 @@ class getFinanceDataH(getdataBaseH):
 
 
     def get_y_predict_columns(self):
-        return [self.dictSourceData['predictColumnsName']]
+        return self.dictSourceData['predictColumnsName']
 
 
 class_selector = {

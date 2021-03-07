@@ -49,8 +49,8 @@ class rnnModel(rnnBaseModelH):
         return net
 
 
-    def get_acc(self,y_hat,y):
-        return (y_hat.argmax(dim=1) == y).sum().item()
+    #def get_acc(self,y_hat,y):
+    #    return (y_hat.argmax(dim=1) == y).sum().item()
 
     '''
     def run_train_loss_acc(self,X,y):

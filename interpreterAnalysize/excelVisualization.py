@@ -69,10 +69,11 @@ class ExcelVisualization(InterpreterBase):
         #if os.path.exists(visualize_file):
         #    os.remove(visualize_file)
         workbook = Workbook()
-        writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
-        writer.book = workbook
+        #writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
+        #writer.book = workbook
         if not os.path.exists(visualize_file):
-            writer.save()  # 生成一个新文件
+            #writer.save()  # 生成一个新文件
+            workbook.save(visualize_file)
         try:
             workbook = load_workbook(visualize_file)
         except Exception as e:
@@ -81,7 +82,8 @@ class ExcelVisualization(InterpreterBase):
             self.logger.info('failed to load workbook,remove it and try load it again from file %s, !' % visualize_file)
             if os.path.exists(visualize_file):
                 os.remove(visualize_file)
-                writer.save()
+                #writer.save()
+                workbook.save(visualize_file)
             workbook =load_workbook(visualize_file)
         writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
         writer.book = workbook

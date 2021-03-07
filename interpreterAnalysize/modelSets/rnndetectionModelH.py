@@ -4,8 +4,35 @@ from torch import nn
 
 
 class Loss(LossBaseH):
-    def _call_implement(self):
-        return nn.CrossEntropyLoss().to(self.ctx)
+    def __init__(self,ctx, output_weight):
+        super(Loss,self).__init__(ctx)
+        self.output_weight = output_weight
+        self.lossMain = nn.CrossEntropyLoss().to(self.ctx)
+        self.lossSecond = nn.MSELoss().to(self.ctx)
+        self.lossThird = nn.MSELoss().to(self.ctx)
+
+    def forward(self,y_hat,y):
+        if isinstance(y_hat, tuple):
+            loss = self.lossSecond(y_hat[0], y[:,0]) * self.output_weight[0]
+            loss += self.lossThird(y_hat[1], y[:,1]) * self.output_weight[1]
+            loss += self.lossMain(y_hat[2], y[:,2].long()) * self.output_weight[2]
+        else:
+            y = y.long()
+            loss = self.lossMain(y_hat,y)
+        return loss
+
+
+class Criteria(CriteriaBaseH):
+    def __init__(self):
+        super(Criteria,self).__init__()
+
+    def forward(self,y_hat, y):
+        if isinstance(y_hat, tuple):
+            criteria = (y_hat[-1].argmax(dim=1) == y[:, -1].long()).sum().item()
+        else:
+            #y = y.long()
+            criteria = (y_hat.argmax(dim=1) == y.long()).sum().item()
+        return  criteria
 
 
 class RNNMultiOutput(RNN):
@@ -47,8 +74,12 @@ class rnndetectionModel(rnnBaseModelH):
 
 
     def get_loss(self):
-        #return nn.CrossEntropyLoss().to(self.ctx)
-        return Loss(self.ctx)()
+        output_weight = self.gConfig['output_weight']
+        return Loss(self.ctx, output_weight)
+
+
+    def get_criteria(self):
+        return Criteria()
 
 
     def get_net(self):
@@ -60,6 +91,7 @@ class rnndetectionModel(rnnBaseModelH):
         self.rnn_hiddens = self.gConfig['rnn_hiddens']  # 256
         self.num_layers = self.gConfig['num_layers']
         self.output_dim = self.gConfig['output_dim']
+        self.output_weight = self.gConfig['output_weight']
         self.dropout = self.gConfig['dropout']
         self.bidirectional = self.gConfig['bidirectional']
         self.activation = self.get_activation(self.gConfig['activation'])
@@ -75,7 +107,6 @@ class rnndetectionModel(rnnBaseModelH):
         }
         self.randomIterIsOn = self.gConfig['randomIterIsOn']
         self.input_shape = (self.time_steps, self.batch_size, self.resizedshape[1])
-        #self.get_net()
         cell = self.get_cell(self.gConfig['cell'])
         rnn_layer = self.cell_selector[cell]
         net = RNN(rnn_layer,self.output_dim,self.dropout,self.ctx)
@@ -88,29 +119,43 @@ class rnndetectionModel(rnnBaseModelH):
             # 解决GPU　out memory问题
             y_hat, self.state = net(X, self.state)
         mergedDataFrame = self.merged_fields(keyfields, X, y, y_hat)
-        y = torch.transpose(y, 0, 1).contiguous().view(-1)
-        y_hat = y_hat.squeeze()
+        #y = torch.transpose(y, 0, 1).contiguous().view(-1)
+        #y_hat = y_hat.squeeze()
+        if isinstance(y_hat, tuple):
+            # rnndetection模型中,输出的y_hat是一个tuple型, 不能执行squeeze
+            y = torch.transpose(y, 0, 1).contiguous().view(-1, y.shape[-1])
+            y_hat = tuple(y.squeeze() for y in y_hat)
+        else:
+            y = torch.transpose(y, 0, 1).contiguous().view(-1)
+            y = y.long()
+            y_hat = y_hat.squeeze()
         loss = self.loss(y_hat, y)
         loss = loss.item() * y.shape[0]
-        acc = self.get_acc(y_hat,y)
+        #acc = self.get_acc(y_hat,y)
+        acc = self.criteria(y_hat,y)
         self.output_info(y_hat, y)
-        #if y_hat.dim() == 0:
-        #    y_hat = y_hat.unsqueeze(dim=0)
-        #combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
-        #end = min(len(combine), self.time_steps)
-        #print("(y_hat, y):",combine[:end])
         return loss, acc, mergedDataFrame
 
 
     def merged_fields(self, keyfields, X, y, y_predict):
-        y_predict = y_predict.argmax(axis=1)
         # 用keyfields, X, y, y_predict拼接出原始数据 , 加上 预测市值增长率
         keyfields, seq_lengths_key = keyfields
         X_raw, seq_lengths_X =  torch.nn.utils.rnn.pad_packed_sequence(X)
         X_raw = torch.transpose(X_raw, 0, 1)
         batch_size = len(seq_lengths_X)
-        y_predict = y_predict.reshape(-1, batch_size)
-        y_predict = torch.transpose(y_predict, 0, 1)
+        if isinstance(y_predict,tuple):
+            #y_predict = y_predict[-1]
+            #y = y[:,-1].long()
+            y_predict = [y_hat.squeeze() if y_hat.shape[-1] == 1 else y_hat.argmax(axis=1) for y_hat in y_predict]
+            y_predict = torch.stack(y_predict)
+            #y_predict = y_predict.reshape(-1, batch_size)
+            y_predict = torch.transpose(y_predict, 0, 1)
+        else:
+            y_predict = y_predict.argmax(axis=1)
+            y_predict = y_predict.reshape(-1, batch_size)
+            y_predict = torch.transpose(y_predict, 0, 1)
+        #y_predict = y_predict.reshape(-1, batch_size)
+        #y_predict = torch.transpose(y_predict, 0, 1)
         getdataClass = self.gConfig['getdataClass']
         keyfields_columns = getdataClass.get_keyfields_columns()
         X_columns = getdataClass.get_X_columns()
@@ -118,8 +163,8 @@ class rnndetectionModel(rnnBaseModelH):
         y_predict_columns = getdataClass.get_y_predict_columns()
         dataFrame_keyfields = pd.concat(keyfields, axis=0).reset_index(drop=True)
         dataFrame_X = pd.DataFrame(X_raw.cpu().numpy().reshape(-1, X_raw.shape[-1]).tolist(), columns=X_columns)
-        dataFrame_y = pd.DataFrame(y.cpu().numpy().reshape(-1,1).tolist(), columns=y_columns)
-        dataFrame_y_predict = pd.DataFrame(y_predict.cpu().numpy().reshape(-1,1).tolist(), columns=y_predict_columns)
+        dataFrame_y = pd.DataFrame(y.cpu().numpy().reshape(-1,y.shape[-1]).tolist(), columns=y_columns)
+        dataFrame_y_predict = pd.DataFrame(y_predict.cpu().numpy().reshape(-1,y_predict.shape[-1]).tolist(), columns=y_predict_columns)
         dataFrame_merged = pd.concat([dataFrame_keyfields, dataFrame_X, dataFrame_y, dataFrame_y_predict], axis=1)
         return dataFrame_merged
 
@@ -135,12 +180,19 @@ class rnndetectionModel(rnnBaseModelH):
         return 0.0, 0.0
 
 
-    def get_acc(self,y_hat, y):
-        return (y_hat.argmax(dim=1) == y).sum().item()
+    #def get_acc(self,y_hat, y):
+    #    if isinstance(y_hat,tuple):
+    #        acc =  (y_hat[2].argmax(dim=1) == y[:,2].long()).sum().item()
+    #    else:
+    #        acc = (y_hat.argmax(dim=1) == y).sum().item()
+    #    return acc
 
 
     def output_info(self,y_hat,y):
-        y_hat = y_hat.argmax(axis=1)
+        if isinstance(y_hat, tuple):
+            y_hat = y_hat[2].argmax(axis=1)
+        else:
+            y_hat = y_hat.argmax(axis=1)
         if y_hat.dim() == 0:
             y_hat = y_hat.unsqueeze(dim=0)
         combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
