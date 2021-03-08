@@ -522,7 +522,7 @@
     "trainer": {
       "k" : 4,
       "clip_gradient" : 2e-2,
-      "train_num_epoch" : 200,
+      "train_num_epoch" : 400,
       "learning_rate" : 1e-2,
       "learning_rate_decay_factor" : 0.8,
       "learning_rate_decay_step": 500,
@@ -550,7 +550,7 @@
       "num_layers" : 1,
       "#output_dim": 2,
       "output_dim" : [1,1,2],
-      "output_weight": [1, 3, 1]
+      "output_weight": [1, 5, 1]
     }
   },
 

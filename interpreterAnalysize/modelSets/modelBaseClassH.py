@@ -9,8 +9,36 @@ from torchsummary import summary # 该1.8版本在pytorch 1.2.0版本下使用, 
 import re
 from typing import Callable, Any
 
+class PreprocessH():
+    """
+    用于装饰器, 用在:
+    1) CriteriaBaseH类的__call__方法,在计算前先对 y_hat, y做转换, 针对y_hat为tuple情况(意味着多输出),只取最后一纬
+    args:
+        function - 被装饰的函数
+    """
+    def __init__(self, function):
+        self.function = function
 
-class LossBaseH:
+    def __get__(self,instance,own):
+        """
+        被装饰的函数在调用时,首先会调用__get__函数
+        args:
+            instance - 为被装饰函数所属的对象
+            own - 被装饰函数所属的类
+        reutrn:
+            wrap - 装饰器的内层函数
+        """
+        def wrap(y_hat,y):
+            if CriteriaBaseH.__subclasscheck__(own) or ModelBaseH.__subclasscheck__(own):
+                if isinstance(y_hat, tuple):
+                    y_hat = y_hat[-1]
+                    y = y[:,-1]
+                y = y.long()
+            return self.function(instance,y_hat, y)
+        return wrap
+
+
+class LossBaseH():
     def __init__(self,ctx):
         self.ctx = ctx
         self.loss = nn.CrossEntropyLoss().to(self.ctx)
@@ -23,15 +51,17 @@ class LossBaseH:
         return self.loss(y_hat,y)
 
 
-class CriteriaBaseH:
+class CriteriaBaseH():
     def __init__(self):
         ...
 
+    #@PreprocessH
     def __call__(self, y_hat, y):
         return self.forward(y_hat,y)
 
     def forward(self,y_hat,y):
-        criteria = (y_hat.argmax(dim=1) == y.long()).sum().item()
+        #criteria = (y_hat.argmax(dim=1) == y.long()).sum().item()
+        criteria = (y_hat.argmax(dim=1) == y).sum().item()
         return criteria
 
 

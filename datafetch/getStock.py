@@ -66,6 +66,7 @@ class getStockDataH(getdataBaseH):
                 pass
             features += [group]
         dataFrame = pd.concat(features,axis=0)
+        dataFrame = dataFrame.fillna(0)
         return dataFrame
 
 

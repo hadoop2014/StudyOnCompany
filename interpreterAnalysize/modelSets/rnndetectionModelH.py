@@ -2,7 +2,6 @@
 from interpreterAnalysize.modelSets.rnnBaseModelH import *
 from torch import nn
 
-
 class Loss(LossBaseH):
     def __init__(self,ctx, output_weight):
         super(Loss,self).__init__(ctx)
@@ -26,12 +25,18 @@ class Criteria(CriteriaBaseH):
     def __init__(self):
         super(Criteria,self).__init__()
 
+    @PreprocessH
     def forward(self,y_hat, y):
-        if isinstance(y_hat, tuple):
-            criteria = (y_hat[-1].argmax(dim=1) == y[:, -1].long()).sum().item()
-        else:
-            #y = y.long()
-            criteria = (y_hat.argmax(dim=1) == y.long()).sum().item()
+        """
+        该函数被CriteriaBaseH.__call__调用, 而CriteriaBaseH.__call__被装饰类@PreprocessH装饰, 所以该函数调用前会先调用
+        PreprocessH.__get__函数, 在该函数中,对y_hat,y进行了预处理, 当y_hat为tuple类型时, y_hat取最后一个值, 这个值默认是个分类数据
+        args:
+            y_hat - 神经网络的预测值: [batch_size , classnum + 1]
+            y - 样本数据的标签值[batch_size, 1]
+        return:
+            criteria - 计算出的度量值, 这里值对分类标签的度量值
+        """
+        criteria = (y_hat.argmax(dim=1) == y).sum().item()
         return  criteria
 
 
@@ -187,12 +192,14 @@ class rnndetectionModel(rnnBaseModelH):
     #        acc = (y_hat.argmax(dim=1) == y).sum().item()
     #    return acc
 
-
+    @PreprocessH
     def output_info(self,y_hat,y):
-        if isinstance(y_hat, tuple):
-            y_hat = y_hat[2].argmax(axis=1)
-        else:
-            y_hat = y_hat.argmax(axis=1)
+        #if isinstance(y_hat, tuple):
+        #    y_hat = y_hat[-1].argmax(axis=1)
+        #    y = y[:,-1]
+        #else:
+        #    y_hat = y_hat.argmax(axis=1)
+        y_hat = y_hat.argmax(axis=1)
         if y_hat.dim() == 0:
             y_hat = y_hat.unsqueeze(dim=0)
         combine = list(zip(y_hat.cpu().numpy(), y.cpu().numpy()))
