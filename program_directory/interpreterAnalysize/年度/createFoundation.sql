@@ -1,5 +1,6 @@
-drop table if exists 年度财务分析基础表;
-create table if not exists 年度财务分析基础表 (
+--参数{0}会被替换成报告类型,如: 年报,半年报,季报
+drop table if exists {0}财务分析基础表;
+create table if not exists {0}财务分析基础表 (
     --ID INTEGER PRIMARY KEY AUTOINCREMENT,
     报告时间 DATE NOT NULL,
     公司代码 INTEGER NOT NULL,
@@ -69,7 +70,7 @@ create table if not exists 年度财务分析基础表 (
     五、现金及现金等价物净增加额 REAL
 );
 
-insert into 年度财务分析基础表
+insert into {0}财务分析基础表
 select
     a.报告时间,
     a.公司代码,
@@ -199,8 +200,8 @@ from
         case when 本期资本化研发投入 = '' and 研发投入金额 != '' and 本期费用化研发投入 != ''
             then round(replace(研发投入金额,',','') - replace(本期费用化研发投入,',',''),2) else replace(本期资本化研发投入,',','') end
             as 本期资本化研发投入修正
-    from 年度关键数据表 x
-    where (x.在职员工的数量合计 != '' or x.当期领取薪酬员工总人数 != '') and x.报告类型 = '年度报告'
+    from {0}关键数据表 x
+    where (x.在职员工的数量合计 != '' or x.当期领取薪酬员工总人数 != '') and x.报告类型 = '{0}报告'
 )a
 left join
 (
@@ -239,9 +240,9 @@ left join
             as 归属于上市公司股东的净资产（上期）,
         case when y.货币单位 > 1 then y.货币单位 * replace(y.总资产,',','') else replace(y.总资产,',','') end
             as 总资产（上期）
-    from 年度主要会计数据 x
-    left join 年度主要会计数据 y
-    left join 年度合并资产负债表 z
+    from {0}主要会计数据 x
+    left join {0}主要会计数据 y
+    left join {0}合并资产负债表 z
     where (x.报告时间 - y.报告时间 = 1 and x.报告类型 = y.报告类型 and x.公司代码 = y.公司代码)
         and (x.报告时间 = z.报告时间 and x.公司代码 = z.公司代码 and x.报告类型 = z.报告类型)
 )b
@@ -251,8 +252,8 @@ left join
         case when y.应付职工薪酬 != '' then replace(y.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期初余额）,
         replace(y.归属于母公司所有者权益（或股东权益）合计,',','') as 归属于上市公司股东的净资产（上期）,
         replace(y.负债和所有者权益（或股东权益）总计,',','') as 总资产（上期）
-    from 年度合并资产负债表 x
-    left join 年度合并资产负债表 y
+    from {0}合并资产负债表 x
+    left join {0}合并资产负债表 y
     where x.报告时间 - y.报告时间 = 1
         and x.报告类型 = y.报告类型
         and x.公司代码 = y.公司代码
@@ -270,9 +271,9 @@ left join
         else 0 end as 现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率
     from 年度普通股现金分红情况表 x
 )d
-left join 年度合并利润表 e
-left join 年度合并现金流量表 f
-left join 年度现金流量表补充资料 g
+left join {0}合并利润表 e
+left join {0}合并现金流量表 f
+left join {0}现金流量表补充资料 g
 left join
 (
     --针对有些无形资产情况中,没有土地使用权的情况,如东方财富2017,2018年报,默认设置 期末账面价值 为0
@@ -281,13 +282,13 @@ left join
     from
     (
         select 报告时间,公司代码,报告类型,公司简称,0 as 期末账面价值
-        from 年度无形资产情况
+        from {0}无形资产情况
         group by 报告时间,公司代码,报告类型
     )x
     left join
     (
         select 报告时间,公司代码,报告类型,公司简称,replace(期末账面价值,',','') as 期末账面价值
-        from 年度无形资产情况 x
+        from {0}无形资产情况 x
         where 项目 = '土地使用权'
     )y
     on x.报告时间 = y.报告时间 and x.公司代码 = y.公司代码 and x.报告类型 = y.报告类型
@@ -312,7 +313,7 @@ where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a
     and (a.报告时间 != '' and a.公司代码 != '' and a.报告类型 != '')
 order by a.报告时间,a.公司代码,a.报告类型;
 
-CREATE INDEX IF NOT EXISTS [年度财务分析基础表索引] on [年度财务分析基础表] (
+CREATE INDEX IF NOT EXISTS [{0}财务分析基础表索引] on [{0}财务分析基础表] (
     报告时间,
     公司代码,
     报告类型

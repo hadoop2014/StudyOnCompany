@@ -87,8 +87,6 @@ class CrawlStock(CrawlBase):
         stockInfoURL = self.dictWebsites[website]['download_path']
         tableName = self.dictWebsites[website]['tableName']
         fieldNameEn = self.dictTables[tableName]['fieldAlias'].values()
-        #endTime = time.strftime('%Y%m%d')
-        #endTime = self._get_time_now()
         endTime = self._get_last_week_day()
         resultPaths = []
         stockList = self._get_deduplicate_stock(stockList,endTime)

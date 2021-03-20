@@ -143,6 +143,7 @@ class InterpreterAnalysize(InterpreterBase):
                 self.logger.error('%s script is not exist,you must create it first :%s!'% (manipulate, sql_file))
                 continue
             manipulate_sql = self._get_file_context(sql_file)
+            manipulate_sql = manipulate_sql.format(tablePrefix)
             isSuccess = self._sql_executer_script(manipulate_sql)
             assert isSuccess,"failed to execute sql"
 

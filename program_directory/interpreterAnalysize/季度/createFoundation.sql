@@ -1,5 +1,6 @@
-drop table if exists 季度财务分析基础表;
-create table if not exists 季度财务分析基础表 (
+--参数{0}会被替换成报告类型,如: 年报,半年报,季报
+drop table if exists {0}财务分析基础表;
+create table if not exists {0}财务分析基础表 (
     --ID INTEGER PRIMARY KEY AUTOINCREMENT,
     报告时间 DATE NOT NULL,
     公司代码 INTEGER NOT NULL,
@@ -8,6 +9,7 @@ create table if not exists 季度财务分析基础表 (
     公司名称 CHAR(50),
     公司地址 CHAR(10),
     行业分类 CHAR(10),
+    发布时间 DATE,
     在职员工的数量合计 REAL,
     支付给职工及为职工支付的现金 REAL,
     应付职工薪酬（期末余额） REAL,
@@ -68,7 +70,7 @@ create table if not exists 季度财务分析基础表 (
     五、现金及现金等价物净增加额 REAL
 );
 
-insert into 季度财务分析基础表
+insert into {0}财务分析基础表
 select
     a.报告时间,
     a.公司代码,
@@ -76,10 +78,11 @@ select
     a.公司简称,
     a.公司名称,
     a.公司地址,
-    a.行业分类,
+    case when a.行业分类 != '' then a.行业分类 else i.行业分类 end as 行业分类,
+    j.发布时间,
     case when a.在职员工的数量合计 != '' then a.在职员工的数量合计 else a.当期领取薪酬员工总人数 end as 在职员工的数量合计,
     f.支付给职工及为职工支付的现金,
-    c.应付职工薪酬 as 应付职工薪酬（期末余额）,
+    case when c.应付职工薪酬 != '' then replace(c.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期末余额）,
     c.应付职工薪酬（期初余额）,
     b.营业收入,
     b.归属于上市公司股东的净利润,
@@ -105,12 +108,15 @@ select
     e.四、利润总额,
     e.所得税费用,
     e.五、净利润,
-    e.销售费用,
-    e.管理费用,
-    e.财务费用,
+    case when e.销售费用 is not NULL and e.销售费用 != '' then replace(e.销售费用,',','') else 0 end
+        as 销售费用,
+    case when e.管理费用 is not NULL and e.管理费用 != '' then replace(e.管理费用,',','') else 0 end
+        as 管理费用,
+    case when e.财务费用 is not NULL and e.财务费用 != '' then replace(e.财务费用,',','') else 0 end
+        as 财务费用,
     case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else
         case when e.研发费用 is not NULL and e.研发费用 != '' then replace(e.研发费用,',','') else 0 end
-    end as 研发费用,
+        end as 研发费用,
     case when a.本期资本化研发投入修正 != '' then a.本期资本化研发投入修正 else 0 end as 资本化研发投入,
     case when g.资产减值准备 != '' then replace(g.资产减值准备,',','') else 0 end as 资产减值准备 ,
     case when g.固定资产折旧、油气资产折耗、生产性生物资产折旧 is not NULL and g.固定资产折旧、油气资产折耗、生产性生物资产折旧 != ''
@@ -133,21 +139,45 @@ select
     case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.投资性房地产 else 0 end as 投资性房地产,
     --case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
     case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
-    case when c.预收款项 is not NULL and 预收款项 != '' then c.预收款项 else 0 end as 预收款项,
+    case when c.预收款项 is not NULL and 预收款项 != '' then replace(c.预收款项,',','') else 0 end as 预收款项,
     case when c.应付票据及应付账款 is not NULL then replace(c.应付票据及应付账款,',','') else
         case when c.应付账款 is not NULL and c.应付票据 is not NULL
             then replace(c.应付账款,',','') + replace(c.应付票据,',','') else 0
         end
     end as 应付票据及应付账款,
-    case when c.应付账款 is not NULL then c.应付账款 else 0 end as 应付账款,
-    c.预付款项,
-    case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then c.应收票据及应收账款 else
-        case when c.应收账款 is not NULL and c.应收账款 != '' then c.应收账款 else 0 end
+    case when c.应付账款 is not NULL then replace(c.应付账款,',','') else 0 end as 应付账款,
+    case when c.预付款项 is not NULL then replace(c.预付款项,',','') else 0 end as 预付款项,
+    case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then replace(c.应收票据及应收账款,',','') else
+        case when c.应收账款 is not NULL and c.应收账款 != '' then replace(c.应收账款,',','') else 0 end
     end as 应收账款,
-    case when c.应收票据 is not NULL and c.应收票据 != '' then c.应收票据 else 0 end as 应收票据,
-    c.流动资产合计,
+    case when c.应收票据 is not NULL and c.应收票据 != '' then replace(c.应收票据,',','') else 0 end as 应收票据,
+    case when c.流动资产合计 is not NULL then replace(c.流动资产合计,',','')
+        -- 解决国金证券 没有 流动资产合计 字段
+        else replace(c.资产总计,',','')
+            - case when c.可供出售金融资产 != '' then replace(c.可供出售金融资产,',','') else 0 end
+            - case when c.持有至到期投资 != '' then replace(c.持有至到期投资,',','') else 0 end
+            - case when c.长期股权投资 != '' then replace(c.长期股权投资,',','') else 0 end
+            - case when c.投资性房地产 != '' then replace(c.投资性房地产,',','') else 0 end
+            - case when c.固定资产 != '' then replace(c.固定资产,',','') else 0 end
+            - case when c.在建工程 != '' then replace(c.在建工程,',','') else 0 end
+            - case when c.无形资产 != '' then replace(c.无形资产,',','') else 0 end
+            - case when c.商誉 != '' then replace(c.商誉,',','') else 0 end
+            - case when c.长期待摊费用 != '' and c.长期待摊费用 is not NULL then replace(c.长期待摊费用,',','') else 0 end
+            - case when c.递延所得税资产 != '' then replace(c.递延所得税资产,',','') else 0 end
+        end
+        as 流动资产合计,
     c.负债合计,
-    c.流动负债合计,
+    case when c.流动负债合计 is not NULL then replace(c.流动负债合计,',','')
+        -- 解决国金证券 没有 流动负债合计 字段
+        else replace(c.负债合计,',','')
+            - case when c.长期借款 != '' then replace(c.长期借款,',','') else 0 end
+            - case when c.应付债券 != '' then replace(c.应付债券,',','') else 0 end
+            - case when c.递延所得税负债 != '' then replace(c.递延所得税负债,',','') else 0 end
+        --    - iif(c.长期借款 != '', replace(c.长期借款,',',''),0)
+        --    - iif(c.应付债券 != '', replace(c.应付债券,',',''),0)
+        --    - iif(c.递延所得税负债 != '' , replace(c.递延所得税负债,',',''),0)
+        end
+        as 流动负债合计,
     case when c.存货 != '' then c.存货 else 0 end as 存货,
     c.货币资金,
     case when c.短期借款 is not NULL and c.短期借款 != '' then c.短期借款 else 0 end as 短期借款,
@@ -155,7 +185,10 @@ select
         as 一年内到期的非流动负债,
     case when c.长期借款 is not NULL and c.长期借款 != '' then c.长期借款 else 0 end as 长期借款,
     case when c.应付债券 is not NULL and c.应付债券 != '' then c.应付债券 else 0 end as 应付债券,
-    f.销售商品、提供劳务收到的现金,
+    case when f.销售商品、提供劳务收到的现金 is not NULL then replace(f.销售商品、提供劳务收到的现金,',','')
+        -- 解决国金证券 没有 销售商品、提供劳务收到的现金 字段, 用 收取利息、手续费及佣金的现金 字段来取代
+        else replace(f.收取利息、手续费及佣金的现金,',','') end
+        as 销售商品、提供劳务收到的现金,
     f.六、期末现金及现金等价物余额,
     f.五、现金及现金等价物净增加额
 from
@@ -167,8 +200,8 @@ from
         case when 本期资本化研发投入 = '' and 研发投入金额 != '' and 本期费用化研发投入 != ''
             then round(replace(研发投入金额,',','') - replace(本期费用化研发投入,',',''),2) else replace(本期资本化研发投入,',','') end
             as 本期资本化研发投入修正
-    from 年度关键数据表 x
-    where (x.在职员工的数量合计 != '' or x.当期领取薪酬员工总人数 != '') and x.报告类型 = '季度报告'
+    from {0}关键数据表 x
+    where (x.在职员工的数量合计 != '' or x.当期领取薪酬员工总人数 != '') and x.报告类型 = '{0}报告'
 )a
 left join
 (
@@ -207,20 +240,20 @@ left join
             as 归属于上市公司股东的净资产（上期）,
         case when y.货币单位 > 1 then y.货币单位 * replace(y.总资产,',','') else replace(y.总资产,',','') end
             as 总资产（上期）
-    from 季度主要会计数据 x
-    left join 季度主要会计数据 y
-    left join 季度合并资产负债表 z
+    from {0}主要会计数据 x
+    left join {0}主要会计数据 y
+    left join {0}合并资产负债表 z
     where (x.报告时间 - y.报告时间 = 1 and x.报告类型 = y.报告类型 and x.公司代码 = y.公司代码)
         and (x.报告时间 = z.报告时间 and x.公司代码 = z.公司代码 and x.报告类型 = z.报告类型)
 )b
 left join
 (
     select x.*,
-        y.应付职工薪酬 as 应付职工薪酬（期初余额）,
+        case when y.应付职工薪酬 != '' then replace(y.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期初余额）,
         replace(y.归属于母公司所有者权益（或股东权益）合计,',','') as 归属于上市公司股东的净资产（上期）,
         replace(y.负债和所有者权益（或股东权益）总计,',','') as 总资产（上期）
-    from 季度合并资产负债表 x
-    left join 季度合并资产负债表 y
+    from {0}合并资产负债表 x
+    left join {0}合并资产负债表 y
     where x.报告时间 - y.报告时间 = 1
         and x.报告类型 = y.报告类型
         and x.公司代码 = y.公司代码
@@ -238,31 +271,52 @@ left join
         else 0 end as 现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率
     from 年度普通股现金分红情况表 x
 )d
-left join 季度合并利润表 e
-left join 季度合并现金流量表 f
-left join 年度现金流量表补充资料 g
-left join 年度无形资产情况 h
+left join {0}合并利润表 e
+left join {0}合并现金流量表 f
+left join {0}现金流量表补充资料 g
+left join
+(
+    --针对有些无形资产情况中,没有土地使用权的情况,如东方财富2017,2018年报,默认设置 期末账面价值 为0
+    select x.报告时间,x.公司代码,x.报告类型,x.公司简称,
+        case when y.期末账面价值 is not NULL and y.期末账面价值 != '' then y.期末账面价值 else x.期末账面价值 end as 期末账面价值
+    from
+    (
+        select 报告时间,公司代码,报告类型,公司简称,0 as 期末账面价值
+        from {0}无形资产情况
+        group by 报告时间,公司代码,报告类型
+    )x
+    left join
+    (
+        select 报告时间,公司代码,报告类型,公司简称,replace(期末账面价值,',','') as 期末账面价值
+        from {0}无形资产情况 x
+        where 项目 = '土地使用权'
+    )y
+    on x.报告时间 = y.报告时间 and x.公司代码 = y.公司代码 and x.报告类型 = y.报告类型
+)h
+left join 行业分类数据 i
+left join
+(
+    --同一个公司同一年度可能会发布两次财报, 第二次为第一次发布财报的修正, 但是我们认为第一次发布的财报影响更大, 因此取第一次发布的时间为准
+    select 公司代码, 报告时间, 报告类型, min(发布时间) as 发布时间
+    from 财报发布信息
+    group by 公司代码, 报告时间, 报告类型
+)j
 where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报告类型 = b.报告类型)
     and (a.报告时间 = c.报告时间 and a.公司代码 = c.公司代码 and a.报告类型 = c.报告类型)
     and (a.报告时间 = d.报告时间 and a.公司代码 = d.公司代码 and a.报告类型 = d.报告类型)
     and (a.报告时间 = e.报告时间 and a.公司代码 = e.公司代码 and a.报告类型 = e.报告类型)
     and (a.报告时间 = f.报告时间 and a.公司代码 = f.公司代码 and a.报告类型 = f.报告类型)
     and (a.报告时间 = g.报告时间 and a.公司代码 = g.公司代码 and a.报告类型 = g.报告类型)
-    and (a.报告时间 = h.报告时间 and a.公司代码 = h.公司代码 and a.报告类型 = h.报告类型 and h.项目 = '土地使用权')
+    and (a.报告时间 = h.报告时间 and a.公司代码 = h.公司代码 and a.报告类型 = h.报告类型)
+    and (a.公司代码 = i.公司代码)
+    and (a.报告时间 = j.报告时间 and a.公司代码 = j.公司代码 and a.报告类型 = j.报告类型)
     and (a.报告时间 != '' and a.公司代码 != '' and a.报告类型 != '')
 order by a.报告时间,a.公司代码,a.报告类型;
 
-CREATE INDEX IF NOT EXISTS [季度财务分析基础表索引] on [季度财务分析基础表] (
+CREATE INDEX IF NOT EXISTS [{0}财务分析基础表索引] on [{0}财务分析基础表] (
     报告时间,
     公司代码,
     报告类型
 );
 
-select *
-from 季度财务分析基础表 a
-order by a.公司代码, a.报告时间 desc,a.报告类型;
-
-select *
-from 季度财务分析基础表
-where 公司简称 = '海螺水泥'
 

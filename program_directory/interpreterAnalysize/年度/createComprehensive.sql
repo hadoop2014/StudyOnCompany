@@ -1,5 +1,6 @@
-drop table if exists 年度财务分析综合表;
-create table if not exists 年度财务分析综合表 (
+--参数{0}会被替换成报告类型,如: 年报,半年报,季报
+drop table if exists {0}财务分析综合表;
+create table if not exists {0}财务分析综合表 (
     报告时间 DATE NOT NULL,
     公司代码 INTEGER NOT NULL,
     报告类型 CHAR(20) NOT NULL,
@@ -114,7 +115,7 @@ create table if not exists 年度财务分析综合表 (
     还原后的净资产收益率（ROCE） REAL
 );
 
-insert into 年度财务分析综合表
+insert into {0}财务分析综合表
 select
     a.报告时间,
     a.公司代码,
@@ -242,9 +243,9 @@ select
     round(replace(a.三、营业利润,',','')/(a.流动资产合计 - a.流动负债合计),2) as 营业利润占营业资金的比率,
     round(a.营业收入/(a.流动资产合计 - a.流动负债合计),2) as 营业收入占营业资金的比率,
     round(a.归属于上市公司股东的净利润/a.归属于上市公司股东的净资产（上期）,2) 还原后的净资产收益率（ROCE）
-from 年度财务分析基础表 a;
+from {0}财务分析基础表 a;
 
-CREATE INDEX IF NOT EXISTS [年度财务分析综合表索引] on [年度财务分析综合表] (
+CREATE INDEX IF NOT EXISTS [{0}财务分析综合表索引] on [{0}财务分析综合表] (
     报告时间,
     公司代码,
     报告类型

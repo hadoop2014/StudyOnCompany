@@ -19,6 +19,7 @@ from datetime import date,timedelta,datetime
 from pandas import DataFrame
 import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
+import abc
 #数据读写处理的基类
 
 NULLSTR = ''
@@ -27,7 +28,8 @@ NaN = np.nan
 EOF = 'EOF）'  #加）可解决fidller
 
 
-class BaseClass():
+class BaseClass(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def __init__(self,gConfig):
         self.gConfig = gConfig
         self.gJsonInterpreter = gConfig['gJsonInterpreter'.lower()]
@@ -438,27 +440,13 @@ class BaseClass():
         if now.isoweekday() == 7:
             dayStep = 2
         elif now.isoweekday() == 6:
-            dayStep = 2
+            dayStep = 1
         else:
             dayStep = 0
         #print(dayStep)
         lastWorkDay = now - timedelta(days=dayStep)
         lastWorkDay = lastWorkDay.strftime('%Y%m%d')
         return lastWorkDay
-
-
-    @pysnooper.snoop()
-    def _sql_executer(self,sql):
-        conn = self._get_connect()
-        try:
-            conn.execute(sql)
-            conn.commit()
-            self.logger.debug('success to execute sql(脚本执行成功):\n%s' % sql)
-        except Exception as e:
-            # 回滚
-            conn.rollback()
-            self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
-        conn.close()
 
 
     def _is_matched(self,pattern,field):
@@ -589,6 +577,23 @@ class BaseClass():
         if len(joined) > 0:
             condition = ' and '.join(joined)
         return condition
+
+
+    @pysnooper.snoop()
+    def _sql_executer(self,sql):
+        isSuccess = False
+        conn = self._get_connect()
+        try:
+            conn.execute(sql)
+            conn.commit()
+            self.logger.debug('success to execute sql(脚本执行成功):\n%s' % sql)
+            isSuccess = True
+        except Exception as e:
+            # 回滚
+            conn.rollback()
+            self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
+        conn.close()
+        return isSuccess
 
 
     def _sql_executer_script(self,sql):
