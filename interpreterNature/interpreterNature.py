@@ -12,6 +12,13 @@ import time
 from interpreterNature.interpreterBaseClass import *
 
 
+# 定义一个顶层函数,用于在multiprocessing.Pool中使用
+def process_wrap(class_function):
+    def wrap(self, *args):
+        return class_function(self, *args)
+    return wrap
+
+
 class InterpreterNature(InterpreterBase):
     def __init__(self,gConfig,interpreterDict):
         super(InterpreterNature, self).__init__(gConfig)
@@ -349,6 +356,7 @@ class InterpreterNature(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
             return
+        startTime = time.time()
         # 把行业分类中的公司和公司简称中的公司进行合并
         self.gConfig.update(self.names_global)
         taskResults = list()
@@ -356,21 +364,37 @@ class InterpreterNature(InterpreterBase):
         sourcefiles = self._remove_black_lists(scale,list(sourcefiles))
         sourcefiles = list(sourcefiles)
         sourcefiles.sort()
+        processList = []
         for sourcefile in sourcefiles:
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})
             dictParameter.update(self.names_global)
-            taskResult = self._process_single_parse(dictParameter)
-            taskResults.append(str(taskResult))
-        self.logger.info('运行结果汇总如下:\n\t\t\t\t'+'\n\t\t\t\t'.join(taskResults))
+            if self.multiprocessingIsOn:
+                # 这里采用多进程编程,充分使用多核心并行
+                processParse = multiprocessing.Process(target=self._process_single_parse,args=(dictParameter,))
+                #taskResult = processPool.apply_async(self._process_single_parse,args=(dictParameter,))
+                processList.append(processParse)
+                processParse.start()
+            else:
+                taskResult = self._process_single_parse(dictParameter)
+                taskResults.append(str(taskResult))
+
+        if self.multiprocessingIsOn:
+            #等待进程全部执行完
+            for processParse in processList:
+                processParse.join()
+                taskResults.append(str(self.processQueue.get()))
+        self.logger.info('运行结果汇总如下(总耗时%.4f秒):\n\t\t\t\t'%(time.time()-startTime) + '\n\t\t\t\t'.join(taskResults))
 
 
+    #@process_wrap
     def _process_single_parse(self,dictParameter):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_parse!')
             return
         self.interpreterAccounting.initialize(dictParameter)
         taskResult = self.interpreterAccounting.doWork(debug=False, tracking=False)
+        self.processQueue.put(taskResult)
         return taskResult
 
 

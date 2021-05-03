@@ -20,6 +20,8 @@ from pandas import DataFrame
 import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
 import abc
+#from threading import Thread,Lock,BoundedSemaphore,Event
+import multiprocessing
 #数据读写处理的基类
 
 NULLSTR = ''
@@ -55,8 +57,11 @@ class BaseClass(metaclass=abc.ABCMeta):
         self.tableNames = self.gJsonBase['TABLE'].split('|')
         self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
         self.filenameAlias = self.gJsonBase['filenameAlias']
-        #self._get_interpreter_keyword()
-        #self._create_tables(self.tableNames)
+        # 此处变量用于多进程
+        # 使用multiprocessing.Pool时,必须采用multiprocessing.Manager().Lock()进行加锁
+        self.multiprocessingIsOn = gConfig['multiprocessingIsOn'.lower()]
+        self.processLock = multiprocessing.Lock()
+        self.processQueue = multiprocessing.Queue()
 
 
     def __iter__(self):

@@ -227,7 +227,9 @@ class DocParserSql(DocParserBase):
         #把dataframe写入sqlite3数据库
         reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
         targetTableName = self._get_tablename_by_report_type(reportType, tableName)
-        self._write_to_sqlite3(dataframe,targetTableName)
+        with self.processLock:
+            # 多进程写数据库时必须加锁
+            self._write_to_sqlite3(dataframe,targetTableName)
         self.process_info[tableName].update({'processtime':time.time() - self.process_info[tableName]['processtime']})
 
 

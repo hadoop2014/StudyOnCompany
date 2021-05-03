@@ -19,7 +19,7 @@ def get_config(config_file='',config_file_base='config_directory/configbase.ini'
     _conf_ints=_conf_floats=_conf_strings=_conf_bools=_conf_lists=_conf_sets=_conf_attrs=[]
     _conf_dicts = {}
     for section in parser.sections():
-        if section == "int":
+        if section == "ints":
             _conf_ints = [(key, int(value)) for key, value in parser.items(section)]
         elif section == "floats":
             _conf_floats = [(key, float(value)) for key, value in parser.items(section)]
