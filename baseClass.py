@@ -31,7 +31,7 @@ EOF = 'EOF）'  #加）可解决fidller
 
 
 # 用于定义单例,使用方法:
-# class Example(metaclass = MetaSingleton
+# class Example(metaclass = MetaSingleton)
 class MetaSingleton(type):
     _instance_lock = threading.Lock()
     def __call__(cls, *args, **kwargs):
@@ -42,7 +42,7 @@ class MetaSingleton(type):
         return cls._instance
 
 
-# 用于实现多进程的类,该类是一个单例,
+# 用于实现多进程的类, 采用@Multiprocess装饰函数即可, 最后调用Multiprocess.release(), 对需加进程锁的函数采用@Multiprocess.Lock装饰.
 class Multiprocess():
     """
     用于装饰器
@@ -62,7 +62,8 @@ class Multiprocess():
 
     def __get__(self, instance, own):
         """
-        被装饰的函数在调用时,首先会调用__get__函数
+        被装饰的函数在调用时,首先会调用__get__函数对函数进行包装,使其按多进程方式运行.
+        最后必须手工调用Multiprocess.release()等待进程结束
         args:
             instance - 为被装饰函数所属的对象
             own - 被装饰函数所属的类
@@ -169,10 +170,6 @@ class BaseClass(metaclass=abc.ABCMeta):
         # 此处变量用于多进程
         # 使用multiprocessing.Pool时,必须采用multiprocessing.Manager().Lock()进行加锁
         self.multiprocessingIsOn = gConfig['multiprocessingIsOn'.lower()]
-        #self.processLock = multiprocessing.Lock()
-        #self.processQueue = multiprocessing.Queue()
-        # 用信号量控制同时并发执行的进程数,默认并发进程数等于cpu个数
-        #self.semaphore = multiprocessing.Semaphore(multiprocessing.cpu_count())
 
 
     def __iter__(self):

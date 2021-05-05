@@ -306,7 +306,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('注$', NULLSTR, value)#解决康泰生物2018年年报中普通股现金分红情况表中出现中文字符'注',导致_process_merge_header_simple出问题
                     value = re.sub('^增\\s*加', NULLSTR, value) #1)解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'； 2)解决福耀玻璃2015年报 主营业务分行业经营情况的数据中出现: 增 加 0.27 个百分点
                     value = re.sub('^减\\s*少', '-', value) #解决海天味业2014年报中主营业物质的数据中出现,'增加','减少'
-                    value = re.sub('^下降', '-', value)  # 解决海螺水泥2014年报中主营业物质的数据中出现,'下降'
+                    value = re.sub('^下降[了]*', '-', value)  # 解决海螺水泥2014年报中主营业物质的数据中出现,'下降'; 解决 圣农发展：2020年年度报告,主营业务分行业经营情况出现''下降了
                     value = re.sub('^储$', NULLSTR, value) #解决尚荣医疗2014年报,合并所有者权益变动表,、上年年末余额 这一行中出现 "储","备
                     value = re.sub('^备-$',NULLSTR, value)
                     value = re.sub('^无$', NULLSTR, value) #解决海康威视2015年报,普通股现金分红情况表 最后一列出现 '无'
@@ -377,13 +377,13 @@ class DocParserSql(DocParserBase):
         # 增加blankFrame来驱动最后一个field的合并
         #blankFrame = pd.DataFrame([''] * len(dataFrame.columns.values), index=dataFrame.columns).T
         #dataFrame = dataFrame.append(blankFrame)
-        while dataFrame.shape[0] > 0 and ( self._is_row_all_invalid(dataFrame.iloc[0].tolist())\
+        while dataFrame.shape[0] > 0 and ( self._is_row_all_invalid(dataFrame.iloc[0].tolist()) \
             or self._is_header_in_row(dataFrame.iloc[0].tolist(),tableName) == False):
             # self._is_header_in_row(dataFrame.iloc[0].tolist(),tableName) == False 解决思源电器2015年报,合并资产负债表,前三行为: 编制单位：思源电气股份有限公司合并资产负债表2015年12月31日货币单位：人民
             # 如果第一行数据全部为无效的,则删除掉. 解决康泰生物：2016年年度报告.PDF,合并所有者权益变动表中第一行为全None行,导致标题头不对的情况
             # 但是解析出的合并所有者权益变动表仍然是不对的,原因是合并所有者权益变动表第二页的数据被拆成了两张无效表,而用母公司合并所有者权益变动表的数据填充了.
             self.logger.info('delete all invalid row or no header row: %s' % dataFrame.iloc[0].tolist())
-            dataFrame.iloc[0][0] = NaN
+            dataFrame.iloc[0] = NaN
             dataFrame = dataFrame.dropna(axis=0)
         dataFrame = self._major_accounting_data_tailor(dataFrame,tableName)
         if dataFrame.shape[0] == 0:

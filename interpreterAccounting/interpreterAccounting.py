@@ -219,6 +219,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional LOCATION
                         | optional NUMERO
                         | optional NUMERO NUMERO NUMERO
+                        | optional NUMERO '-' NUMERO
                         | optional '(' NUMERO ')'
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
@@ -232,6 +233,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '(' ')' NUMERIC NUMERIC NUMERIC
                         | NUMERIC
                         | empty '''
+            # optional NUMERO '-' NUMERO 解决恩捷股份：2020年年度报告, 主营业务分行业经营情况出现在页尾,第二页出现:公告编号：2021-033
             # optional NUMERO NUMERO NUMERO 解决 华测导航：2018年第一季度报告全文,合并资产负债表,解析出 合并资产负债表 ...  2018 03 31
             # optional '(' ')' NUMERIC NUMERIC NUMERIC 解决白云山 2020年第三季度报告, 主要会计数据 搜索不到的问题
             # optional '（' AUDITTYPE '）' 解决（600332）白云山：2020年第一季度报告全文.PDF 的 主要会计数据搜索不到问题
