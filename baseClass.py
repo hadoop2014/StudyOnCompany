@@ -20,7 +20,7 @@ from pandas import DataFrame
 import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
 import abc
-#from threading import Thread,Lock,BoundedSemaphore,Event
+import threading
 import multiprocessing
 #数据读写处理的基类
 
@@ -28,6 +28,115 @@ NULLSTR = ''
 NONESTR = 'None'
 NaN = np.nan
 EOF = 'EOF）'  #加）可解决fidller
+
+
+# 用于定义单例,使用方法:
+# class Example(metaclass = MetaSingleton
+class MetaSingleton(type):
+    _instance_lock = threading.Lock()
+    def __call__(cls, *args, **kwargs):
+        if not hasattr(cls, '_instance'):
+            with MetaSingleton._instance_lock:
+                if not hasattr(cls, '_instance'):
+                    cls._instance = super(MetaSingleton, cls).__call__(*args, **kwargs)
+        return cls._instance
+
+
+# 用于实现多进程的类,该类是一个单例,
+class Multiprocess():
+    """
+    用于装饰器
+    例: 装饰InterPreterNature类的_process_single_parse方法, 使之采用多进程运行.
+    1) 初始化时, python解释器调用__init__记录被装饰的函数
+    2) python解释器扫描到被装饰的函数时,自动调用__get__函数, 将函数进行包装
+    args:
+        function - 被装饰的函数
+    """
+    processPool = []
+    processQueue = multiprocessing.Queue()
+    processLock = multiprocessing.Lock()
+    semaphore = multiprocessing.Semaphore(multiprocessing.cpu_count())
+
+    def __init__(self, function):
+        self.function = function
+
+    def __get__(self, instance, own):
+        """
+        被装饰的函数在调用时,首先会调用__get__函数
+        args:
+            instance - 为被装饰函数所属的对象
+            own - 被装饰函数所属的类
+        reutrn:
+            wrap - 装饰器的内层函数
+        """
+        @functools.wraps(self.function)
+        def function_wrap(*args):
+            """
+            对self.function函数进行装饰:
+            1) 运行函数self.function前调用semaphore.acquire进行阻塞
+            2) 运行函数,将运行结果放入到processQueue中
+            3) 释放信号量semaphore
+            args:
+                cls - Multiprocess类
+            reutrn:
+                func_wrap - 被装饰过后的函数
+            """
+            self.semaphore.acquire()
+            result = self.function(instance, *args)
+            self.processQueue.put(result)
+            self.semaphore.release()
+            return result
+
+        def mutiprocess_wrap(*args):
+            """
+            判断multiprocessingIsOn标识是否设置,如果设置,则对函数进行多进程编程:
+            1) 函数先通过function_wrap包装后, 放入进程中.
+            2) processPool进程池中增加进程.
+            3) 启动进程,然后在release函数中等待进程结束. 所以采用多进程编程后,最后必须调用Multiprocess.release()等待进程结束
+            args:
+                cls - Multiprocess类
+            reutrn:
+                func_wrap - 被装饰过后的函数
+            """
+            if not instance.multiprocessingIsOn:
+                return function_wrap(*args)
+            else:
+                process = multiprocessing.Process(target=function_wrap, args=(*args,))
+                self.processPool.append(process)
+                process.start()
+        return mutiprocess_wrap
+
+    @classmethod
+    def release(cls):
+        """
+        释放Multiprocess: 1) 等待进程池中所有的进程运行完, 然后清空进程池. 2) 取出进程队列里面所有的函数返回值.
+        args:
+            cls - MultiProcess类
+        reutrn:
+            taskResults - 进程返回值的列表
+        """
+        taskResults = []
+        for process in cls.processPool:
+            process.join()
+        cls.processPool.clear()
+        for _ in range(cls.processQueue.qsize()):
+            taskResults.append(str(cls.processQueue.get()))
+        return taskResults
+
+    @classmethod
+    def lock(cls, func):
+        """
+        对函数加进程锁,主要正对进程内如下场景:1)写文件. 2)写数据库.
+        args:
+            cls - Multiprocess类
+        reutrn:
+            func_wrap - 被装饰过后的函数,原理: 在运行函数func前, 先用processLock进行加锁.
+        """
+        @functools.wraps(func)
+        def func_wrap(*args):
+            with cls.processLock:
+                return func(*args)
+        return func_wrap
 
 
 class BaseClass(metaclass=abc.ABCMeta):
@@ -60,8 +169,10 @@ class BaseClass(metaclass=abc.ABCMeta):
         # 此处变量用于多进程
         # 使用multiprocessing.Pool时,必须采用multiprocessing.Manager().Lock()进行加锁
         self.multiprocessingIsOn = gConfig['multiprocessingIsOn'.lower()]
-        self.processLock = multiprocessing.Lock()
-        self.processQueue = multiprocessing.Queue()
+        #self.processLock = multiprocessing.Lock()
+        #self.processQueue = multiprocessing.Queue()
+        # 用信号量控制同时并发执行的进程数,默认并发进程数等于cpu个数
+        #self.semaphore = multiprocessing.Semaphore(multiprocessing.cpu_count())
 
 
     def __iter__(self):

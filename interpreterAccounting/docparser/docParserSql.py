@@ -4,6 +4,7 @@
 # @Author  : wu.hao
 # @File    : docParserSql.py
 # @Note    : 用于sql数据库的读写
+import re
 
 from interpreterAccounting.docparser.docParserBaseClass import  *
 import sqlite3 as sqlite
@@ -23,19 +24,17 @@ class DocParserSql(DocParserBase):
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.dictLexers = self._construct_lexers()
 
-
     def _construct_lexers(self):
         dictLexer = dict()
         for tableName in self.dictTables.keys():
-            dictLexer.update({tableName:dict()})
-            for tokenName in ['field','header']:
-                #构建field lexer 和 header lexer
-                dictTokens = self._get_dict_tokens(tableName,tokenName=tokenName)
+            dictLexer.update({tableName: dict()})
+            for tokenName in ['field', 'header']:
+                # 构建field lexer 和 header lexer
+                dictTokens = self._get_dict_tokens(tableName, tokenName=tokenName)
                 lexer = self._get_lexer(dictTokens)
                 dictLexer[tableName].update({'lexer'+tokenName.title(): lexer, "dictToken" + tokenName.title(): dictTokens})
-                self.logger.info('success to create %s lexer for %s!' % (tokenName,tableName))
+                self.logger.info('success to create %s lexer for %s!' % (tokenName, tableName))
         return dictLexer
-
 
     def _get_lexer(self, dictTokens):
         # Tokens
@@ -61,8 +60,7 @@ class DocParserSql(DocParserBase):
         lexer = lex.lex(outputdir=self.working_directory)
         return lexer
 
-
-    def _get_dict_tokens(self, tableName,tokenName='field'):
+    def _get_dict_tokens(self, tableName, tokenName='field'):
         # 对所有的表字段进行标准化
         standardFields = self.dictTables[tableName][tokenName + 'Name']
         if len(standardFields) != len(set(standardFields)):
@@ -118,7 +116,8 @@ class DocParserSql(DocParserBase):
                 self.logger.warning('%s (fieldDiscard/headerDiscard) has NaN field' % tableName)
             else:
                 self.logger.debug(
-                    "%s has dupicated (fieldDiscard/headerDiscard) with (fieldName/headerName):%s!" % (tableName, ' '.join(list(fieldJoint))))
+                    "%s has dupicated (fieldDiscard/headerDiscard) with (fieldName/headerName):%s!"
+                    % (tableName, ' '.join(list(fieldJoint))))
             standardDiscardFields = list(set(standardDiscardFields).difference(fieldJoint))
         for value in standardDiscardFields:
             if value is not NaN:
@@ -136,7 +135,7 @@ class DocParserSql(DocParserBase):
         return dictTokens
 
 
-    def loginfo(text = 'running '):
+    def loginfo(text='running '):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self,*args, **kwargs):
@@ -146,11 +145,9 @@ class DocParserSql(DocParserBase):
                 if isinstance(result,tuple):
                     resultForLog = result[0].T.copy()
                     columns = result[0].iloc[0]
-                self.logger.info('%s %s() \n\t%s,%s%s,\t%s:\n\t%s\n\t%s\n\t columns=%s'
-                                  % (text, func.__name__,
-                                     self.dataTable['公司名称'],self.dataTable['报告时间'],self.dataTable['报告类型'],
-                                     args[-1],'',
-                                     resultForLog,columns))
+                self.logger.info('%s %s() \n\t%s,%s%s,\t%s:\n\t%s\n\t%s\n\t columns=%s' %
+                                 (text, func.__name__,self.dataTable['公司名称'],self.dataTable['报告时间']
+                                  ,self.dataTable['报告类型'], args[-1],'', resultForLog,columns))
                 return result
             return wrapper
         return decorator
@@ -227,9 +224,9 @@ class DocParserSql(DocParserBase):
         #把dataframe写入sqlite3数据库
         reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
         targetTableName = self._get_tablename_by_report_type(reportType, tableName)
-        with self.processLock:
+        #with self.processLock:
             # 多进程写数据库时必须加锁
-            self._write_to_sqlite3(dataframe,targetTableName)
+        self._write_to_sqlite3(dataframe,targetTableName)
         self.process_info[tableName].update({'processtime':time.time() - self.process_info[tableName]['processtime']})
 
 
@@ -247,6 +244,7 @@ class DocParserSql(DocParserBase):
         return dataFrame,countTotalFields
 
 
+    @Multiprocess.lock
     def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
         conn = self._get_connect()
         dataFrame = dataFrame.T
@@ -318,11 +316,14 @@ class DocParserSql(DocParserBase):
                     value = re.sub('^不派发现金红利$',NULLSTR,value) #解决沪电股份2014年报 普通股现金分行情况表中出现 '不派发现金红利'
                     value = re.sub('^每\\d+股转增\\d+股',NULLSTR,value) #解决（300033）同花顺：2014年年度报告中,普通股现金分行情况表中出现 每10股转增10股
                     value = re.sub('^货币单位：人民币$',NULLSTR,value) # 解决思源电器2015年报,合并资产负债表的前三行为 : 编制单位：思源电气股份有限公司合并资产负债表2015年12月31日 货币单位：人民
+                    value = re.sub('^去年同期为负$',NULLSTR,value) # 解决英科医疗2020年年报,主要会计数据, 归属于上市公司股东的扣除非经常性损益的净利润（元）这一行中出现: 去年同期为负
+                    value = re.sub('(?=\\d)\\d、$',NULLSTR,value) # 解决双汇发展2020年报,主要会计数据,主营业收入一行中出现: 1、
                     #解决海康威视2019-2014年报合并资产负债表等 中的辅助中出现 :  (五)2
                     value = re.sub('(^\\s*[（(]*[一二三四五六七八九十〇、]{1,3})[)）]*(?=[^\\u4E00-\\u9FA5])', NULLSTR, value) # 新城控股合并利润表中出现附注,数据中出现四(38)及一、四(38).  海康威视2019-2014年报合并资产负债表等 中的附注中出现 :  (五)2
                     value = re.sub('([（(]*[一二三四五六七八九十〇、]{1,3})[)）]*(?=[^\\u4E00-\\u9FA5])', NULLSTR, value)  # 执行两次,解决安琪酵母2014年报中,并资产负债表等 中的附注中出现 :五（一）
                     #解决高德红外2014年报中 主营业务分行业经营情况表中,出现（%）,改为通过headerStandardize来解决
-                    result = re.split("[ ]{2,}",value,maxsplit=1)
+                    # 解决五粮液2020年年报,主要会计数据中,存在两列数据并列到了一列,同时后接一个None的场景和,其中总资产字段合并为一列时中间间隔1个空字符
+                    result = re.split("[ ]{1,}(?=\\d+)",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
                     value = value.replace(' ',NULLSTR)       # 解决石头科技2019年报,主营业务分行业经营情况中出现 "增加 7.30个 百 分 点" 和 "增加 8.65个 百 分"
@@ -332,7 +333,7 @@ class DocParserSql(DocParserBase):
                     if self.lastValue != None and value == NONESTR:
                         # 解决奥美医疗2018年年报,主要会计数据中,存在两列数值并列到了一列,同时后接一个None的场景
                         value = self.lastValue
-                        self.lastValue = None
+                    self.lastValue = None
         except Exception as e:
             print(e)
         return value

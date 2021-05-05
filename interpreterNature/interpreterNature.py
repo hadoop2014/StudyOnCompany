@@ -4,19 +4,13 @@
 # @Author  : wu.hao
 # @File    : interpreterCrawl.py
 # @Note    : 用接近自然语言的解释器处理各类事务,用于处理财务数据爬取,财务数据提取,财务数据分析.
+import multiprocessing
 from collections import Counter
 from ply import lex,yacc
 import copy
 import itertools
 import time
 from interpreterNature.interpreterBaseClass import *
-
-
-# 定义一个顶层函数,用于在multiprocessing.Pool中使用
-def process_wrap(class_function):
-    def wrap(self, *args):
-        return class_function(self, *args)
-    return wrap
 
 
 class InterpreterNature(InterpreterBase):
@@ -364,37 +358,38 @@ class InterpreterNature(InterpreterBase):
         sourcefiles = self._remove_black_lists(scale,list(sourcefiles))
         sourcefiles = list(sourcefiles)
         sourcefiles.sort()
-        processList = []
         for sourcefile in sourcefiles:
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})
             dictParameter.update(self.names_global)
+            '''
             if self.multiprocessingIsOn:
                 # 这里采用多进程编程,充分使用多核心并行
+                # 采用信号量控制同时运行的进程数量,默认等于CPU数量
+                self.semaphore.acquire()
                 processParse = multiprocessing.Process(target=self._process_single_parse,args=(dictParameter,))
-                #taskResult = processPool.apply_async(self._process_single_parse,args=(dictParameter,))
+                #taskResult = processPool.apply_async(self._process_single_parse,args=(self,dictParameter)) # Pool不舍用类方法
                 processList.append(processParse)
                 processParse.start()
             else:
                 taskResult = self._process_single_parse(dictParameter)
                 taskResults.append(str(taskResult))
-
-        if self.multiprocessingIsOn:
-            #等待进程全部执行完
-            for processParse in processList:
-                processParse.join()
-                taskResults.append(str(self.processQueue.get()))
+            '''
+            # 此处对_process_single_parse采用了多进程
+            taskResult = self._process_single_parse(dictParameter)
+            taskResults.append(str(taskResult))
+        # 当采用多进程编程时,此处需要关闭多进程, 同时获取multiprocessing.Queue()中的函数返回值
+        taskResults = Multiprocess.release()
         self.logger.info('运行结果汇总如下(总耗时%.4f秒):\n\t\t\t\t'%(time.time()-startTime) + '\n\t\t\t\t'.join(taskResults))
 
 
-    #@process_wrap
+    @Multiprocess
     def _process_single_parse(self,dictParameter):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_parse!')
             return
         self.interpreterAccounting.initialize(dictParameter)
         taskResult = self.interpreterAccounting.doWork(debug=False, tracking=False)
-        self.processQueue.put(taskResult)
         return taskResult
 
 
