@@ -88,14 +88,14 @@
       ,"流动资产合计/负债合计","销售商品、提供劳务收到的现金","六、期末现金及现金等价物余额","五、现金及现金等价物净增加额","现金收入／营业收入"
       ,"应收账款周转率","存货周转率","营业利润/营业资金","营业收入/营业资金","还原后的净资产收益率(ROCE)","要求的回报率","剩余收益增长率"
       ,"剩余收益","永续收益"],
-    "fieldDiscard": ["报告类型","公司代码","公司名称"],
+    "fieldDiscard": ["报告类型","公司名称"],
     "parent": "",
     "create": "createComprehensive.sql",
     "generate": "",
     "update": "",
     "visualize": "FinanceAnalysis v1.0.xlsx",
     "sourceTable": "",
-    "orderBy": ["公司投资等级 desc","公司简称","报告时间 desc"],
+    "orderBy": ["公司投资等级 desc","公司代码","报告时间 desc"],
     "startrow": 1,
     "freezecol": 4,
     "maxrow": 1000,

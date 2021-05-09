@@ -269,11 +269,12 @@ class DocParserPdf(DocParserBase):
         #引入maxFieldLen是为了解决（002555）三七互娱：2018年年度报告.PDF,主要会计数据,在最后一个字段'归属于上市公司股东的净资产（元）'后面又加了一段无用的话,直接去掉
         maxFieldLen = self.dictTables[tableName]['maxFieldLen']
         # 广济药业：2019年半年度报告,合并现金流量表,最后一行为 法定代表人：安靖 主管会计工作负责人:胡明峰 会计机构负责人：王琼,长度为 33,因此把此处从2改为1.3
-        if isinstance(table[-1][0],str) and len(table[-1][0]) > 1.3 * maxFieldLen:
+        #table[-1][0].replace(' ',NULLSTR)增加了replace(' ',NULLSTR)解决赛轮轮胎：2020年年度报告,无形资产情况表,最后一个字段增加了几个空格,导致if语句误判
+        if isinstance(table[-1][0],str) and len(table[-1][0].replace(' ',NULLSTR)) > 1.3 * maxFieldLen:
             #去掉最后一个超长且无用的字段
             table = table[:-1]
         if len(table) > 0:
-            if isinstance(table[0][0],str) and len(table[0][0]) > 1.5 * maxFieldLen:
+            if isinstance(table[0][0],str) and len(table[0][0].replace(' ',NULLSTR)) > 1.5 * maxFieldLen:
             #解决广济药业2015年报,合并资产负债表的第一个单元格为: 合并资产负债表 编制单位：湖北广济药业股份有限公司 2015年12月31日 单位：人民币元'
                 table = table[1:]
         return  table
@@ -372,6 +373,7 @@ class DocParserPdf(DocParserBase):
             return True
 
 
+    @Multiprocess.lock
     def save_checkpoint(self,content):
         if self.checkpointIsOn == False:
             return
