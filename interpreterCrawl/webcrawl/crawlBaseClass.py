@@ -7,6 +7,44 @@
 import time
 from interpreterCrawl.interpreterBaseClass import *
 
+class SqliteCrawl(SqilteBase):
+
+    def _get_max_min_trading_date(self,conn, tableName, dataFrame, commonFields):
+        minTradingDate, maxTradingDate = None, None
+        condition = self._get_condition(dataFrame,commonFields)
+        sql = "select min(报告时间), max(报告时间) from {} where ".format(tableName) + condition
+        try:
+            result = conn.execute(sql).fetchall()
+            if len(result) > 0:
+                minTradingDate, maxTradingDate = result[0]
+        except Exception as e:
+            print(e)
+            self.logger.error('failed to get max & min trading data from sql:%s'% sql)
+        return minTradingDate,maxTradingDate
+
+    def _write_to_sqlite3(self, dataFrame:DataFrame, commonFields, tableName):
+        conn = self._get_connect()
+        sql_df = dataFrame
+        sql_df['公司代码'] = dataFrame['公司代码'].apply(lambda x: x.replace('\'', NULLSTR))
+        sql_df['公司简称'] = dataFrame['公司简称'].apply(lambda x: x.replace(' ', NULLSTR))
+        minTradingDate, maxTradingDate = self._get_max_min_trading_date(conn, tableName, sql_df, commonFields)
+        if minTradingDate is not None and maxTradingDate is not None:
+            if sql_df['报告时间'].max() > maxTradingDate:
+                #self.logger.info("delete from {} where is {} {} - {}!".format(tableName,sql_df['公司简称'].values[0]
+                #                                                             ,maxTradingDate, sql_df['报告时间'].max()))
+                sql_df = sql_df[sql_df['报告时间'] > maxTradingDate]
+                if not sql_df.empty:
+                    sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+                    conn.commit()
+                    self.logger.info("insert into {} where is {} {} - {}!".format(tableName, sql_df['公司简称'].values[0]
+                                                                                 ,sql_df['报告时间'].values[-1]
+                                                                                 ,sql_df['报告时间'].values[0]))
+        else:
+            sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
+            conn.commit()
+            self.logger.info("insert into {} where is {} {} - {}!".format(tableName, sql_df['公司简称'].values[0]
+                                                                        ,sql_df['报告时间'].values[-1],sql_df['报告时间'].values[0]))
+        conn.close()
 
 #深度学习模型的基类
 class CrawlBase(InterpreterBase):
@@ -23,6 +61,7 @@ class CrawlBase(InterpreterBase):
         self.checkpointfilename = os.path.join(self.working_directory, self.gConfig['checkpointfile'])
         self.checkpoint = None
         self.checkpointWriter = None
+        self.database = self.create_database(SqliteCrawl)
         #self._create_tables(self.tableNames)
 
     '''
@@ -31,7 +70,7 @@ class CrawlBase(InterpreterBase):
         mergedColumns = mergedColumns + self.dictTables[tableName]['fieldName']
         return mergedColumns
     '''
-
+    '''
     def _write_to_sqlite3(self, dataFrame:DataFrame, commonFields, tableName):
         conn = self.database._get_connect()
         sql_df = dataFrame
@@ -55,8 +94,8 @@ class CrawlBase(InterpreterBase):
             self.logger.info("insert into {} where is {} {} - {}!".format(tableName, sql_df['公司简称'].values[0]
                                                                         ,sql_df['报告时间'].values[-1],sql_df['报告时间'].values[0]))
         conn.close()
-
-
+    '''
+    '''
     def _get_max_min_trading_date(self,conn, tableName, dataFrame):
         minTradingDate, maxTradingDate = None, None
         condition = self.database._get_condition(dataFrame,self.commonFields)
@@ -69,7 +108,7 @@ class CrawlBase(InterpreterBase):
             print(e)
             self.logger.error('failed to get max & min trading data from sql:%s'% sql)
         return minTradingDate,maxTradingDate
-
+    '''
     '''
     def _create_tables(self,tableNames):
         # 用于想sqlite3数据库中创建新表

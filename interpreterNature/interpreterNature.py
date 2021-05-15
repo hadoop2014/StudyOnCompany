@@ -12,6 +12,41 @@ import itertools
 import time
 from interpreterNature.interpreterBaseClass import *
 
+class Sqlite(SqilteBase):
+
+    def _get_company_code_list(self,conn,tableName):
+        companyCodeList = None
+        sql = "select distinct 公司代码 from {}".format(tableName)
+        try:
+            result = conn.execute(sql).fetchall()
+            if len(result) > 0 and len(result[0]) > 0:
+                #companyCodeList = result[0]
+                companyCodeList = [code[0] for code in result]
+        except Exception as e:
+            print(e)
+            self.logger.error('failed to get max & min trading data from sql:%s' % sql)
+        return companyCodeList
+
+    def _write_to_sqlite3(self,dataFrame:DataFrame,commonFields, tableName):
+        conn = self._get_connect()
+        sql_df = dataFrame
+        companyCodeList = self._get_company_code_list(conn, tableName)
+        if companyCodeList is not None:
+            companyCodeNew = sql_df['公司代码'].values.tolist()
+            companyCodeDiff = set(companyCodeNew).difference(set(companyCodeList))
+            if len(companyCodeDiff) > 0:
+                #sql_df = sql_df[sql_df['公司代码'] in companyCodeDiff]
+                sql_df = sql_df[sql_df['公司代码'].isin(companyCodeDiff)]
+                if not sql_df.empty:
+                    sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+                    conn.commit()
+                    self.logger.info("insert into {} at {}!".format(tableName, utile._get_time_now()))
+        else:
+            sql_df.to_sql(name=tableName, con=conn, if_exists='replace', index=False)
+            conn.commit()
+            self.logger.info("insert into {} at {}!".format(tableName, utile._get_time_now()))
+        conn.close()
+
 
 class InterpreterNature(InterpreterBase):
     def __init__(self,gConfig,interpreterDict):
@@ -20,6 +55,7 @@ class InterpreterNature(InterpreterBase):
         self.interpreterAnalysize = interpreterDict['analysize']
         self.interpreterCrawl = interpreterDict['crawl']
         self.interpretDefine()
+        self.database = self.create_database(Sqlite)
 
 
     def interpretDefine(self):
@@ -265,14 +301,14 @@ class InterpreterNature(InterpreterBase):
         companyCodes = self._get_stock_list(companys)
         dataFrameCompanyCodes = pd.DataFrame(companyCodes, columns=self.gJsonBase['stockcodeHeader'])
         # 增加一列 上报时间,取当前日期
-        dataFrameCompanyCodes['报告时间'] = self._get_time_now()
+        dataFrameCompanyCodes['报告时间'] = utile._get_time_now()
         dataFrameIndustryCategery = pd.DataFrame([[key,value] for key,value in dictIndustryCategory.items()], columns=['公司简称','行业分类'])
         dataFrameMerged = pd.merge(dataFrameCompanyCodes,dataFrameIndustryCategery,how='left',on=['公司简称'])
         columnsName = self._get_merged_columns(tableName)
         dataFrameMerged = dataFrameMerged[columnsName]
-        self._write_to_sqlite3(dataFrameMerged,self.commonFields, tableName)
+        self.database._write_to_sqlite3(dataFrameMerged,self.commonFields, tableName)
 
-
+    '''
     def _write_to_sqlite3(self,dataFrame:DataFrame,commonFields, tableName):
         conn = self.database._get_connect()
         sql_df = dataFrame
@@ -292,8 +328,8 @@ class InterpreterNature(InterpreterBase):
             conn.commit()
             self.logger.info("insert into {} at {}!".format(tableName, self._get_time_now()))
         conn.close()
-
-
+    '''
+    '''
     def _get_company_code_list(self,conn,tableName):
         companyCodeList = None
         sql = "select distinct 公司代码 from {}".format(tableName)
@@ -306,7 +342,7 @@ class InterpreterNature(InterpreterBase):
             print(e)
             self.logger.error('failed to get max & min trading data from sql:%s' % sql)
         return companyCodeList
-
+    '''
 
     def _process_analysize(self,command):
         """

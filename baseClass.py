@@ -13,6 +13,7 @@ import re
 import sqlite3 as sqlite
 import pysnooper
 import time
+import utile
 from typing import Type
 from dateutil import rrule
 from datetime import date,timedelta,datetime
@@ -320,7 +321,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         #不同的类继承BaseClass时,logger采用不同的名字
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
         self.databasefile = os.path.join(gConfig['working_directory'],gConfig['database'])
-        self.database = SqilteBase(self.databasefile, self._logger)
+        self.database = self.create_database(SqilteBase)
         self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
         self.reportTypes =  self.gJsonBase['reportType']
         self.companyAlias = self.gJsonBase['companyAlias']
@@ -349,6 +350,10 @@ class BaseClass(metaclass=abc.ABCMeta):
 
     def __getitem__(self, item):
         return self._data[item]
+
+
+    def create_database(self, DataBase):
+        return DataBase(self.databasefile, self.logger)
 
     '''
     def _get_connect(self):
@@ -647,10 +652,10 @@ class BaseClass(metaclass=abc.ABCMeta):
         dataFrame.to_sql(tableName, conn, if_exists='replace', index=False)
         conn.close()
     '''
-
+    '''
     def _get_time_now(self):
         return time.strftime('%Y%m%d')
-
+    '''
 
     def _time_add(self,unit, startTime, deltaTime):
         # 支持两种日期格式, 2020-1-30, 2020/1/30

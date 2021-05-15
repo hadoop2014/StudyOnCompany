@@ -8,8 +8,6 @@
 from interpreterAnalysize.interpreterBaseClass import *
 
 class Sqlite(SqilteBase):
-    def __init__(self, databasefile, logger):
-        super(Sqlite, self).__init__(databasefile, logger)
 
     def _write_to_sqlite3(self, dataFrame:DataFrame,commonFields,tableName):
         conn = self._get_connect()
@@ -43,7 +41,7 @@ class StockAnalysize(InterpreterBase):
     def __init__(self,gConfig):
         super(StockAnalysize, self).__init__(gConfig)
         self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
-        self.database = Sqlite(self.databasefile, self.logger)   # 重置database, 对其_write_to_sqlite函数进行了重写
+        self.database = self.create_database(Sqlite)   # 重置database, 对其_write_to_sqlite函数进行了重写
 
 
     def stock_index_trend_analysize(self, tableName, scale):

@@ -76,7 +76,7 @@ class CrawlStock(CrawlBase):
             dataFrame = pd.read_csv(fullfileName, encoding=encoding,dtype=str)
             dataFrame.columns = self._get_merged_columns(tableName)
             if not dataFrame.empty:
-                self._write_to_sqlite3(dataFrame, self.commonFields, tableName)
+                self.database._write_to_sqlite3(dataFrame, self.commonFields, tableName)
                 successPaths.append(fileName)
             else:
                 self.logger.info('failed to write to sqlite3,the file is empty: %s' % fileName)
