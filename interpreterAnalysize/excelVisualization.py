@@ -130,7 +130,7 @@ class ExcelVisualization(InterpreterBase):
         order = self.dictTables[tableName]["orderBy"]
         if isinstance(order,list) and len(order) > 0:
             sql = sql + '\norder by ' + ','.join(order)
-        dataframe = pd.read_sql(sql, self._get_connect())
+        dataframe = pd.read_sql(sql, self.database._get_connect())
         return dataframe
 
 

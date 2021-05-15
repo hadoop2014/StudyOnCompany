@@ -140,6 +140,167 @@ class Multiprocess():
         return func_wrap
 
 
+class SqilteBase():
+    def __init__(self, databasefile,logger):
+        self._databasefile = databasefile
+        self.logger = logger
+
+    def _get_connect(self):
+        #用于获取数据库连接
+        return sqlite.connect(self._databasefile)
+
+    def _create_tables(self,tableNames,dictTables, commonFields):
+        # 用于想sqlite3数据库中创建新表
+        conn = self._get_connect()
+        cursor = conn.cursor()
+        allTables = self._fetch_all_tables(cursor)
+        allTables = list(map(lambda x: x[0], allTables))
+        for tableName in tableNames:
+            targetTableName =  tableName
+            if targetTableName not in allTables:
+                sql = " CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t" % targetTableName
+                for commonFiled, type in commonFields.items():
+                    sql = sql + "[%s] %s\n\t\t\t\t\t," % (commonFiled, type)
+                # 由表头转换生产的字段
+                fieldFromHeader = dictTables[tableName]["fieldFromHeader"]
+                if len(fieldFromHeader) != 0:
+                    for field in fieldFromHeader:
+                        sql = sql + "[%s] VARCHAR(20)\n\t\t\t\t\t," % field
+                sql = sql[:-1]  # 去掉最后一个逗号
+                # 创建新表
+                standardizedFields = dictTables[tableName]['fieldName']
+                #duplicatedFields = self._get_duplicated_field(standardizedFields)
+                duplicatedFields = standardizedFields
+                for fieldName in duplicatedFields:
+                    if fieldName is not NaN:
+                        if 'fieldType' in dictTables[tableName].keys() \
+                            and fieldName in dictTables[tableName]['fieldType'].keys():
+                            type = dictTables[tableName]['fieldType'][fieldName]
+                        else:
+                            type = 'NUMERIC'
+                        sql = sql + "\n\t\t\t\t\t,[%s]  %s" % (fieldName, type)
+                sql = sql + '\n\t\t\t\t\t)'
+                try:
+                    conn.execute(sql)
+                    conn.commit()
+                    print('创建数据库表%s成功' % (targetTableName))
+                except Exception as e:
+                    # 回滚
+                    conn.rollback()
+                    print(e, ' 创建数据库表%s失败' % targetTableName)
+
+                # 创建索引
+                sql = "CREATE INDEX IF NOT EXISTS [%s索引] on [%s] (\n\t\t\t\t\t" % (targetTableName, targetTableName)
+                sql = sql + ", ".join(str(field) for field, value in commonFields.items()
+                                      if value.find('NOT NULL') >= 0)
+                sql = sql + '\n\t\t\t\t\t)'
+                try:
+                    conn.execute(sql)
+                    conn.commit()
+                    print('创建数据库%s索引成功' % (targetTableName))
+                except Exception as e:
+                    # 回滚
+                    conn.rollback()
+                    print(e, ' 创建数据库%s索引失败' % targetTableName)
+        cursor.close()
+        conn.close()
+
+    def _write_to_sqlite3(self,dataFrame:DataFrame, commonFields,tableName):
+        conn = self._get_connect()
+        dataFrame.to_sql(tableName, conn, if_exists='replace', index=False)
+        conn.close()
+
+    def _fetch_all_tables(self, cursor):
+        #获取数据库中所有的表,用于判断待新建的表是否已经存在
+        try:
+            cursor.execute("select name from sqlite_master where type='table' order by name")
+        except Exception as e:
+            print(e)
+        return cursor.fetchall()
+
+
+    def _drop_table(self,conn,tableName):
+        sql = 'drop table if exists \'{}\''.format(tableName)
+        result = conn.execute(sql).fetchall()
+        return result
+
+
+    def _is_table_exist(self,conn, tableName):
+        # 判断数据库中该表是否存在
+        isTableExist = False
+        sql = 'SELECT count(*) FROM sqlite_master WHERE type="table" AND name = \'{}\''.format(tableName)
+        result = conn.execute(sql).fetchall()
+        if len(result) > 0:
+            isTableExist = result[0][0] > 0
+        return isTableExist
+
+
+    def _is_record_exist(self, conn, tableName, dataFrame:DataFrame,commonFields,specialKeys = None):
+        #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
+        #对于Sqlit3,字符串表示为'string' ,而不是"string".
+        isRecordExist = False
+        condition = self._get_condition(dataFrame,commonFields,specialKeys)
+        if condition == NULLSTR:
+            #condition为空时,说明dataFrame没有有效数据,直接返回False
+            return isRecordExist
+        sql = 'select count(*) from {} where '.format(tableName) + condition
+        result = conn.execute(sql).fetchall()
+        if len(result) > 0:
+            isRecordExist = (result[0][0] > 0)
+        return isRecordExist
+
+
+    def _get_condition(self,dataFrame,commonFields, specialKeys = None):
+        primaryKey = [key for key, value in commonFields.items() if value.find('NOT NULL') >= 0]
+        if specialKeys is not None and isinstance(specialKeys,list):
+            primaryKey = primaryKey + specialKeys
+        # 对于Sqlit3,字符串表示为'string' ,而不是"string".
+        joined = list()
+        for key in primaryKey:
+            if dataFrame[key].shape[0] == 0:
+                joined = list()
+                break
+            current = '(' + ' or '.join(['{} = \'{}\''.format(key,value) for value in set(dataFrame[key].tolist())]) + ')'
+            joined = joined + list([current])
+        condition = NULLSTR
+        if len(joined) > 0:
+            condition = ' and '.join(joined)
+        return condition
+
+
+    @pysnooper.snoop()
+    def _sql_executer(self,sql):
+        isSuccess = False
+        conn = self._get_connect()
+        try:
+            conn.execute(sql)
+            conn.commit()
+            self.logger.debug('success to execute sql(脚本执行成功):\n%s' % sql)
+            isSuccess = True
+        except Exception as e:
+            # 回滚
+            conn.rollback()
+            self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
+        conn.close()
+        return isSuccess
+
+
+    def _sql_executer_script(self,sql):
+        isSuccess = False
+        conn = self._get_connect()
+        try:
+            conn.executescript(sql)
+            conn.commit()
+            self.logger.info('success to execute sql(脚本执行成功)!')
+            isSuccess = True
+        except Exception as e:
+            # 回滚
+            conn.rollback()
+            self.logger.error('failed to execute sql(脚本执行失败):%s' % (str(e)))
+        conn.close()
+        return isSuccess
+
+
 class BaseClass(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __init__(self,gConfig):
@@ -158,7 +319,8 @@ class BaseClass(metaclass=abc.ABCMeta):
         self._length = len(self._data)
         #不同的类继承BaseClass时,logger采用不同的名字
         self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
-        self.database = os.path.join(gConfig['working_directory'],gConfig['database'])
+        self.databasefile = os.path.join(gConfig['working_directory'],gConfig['database'])
+        self.database = SqilteBase(self.databasefile, self._logger)
         self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
         self.reportTypes =  self.gJsonBase['reportType']
         self.companyAlias = self.gJsonBase['companyAlias']
@@ -188,17 +350,14 @@ class BaseClass(metaclass=abc.ABCMeta):
     def __getitem__(self, item):
         return self._data[item]
 
-
+    '''
     def _get_connect(self):
         #用于获取数据库连接
         return sqlite.connect(self.database)
-
+    '''
 
     def _get_interpreter_keyword(self):
         # 编译器,文件解析器共同使用的关键字
-        #self.tableNames = self.gJsonBase['TABLE'].split('|')
-        #self.commonFields = self.gJsonBase['公共表字段定义']
-        #self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
         ...
 
 
@@ -482,12 +641,12 @@ class BaseClass(metaclass=abc.ABCMeta):
         path = os.path.join(*module.split('.'))
         return path
 
-
+    '''
     def _write_to_sqlite3(self,dataFrame:DataFrame, tableName):
-        conn = self._get_connect()
+        conn = self.database._get_connect()
         dataFrame.to_sql(tableName, conn, if_exists='replace', index=False)
         conn.close()
-
+    '''
 
     def _get_time_now(self):
         return time.strftime('%Y%m%d')
@@ -528,21 +687,11 @@ class BaseClass(metaclass=abc.ABCMeta):
             startTime = datetime.strptime(startTime, '%Y/%m/%d')
         #if unit == 'year':
         #    timeInterval = rrule.rrule(freq=rrule.YEARLY, dtstart=startTime, until=endTime).count()
-        #elif unit == 'month':
-        #    timeInterval = rrule.rrule(freq=rrule.MONTHLY, dtstart=startTime, until=endTime).count()
-        #elif unit == 'week':
-        #    timeInterval = rrule.rrule(freq=rrule.WEEKLY, dtstart=startTime, until=endTime).count()
         if unit == 'days':
             timeInterval = (endTime - startTime).days
-            #timeInterval = rrule.rrule(freq=rrule.DAILY, dtstart=startTime, until=endTime).count()
-        #elif unit == 'hour':
-        #    timeInterval = rrule.rrule(freq=rrule.HOURLY, dtstart=startTime, until=endTime).count()
-        #elif unit == 'minute':
-        #    timeInterval = rrule.rrule(freq=rrule.MINUTELY, dtstart=startTime, until=endTime).count()
         elif unit == 'seconds':
             # total_seconds是包含天数差,转化过来的秒差
             timeInterval = (endTime - startTime).total_seconds()
-            #timeInterval = rrule.rrule(freq=rrule.SECONDLY,dtstart=startTime, until=endTime).count()
         else:
             raise ValueError('unit(%s) is not supported, now only support unit: days,seconds')
         return timeInterval
@@ -576,12 +725,12 @@ class BaseClass(metaclass=abc.ABCMeta):
         mergedColumns = mergedColumns + self.dictTables[tableName]['fieldName']
         return mergedColumns
 
-
+    '''
     def _create_tables(self,tableNames):
         # 用于想sqlite3数据库中创建新表
-        conn = self._get_connect()
+        conn = self.database._get_connect()
         cursor = conn.cursor()
-        allTables = self._fetch_all_tables(cursor)
+        allTables = self.database._fetch_all_tables(cursor)
         allTables = list(map(lambda x: x[0], allTables))
         for tableName in tableNames:
             targetTableName =  tableName
@@ -632,8 +781,8 @@ class BaseClass(metaclass=abc.ABCMeta):
                     print(e, ' 创建数据库%s索引失败' % targetTableName)
         cursor.close()
         conn.close()
-
-
+    '''
+    '''
     def _fetch_all_tables(self, cursor):
         #获取数据库中所有的表,用于判断待新建的表是否已经存在
         try:
@@ -641,14 +790,14 @@ class BaseClass(metaclass=abc.ABCMeta):
         except Exception as e:
             print(e)
         return cursor.fetchall()
-
-
+    '''
+    '''
     def _drop_table(self,conn,tableName):
         sql = 'drop table if exists \'{}\''.format(tableName)
         result = conn.execute(sql).fetchall()
         return result
-
-
+    '''
+    '''
     def _is_table_exist(self,conn, tableName):
         # 判断数据库中该表是否存在
         isTableExist = False
@@ -657,8 +806,8 @@ class BaseClass(metaclass=abc.ABCMeta):
         if len(result) > 0:
             isTableExist = result[0][0] > 0
         return isTableExist
-
-
+    '''
+    '''
     def _is_record_exist(self, conn, tableName, dataFrame:DataFrame,specialKeys = None):
         #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
         #对于Sqlit3,字符串表示为'string' ,而不是"string".
@@ -672,8 +821,8 @@ class BaseClass(metaclass=abc.ABCMeta):
         if len(result) > 0:
             isRecordExist = (result[0][0] > 0)
         return isRecordExist
-
-
+    '''
+    '''
     def _get_condition(self,dataFrame,specialKeys = None):
         primaryKey = [key for key, value in self.commonFields.items() if value.find('NOT NULL') >= 0]
         if specialKeys is not None and isinstance(specialKeys,list):
@@ -690,12 +839,12 @@ class BaseClass(metaclass=abc.ABCMeta):
         if len(joined) > 0:
             condition = ' and '.join(joined)
         return condition
-
-
+    '''
+    '''
     @pysnooper.snoop()
     def _sql_executer(self,sql):
         isSuccess = False
-        conn = self._get_connect()
+        conn = self.database._get_connect()
         try:
             conn.execute(sql)
             conn.commit()
@@ -707,11 +856,11 @@ class BaseClass(metaclass=abc.ABCMeta):
             self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
         conn.close()
         return isSuccess
-
-
+    '''
+    '''
     def _sql_executer_script(self,sql):
         isSuccess = False
-        conn = self._get_connect()
+        conn = self.database._get_connect()
         #cursor = conn.cursor()
         try:
             conn.executescript(sql)
@@ -725,7 +874,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         #cursor.close()
         conn.close()
         return isSuccess
-
+    '''
 
     def _get_file_context(self,fileName):
         file_object = open(fileName,encoding='utf-8')

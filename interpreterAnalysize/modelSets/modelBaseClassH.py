@@ -437,7 +437,7 @@ class ModelBaseH(InterpreterBase):
         for reportType in self.gConfig['报告类型']:
             tablePrefix = self._get_tableprefix_by_report_type(reportType)
             tableName = tablePrefix + self.gConfig['tableName']
-            self._write_to_sqlite3(mergedDataFrame, tableName)
+            self.database._write_to_sqlite3(mergedDataFrame, self.commonFields,tableName)
             self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'
                              %(self.gConfig['model'], tableName))
 

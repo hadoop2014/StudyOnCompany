@@ -226,7 +226,7 @@ class DocParserSql(DocParserBase):
         targetTableName = self._get_tablename_by_report_type(reportType, tableName)
         #with self.processLock:
             # 多进程写数据库时必须加锁
-        self._write_to_sqlite3(dataframe,targetTableName)
+        self._write_to_sqlite3(dataframe,self.commonFields, targetTableName)
         self.process_info[tableName].update({'processtime':time.time() - self.process_info[tableName]['processtime']})
 
 
@@ -245,17 +245,17 @@ class DocParserSql(DocParserBase):
 
 
     @Multiprocess.lock
-    def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
-        conn = self._get_connect()
+    def _write_to_sqlite3(self, dataFrame:DataFrame,commonFields,tableName):
+        conn = self.database._get_connect()
         dataFrame = dataFrame.T
         sql_df = dataFrame.set_index(dataFrame.columns[0],inplace=False).T
-        isRecordExist = self._is_record_exist(conn, tableName, sql_df)
+        isRecordExist = self.database._is_record_exist(conn, tableName, sql_df, commonFields)
         if isRecordExist:
-            condition = self._get_condition(sql_df)
+            condition = self.database._get_condition(sql_df, commonFields)
             sql = ''
             sql = sql + 'delete from {}'.format(tableName)
             sql = sql + '\nwhere ' + condition
-            self._sql_executer(sql)
+            self.database._sql_executer(sql)
             self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
                                                                         ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
             sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
@@ -934,9 +934,9 @@ class DocParserSql(DocParserBase):
 
     def _create_tables_by_type(self, tablePrefix,tableNames):
         #用于向Sqlite3数据库中创建新表
-        conn = self._get_connect()
+        conn = self.database._get_connect()
         cursor = conn.cursor()
-        allTables = self._fetch_all_tables(cursor)
+        allTables = self.database._fetch_all_tables(cursor)
         allTables = list(map(lambda x:x[0],allTables))
         for tableName in tableNames:
             targetTableName = tablePrefix + tableName

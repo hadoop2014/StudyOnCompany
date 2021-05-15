@@ -7,11 +7,43 @@
 
 from interpreterAnalysize.interpreterBaseClass import *
 
+class Sqlite(SqilteBase):
+    def __init__(self, databasefile, logger):
+        super(Sqlite, self).__init__(databasefile, logger)
+
+    def _write_to_sqlite3(self, dataFrame:DataFrame,commonFields,tableName):
+        conn = self._get_connect()
+        if not self._is_table_exist(conn, tableName):
+            # 如果是第一次写入, 则新建表,调用积累的函数写入
+            super(Sqlite,self)._write_to_sqlite3(dataFrame, commonFields, tableName)
+            return
+        sql_df = dataFrame.copy()
+        isRecordExist = self._is_record_exist(conn, tableName, sql_df, commonFields)
+        if isRecordExist:
+            condition = self._get_condition(sql_df, commonFields)
+            sql = ''
+            sql = sql + 'delete from {}'.format(tableName)
+            sql = sql + '\nwhere ' + condition
+            self._sql_executer(sql)
+            self.logger.info("delete from {} where is {}!".format(tableName,sql_df['公司简称'].values[0]))
+            sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
+            conn.commit()
+            self.logger.info("insert into {} where is {}!".format(tableName, sql_df['公司简称'].values[0]))
+        else:
+            if sql_df.shape[0] > 0:
+                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
+                conn.commit()
+                self.logger.info("insert into {} where is {}!".format(tableName, sql_df['公司简称'].values[0]))
+            else:
+                self.logger.error('sql_df is empty!')
+        conn.close()
+
 
 class StockAnalysize(InterpreterBase):
     def __init__(self,gConfig):
         super(StockAnalysize, self).__init__(gConfig)
         self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
+        self.database = Sqlite(self.databasefile, self.logger)   # 重置database, 对其_write_to_sqlite函数进行了重写
 
 
     def stock_index_trend_analysize(self, tableName, scale):
@@ -20,9 +52,9 @@ class StockAnalysize(InterpreterBase):
                 ,'parameter 指数简称(%s) is not valid!' % self.gConfig['指数简称']
             sourceTableName = self.dictTables[tableName]['sourceTable']
             dataFrame = self._sql_to_dataframe(tableName, sourceTableName,scale)
-            conn = self._get_connect()
-            if self._is_table_exist(conn, tableName):
-                self._drop_table(conn, tableName)
+            conn = self.database._get_connect()
+            if self.database._is_table_exist(conn, tableName):
+                self.database._drop_table(conn, tableName)
             conn.close()
             for indexName in self.gConfig['指数简称']:
                 self._index_trend_analysize(dataFrame, indexName,tableName)
@@ -88,7 +120,7 @@ class StockAnalysize(InterpreterBase):
         trendInfoLong = self._judge_last_long_trend(trendInfoLong, indexMovingAverage, tableName, indexName, trendName)
 
         trendInfoMerged = pd.concat([trendInfoMedian,trendInfoLong], axis=0)
-        self._write_to_sqlite3(trendInfoMerged, tableName)
+        self.database._write_to_sqlite3(trendInfoMerged, self.commonFields, tableName)
 
 
     def _judge_last_long_trend(self, trendInfo, indexMovingAverage, tableName, indexName, trendName):
@@ -741,7 +773,7 @@ class StockAnalysize(InterpreterBase):
                  %(self.gConfig['公司简称'],self.gConfig['报告时间'],self.gConfig['报告类型'])
             #批量处理模式时会进入此分支
             dataFrame = pd.DataFrame(self._get_stock_list(self.gConfig['指数简称']),columns=self.gJsonBase['stockcodeHeader'])
-            condition = self._get_condition(dataFrame)
+            condition = self.database._get_condition(dataFrame, self.commonFields)
             sql = ''
             sql = sql + '\nselect * '
             sql = sql + '\nfrom %s' % (sourceTableName)
@@ -749,24 +781,24 @@ class StockAnalysize(InterpreterBase):
         order = self.dictTables[tableName]["orderBy"]
         if isinstance(order,list) and len(order) > 0:
             sql = sql + '\norder by ' + ','.join(order)
-        dataframe = pd.read_sql(sql, self._get_connect())
+        dataframe = pd.read_sql(sql, self.database._get_connect())
         return dataframe
 
-
+    '''
     def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
-        conn = self._get_connect()
-        if not self._is_table_exist(conn, tableName):
+        conn = self.database._get_connect()
+        if not self.database._is_table_exist(conn, tableName):
             # 如果是第一次写入, 则新建表,调用积累的函数写入
             super(InterpreterBase,self)._write_to_sqlite3(dataFrame, tableName)
             return
         sql_df = dataFrame.copy()
-        isRecordExist = self._is_record_exist(conn, tableName, sql_df)
+        isRecordExist = self.database._is_record_exist(conn, tableName, sql_df)
         if isRecordExist:
-            condition = self._get_condition(sql_df)
+            condition = self.database._get_condition(sql_df, self.commonFields)
             sql = ''
             sql = sql + 'delete from {}'.format(tableName)
             sql = sql + '\nwhere ' + condition
-            self._sql_executer(sql)
+            self.database._sql_executer(sql)
             self.logger.info("delete from {} where is {}!".format(tableName,sql_df['公司简称'].values[0]))
             sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
             conn.commit()
@@ -779,7 +811,7 @@ class StockAnalysize(InterpreterBase):
             else:
                 self.logger.error('sql_df is empty!')
         conn.close()
-
+    '''
 
     def _get_class_name(self, gConfig):
         return "analysize"

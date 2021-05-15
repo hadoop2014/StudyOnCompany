@@ -72,7 +72,7 @@ class CrawlFinance(CrawlBase):
         #dictCompanys = self._get_deduplicate_companys(companys, self.gConfig['报告时间'], self.gConfig['报告类型'],website)
         for reportType in self.gConfig['报告类型']:
             dataFrameReportType = dataFrameNeeded[dataFrameNeeded['报告类型'] == reportType]
-            self._write_to_sqlite3(dataFrameReportType, tableName)
+            self._write_to_sqlite3(dataFrameReportType, self.commonFields, tableName)
         return
 
 
@@ -85,25 +85,25 @@ class CrawlFinance(CrawlBase):
             dataFrame.columns = self._get_merged_columns(tableName)
             for reportType in self.gConfig['报告类型']:
                 dataFrameReportType = dataFrame[dataFrame['报告类型'] == reportType]
-                self._write_to_sqlite3(dataFrameReportType,tableName)
+                self._write_to_sqlite3(dataFrameReportType, self.commonFields, tableName)
 
 
-    def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
+    def _write_to_sqlite3(self, dataFrame:DataFrame, commonFields, tableName):
         if dataFrame.shape[0] == 0:
             return
-        conn = self._get_connect()
+        conn = self.database._get_connect()
         sql_df = dataFrame.copy()
         # 大立科技2015年有两个年报,（002214）大立科技：2015年年度报告（更新后）.PDF和（002214）大立科技：2015年年度报告（已取消）.PDF,都在2016-03-26发布,需要去掉一个
         sql_df.drop_duplicates(['公司代码','报告类型','报告时间','发布时间'],keep='first',inplace=True)
         # 对于财报发布信息, 必须用报告时间, 报告类型作为过滤关键字
         specialKeys = ['报告类型','发布时间']
-        isRecordExist = self._is_record_exist(conn, tableName, sql_df, specialKeys=specialKeys)
+        isRecordExist = self.database._is_record_exist(conn, tableName, sql_df, self.commonFields, specialKeys=specialKeys)
         if isRecordExist:
-            condition = self._get_condition(sql_df,specialKeys=specialKeys)
+            condition = self.database._get_condition(sql_df, self.commonFields,specialKeys=specialKeys)
             sql = ''
             sql = sql + 'delete from {}'.format(tableName)
             sql = sql + '\n where ' + condition
-            self._sql_executer(sql)
+            self.database._sql_executer(sql)
             self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
                                                                         ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
             sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)

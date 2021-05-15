@@ -270,11 +270,11 @@ class InterpreterNature(InterpreterBase):
         dataFrameMerged = pd.merge(dataFrameCompanyCodes,dataFrameIndustryCategery,how='left',on=['公司简称'])
         columnsName = self._get_merged_columns(tableName)
         dataFrameMerged = dataFrameMerged[columnsName]
-        self._write_to_sqlite3(dataFrameMerged,tableName)
+        self._write_to_sqlite3(dataFrameMerged,self.commonFields, tableName)
 
 
-    def _write_to_sqlite3(self,dataFrame:DataFrame, tableName):
-        conn = self._get_connect()
+    def _write_to_sqlite3(self,dataFrame:DataFrame,commonFields, tableName):
+        conn = self.database._get_connect()
         sql_df = dataFrame
         companyCodeList = self._get_company_code_list(conn, tableName)
         if companyCodeList is not None:

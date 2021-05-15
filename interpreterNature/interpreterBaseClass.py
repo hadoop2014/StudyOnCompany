@@ -17,7 +17,7 @@ class InterpreterBase(BaseClass):
         if os.path.exists(self.logging_directory) == False:
             os.makedirs(self.logging_directory)
         self._get_interpreter_keyword()
-        self._create_tables(list(self.dictTables.keys()))
+        self.database._create_tables(list(self.dictTables.keys()),self.dictTables,self.commonFields)
         self._load_data()
 
 

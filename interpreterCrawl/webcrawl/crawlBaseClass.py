@@ -32,8 +32,8 @@ class CrawlBase(InterpreterBase):
         return mergedColumns
     '''
 
-    def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
-        conn = self._get_connect()
+    def _write_to_sqlite3(self, dataFrame:DataFrame, commonFields, tableName):
+        conn = self.database._get_connect()
         sql_df = dataFrame
         sql_df['公司代码'] = dataFrame['公司代码'].apply(lambda x: x.replace('\'', NULLSTR))
         sql_df['公司简称'] = dataFrame['公司简称'].apply(lambda x: x.replace(' ', NULLSTR))
@@ -59,7 +59,7 @@ class CrawlBase(InterpreterBase):
 
     def _get_max_min_trading_date(self,conn, tableName, dataFrame):
         minTradingDate, maxTradingDate = None, None
-        condition = self._get_condition(dataFrame)
+        condition = self.database._get_condition(dataFrame,self.commonFields)
         sql = "select min(报告时间), max(报告时间) from {} where ".format(tableName) + condition
         try:
             result = conn.execute(sql).fetchall()
@@ -73,7 +73,7 @@ class CrawlBase(InterpreterBase):
     '''
     def _create_tables(self,tableNames):
         # 用于想sqlite3数据库中创建新表
-        conn = self._get_connect()
+        conn = self.databaseT._get_connect()
         cursor = conn.cursor()
         allTables = self._fetch_all_tables(cursor)
         allTables = list(map(lambda x: x[0], allTables))

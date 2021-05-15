@@ -176,7 +176,7 @@ class rnndetectionModel(rnnBaseModelH):
 
     def process_write_to_sqlite3(self, mergedDataFrame):
         tableName = self.gConfig['tableName']
-        self._write_to_sqlite3(mergedDataFrame, tableName)
+        self.database._write_to_sqlite3(mergedDataFrame, self.commonFields,tableName)
         self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'
                              %(self.gConfig['model'], tableName))
 
