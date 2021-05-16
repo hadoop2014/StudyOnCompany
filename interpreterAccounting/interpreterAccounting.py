@@ -62,7 +62,7 @@ class InterpreterAccounting(InterpreterBase):
             t.lexer.skip(1)
 
         # Build the lexer
-        self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
+        self.lexer = lex.lex(outputdir=self.workingspace.directory,reflags=int(re.MULTILINE))
 
         # dictionary of names_global
         self.names = {}
@@ -581,7 +581,7 @@ class InterpreterAccounting(InterpreterBase):
 
 
         # Build the docparser
-        self.parser = yacc.yacc(outputdir=self.working_directory)
+        self.parser = yacc.yacc(outputdir=self.workingspace.directory)
 
 
     def doWork(self,lexer=None,debug=False,tracking=False):

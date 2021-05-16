@@ -492,13 +492,9 @@ class ModelBaseH(InterpreterBase):
         self.gConfig.update(dictParameter)
         self._init_parameters()
 
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        self.clear_logging_directory(self.logging_directory)
+        self.loggingspace.clear_directory(self.loggingspace.directory)
 
-        self.writer = SummaryWriter(logdir=self.logging_directory,max_queue=self.max_queue)
+        self.writer = SummaryWriter(logdir=self.loggingspace.directory,max_queue=self.max_queue)
         #self.vis = visdom.Visdom(env='test')
         assert self.gConfig['mode'] in self.gConfig['modelist']\
             ,"mode(%s) must be in modelist: %s'(self.gConfig['mode'],self.gConfig['modelist']"

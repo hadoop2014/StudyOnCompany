@@ -13,7 +13,7 @@ class InterpreterCrawl(InterpreterBase):
         super(InterpreterCrawl, self).__init__(gConfig)
         self.crawlFinance = memberModuleDict['crawlFinance']
         self.crawlStock = memberModuleDict['crawlStock']
-        self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
+        self.checkpointfilename = os.path.join(self.workingspace.directory, gConfig['checkpointfile'])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.interpretDefine()
 
@@ -43,7 +43,7 @@ class InterpreterCrawl(InterpreterBase):
             t.lexer.skip(1)
 
         # Build the lexer
-        self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
+        self.lexer = lex.lex(outputdir=self.workingspace.directory,reflags=int(re.MULTILINE))
 
         # dictionary of names_global
         self.names = {}
@@ -87,7 +87,7 @@ class InterpreterCrawl(InterpreterBase):
 
 
         # Build the docparser
-        self.parser = yacc.yacc(outputdir=self.working_directory)
+        self.parser = yacc.yacc(outputdir=self.workingspace.directory)
 
 
     def doWork(self,command,debug=False,tracking=False):

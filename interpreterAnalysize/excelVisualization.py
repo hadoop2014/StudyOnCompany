@@ -18,7 +18,7 @@ import pandas as pd
 class ExcelVisualization(InterpreterBase):
     def __init__(self,gConfig):
         super(ExcelVisualization, self).__init__(gConfig)
-        self.analysizeresult = os.path.join(self.working_directory,gConfig['analysizeresult'])
+        self.analysizeresult = os.path.join(self.workingspace.directory,gConfig['analysizeresult'])
         self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
 
 
@@ -29,7 +29,7 @@ class ExcelVisualization(InterpreterBase):
 
     def read_and_visualize(self,visualize_file,tableName,scale):
         # 专门用于写文件
-        visualize_file = os.path.join(self.working_directory,visualize_file)
+        visualize_file = os.path.join(self.workingspace.directory,visualize_file)
         #workbook = Workbook()
         #writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
         #writer.book = workbook
@@ -291,10 +291,6 @@ class ExcelVisualization(InterpreterBase):
     def initialize(self,dictParameter = None):
         if dictParameter is not None:
             self.gConfig.update(dictParameter)
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
 
 
 def create_object(gConfig):

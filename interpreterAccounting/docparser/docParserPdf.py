@@ -15,7 +15,7 @@ class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
         self._interpretPrefix = NULLSTR
-        self.checkpointfilename = os.path.join(self.working_directory, gConfig['checkpointfile'])
+        self.checkpointfilename = os.path.join(self.workingspace.directory, gConfig['checkpointfile'])
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.debugExtractTable = self.gConfig["debugExtractTable".lower()]
 
@@ -426,11 +426,7 @@ class DocParserPdf(DocParserBase):
 
 
     def initialize(self):
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        self.clear_logging_directory(self.logging_directory)
+        self.loggingspace.clear_directory(self.loggingspace.directory)
         suffix = self.sourceFile.split('.')[-1]
         assert suffix.lower() in self.gConfig['pdfSuffix'.lower()], \
             'suffix of {} is invalid,it must one of {}'.format(self.sourceFile, self.gConfig['pdfSuffix'.lower()])

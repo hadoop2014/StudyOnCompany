@@ -13,10 +13,6 @@ import itertools
 class InterpreterBase(BaseClass):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
         self._get_interpreter_keyword()
 
 

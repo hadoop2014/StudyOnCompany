@@ -11,10 +11,6 @@ from modelBaseClass import *
 class InterpreterBase(ModelBase):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
         self._get_interpreter_keyword()
 
 
@@ -87,8 +83,4 @@ class InterpreterBase(ModelBase):
 
     def initialize(self):
         #初始化一个解释器语言
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-
+        ...

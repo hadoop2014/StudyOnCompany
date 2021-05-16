@@ -3,7 +3,7 @@
 # @Time    : 9/25/2019 5:03 PM
 # @Author  : wu.hao
 # @File    : docParserBaseClass.py
-from six import unichr
+#from six import unichr
 
 from loggerClass import *
 import functools
@@ -12,11 +12,11 @@ import os
 import re
 import sqlite3 as sqlite
 import pysnooper
-import time
+#import time
 import utile
 from typing import Type
-from dateutil import rrule
-from datetime import date,timedelta,datetime
+#from dateutil import rrule
+#from datetime import date,timedelta,datetime
 from pandas import DataFrame
 import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
@@ -142,6 +142,15 @@ class Multiprocess():
 
 
 class SqilteBase():
+    """
+    用于操作Sqlite3数据库
+    1) 对数据库的操作包括: 获取连接, 创建表, 丢弃表, 数据写入, 表是否存在, 记录是否存在, 执行脚本, 执行脚本文件
+    2) _create_table, _write_to_sqlite3将被其所派生的子类覆盖
+    3) 在每次继承后,必须调用工厂方法create_database来覆盖成员变量self.database,解决各子类的继承和派生问题.
+    args:
+        databasefile - 数据库所存放的文件路径+文件名
+        logger - 当前实例的logger
+    """
     def __init__(self, databasefile,logger):
         self._databasefile = databasefile
         self.logger = logger
@@ -302,6 +311,42 @@ class SqilteBase():
         return isSuccess
 
 
+class SpaceBase(metaclass=abc.ABCMeta):
+    """
+    虚拟基类,用于派生workingspace和loggingspace,分别用于处理工作目录和日志目录的各项工作
+    args:
+        directory - working_directory 或则 logging_directory
+        logger - 当前实例的logger
+    """
+    def __init__(self, directory, logger):
+        self.directory = directory
+        self.logger = logger
+        if os.path.exists(self.directory) == False:
+            os.makedirs(self.directory)
+
+    def clear_directory(self,directory):
+        assert directory == self.directory ,\
+            'It is only clear logging directory, but %s is not'%directory
+        files = os.listdir(directory)
+        for file in files:
+            full_file = os.path.join(directory,file)
+            if os.path.isdir(full_file):
+                self.clear_directory(full_file)
+            else:
+                try:
+                    os.remove(full_file)
+                except:
+                   self.logger('Failed to clear directory %s!'%full_file)
+
+class WorkingspaceBase(SpaceBase):
+    def __init__(self, working_directory, logger):
+        super(WorkingspaceBase, self).__init__(working_directory, logger)
+
+class LoggingspaceBase(SpaceBase):
+    def __init__(self, logging_directory, logger):
+        super(LoggingspaceBase, self).__init__(logging_directory, logger)
+
+
 class BaseClass(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __init__(self,gConfig):
@@ -309,19 +354,17 @@ class BaseClass(metaclass=abc.ABCMeta):
         self.gJsonInterpreter = gConfig['gJsonInterpreter'.lower()]
         self.gJsonBase = gConfig['gJsonBase'.lower()]
         #self.debugIsOn = gConfig['debugIsOn'.lower()]
+        self.logger = Logger(gConfig,self._get_class_name(gConfig)).logger # 不同的类继承BaseClass时,logger采用不同的名字
+        self.database = self.create_database(SqilteBase)
         self.program_directory = gConfig['program_directory']
-        self.working_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
-        self.logging_directory = os.path.join(self.gConfig['logging_directory'], self._get_module_path())
+        self.workingspace = self.create_space(WorkingspaceBase)
+        self.loggingspace = self.create_space(LoggingspaceBase)
         self.data_directory = gConfig['data_directory']
         self.stockcodefile = os.path.join(self.data_directory,self.gConfig['stockcodefile'])
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._data = list()
         self._index = 0
         self._length = len(self._data)
-        #不同的类继承BaseClass时,logger采用不同的名字
-        self._logger = Logger(gConfig,self._get_class_name(gConfig)).logger
-        self.databasefile = os.path.join(gConfig['working_directory'],gConfig['database'])
-        self.database = self.create_database(SqilteBase)
         self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
         self.reportTypes =  self.gJsonBase['reportType']
         self.companyAlias = self.gJsonBase['companyAlias']
@@ -352,14 +395,21 @@ class BaseClass(metaclass=abc.ABCMeta):
         return self._data[item]
 
 
-    def create_database(self, DataBase):
-        return DataBase(self.databasefile, self.logger)
+    def create_space(self, SpaceBase) -> SpaceBase:
+        if WorkingspaceBase.__subclasscheck__(SpaceBase):
+            space_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
+        elif LoggingspaceBase.__subclasscheck__(SpaceBase):
+            space_directory = os.path.join(self.gConfig['logging_directory'], self._get_module_path())
+        else:
+            raise NotImplementedError('create_space class %s is not implement' % SpaceBase)
+        return SpaceBase(space_directory, self.logger)
 
-    '''
-    def _get_connect(self):
-        #用于获取数据库连接
-        return sqlite.connect(self.database)
-    '''
+
+    def create_database(self, DataBase) -> SqilteBase:
+        # SqilteBase及其派生类的工厂方
+        databasefile = os.path.join(self.gConfig['working_directory'], self.gConfig['database'])
+        return DataBase(databasefile, self.logger)
+
 
     def _get_interpreter_keyword(self):
         # 编译器,文件解析器共同使用的关键字
@@ -563,39 +613,6 @@ class BaseClass(metaclass=abc.ABCMeta):
                 standardizedField = NaN
         return standardizedField
 
-
-    def _strQ2B(self,ustring):
-        """把字符串全角转半角"""
-        rstring = ""
-        for uchar in ustring:
-            inside_code = ord(uchar)
-            if inside_code == 0x3000:
-                inside_code = 0x0020
-            else:
-                inside_code -= 0xfee0
-            if inside_code < 0x0020 or inside_code > 0x7e:  # 转完之后不是半角字符返回原来的字符
-                rstring += uchar
-            else:
-                rstring += unichr(inside_code)
-        return rstring
-
-
-    def _strB2Q(self,ustring):
-        """把字符串半角转全角"""
-        rstring = ""
-        for uchar in ustring:
-            inside_code = ord(uchar)
-            if inside_code == 0x0020:  # 除了空格其他的全角半角的公式为:半角=全角-0xfee0
-                inside_code = 0x3000
-            else:
-                inside_code += 0xfee0
-            if inside_code < 0x0020 or inside_code > 0x7e:  # 不是半角字符就返回原来的字符
-                rstring += uchar
-            else:
-                rstring += unichr(inside_code)
-        return rstring
-
-
     def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:
             dictTable = list()
@@ -646,75 +663,6 @@ class BaseClass(metaclass=abc.ABCMeta):
         path = os.path.join(*module.split('.'))
         return path
 
-    '''
-    def _write_to_sqlite3(self,dataFrame:DataFrame, tableName):
-        conn = self.database._get_connect()
-        dataFrame.to_sql(tableName, conn, if_exists='replace', index=False)
-        conn.close()
-    '''
-    '''
-    def _get_time_now(self):
-        return time.strftime('%Y%m%d')
-    '''
-
-    def _time_add(self,unit, startTime, deltaTime):
-        # 支持两种日期格式, 2020-1-30, 2020/1/30
-        try:
-            startTime = datetime.strptime(startTime, '%Y-%m-%d')
-        except:
-            startTime = datetime.strptime(startTime, '%Y/%m/%d')
-        if unit == 'weeks':
-            timeAdded = startTime + timedelta(weeks=deltaTime)
-        elif unit == 'days':
-            timeAdded = startTime + timedelta(days=deltaTime)
-        elif unit == 'hours':
-            timeAdded = startTime + timedelta(hours=deltaTime)
-        elif unit == 'minutes':
-            timeAdded = startTime + timedelta(minutes=deltaTime)
-        elif unit == 'seconds':
-            timeAdded = startTime + timedelta(seconds=deltaTime)
-        elif unit == 'millliseconds':
-            timeAdded = startTime + timedelta(milliseconds=deltaTime)
-        else:
-            raise ValueError('unit(%s) is not supported, now only support unit: weeks,days,hours,minutes,seconds,milliseoconds')
-        return timeAdded
-
-
-    def _time_difference(self,unit,  startTime, endTime):
-        # 支持两种日期格式, 2020-1-30, 2020/1/30
-        try:
-            endTime = datetime.strptime(endTime,'%Y-%m-%d')
-        except:
-            endTime = datetime.strptime(endTime,'%Y/%m/%d')
-        try:
-            startTime = datetime.strptime(startTime,'%Y-%m-%d')
-        except:
-            startTime = datetime.strptime(startTime, '%Y/%m/%d')
-        #if unit == 'year':
-        #    timeInterval = rrule.rrule(freq=rrule.YEARLY, dtstart=startTime, until=endTime).count()
-        if unit == 'days':
-            timeInterval = (endTime - startTime).days
-        elif unit == 'seconds':
-            # total_seconds是包含天数差,转化过来的秒差
-            timeInterval = (endTime - startTime).total_seconds()
-        else:
-            raise ValueError('unit(%s) is not supported, now only support unit: days,seconds')
-        return timeInterval
-
-
-    def _get_last_week_day(self):
-        now = date.today()
-        if now.isoweekday() == 7:
-            dayStep = 2
-        elif now.isoweekday() == 6:
-            dayStep = 1
-        else:
-            dayStep = 0
-        #print(dayStep)
-        lastWorkDay = now - timedelta(days=dayStep)
-        lastWorkDay = lastWorkDay.strftime('%Y%m%d')
-        return lastWorkDay
-
 
     def _is_matched(self,pattern,field):
         isMatched = False
@@ -730,156 +678,6 @@ class BaseClass(metaclass=abc.ABCMeta):
         mergedColumns = mergedColumns + self.dictTables[tableName]['fieldName']
         return mergedColumns
 
-    '''
-    def _create_tables(self,tableNames):
-        # 用于想sqlite3数据库中创建新表
-        conn = self.database._get_connect()
-        cursor = conn.cursor()
-        allTables = self.database._fetch_all_tables(cursor)
-        allTables = list(map(lambda x: x[0], allTables))
-        for tableName in tableNames:
-            targetTableName =  tableName
-            if targetTableName not in allTables:
-                sql = " CREATE TABLE IF NOT EXISTS [%s] ( \n\t\t\t\t\t" % targetTableName
-                for commonFiled, type in self.commonFields.items():
-                    sql = sql + "[%s] %s\n\t\t\t\t\t," % (commonFiled, type)
-                # 由表头转换生产的字段
-                fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
-                if len(fieldFromHeader) != 0:
-                    for field in fieldFromHeader:
-                        sql = sql + "[%s] VARCHAR(20)\n\t\t\t\t\t," % field
-                sql = sql[:-1]  # 去掉最后一个逗号
-                # 创建新表
-                standardizedFields = self.dictTables[tableName]['fieldName']
-                #duplicatedFields = self._get_duplicated_field(standardizedFields)
-                duplicatedFields = standardizedFields
-                for fieldName in duplicatedFields:
-                    if fieldName is not NaN:
-                        if 'fieldType' in self.dictTables[tableName].keys() \
-                            and fieldName in self.dictTables[tableName]['fieldType'].keys():
-                            type = self.dictTables[tableName]['fieldType'][fieldName]
-                        else:
-                            type = 'NUMERIC'
-                        sql = sql + "\n\t\t\t\t\t,[%s]  %s" % (fieldName, type)
-                sql = sql + '\n\t\t\t\t\t)'
-                try:
-                    conn.execute(sql)
-                    conn.commit()
-                    print('创建数据库表%s成功' % (targetTableName))
-                except Exception as e:
-                    # 回滚
-                    conn.rollback()
-                    print(e, ' 创建数据库表%s失败' % targetTableName)
-
-                # 创建索引
-                sql = "CREATE INDEX IF NOT EXISTS [%s索引] on [%s] (\n\t\t\t\t\t" % (targetTableName, targetTableName)
-                sql = sql + ", ".join(str(field) for field, value in self.commonFields.items()
-                                      if value.find('NOT NULL') >= 0)
-                sql = sql + '\n\t\t\t\t\t)'
-                try:
-                    conn.execute(sql)
-                    conn.commit()
-                    print('创建数据库%s索引成功' % (targetTableName))
-                except Exception as e:
-                    # 回滚
-                    conn.rollback()
-                    print(e, ' 创建数据库%s索引失败' % targetTableName)
-        cursor.close()
-        conn.close()
-    '''
-    '''
-    def _fetch_all_tables(self, cursor):
-        #获取数据库中所有的表,用于判断待新建的表是否已经存在
-        try:
-            cursor.execute("select name from sqlite_master where type='table' order by name")
-        except Exception as e:
-            print(e)
-        return cursor.fetchall()
-    '''
-    '''
-    def _drop_table(self,conn,tableName):
-        sql = 'drop table if exists \'{}\''.format(tableName)
-        result = conn.execute(sql).fetchall()
-        return result
-    '''
-    '''
-    def _is_table_exist(self,conn, tableName):
-        # 判断数据库中该表是否存在
-        isTableExist = False
-        sql = 'SELECT count(*) FROM sqlite_master WHERE type="table" AND name = \'{}\''.format(tableName)
-        result = conn.execute(sql).fetchall()
-        if len(result) > 0:
-            isTableExist = result[0][0] > 0
-        return isTableExist
-    '''
-    '''
-    def _is_record_exist(self, conn, tableName, dataFrame:DataFrame,specialKeys = None):
-        #用于数据在插入数据库之前,通过组合的关键字段判断记录是否存在.
-        #对于Sqlit3,字符串表示为'string' ,而不是"string".
-        isRecordExist = False
-        condition = self._get_condition(dataFrame,specialKeys)
-        if condition == NULLSTR:
-            #condition为空时,说明dataFrame没有有效数据,直接返回False
-            return isRecordExist
-        sql = 'select count(*) from {} where '.format(tableName) + condition
-        result = conn.execute(sql).fetchall()
-        if len(result) > 0:
-            isRecordExist = (result[0][0] > 0)
-        return isRecordExist
-    '''
-    '''
-    def _get_condition(self,dataFrame,specialKeys = None):
-        primaryKey = [key for key, value in self.commonFields.items() if value.find('NOT NULL') >= 0]
-        if specialKeys is not None and isinstance(specialKeys,list):
-            primaryKey = primaryKey + specialKeys
-        # 对于Sqlit3,字符串表示为'string' ,而不是"string".
-        joined = list()
-        for key in primaryKey:
-            if dataFrame[key].shape[0] == 0:
-                joined = list()
-                break
-            current = '(' + ' or '.join(['{} = \'{}\''.format(key,value) for value in set(dataFrame[key].tolist())]) + ')'
-            joined = joined + list([current])
-        condition = NULLSTR
-        if len(joined) > 0:
-            condition = ' and '.join(joined)
-        return condition
-    '''
-    '''
-    @pysnooper.snoop()
-    def _sql_executer(self,sql):
-        isSuccess = False
-        conn = self.database._get_connect()
-        try:
-            conn.execute(sql)
-            conn.commit()
-            self.logger.debug('success to execute sql(脚本执行成功):\n%s' % sql)
-            isSuccess = True
-        except Exception as e:
-            # 回滚
-            conn.rollback()
-            self.logger.error('failed to execute sql(脚本执行失败):%s\n%s' % (str(e),sql))
-        conn.close()
-        return isSuccess
-    '''
-    '''
-    def _sql_executer_script(self,sql):
-        isSuccess = False
-        conn = self.database._get_connect()
-        #cursor = conn.cursor()
-        try:
-            conn.executescript(sql)
-            conn.commit()
-            self.logger.info('success to execute sql(脚本执行成功)!')
-            isSuccess = True
-        except Exception as e:
-            # 回滚
-            conn.rollback()
-            self.logger.error('failed to execute sql(脚本执行失败):%s' % (str(e)))
-        #cursor.close()
-        conn.close()
-        return isSuccess
-    '''
 
     def _get_file_context(self,fileName):
         file_object = open(fileName,encoding='utf-8')
@@ -918,22 +716,9 @@ class BaseClass(metaclass=abc.ABCMeta):
         return stockList
 
 
-    def _year_plus(self,reportTime, plusNumber):
-        # 2019年 + 1 = 2020年, 2020年 - 1 = 2019年
-        assert isinstance(reportTime,str) and isinstance(plusNumber,int),'reportTime must be str and plusNumber must be int!'
-        newYear = int(reportTime.split('年')[0]) + plusNumber
-        newYear = str(newYear) + '年'
-        return newYear
-
-
     @property
     def index(self):
         return self._index - 1
-
-
-    @property
-    def logger(self):
-        return self._logger
 
 
     def loginfo(text = NULLSTR):
@@ -941,7 +726,7 @@ class BaseClass(metaclass=abc.ABCMeta):
             @functools.wraps(func)
             def wrapper(self,*args, **kwargs):
                 result = func(self,*args, **kwargs)
-                self._logger.info('%s %s() %s:\n\t%s' % (text, func.__name__, list([*args]), result))
+                self.logger.info('%s %s() %s:\n\t%s' % (text, func.__name__, list([*args]), result))
                 return result
             return wrapper
         return decorator

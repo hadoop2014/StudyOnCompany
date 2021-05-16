@@ -350,7 +350,7 @@ class CrawlFinance(CrawlBase):
 
     def _get_crawl_time(self,crawlTime, reportType):
         if reportType == '年度报告':
-            crawlTime = self._year_plus(crawlTime, -1)
+            crawlTime = utile.year_plus(crawlTime, -1)
         return crawlTime
 
 
@@ -511,7 +511,7 @@ class CrawlFinance(CrawlBase):
         if matched is not None:
             company = ''.join(matched)
         #全角字符转换成半角字符，比如把 华侨城Ａ 转换成 华侨城A
-        company = self._strQ2B(company)
+        company = utile.strQ2B(company)
         company = self._get_company_alias(company)
         return company
 
@@ -533,11 +533,7 @@ class CrawlFinance(CrawlBase):
     def initialize(self,dictParameter = None):
         if dictParameter is not None:
             self.gConfig.update(dictParameter)
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        self.clear_logging_directory(self.logging_directory)
+        self.loggingspace.clear_directory(self.loggingspace.directory)
         if self.checkpointIsOn:
             if not os.path.exists(self.checkpointfilename):
                 fw = open(self.checkpointfilename,'w',newline='',encoding='utf-8')

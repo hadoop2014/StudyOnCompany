@@ -387,7 +387,7 @@ class rnnModel(ModelBaseM):
             net,state = self.net(input_symbol,state_symbol)
             mx.viz.plot_network(net, title=title, save_format='png', hide_weights=False,
                                 shape=input_shape) \
-                    .view(directory=self.logging_directory)
+                    .view(directory=self.loggingspace.directory)
         return
 
 

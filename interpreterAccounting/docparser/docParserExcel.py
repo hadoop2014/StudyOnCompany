@@ -12,7 +12,7 @@ import pandas as pd
 class DocParserExcel(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserExcel, self).__init__(gConfig)
-        self.targetFile = os.path.join(self.working_directory,
+        self.targetFile = os.path.join(self.workingspace.directory,
                                        '.'.join([os.path.split(self.sourceFile)[-1].split('.')[0],'.xlsx']))
         self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.workbook = Workbook()
@@ -33,13 +33,9 @@ class DocParserExcel(DocParserBase):
 
 
     def initialize(self,dictParameter=None):
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        self.clear_logging_directory(self.logging_directory)
+        self.loggingspace.clear_directory(self.loggingspace.directory)
         if dictParameter is not None:
-            self.targetFile = os.path.join(self.working_directory,
+            self.targetFile = os.path.join(self.workingspace.directory,
                                        '.'.join([os.path.split(dictParameter['sourcefile'])[-1].split('.')[0], 'xlsx']))
         suffix = self.targetFile.split('.')[-1]
         assert suffix in self.gConfig['excelSuffix'.lower()], \

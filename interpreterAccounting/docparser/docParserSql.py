@@ -91,7 +91,7 @@ class DocParserSql(DocParserBase):
             t.lexer.skip(1)
 
         # Build the lexer
-        lexer = lex.lex(outputdir=self.working_directory)
+        lexer = lex.lex(outputdir=self.workingspace.directory)
         return lexer
 
     def _get_dict_tokens(self, tableName, tokenName='field'):
@@ -1018,11 +1018,7 @@ class DocParserSql(DocParserBase):
 
 
     def initialize(self):
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        self.clear_logging_directory(self.logging_directory)
+        self.loggingspace.clear_directory(self.loggingspace.directory)
 
 
 def create_object(gConfig):

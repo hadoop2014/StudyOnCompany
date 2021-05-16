@@ -12,11 +12,9 @@ class DocParserBase(InterpreterBase):
     def __init__(self,gConfig):
         super(DocParserBase, self).__init__(gConfig)
         self.start_time = time.time()
-        self.model_savefile = os.path.join(self.working_directory,self._get_class_name(self.gConfig) + '.model')
+        self.model_savefile = os.path.join(self.workingspace.directory,self._get_class_name(self.gConfig) + '.model')
         self.source_directory = os.path.join(self.data_directory,self.gConfig['source_directory'])
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['source_directory'],self.gConfig['sourcefile'])
-        self.taskResult = os.path.join(self.gConfig['working_directory'],self.gConfig['taskResult'.lower()])
-
 
     def _get_standardized_header(self,headerList,tableName):
         assert headerList is not None, 'sourceRow(%s) must not be None' % headerList
@@ -118,22 +116,6 @@ class DocParserBase(InterpreterBase):
     def debug(self, layer, name=NULLSTR):
         pass
 
-
-    def clear_logging_directory(self,logging_directory):
-        assert logging_directory == self.logging_directory ,\
-            'It is only clear logging directory, but %s is not'%logging_directory
-        files = os.listdir(logging_directory)
-        for file in files:
-            full_file = os.path.join(logging_directory,file)
-            if os.path.isdir(full_file):
-                self.clear_logging_directory(full_file)
-            else:
-                try:
-                    os.remove(full_file)
-                except:
-                   print('%s is not be removed'%full_file)
-
-
     # 装饰器，用于在unittest模式下，只返回一个数据，快速迭代
     @staticmethod
     def getdataForUnittest(getdata):
@@ -156,8 +138,4 @@ class DocParserBase(InterpreterBase):
 
 
     def initialize(self):
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        self.clear_logging_directory(self.logging_directory)
+        self.loggingspace.clear_directory(self.loggingspace.directory)

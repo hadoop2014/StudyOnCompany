@@ -12,10 +12,6 @@ class InterpreterBase(BaseClass):
     def __init__(self,gConfig):
         super(InterpreterBase, self).__init__(gConfig)
         self.mainprogram = os.path.join(self.program_directory,self.gConfig['mainprogram'])
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
         self._get_interpreter_keyword()
         self.database._create_tables(list(self.dictTables.keys()),self.dictTables,self.commonFields)
         self._load_data()

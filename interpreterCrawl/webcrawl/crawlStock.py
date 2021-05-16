@@ -69,7 +69,7 @@ class CrawlStock(CrawlBase):
         assert tableName in self.tableNames, "tableName(%s) must be in table list(%s)" % (tableName, self.tableNames)
         successPaths = []
         for fileName in fileList:
-            fullfileName = os.path.join(self.working_directory, fileName[0])
+            fullfileName = os.path.join(self.workingspace.directory, fileName[0])
             if not os.path.exists(fullfileName):
                 self.logger.info('file %s is not exist!' % fullfileName)
                 continue
@@ -87,7 +87,7 @@ class CrawlStock(CrawlBase):
         stockInfoURL = self.dictWebsites[website]['download_path']
         tableName = self.dictWebsites[website]['tableName']
         fieldNameEn = self.dictTables[tableName]['fieldAlias'].values()
-        endTime = self._get_last_week_day()
+        endTime = utile.get_last_week_day()
         resultPaths = []
         stockList = self._get_deduplicate_stock(stockList,endTime)
         for company, code, type in stockList:
@@ -99,7 +99,7 @@ class CrawlStock(CrawlBase):
                   + '&end=' + endTime \
                   + '&fields=' + ';'.join(fieldNameEn)
             fileName = "（" + code + "）" + company + '.csv'
-            fullfileName = os.path.join(self.working_directory, fileName)
+            fullfileName = os.path.join(self.workingspace.directory, fileName)
             try:
                 if os.path.exists(fullfileName):
                     os.remove(fullfileName)
@@ -119,13 +119,13 @@ class CrawlStock(CrawlBase):
 
     def _process_construct_stock_list(self, stockList):
         #endTime = time.strftime('%Y%m%d')
-        endTime = self._get_time_now()
+        endTime = utile.get_time_now()
         #endTime = self._get_last_week_day()
         stockList = self._get_deduplicate_stock(stockList,endTime)
         resultPaths = []
         for company, code, type in stockList:
             fileName = "（" + code + "）" + company + '.csv'
-            fullfileName = os.path.join(self.working_directory, fileName)
+            fullfileName = os.path.join(self.workingspace.directory, fileName)
             if os.path.exists(fullfileName):
                 resultPaths.append([fileName, company, str(code), endTime])
                 self.logger.info('success to get stock (%s)%s trading data!'% (code, company))
@@ -325,11 +325,7 @@ class CrawlStock(CrawlBase):
     def initialize(self,dictParameter = None):
         if dictParameter is not None:
             self.gConfig.update(dictParameter)
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        self.clear_logging_directory(self.logging_directory)
+        self.loggingspace.clear_directory(self.loggingspace.directory)
         if self.checkpointIsOn:
             if not os.path.exists(self.checkpointfilename):
                 fw = open(self.checkpointfilename,'w',newline='',encoding='utf-8')

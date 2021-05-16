@@ -111,7 +111,7 @@ class ModelBaseM(InterpreterBase):
         net = self.net(input_symbol)
         mx.viz.plot_network(net, title=title, save_format='png', hide_weights=False,
                             shape=input_shape) \
-                .view(directory=self.logging_directory)
+                .view(directory=self.loggingspace.directory)
         return
 
 
@@ -290,7 +290,7 @@ class ModelBaseM(InterpreterBase):
     def transfer_learning(self):
         # 迁移学习
         pretrained_net = self.get_pretrain_model(pretrained=True, ctx=self.ctx,
-                                                 root=self.working_directory, classes=self.get_classes())
+                                                 root=self.workingspace.directory, classes=self.get_classes())
         net = self.get_pretrain_model(classes=self.get_classes())
         net.features = pretrained_net.features
         net.output.initialize(self.weight_initializer, ctx=self.ctx)
@@ -302,11 +302,6 @@ class ModelBaseM(InterpreterBase):
         assert dictParameter is not None,'dictParameter must not be None!'
         self.gConfig.update(dictParameter)
         self._init_parameters()
-
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
 
         ckpt = self.getSaveFile()
         ckpt_used = self.gConfig['ckpt_used']

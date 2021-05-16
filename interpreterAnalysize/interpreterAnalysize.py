@@ -57,7 +57,7 @@ class InterpreterAnalysize(InterpreterBase):
             t.lexer.skip(1)
 
         # Build the lexer
-        self.lexer = lex.lex(outputdir=self.working_directory,reflags=int(re.MULTILINE))
+        self.lexer = lex.lex(outputdir=self.workingspace.directory,reflags=int(re.MULTILINE))
 
         # dictionary of names_global
         self.names = {}
@@ -106,7 +106,7 @@ class InterpreterAnalysize(InterpreterBase):
                 self.logger.error("Syntax error at EOF page")
 
         # Build the docparser
-        self.parser = yacc.yacc(outputdir=self.working_directory)
+        self.parser = yacc.yacc(outputdir=self.workingspace.directory)
 
 
     def doWork(self,commond,lexer=None,debug=False,tracking=False):
