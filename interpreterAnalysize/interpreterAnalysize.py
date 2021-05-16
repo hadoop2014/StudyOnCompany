@@ -193,7 +193,11 @@ class InterpreterAnalysize(InterpreterBase):
         self.handleStart(modelModule, modelModule, gConfig, handle)
 
 
+    @Logger.log_runtime
     def handleStart(self, model, model_eval, gConfig,handle):
+        '''
+        explain: 模型训练功能
+        '''
         getdataClass = gConfig['getdataClass']
         framework = gConfig['framework']
         modelName = gConfig['model']
@@ -203,7 +207,7 @@ class InterpreterAnalysize(InterpreterBase):
             num_epochs = 1
         else:
             num_epochs = gConfig['train_num_epoch']
-        start_time = time.time()
+        #start_time = time.time()
 
         if handle == '训练':
             self.logger.info("\n\n(%s %s %s %s) is starting, use optimizer %s,ctx=%s,initializer=%s,check_point=%s,"
@@ -213,13 +217,13 @@ class InterpreterAnalysize(InterpreterBase):
             losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test = \
                 model.train(model_eval, getdataClass, gConfig, num_epochs)
             getdataClass.endProcess()
-            self.logger.info('training %s end, time used %.4f' % (modelName, (time.time() - start_time)))
+            self.logger.info('training %s end' % (modelName))
             self.plotLossAcc(losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, modelName)
         elif handle == '应用':
             self.logger.info("Starting apply %s at (%s %s) to predict ..................................... "
                              % (modelName, framework, dataset))
             model.apply_model(model_eval.net)
-            self.logger.info('apply model %s end, time used %.4f\n\n' % (modelName, (time.time() - start_time)))
+            self.logger.info('apply model %s end\n\n' % (modelName))
 
 
     def plotLossAcc(self,losses_train, acces_train, losses_valid, acces_valid, losses_test, acces_test, gConfig, taskName):

@@ -12,7 +12,7 @@ class DocParserBase(InterpreterBase):
     def __init__(self,gConfig):
         super(DocParserBase, self).__init__(gConfig)
         self.start_time = time.time()
-        self.model_savefile = os.path.join(self.workingspace.directory,self._get_class_name(self.gConfig) + '.model')
+        #self.model_savefile = os.path.join(self.workingspace.directory,self._get_class_name(self.gConfig) + '.model')
         self.source_directory = os.path.join(self.data_directory,self.gConfig['source_directory'])
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['source_directory'],self.gConfig['sourcefile'])
 
@@ -75,19 +75,19 @@ class DocParserBase(InterpreterBase):
         isRowAllInvalid = not self._is_valid(mergedField)
         return isRowAllInvalid
 
-
+    '''
     def _get_class_name(self, gConfig):
         parser_name = re.findall('DocParser(.*)', self.__class__.__name__).pop().lower()
         assert parser_name in gConfig['docformatlist'], \
             'docformatlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
             (gConfig['docformatlist'], parser_name, self.__class__.__name__)
         return parser_name
-
+    '''
 
     def saveCheckpoint(self):
         pass
 
-
+    '''
     def getSaveFile(self):
         if self.model_savefile == NULLSTR:
             self.model_savefile = None
@@ -104,7 +104,7 @@ class DocParserBase(InterpreterBase):
             filename = os.path.join(os.getcwd(), self.model_savefile)
             if os.path.exists(filename):
                 os.remove(filename)
-
+    '''
 
     def debug_info(self, info=None):
         if self.debugIsOn == False:

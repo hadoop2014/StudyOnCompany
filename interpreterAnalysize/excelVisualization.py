@@ -21,11 +21,11 @@ class ExcelVisualization(InterpreterBase):
         self.analysizeresult = os.path.join(self.workingspace.directory,gConfig['analysizeresult'])
         self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
 
-
+    '''
     def _get_class_name(self, gConfig):
         visualization_name = re.findall('(.*)Visualization', self.__class__.__name__).pop().lower()
         return visualization_name
-
+    '''
 
     def read_and_visualize(self,visualize_file,tableName,scale):
         # 专门用于写文件

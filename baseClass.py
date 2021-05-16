@@ -7,16 +7,13 @@
 
 from loggerClass import *
 import functools
-import numpy as np
 import os
 import re
 import sqlite3 as sqlite
 import pysnooper
-#import time
 import utile
+from constant import *
 from typing import Type
-#from dateutil import rrule
-#from datetime import date,timedelta,datetime
 from pandas import DataFrame
 import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
@@ -24,12 +21,6 @@ import abc
 import threading
 import multiprocessing
 #数据读写处理的基类
-
-NULLSTR = ''
-NONESTR = 'None'
-NaN = np.nan
-EOF = 'EOF）'  #加）可解决fidller
-
 
 # 用于定义单例,使用方法:
 # class Example(metaclass = MetaSingleton)
@@ -354,7 +345,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         self.gJsonInterpreter = gConfig['gJsonInterpreter'.lower()]
         self.gJsonBase = gConfig['gJsonBase'.lower()]
         #self.debugIsOn = gConfig['debugIsOn'.lower()]
-        self.logger = Logger(gConfig,self._get_class_name(gConfig)).logger # 不同的类继承BaseClass时,logger采用不同的名字
+        self.logger = Logger(gConfig,self._get_module_name()).logger # 不同的类继承BaseClass时,logger采用不同的名字
         self.database = self.create_database(SqilteBase)
         self.program_directory = gConfig['program_directory']
         self.workingspace = self.create_space(WorkingspaceBase)
@@ -653,15 +644,21 @@ class BaseClass(metaclass=abc.ABCMeta):
     def _debug_info(self):
         pass
 
-
+    '''
     def _get_class_name(self,*args):
         return 'Base'
-
+    '''
 
     def _get_module_path(self):
         module = self.__class__.__module__
         path = os.path.join(*module.split('.'))
         return path
+
+
+    def _get_module_name(self):
+        module = self.__class__.__module__
+        module_name = module.split('.')[-1].lower()
+        return module_name
 
 
     def _is_matched(self,pattern,field):

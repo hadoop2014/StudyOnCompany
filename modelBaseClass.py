@@ -14,9 +14,9 @@ class ModelBase(BaseClass):
         #self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.check_book = self.get_check_book()
         self.model_savefile = os.path.join(self.workingspace.directory,
-                                           self._get_class_name(self.gConfig) + '.model')# + self.gConfig['framework'])
+                                           self._get_module_name() + '.model')# + self.gConfig['framework'])
         self.symbol_savefile = os.path.join(self.workingspace.directory,
-                                            self._get_class_name(self.gConfig) + '.symbol')# + self.gConfig['framework'])
+                                            self._get_module_name() + '.symbol')# + self.gConfig['framework'])
         self.losses_train = []
         self.acces_train = []
         self.losses_valid = []
@@ -43,10 +43,10 @@ class ModelBase(BaseClass):
             raise ValueError("%s is not exist,you must create first!" % check_file)
         return check_book
 
-
+    '''
     def _get_class_name(self, gConfig):
         return "ModelBase"
-
+    '''
 
     def get_net(self):
         pass

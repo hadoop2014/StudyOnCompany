@@ -28,7 +28,7 @@ class InterpreterBase(BaseClass):
         pageText = self._data
         return pageText
 
-
+    '''
     def _get_class_name(self, gConfig):
         #获取解释器的名称
         dataset_name = re.findall('Interpreter(.*)', self.__class__.__name__).pop().lower()
@@ -36,7 +36,7 @@ class InterpreterBase(BaseClass):
             'interpreterlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
             (gConfig['interpreterlist'], dataset_name, self.__class__.__name__)
         return dataset_name
-
+    '''
 
     def _get_interpreter_keyword(self):
         super(InterpreterBase,self)._get_interpreter_keyword()

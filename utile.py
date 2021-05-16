@@ -8,11 +8,14 @@
 from six import unichr
 import time
 import datetime
+from constant import *
 from datetime import date,timedelta,datetime
 
 def get_time_now():
     return time.strftime('%Y%m%d')
 
+def get_today():
+    return datetime.now().strftime('%Y-%m-%d')
 
 def time_add(unit, startTime, deltaTime):
     # 支持两种日期格式, 2020-1-30, 2020/1/30
@@ -111,3 +114,15 @@ def strB2Q(ustring):
         else:
             rstring += unichr(inside_code)
     return rstring
+
+
+def get_function_explain(function) -> str:
+    '''
+    explain : 从函数的__doc__中取出函数的用途说明,及explain后的一段文字(只取第一行)
+    '''
+    func_doc = function.__doc__.strip()
+    func_doc = func_doc.split(':')
+    func_doc_dict = dict((func_doc[index - 1], word) for index, word in enumerate(func_doc) if index % 2 == 1 )
+    func_explain = func_doc_dict.get('explain', NULLSTR)
+    func_explain = func_explain.strip().split('\n')[0]
+    return func_explain

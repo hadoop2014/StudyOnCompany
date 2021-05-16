@@ -44,7 +44,11 @@ class StockAnalysize(InterpreterBase):
         self.database = self.create_database(Sqlite)   # 重置database, 对其_write_to_sqlite函数进行了重写
 
 
+    @Logger.log_runtime
     def stock_index_trend_analysize(self, tableName, scale):
+        '''
+        explain: 指数趋势分析
+        '''
         if scale == '批量':
             assert '指数简称' in self.gConfig.keys() and self.gConfig['指数简称'] != NULLSTR\
                 ,'parameter 指数简称(%s) is not valid!' % self.gConfig['指数简称']
@@ -55,9 +59,13 @@ class StockAnalysize(InterpreterBase):
                 self.database._drop_table(conn, tableName)
             conn.close()
             for indexName in self.gConfig['指数简称']:
+                # 对指数趋势分析采用了多进程
                 self._index_trend_analysize(dataFrame, indexName,tableName)
+            #采用多进程后,最后调用Multiprocess.release等待多进程运行结束
+            Multiprocess.release()
 
 
+    @Multiprocess
     def _index_trend_analysize(self,dataFrame: DataFrame, indexName,tableName):
         """
         explain:
@@ -147,8 +155,7 @@ class StockAnalysize(InterpreterBase):
         longTermDay = self.dictTables[tableName]['trend_settings']['longTermDay']
 
         lastTrendType = NULLSTR
-        #iDimension = 0
-        today = datetime.now().strftime('%Y-%m-%d')
+        today = utile.get_today()
         for iLoop in range(trendInfo.shape[0]):
             if utile.time_difference('days', trendInfo['报告时间'].iloc[iLoop], today) <= longTermDay:
                 if lastTrendType == NULLSTR:
@@ -783,37 +790,9 @@ class StockAnalysize(InterpreterBase):
         return dataframe
 
     '''
-    def _write_to_sqlite3(self, dataFrame:DataFrame,tableName):
-        conn = self.database._get_connect()
-        if not self.database._is_table_exist(conn, tableName):
-            # 如果是第一次写入, 则新建表,调用积累的函数写入
-            super(InterpreterBase,self)._write_to_sqlite3(dataFrame, tableName)
-            return
-        sql_df = dataFrame.copy()
-        isRecordExist = self.database._is_record_exist(conn, tableName, sql_df)
-        if isRecordExist:
-            condition = self.database._get_condition(sql_df, self.commonFields)
-            sql = ''
-            sql = sql + 'delete from {}'.format(tableName)
-            sql = sql + '\nwhere ' + condition
-            self.database._sql_executer(sql)
-            self.logger.info("delete from {} where is {}!".format(tableName,sql_df['公司简称'].values[0]))
-            sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
-            conn.commit()
-            self.logger.info("insert into {} where is {}!".format(tableName, sql_df['公司简称'].values[0]))
-        else:
-            if sql_df.shape[0] > 0:
-                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
-                conn.commit()
-                self.logger.info("insert into {} where is {}!".format(tableName, sql_df['公司简称'].values[0]))
-            else:
-                self.logger.error('sql_df is empty!')
-        conn.close()
-    '''
-
     def _get_class_name(self, gConfig):
         return "analysize"
-
+    '''
 
     def initialize(self,dictParameter = None):
         super(StockAnalysize, self).initialize()

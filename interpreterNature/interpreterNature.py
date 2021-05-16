@@ -308,41 +308,6 @@ class InterpreterNature(InterpreterBase):
         dataFrameMerged = dataFrameMerged[columnsName]
         self.database._write_to_sqlite3(dataFrameMerged,self.commonFields, tableName)
 
-    '''
-    def _write_to_sqlite3(self,dataFrame:DataFrame,commonFields, tableName):
-        conn = self.database._get_connect()
-        sql_df = dataFrame
-        companyCodeList = self._get_company_code_list(conn, tableName)
-        if companyCodeList is not None:
-            companyCodeNew = sql_df['公司代码'].values.tolist()
-            companyCodeDiff = set(companyCodeNew).difference(set(companyCodeList))
-            if len(companyCodeDiff) > 0:
-                #sql_df = sql_df[sql_df['公司代码'] in companyCodeDiff]
-                sql_df = sql_df[sql_df['公司代码'].isin(companyCodeDiff)]
-                if not sql_df.empty:
-                    sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
-                    conn.commit()
-                    self.logger.info("insert into {} at {}!".format(tableName, self._get_time_now()))
-        else:
-            sql_df.to_sql(name=tableName, con=conn, if_exists='replace', index=False)
-            conn.commit()
-            self.logger.info("insert into {} at {}!".format(tableName, self._get_time_now()))
-        conn.close()
-    '''
-    '''
-    def _get_company_code_list(self,conn,tableName):
-        companyCodeList = None
-        sql = "select distinct 公司代码 from {}".format(tableName)
-        try:
-            result = conn.execute(sql).fetchall()
-            if len(result) > 0 and len(result[0]) > 0:
-                #companyCodeList = result[0]
-                companyCodeList = [code[0] for code in result]
-        except Exception as e:
-            print(e)
-            self.logger.error('failed to get max & min trading data from sql:%s' % sql)
-        return companyCodeList
-    '''
 
     def _process_analysize(self,command):
         """
@@ -367,11 +332,13 @@ class InterpreterNature(InterpreterBase):
         self.interpreterAnalysize.doWork(command)
 
 
+    @Logger.log_runtime
     def _process_parse(self,scale,isForced = False):
         """
         explain:
-            用于执行财务报表解析的功能, 根据 .nature文件中 参数配置{} 中配置的公司简称, 报告类型, 报告时间, 从 data_directory中读取指定
-            的财报文件, 根据interpreterBase.Json的black_lists的配置移除无需处理的文件,然后由_process_single_parse进行财报解析.
+            财务报表解析功能
+            1) 根据 .nature文件中 参数配置{} 中配置的公司简称, 报告类型, 报告时间, 从 data_directory中读取指定的财报文件,
+               根据interpreterBase.Json的black_lists的配置移除无需处理的文件,然后由_process_single_parse进行财报解析.
         Example:
             批量 执行 财务报表解析
             全量 执行 财务报表解析
@@ -386,7 +353,7 @@ class InterpreterNature(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_full_parse!')
             return
-        startTime = time.time()
+        #startTime = time.time()
         # 把行业分类中的公司和公司简称中的公司进行合并
         self.gConfig.update(self.names_global)
         taskResults = list()
@@ -398,25 +365,12 @@ class InterpreterNature(InterpreterBase):
             self.logger.info('start process %s' % sourcefile)
             dictParameter = dict({'sourcefile': sourcefile})
             dictParameter.update(self.names_global)
-            '''
-            if self.multiprocessingIsOn:
-                # 这里采用多进程编程,充分使用多核心并行
-                # 采用信号量控制同时运行的进程数量,默认等于CPU数量
-                self.semaphore.acquire()
-                processParse = multiprocessing.Process(target=self._process_single_parse,args=(dictParameter,))
-                #taskResult = processPool.apply_async(self._process_single_parse,args=(self,dictParameter)) # Pool不舍用类方法
-                processList.append(processParse)
-                processParse.start()
-            else:
-                taskResult = self._process_single_parse(dictParameter)
-                taskResults.append(str(taskResult))
-            '''
             # 此处对_process_single_parse采用了多进程
             taskResult = self._process_single_parse(dictParameter)
             taskResults.append(str(taskResult))
         # 当采用多进程编程时,此处需要关闭多进程, 同时获取multiprocessing.Queue()中的函数返回值
         taskResults = Multiprocess.release()
-        self.logger.info('运行结果汇总如下(总耗时%.4f秒):\n\t\t\t\t'%(time.time()-startTime) + '\n\t\t\t\t'.join(taskResults))
+        self.logger.info('运行结果汇总如下:\n\t\t\t\t' + '\n\t\t\t\t'.join(taskResults))
 
 
     @Multiprocess

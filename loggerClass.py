@@ -6,8 +6,12 @@
 
 import sys
 import logging
+import functools
+import time
 from logging import handlers
 # 默认日志格式
+import utile
+
 DEFAULT_LOG_FMT = "%(asctime)s %(filename)s [line:%(lineno)d] %(levelname)s: %(message)s"
 # 默认时间格式
 DEFUALT_LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
@@ -62,5 +66,19 @@ class Logger():
     @property
     def logger(self):
         return self._logger
+
+
+    @classmethod
+    def log_runtime(cls, func):
+        @functools.wraps(func)
+        def wrapper(self,*args, **kwargs):
+            start_time = time.time()
+            # 此处要求函数有解释, 并且有explian : XXXX
+            func_explain = utile.get_function_explain(func)
+            result = func(self,*args, **kwargs)
+            self.logger.info('%s函数%s运行总时长为: %.4f秒:\n\t' % (func_explain, func.__name__,(time.time() - start_time)))
+            return result
+        return wrapper
+
 
 
