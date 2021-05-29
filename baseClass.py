@@ -13,7 +13,7 @@ import sqlite3 as sqlite
 import pysnooper
 import utile
 from constant import *
-from typing import Type
+from typing import Type, Callable
 from pandas import DataFrame
 import pandas as pd
 import csv
@@ -342,6 +342,15 @@ class SpaceBase(metaclass=abc.ABCMeta):
     def get_content(self):
         ...
 
+    def save_model(self, net, optimizer):
+        ...
+
+    def load_model(self, net, get_optimizer : Callable, ctx):
+        ...
+
+    def is_modelfile_exist(self):
+        ...
+
 class WorkingspaceBase(SpaceBase):
     def __init__(self, working_directory, logger):
         super(WorkingspaceBase, self).__init__(working_directory, logger)
@@ -360,7 +369,7 @@ class CheckpointBase(WorkingspaceBase):
         checkpointfile - 检查点文件名
         checkpointIsOn - 是否启用检查点功能
     """
-    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn):
+    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, **kwargs):
         super(CheckpointBase,self).__init__(working_directory, logger)
         checkpointfile = os.path.join(self.directory, checkpointfile)
         self.checkpointIsOn = checkpointIsOn
@@ -469,12 +478,12 @@ class BaseClass(metaclass=abc.ABCMeta):
         return self._data[item]
 
 
-    def create_space(self, SpaceBase) -> SpaceBase:
+    def create_space(self, SpaceBase, **kwargs) -> SpaceBase:
         if WorkingspaceBase.__subclasscheck__(SpaceBase):
             space_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
             if CheckpointBase.__subclasscheck__(SpaceBase):
                 spacebase = SpaceBase(space_directory, self.logger, self.gConfig['checkpointfile'],
-                                      self.gConfig['checkpointIsOn'.lower()])
+                                      self.gConfig['checkpointIsOn'.lower()], **kwargs)
             else:
                 spacebase = SpaceBase(space_directory, self.logger)
         elif LoggingspaceBase.__subclasscheck__(SpaceBase):
@@ -713,11 +722,6 @@ class BaseClass(metaclass=abc.ABCMeta):
 
 
     def _alias(self, name, dictAlias: dict):
-        #alias = name
-        #aliasKeys = dictAlias.keys()
-        #if len(aliasKeys) > 0:
-        #    if name in aliasKeys:
-        #        alias = dictAlias[name]
         alias = dictAlias.get(name, name)
         return alias
 
@@ -733,10 +737,6 @@ class BaseClass(metaclass=abc.ABCMeta):
     def _debug_info(self):
         pass
 
-    '''
-    def _get_class_name(self,*args):
-        return 'Base'
-    '''
 
     def _get_module_path(self):
         module = self.__class__.__module__
@@ -805,14 +805,3 @@ class BaseClass(metaclass=abc.ABCMeta):
     @property
     def index(self):
         return self._index - 1
-
-
-    def loginfo(text = NULLSTR):
-        def decorator(func):
-            @functools.wraps(func)
-            def wrapper(self,*args, **kwargs):
-                result = func(self,*args, **kwargs)
-                self.logger.info('%s %s() %s:\n\t%s' % (text, func.__name__, list([*args]), result))
-                return result
-            return wrapper
-        return decorator

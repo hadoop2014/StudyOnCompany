@@ -167,7 +167,7 @@ class DocParserSql(DocParserBase):
             dictTokens.update({token: '|'.join(pattern)})
         return dictTokens
 
-
+    '''
     def loginfo(text='running '):
         def decorator(func):
             @functools.wraps(func)
@@ -184,7 +184,7 @@ class DocParserSql(DocParserBase):
                 return result
             return wrapper
         return decorator
-
+    '''
 
     def writeToStore(self, dictTable):
         self.dataTable = dictTable
@@ -474,7 +474,7 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
 
-    @loginfo()
+    @Logger.log_runinfo()
     def _process_field_merge_simple(self,dataFrame:DataFrame,tokenName,tableName):
         # 解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
         # 解决贝达药业2018年年报无形资产情况表解析不正确
@@ -593,7 +593,7 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
 
-    @loginfo()
+    @Logger.log_runinfo()
     def _process_field_common(self, dataFrame, dictTable, countFieldDiscard,tableName):
         #在dataFrame前面插入公共字段
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]

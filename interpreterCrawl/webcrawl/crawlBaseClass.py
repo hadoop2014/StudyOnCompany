@@ -52,46 +52,6 @@ class CrawlBase(InterpreterBase):
         self.start_time = time.time()
         self.database = self.create_database(SqliteCrawlBase)
 
-    '''
-    def save_checkpoint(self, content, website):
-        assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
-        if len(content) == 0:
-            return
-        content = self._remove_duplicate(content, website)
-        self.checkpoint.seek(0)
-        self.checkpoint.truncate()
-        self.checkpointWriter.writerows(content)
-        #读取checkpoint内容,去掉重复记录,重新排序,写入文件
-    '''
-    '''
-    def close_checkpoint(self):
-        self.checkpoint.close()
-    '''
-    '''
-    def get_checkpoint(self):
-        if self.checkpointIsOn == False:
-            return
-        with open(self.checkpointfilename, 'r', encoding='utf-8') as csv_in:
-            reader = csv_in.read().splitlines()
-        return reader
-    '''
-    '''
-    def _remove_duplicate(self,content,website):
-        assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
-        resultContent = content
-        if len(content) == 0:
-            return resultContent
-        checkpointHeader = self.dictWebsites[website]['checkpointHeader']
-        dataFrame = pd.read_csv(self.checkpointfilename,names=checkpointHeader,dtype=str)
-        dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpointHeader,dtype=str))
-        # 根据数据第一列去重
-        dataFrame = dataFrame.drop_duplicates(self.dictWebsites[website]['drop_duplicate'], keep= 'last')
-        order = self.dictWebsites[website]['orderBy']
-        dataFrame = dataFrame.sort_values(by=order, ascending=False)
-        resultContent = dataFrame.values.tolist()
-        return resultContent
-    '''
-
     def debug_info(self, info=None):
         if self.debugIsOn == False:
             return

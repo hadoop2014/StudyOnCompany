@@ -29,14 +29,6 @@ class ModelBaseM(InterpreterBase):
         self.state = None  # 用于rnn,lstm等
         self.ssd_image_size = 1  # 仅用于ssd 的pretrain模式,默认情况下设置为１
 
-    '''
-    def _get_class_name(self, gConfig):
-        model_name = re.findall('(.*)Model', self.__class__.__name__).pop().lower()
-        assert model_name in gConfig['modellist'], \
-            'modellist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
-            (gConfig['modellist'], model_name, self.__class__.__name__)
-        return model_name
-    '''
 
     def get_net(self):
         return
@@ -250,6 +242,9 @@ class ModelBaseM(InterpreterBase):
             loss_test, acc_test = self.evaluate_loss_acc(test_iter)
             self.run_matrix(loss_train, loss_test)   #仅用于rnn,lstm,ssd等
             self.predict_nlp(self.net)    #仅用于rnn,lstm,ssd等
+        if epoch % self.epochs_per_checkpoint == 0:
+            self.saveCheckpoint()
+            #self.checkpoint.save_model(self.net, self.optimizer)
         return loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test
 
 

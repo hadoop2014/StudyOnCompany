@@ -63,10 +63,10 @@ class ModelBase(BaseClass):
     def get_global_step(self):
         pass
 
-
+    '''
     def saveCheckpoint(self):
         pass
-
+    '''
 
     def run_step(self,epoch,train_iter,valid_iter,test_iter,epoch_per_print):
         loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test=None,None,None,None,None,None
@@ -121,8 +121,9 @@ class ModelBase(BaseClass):
                       "  context:%s" % self.get_context())
             self.start_time = check_time
             self.debug_info()  #tensorflow框架下有无效打印，需要修改
-        if epoch % self.epochs_per_checkpoint == 0:
-            self.saveCheckpoint()
+        #if epoch % self.epochs_per_checkpoint == 0:
+            #self.saveCheckpoint()
+        #    self.checkpoint.save_model(self.net, self.optimizer)
         return
 
 

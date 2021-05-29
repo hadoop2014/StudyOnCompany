@@ -7,6 +7,7 @@ import torch
 from tensorboardX import SummaryWriter
 from torchsummary import summary # 该1.8版本在pytorch 1.2.0版本下使用, add_graph函数存在异常
 import re
+from functools import partial
 from typing import Callable, Any
 
 class PreprocessH():
@@ -65,6 +66,77 @@ class CriteriaBaseH():
         return criteria
 
 
+class CheckpointModelH(CheckpointBase):
+    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, moduleName, max_to_keep):
+        super(CheckpointModelH, self).__init__(working_directory, logger, checkpointfile, checkpointIsOn)
+        self.model_savefile = os.path.join(self.directory, moduleName + '.model')
+        self.symbol_savefile = os.path.join(self.directory, moduleName + '.symbol')
+        self.max_to_keep = max_to_keep
+
+    def save_model(self, net: nn.Module, optimizer: optim.Optimizer):
+        stateSaved = {'model':net.state_dict(),'optimizer': optimizer.state_dict()}
+        torch.save(stateSaved,self.model_savefile)
+        self.logger.info('success to save checkpoint to file %s'%self.model_savefile)
+
+    def load_model(self, net: nn.Module, get_optimizer : Callable, ctx):
+        #model_savefile = self._get_model_file()
+        #if model_savefile is not None:
+        if self.is_modelfile_exist():
+            stateLoaded = torch.load(self.model_savefile, map_location=ctx)
+            net.load_state_dict(stateLoaded['model'])
+            net.to(ctx)
+            #self.load_optim_state(stateLoaded['optimizer'])
+            #optimizer = self.get_optimizer(self.gConfig['optimizer'], net.parameters())
+            optimizer = get_optimizer(net.parameters())
+            optimizer.load_state_dict(stateLoaded['optimizer'])
+            self.logger.info("Reading model parameters from %s" % self.model_savefile)
+        else:
+            self.logger.error(
+                "failed to load the mode file(%s),it is not exists, you must train it first!" % self.model_savefile)
+            raise ValueError(
+                "failed to load the mode file(%s),it is not exists, you must train it first!" % self.model_savefile)
+        return net, optimizer
+    '''
+    def saveCheckpoint(self):
+        stateSaved = {'model':self.net.state_dict(),'optimizer':self.get_optim_state()}
+        torch.save(stateSaved,self.model_savefile)
+        self.logger.info('success to save checkpoint to file %s'%self.model_savefile)
+
+
+    def loadCheckpoint(self):
+        model_savefile = self.getSaveFile()
+        if model_savefile is not None:
+            stateLoaded = torch.load(model_savefile,map_location=self.ctx)
+            self.net.load_state_dict(stateLoaded['model'])
+            self.net.to(self.ctx)
+            self.load_optim_state(stateLoaded['optimizer'])
+        else:
+            self.logger.error("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
+            raise ValueError("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
+
+    '''
+    def is_modelfile_exist(self):
+        isModelfileExist = False
+        #if self.model_savefile == NULLSTR:
+            #self.model_savefile = None
+        #    return False
+        if self.model_savefile is not None:
+            if os.path.exists(self.model_savefile):
+               isModelfileExist = True
+                #文件不存在
+        return isModelfileExist
+    '''
+    def _get_model_file(self):
+        if self.model_savefile == NULLSTR:
+            self.model_savefile = None
+            return None
+        if self.model_savefile is not None:
+            if os.path.exists(self.model_savefile)== False:
+               return None
+                #文件不存在
+        return self.model_savefile
+    '''
+
 #深度学习模型的基类
 class ModelBaseH(InterpreterBase):
     def __init__(self,gConfig):
@@ -78,7 +150,7 @@ class ModelBaseH(InterpreterBase):
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
         self.learning_rate_decay_step = self.gConfig['learning_rate_decay_step']
         self.viewIsOn = self.gConfig['viewIsOn']
-        self.max_to_keep = self.gConfig['max_to_keep']
+        #self.max_to_keep = self.gConfig['max_to_keep']
         self.ctx = self.get_ctx(self.gConfig['ctx'])
         self.init_sigma = self.gConfig['init_sigma']
         self.init_bias = self.gConfig['init_bias']
@@ -87,16 +159,11 @@ class ModelBaseH(InterpreterBase):
         self.max_queue = self.gConfig['max_queue']
         self.weight_initializer = self.get_initializer(self.initializer)
         self.bias_initializer = self.get_initializer('constant')
+        self.checkpoint = self.create_space(CheckpointModelH
+                                            , moduleName =  self._get_module_name()
+                                            , max_to_keep = self.gConfig['max_to_keep'])
         #self.set_default_tensor_type()  #设置默认的tensor在ｇｐｕ还是在ｃｐｕ上运算
 
-    '''
-    def _get_class_name(self, gConfig):
-        model_name = re.findall('(.*)Model', self.__class__.__name__).pop().lower()
-        assert model_name in gConfig['modellist'], \
-            'modellist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
-            (gConfig['modellist'], model_name, self.__class__.__name__)
-        return model_name
-   '''
 
     def get_net(self):
         return
@@ -195,21 +262,21 @@ class ModelBaseH(InterpreterBase):
     def init_state(self):
         pass
 
-
+    '''
     def get_optim_state(self):
         pass
-
-
+    '''
+    '''
     def load_optim_state(self,state_dict):
         pass
-
-
+    '''
+    '''
     def saveCheckpoint(self):
         stateSaved = {'model':self.net.state_dict(),'optimizer':self.get_optim_state()}
         torch.save(stateSaved,self.model_savefile)
         self.logger.info('success to save checkpoint to file %s'%self.model_savefile)
-
-
+    '''
+    '''
     def loadCheckpoint(self):
         model_savefile = self.getSaveFile()
         if model_savefile is not None:
@@ -220,8 +287,8 @@ class ModelBaseH(InterpreterBase):
         else:
             self.logger.error("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
             raise ValueError("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
-
-
+    '''
+    '''
     def getSaveFile(self):
         if self.model_savefile == '':
             self.model_savefile = None
@@ -231,8 +298,8 @@ class ModelBaseH(InterpreterBase):
                return None
                 #文件不存在
         return self.model_savefile
-
-
+    '''
+    '''
     def removeSaveFile(self):
         if self.model_savefile is not None:
             filename = os.path.join(os.getcwd() , self.model_savefile)
@@ -242,12 +309,13 @@ class ModelBaseH(InterpreterBase):
             filename = os.path.join(os.getcwd(),self.symbol_savefile)
             if os.path.exists(filename):
                 os.remove(filename)
-
+    '''
 
     def train(self,model_eval,getdataClass,gConfig,num_epochs):
         for epoch in range(num_epochs):
             self.run_epoch(getdataClass,epoch)
-        self.saveCheckpoint()
+        #self.saveCheckpoint()
+        self.checkpoint.save_model(self.net, self.optimizer)
         self.writer.close()
 
         return self.losses_train,self.acces_train,self.losses_valid,self.acces_valid,\
@@ -381,6 +449,9 @@ class ModelBaseH(InterpreterBase):
             self.writer.add_scalar('test/accuracy', acc_test, self.get_global_step())
             self.run_matrix(loss_train, loss_test)  # 仅用于rnn,lstm,ssd等
             self.predict(self.net)  # 仅用于rnn,lstm,ssd等
+        if epoch % self.epochs_per_checkpoint == 0:
+            #self.saveCheckpoint()
+            self.checkpoint.save_model(self.net, self.optimizer)
         return loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test
 
 
@@ -499,15 +570,21 @@ class ModelBaseH(InterpreterBase):
         assert self.gConfig['mode'] in self.gConfig['modelist']\
             ,"mode(%s) must be in modelist: %s'(self.gConfig['mode'],self.gConfig['modelist']"
         if self.gConfig['mode'] == 'apply':
-            self.loadCheckpoint()
+            #self.loadCheckpoint()
+            self.net, self.optimizer = self.checkpoint.load_model(self.net
+                                                                  , partial(self.get_optimizer,self.gConfig['optimizer'])
+                                                                  , self.ctx)
         elif self.gConfig['mode'] == 'pretrain':
             pass
         else:
-            ckpt = self.getSaveFile()
+            #ckpt = self.getSaveFile()
             ckpt_used = self.gConfig['ckpt_used']
-            if ckpt and ckpt_used:
-                print("Reading model parameters from %s" % ckpt)
-                self.loadCheckpoint()
+            if self.checkpoint.is_modelfile_exist() and ckpt_used:
+                #print("Reading model parameters from %s" % ckpt)
+                #self.loadCheckpoint()
+                self.net, self.optimizer = self.checkpoint.load_model(self.net
+                                                                      , partial(self.get_optimizer,self.gConfig['optimizer'])
+                                                                      , self.ctx)
             else:
                 print("Created model with fresh parameters.")
                 self.net.to(device=self.ctx)

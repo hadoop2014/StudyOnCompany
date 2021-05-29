@@ -80,5 +80,21 @@ class Logger():
             return result
         return wrapper
 
-
+    @classmethod
+    def log_runinfo(cls,text='running '):
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(self,*args, **kwargs):
+                result = func(self,*args, **kwargs)
+                resultForLog = result
+                columns = 0
+                if isinstance(result,tuple):
+                    resultForLog = result[0].T.copy()
+                    columns = result[0].iloc[0]
+                self.logger.info('%s %s() \n\t%s,%s%s,\t%s:\n\t%s\n\t%s\n\t columns=%s' %
+                                 (text, func.__name__,self.dataTable['公司名称'],self.dataTable['报告时间']
+                                  ,self.dataTable['报告类型'], args[-1],'', resultForLog,columns))
+                return result
+            return wrapper
+        return decorator
 

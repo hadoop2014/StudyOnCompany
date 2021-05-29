@@ -1,8 +1,6 @@
 from interpreterAnalysize.modelSets.modelBaseClassH import *
 from torch import nn
 
-
-
 class RNN(nn.Module):
     def __init__(self,rnn_layer,output_dim,dropout,ctx):
         super(RNN,self).__init__()
@@ -177,7 +175,7 @@ class rnnBaseModelH(ModelBaseH):
     def init_state(self):
         self.state = None
 
-
+    '''
     def get_optim_state(self):
         return self.optimizer.state_dict()
 
@@ -185,7 +183,7 @@ class rnnBaseModelH(ModelBaseH):
     def load_optim_state(self,state_dict):
         self.optimizer = self.get_optimizer(self.gConfig['optimizer'], self.net.parameters())
         self.optimizer.load_state_dict(state_dict)
-
+    '''
 
     def get_input_shape(self):
         raise NotImplementedError('you should implement it!')
