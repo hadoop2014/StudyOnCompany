@@ -9,7 +9,6 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.request
 #import xlwt  # 引入xlwt库，对Excel进行操作。
-import csv
 import random
 from interpreterCrawl.webcrawl.crawlBaseClass import *
 
@@ -41,8 +40,10 @@ class CrawlStock(CrawlBase):
             self._save_stock_list(stockList)
         #resultPaths = self._process_fetch_stock_data(stockList, website)
         #resultPaths = self._process_save_to_sqlite3(resultPaths, website, encoding='gbk')
-        self.save_checkpoint(resultPaths, website)
-        self.close_checkpoint()
+        self.checkpoint.save(resultPaths, self.dictWebsites[website]['checkpointHeader'],
+                             self.dictWebsites[website]['drop_duplicate'],
+                             self.dictWebsites[website]['orderBy'])
+        self.checkpoint.close()
 
 
     def import_stock_data(self,tableName,scale):
@@ -149,8 +150,8 @@ class CrawlStock(CrawlBase):
 
     def _get_deduplicate_stock(self,stockList,endTime):
         # 从stockList中去掉checkpoint中已经记录的部分,这部分已经入了数据库,不再需要下载了, 因为交易数据按天更新,所以要考虑endTime
-        checkpoint = self.get_checkpoint()
-        checkpointList = [','.join(lines.split(',')[1:]) for lines in checkpoint]
+        checkpoint_content = self.checkpoint.get_content()
+        checkpointList = [','.join(lines.split(',')[1:]) for lines in checkpoint_content]
         stockDiffer = set([','.join([stock[0],stock[1],endTime]) for stock in stockList]).difference(set(checkpointList))
         stockListResult = []
         for stock in stockList:
@@ -326,15 +327,6 @@ class CrawlStock(CrawlBase):
         if dictParameter is not None:
             self.gConfig.update(dictParameter)
         self.loggingspace.clear_directory(self.loggingspace.directory)
-        if self.checkpointIsOn:
-            if not os.path.exists(self.checkpointfilename):
-                fw = open(self.checkpointfilename,'w',newline='',encoding='utf-8')
-                fw.close()
-            self.checkpoint = open(self.checkpointfilename, 'r+', newline='', encoding='utf-8')
-            self.checkpointWriter = csv.writer(self.checkpoint)
-        else:
-            if os.path.exists(self.checkpointfilename):
-                os.remove(self.checkpointfilename)
 
 
 def create_object(gConfig):

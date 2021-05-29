@@ -40,7 +40,6 @@ class Sqlite(SqilteBase):
 class StockAnalysize(InterpreterBase):
     def __init__(self,gConfig):
         super(StockAnalysize, self).__init__(gConfig)
-        self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
         self.database = self.create_database(Sqlite)   # 重置database, 对其_write_to_sqlite函数进行了重写
 
 

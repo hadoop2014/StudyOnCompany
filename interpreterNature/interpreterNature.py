@@ -498,7 +498,8 @@ class InterpreterNature(InterpreterBase):
             sourcefilesValid = self._remove_exclude_files(sourcefilesValid)
             sourcefilesValid = self._remove_duplicate_files(sourcefilesValid)
         if isForced == False:
-            checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
+            #checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
+            checkpoint = self.interpreterAccounting.docParser.checkpoint.get_content()
             if isinstance(checkpoint,list) and len(checkpoint) > 0:
                 sourcefilesRemainder = set(sourcefilesValid).difference(set(checkpoint))
                 sourcefilesDone = set(sourcefilesValid).difference(set(sourcefilesRemainder))
@@ -511,7 +512,8 @@ class InterpreterNature(InterpreterBase):
         else:
             self.logger.info('force to start process........\n')
             sourcefiles = list(sourcefilesValid)
-            self.interpreterAccounting.docParser.remove_checkpoint_files(sourcefiles)
+            #self.interpreterAccounting.docParser.remove_checkpoint_files(sourcefiles)
+            self.interpreterAccounting.docParser.checkpoint.remove_checkpoint_files(sourcefiles)
         return sourcefiles
 
 

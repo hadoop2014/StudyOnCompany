@@ -84,9 +84,6 @@ class DocParserBase(InterpreterBase):
         return parser_name
     '''
 
-    def saveCheckpoint(self):
-        pass
-
     '''
     def getSaveFile(self):
         if self.model_savefile == NULLSTR:

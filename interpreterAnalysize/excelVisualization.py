@@ -19,7 +19,6 @@ class ExcelVisualization(InterpreterBase):
     def __init__(self,gConfig):
         super(ExcelVisualization, self).__init__(gConfig)
         self.analysizeresult = os.path.join(self.workingspace.directory,gConfig['analysizeresult'])
-        self.checkpointIsOn = gConfig['checkpointIsOn'.lower()]
 
     '''
     def _get_class_name(self, gConfig):

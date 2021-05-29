@@ -54,7 +54,6 @@ class DocParserSql(DocParserBase):
         self._create_tables()
         self.process_info = {}
         self.dataTable = {}
-        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.dictLexers = self._construct_lexers()
         self.database = self.create_database(Sqlite)
 

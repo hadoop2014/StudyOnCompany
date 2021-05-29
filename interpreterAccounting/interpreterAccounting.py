@@ -587,7 +587,7 @@ class InterpreterAccounting(InterpreterBase):
     def doWork(self,lexer=None,debug=False,tracking=False):
         start_time = time.time()
         fileName = os.path.split(self.docParser.sourceFile)[-1]
-        if self.docParser.is_file_in_checkpoint(fileName):
+        if self.docParser.checkpoint.is_file_in_checkpoint(fileName):
             self.logger.info('the file %s is already in checkpointfile,no need to process!'%fileName)
             return
         self.logger.info("%s parse is starting!\n" % (fileName))
@@ -625,7 +625,8 @@ class InterpreterAccounting(InterpreterBase):
                 self.logger.info('remain failed to process %s\t tables:%s!' %(sourceFile,failedTable))
             else:
                 self.logger.info("all table is success processed %s!\n" % (sourceFile))
-                self.docParser.save_checkpoint(fileName)
+                #self.docParser.save_checkpoint(fileName)
+                self.docParser.checkpoint.save(fileName)
             resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time)
                               ,'failedTable': failedTableAgain})
         else:
@@ -655,7 +656,8 @@ class InterpreterAccounting(InterpreterBase):
                 self.logger.info('remain failed to process %s\t tables:%s!' %(sourceFile,failedTable))
             else:
                 self.logger.info("all table is success processed %s!\n" % (sourceFile))
-                self.docParser.save_checkpoint(fileName)
+                #self.docParser.save_checkpoint(fileName)
+                self.docParser.checkpoint.save(fileName)
             resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time)
                               ,'firstRowAllInvalid': firstRowAllInvalid
                               ,'failedTable': list([(tableName,self.names[tableName]['page_numbers']) for tableName in failedTable])})

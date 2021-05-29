@@ -10,14 +10,52 @@ import pdfplumber
 import itertools
 from functools import reduce
 
+class CheckpointPdf(CheckpointBase):
+
+    def is_file_in_checkpoint(self,content):
+        if self.checkpointIsOn == False:
+            return False
+        reader = self.get_content()
+        if content in reader:
+            return True
+
+    @Multiprocess.lock
+    def save(self, content, checkpoint_header = NULLSTR, drop_duplicate = NULLSTR, order_by = NULLSTR):
+        if self.checkpointIsOn == False:
+            return
+        with self.checkpoint as checkpoint:
+            reader = checkpoint.read().splitlines()
+            reader = reader + [content]
+            reader.sort()
+            lines = [line + '\n' for line in reader]
+            checkpoint.seek(0)
+            checkpoint.truncate()
+            checkpoint.writelines(lines)
+
+    def remove_checkpoint_files(self,sourcefiles):
+        assert isinstance(sourcefiles,list),'Parameter sourcefiles must be list!'
+        if self.checkpointIsOn == False:
+            return
+        self.checkpoint.seek(0)
+        reader = self.checkpoint.read().splitlines()
+        resultfiles = list(set(reader).difference(set(sourcefiles)))
+        resultfiles.sort()
+        lines = [line + '\n' for line in resultfiles]
+        self.checkpoint.seek(0)
+        self.checkpoint.truncate()
+        self.checkpoint.writelines(lines)
+        removedfiles = list(set(reader).difference(set(resultfiles)))
+        if len(removedfiles) > 0:
+            removedlines = '\n\t\t\t\t'.join(removedfiles)
+            self.logger.info("Success to remove from checkpointfile : %s"%(removedlines))
+
 
 class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
         self._interpretPrefix = NULLSTR
-        self.checkpointfilename = os.path.join(self.workingspace.directory, gConfig['checkpointfile'])
-        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.debugExtractTable = self.gConfig["debugExtractTable".lower()]
+        self.checkpoint = self.create_space(CheckpointPdf)
 
 
     def _load_data(self,sourceFile=None):
@@ -364,15 +402,15 @@ class DocParserPdf(DocParserBase):
             for row in table:
                 self.logger.info('debug:' + str(row))
 
-
+    '''
     def is_file_in_checkpoint(self,content):
         if self.checkpointIsOn == False:
             return False
         reader = self.get_checkpoint()
         if content in reader:
             return True
-
-
+    '''
+    '''
     @Multiprocess.lock
     def save_checkpoint(self,content):
         if self.checkpointIsOn == False:
@@ -385,16 +423,16 @@ class DocParserPdf(DocParserBase):
             checkpointfile.seek(0)
             checkpointfile.truncate()
             checkpointfile.writelines(lines)
-
-
+    '''
+    '''
     def get_checkpoint(self):
         if self.checkpointIsOn == False:
             return
         with open(self.checkpointfilename, 'r', encoding='utf-8') as csv_in:
             reader = csv_in.read().splitlines()
         return reader
-
-
+    '''
+    '''
     def remove_checkpoint_files(self,sourcefiles):
         assert isinstance(sourcefiles,list),'Parameter sourcefiles must be list!'
         if self.checkpointIsOn == False:
@@ -412,7 +450,7 @@ class DocParserPdf(DocParserBase):
         if len(removedfiles) > 0:
             removedlines = '\n\t\t\t\t'.join(removedfiles)
             self.logger.info("Success to remove from checkpointfile : %s"%(removedlines))
-
+    '''
 
     @property
     def interpretPrefix(self):
@@ -430,13 +468,6 @@ class DocParserPdf(DocParserBase):
         suffix = self.sourceFile.split('.')[-1]
         assert suffix.lower() in self.gConfig['pdfSuffix'.lower()], \
             'suffix of {} is invalid,it must one of {}'.format(self.sourceFile, self.gConfig['pdfSuffix'.lower()])
-        if self.checkpointIsOn:
-            if not os.path.exists(self.checkpointfilename):
-                fw = open(self.checkpointfilename,'w',newline='',encoding='utf-8')
-                fw.close()
-        else:
-            if os.path.exists(self.checkpointfilename):
-                os.remove(self.checkpointfilename)
 
 
 def create_object(gConfig):

@@ -13,8 +13,6 @@ class InterpreterCrawl(InterpreterBase):
         super(InterpreterCrawl, self).__init__(gConfig)
         self.crawlFinance = memberModuleDict['crawlFinance']
         self.crawlStock = memberModuleDict['crawlStock']
-        self.checkpointfilename = os.path.join(self.workingspace.directory, gConfig['checkpointfile'])
-        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.interpretDefine()
 
 

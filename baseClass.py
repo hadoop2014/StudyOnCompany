@@ -16,6 +16,7 @@ from constant import *
 from typing import Type
 from pandas import DataFrame
 import pandas as pd
+import csv
 from sklearn.preprocessing import MaxAbsScaler
 import abc
 import threading
@@ -329,6 +330,18 @@ class SpaceBase(metaclass=abc.ABCMeta):
                 except:
                    self.logger('Failed to clear directory %s!'%full_file)
 
+    def save(self, content, checkpoint_header, drop_duplicate, order_by):
+        ...
+
+    def _remove_duplicate(self,content, checkpoint_header, drop_duplicate, order_by):
+        ...
+
+    def close(self):
+        ...
+
+    def get_content(self):
+        ...
+
 class WorkingspaceBase(SpaceBase):
     def __init__(self, working_directory, logger):
         super(WorkingspaceBase, self).__init__(working_directory, logger)
@@ -336,6 +349,75 @@ class WorkingspaceBase(SpaceBase):
 class LoggingspaceBase(SpaceBase):
     def __init__(self, logging_directory, logger):
         super(LoggingspaceBase, self).__init__(logging_directory, logger)
+
+class CheckpointBase(WorkingspaceBase):
+    """
+    explain: 检查点基类
+        从WorkingspaceBase派生, 即checkpoint存放在working_directory中,该类用于处理检查点的创建, 读取, 写入等
+    args:
+        working_directory - 检查点文件存放的目录
+        logger - 当前实例的logger
+        checkpointfile - 检查点文件名
+        checkpointIsOn - 是否启用检查点功能
+    """
+    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn):
+        super(CheckpointBase,self).__init__(working_directory, logger)
+        checkpointfile = os.path.join(self.directory, checkpointfile)
+        self.checkpointIsOn = checkpointIsOn
+        self.checkpoint , self.checkpointWriter = self._init_checkpoint(checkpointfile)
+
+    def _init_checkpoint(self, checkpointfile):
+        if self.checkpointIsOn:
+            if not os.path.exists(checkpointfile):
+                # 第一次创建checkpoint情况, 如果文件不存在,则创建它
+                fw = open(checkpointfile,'w',newline='',encoding='utf-8')
+                fw.close()
+            checkpoint = open(checkpointfile, 'r+', newline='', encoding='utf-8')
+            checkpointWriter = csv.writer(checkpoint)
+        else:
+            if os.path.exists(checkpointfile):
+                os.remove(checkpointfile)
+            checkpoint = None
+            checkpointWriter = None
+        return checkpoint, checkpointWriter
+
+    def close(self):
+        if self.checkpointIsOn:
+            self.checkpoint.close()
+
+    def get_content(self):
+        if self.checkpointIsOn == False:
+            return list()
+        reader = self.checkpoint.read().splitlines()
+        return reader
+
+    def save(self, content, checkpoint_header, drop_duplicate, order_by):
+        assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
+        if len(content) == 0 or self.checkpointIsOn == False:
+            return
+        #读取checkpoint内容,去掉重复记录,重新排序,写入文件
+        content = self._remove_duplicate(content, checkpoint_header, drop_duplicate, order_by)
+        self.checkpoint.seek(0)
+        self.checkpoint.truncate()
+        self.checkpointWriter.writerows(content)
+
+    def _remove_duplicate(self,content, checkpoint_header, drop_duplicate, order_by):
+        assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
+        resultContent = content
+        if len(content) == 0 or self.checkpoint == False:
+            return resultContent
+        #checkpointHeader = self.dictWebsites[website]['checkpointHeader']
+        #dataFrame = pd.read_csv(self.checkpointfile,names=checkpoint_header,dtype=str)
+        self.checkpoint.seek(0)
+        dataFrame = pd.read_csv(self.checkpoint, names=checkpoint_header,dtype=str)
+        dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpoint_header,dtype=str))
+        # 根据数据第一列去重
+        #dataFrame = dataFrame.drop_duplicates(self.dictWebsites[website]['drop_duplicate'], keep= 'last')
+        dataFrame = dataFrame.drop_duplicates(drop_duplicate, keep='last')
+        #order = self.dictWebsites[website]['orderBy']
+        dataFrame = dataFrame.sort_values(by=order_by, ascending=False)
+        resultContent = dataFrame.values.tolist()
+        return resultContent
 
 
 class BaseClass(metaclass=abc.ABCMeta):
@@ -350,6 +432,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         self.program_directory = gConfig['program_directory']
         self.workingspace = self.create_space(WorkingspaceBase)
         self.loggingspace = self.create_space(LoggingspaceBase)
+        self.checkpoint = self.create_space(CheckpointBase)
         self.data_directory = gConfig['data_directory']
         self.stockcodefile = os.path.join(self.data_directory,self.gConfig['stockcodefile'])
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
@@ -389,11 +472,17 @@ class BaseClass(metaclass=abc.ABCMeta):
     def create_space(self, SpaceBase) -> SpaceBase:
         if WorkingspaceBase.__subclasscheck__(SpaceBase):
             space_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
+            if CheckpointBase.__subclasscheck__(SpaceBase):
+                spacebase = SpaceBase(space_directory, self.logger, self.gConfig['checkpointfile'],
+                                      self.gConfig['checkpointIsOn'.lower()])
+            else:
+                spacebase = SpaceBase(space_directory, self.logger)
         elif LoggingspaceBase.__subclasscheck__(SpaceBase):
             space_directory = os.path.join(self.gConfig['logging_directory'], self._get_module_path())
+            spacebase = SpaceBase(space_directory, self.logger)
         else:
             raise NotImplementedError('create_space class %s is not implement' % SpaceBase)
-        return SpaceBase(space_directory, self.logger)
+        return spacebase
 
 
     def create_database(self, DataBase) -> SqilteBase:

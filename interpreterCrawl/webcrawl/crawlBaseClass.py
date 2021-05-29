@@ -4,10 +4,9 @@
 # @Author  : wu.hao
 # @File    : crawlBaseClass.py
 
-import time
 from interpreterCrawl.interpreterBaseClass import *
 
-class SqliteCrawl(SqilteBase):
+class SqliteCrawlBase(SqilteBase):
 
     def _get_max_min_trading_date(self,conn, tableName, dataFrame, commonFields):
         minTradingDate, maxTradingDate = None, None
@@ -51,23 +50,9 @@ class CrawlBase(InterpreterBase):
     def __init__(self,gConfig):
         super(CrawlBase, self).__init__(gConfig)
         self.start_time = time.time()
-        #self.model_savefile = os.path.join(self.workingspace.directory, self._get_module_name() + '.model')
-        #self.checkpoint_filename = self._get_class_name(self.gConfig) + '.ckpt'
-        self.source_directory = os.path.join(self.data_directory, self.gConfig['source_directory'])
-        self.sourceFile = os.path.join(self.data_directory, self.gConfig['source_directory'],
-                                       self.gConfig['sourcefile'])
-        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
-        self.checkpointfilename = os.path.join(self.workingspace.directory, self.gConfig['checkpointfile'])
-        self.checkpoint = None
-        self.checkpointWriter = None
-        self.database = self.create_database(SqliteCrawl)
-        #self._create_tables(self.tableNames)
-    '''
-    def _get_class_name(self, gConfig):
-        parser_name = re.findall('Crawl(.*)', self.__class__.__name__).pop().lower()
-        return parser_name
-    '''
+        self.database = self.create_database(SqliteCrawlBase)
 
+    '''
     def save_checkpoint(self, content, website):
         assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
         if len(content) == 0:
@@ -77,20 +62,20 @@ class CrawlBase(InterpreterBase):
         self.checkpoint.truncate()
         self.checkpointWriter.writerows(content)
         #读取checkpoint内容,去掉重复记录,重新排序,写入文件
-
-
+    '''
+    '''
     def close_checkpoint(self):
         self.checkpoint.close()
-
-
+    '''
+    '''
     def get_checkpoint(self):
         if self.checkpointIsOn == False:
             return
         with open(self.checkpointfilename, 'r', encoding='utf-8') as csv_in:
             reader = csv_in.read().splitlines()
         return reader
-
-
+    '''
+    '''
     def _remove_duplicate(self,content,website):
         assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
         resultContent = content
@@ -105,24 +90,6 @@ class CrawlBase(InterpreterBase):
         dataFrame = dataFrame.sort_values(by=order, ascending=False)
         resultContent = dataFrame.values.tolist()
         return resultContent
-
-    '''
-    def getSaveFile(self):
-        if self.model_savefile == NULLSTR:
-            self.model_savefile = None
-            return None
-        if self.model_savefile is not None:
-            if os.path.exists(self.model_savefile) == False:
-                return None
-                # 文件不存在
-        return self.model_savefile
-
-
-    def removeSaveFile(self):
-        if self.model_savefile is not None:
-            filename = os.path.join(os.getcwd(), self.model_savefile)
-            if os.path.exists(filename):
-                os.remove(filename)
     '''
 
     def debug_info(self, info=None):

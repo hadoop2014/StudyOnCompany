@@ -7,12 +7,11 @@
 import random
 import requests
 import math
-import csv
 import itertools
 from time import strptime
 from interpreterCrawl.webcrawl.crawlBaseClass import *
 
-class Sqlite(SqliteCrawl):
+class SqliteFinance(SqliteCrawlBase):
 
     def _write_to_sqlite3(self, dataFrame:DataFrame, commonFields, tableName):
         if dataFrame.shape[0] == 0:
@@ -47,7 +46,7 @@ class Sqlite(SqliteCrawl):
 class CrawlFinance(CrawlBase):
     def __init__(self,gConfig):
         super(CrawlFinance, self).__init__(gConfig)
-        self.database = self.create_database(Sqlite)
+        self.database = self.create_database(SqliteFinance)
 
 
     def import_finance_data(self,tableName,scale):
@@ -80,21 +79,23 @@ class CrawlFinance(CrawlBase):
 
         self._process_save_to_sqlite3(resultPaths, website)
 
-        self.save_checkpoint(resultPaths, website)
+        self.checkpoint.save(resultPaths, self.dictWebsites[website]['checkpointHeader'],
+                             self.dictWebsites[website]['drop_duplicate'],
+                             self.dictWebsites[website]['orderBy'])
 
-        self.close_checkpoint()
+        self.checkpoint.close()
 
 
     def _process_import_to_sqlite3(self, tableName, encoding = 'utf-8'):
         assert tableName in self.tableNames, "tableName(%s) must be in table list(%s)" % (tableName, self.tableNames)
-        checkpoint = self.get_checkpoint()
-        if len(checkpoint) == 0:
+        checkpoint_content = self.checkpoint.get_content()
+        if len(checkpoint_content) == 0:
             return
 
         #checkpointHeader = self.dictWebsites[website]['checkpointHeader']
-        checkpoint = [item.split(',') for item in checkpoint]
+        checkpoint_content = [item.split(',') for item in checkpoint_content]
         columnsName = self._get_merged_columns(tableName)
-        dataFrame = pd.DataFrame(checkpoint, columns=columnsName)
+        dataFrame = pd.DataFrame(checkpoint_content, columns=columnsName)
         #dataFrame.columns = self._get_merged_columns(tableName)
         companys = self.gConfig['公司简称']
         reportTypes = self.gConfig['报告类型']
@@ -119,36 +120,6 @@ class CrawlFinance(CrawlBase):
                 dataFrameReportType = dataFrame[dataFrame['报告类型'] == reportType]
                 self.database._write_to_sqlite3(dataFrameReportType, self.commonFields, tableName)
 
-    '''
-    def _write_to_sqlite3(self, dataFrame:DataFrame, commonFields, tableName):
-        if dataFrame.shape[0] == 0:
-            return
-        conn = self.database._get_connect()
-        sql_df = dataFrame.copy()
-        # 大立科技2015年有两个年报,（002214）大立科技：2015年年度报告（更新后）.PDF和（002214）大立科技：2015年年度报告（已取消）.PDF,都在2016-03-26发布,需要去掉一个
-        sql_df.drop_duplicates(['公司代码','报告类型','报告时间','发布时间'],keep='first',inplace=True)
-        # 对于财报发布信息, 必须用报告时间, 报告类型作为过滤关键字
-        specialKeys = ['报告类型','发布时间']
-        isRecordExist = self.database._is_record_exist(conn, tableName, sql_df, self.commonFields, specialKeys=specialKeys)
-        if isRecordExist:
-            condition = self.database._get_condition(sql_df, self.commonFields,specialKeys=specialKeys)
-            sql = ''
-            sql = sql + 'delete from {}'.format(tableName)
-            sql = sql + '\n where ' + condition
-            self.database._sql_executer(sql)
-            self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
-                                                                        ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
-            sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
-            conn.commit()
-            self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
-                                                                        ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
-        else:
-            sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
-            conn.commit()
-            self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
-                                                                            ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
-        conn.close()
-    '''
 
     def _process_fetch_download_path(self,website):
         downloadList = list()
@@ -419,11 +390,12 @@ class CrawlFinance(CrawlBase):
             '''
         """
         companysRequired = companysConstruct
-        checkpoint = self.get_checkpoint()
-        if len(checkpoint) == 0:
+        #checkpoint = self.get_checkpoint()
+        checkpoint_content = self.checkpoint.get_content()
+        if len(checkpoint_content) == 0:
             return companysRequired
         checkpointHeader = self.dictWebsites[website]['checkpointHeader']
-        checkpoint = [item.split(',') for item in checkpoint]
+        checkpoint = [item.split(',') for item in checkpoint_content]
         dataFrame = pd.DataFrame(checkpoint,columns=checkpointHeader)
         dataFrameTimeToMarket = dataFrame[dataFrame['上市时间'] != NULLSTR][['公司简称','报告类型','上市时间']].drop_duplicates()
         dataFrame = dataFrame[['公司简称','报告时间','报告类型']]
@@ -534,15 +506,6 @@ class CrawlFinance(CrawlBase):
         if dictParameter is not None:
             self.gConfig.update(dictParameter)
         self.loggingspace.clear_directory(self.loggingspace.directory)
-        if self.checkpointIsOn:
-            if not os.path.exists(self.checkpointfilename):
-                fw = open(self.checkpointfilename,'w',newline='',encoding='utf-8')
-                fw.close()
-            self.checkpoint = open(self.checkpointfilename, 'r+', newline='', encoding='utf-8')
-            self.checkpointWriter = csv.writer(self.checkpoint)
-        else:
-            if os.path.exists(self.checkpointfilename):
-                os.remove(self.checkpointfilename)
 
 
 def create_object(gConfig):

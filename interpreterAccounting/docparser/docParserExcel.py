@@ -14,7 +14,6 @@ class DocParserExcel(DocParserBase):
         super(DocParserExcel, self).__init__(gConfig)
         self.targetFile = os.path.join(self.workingspace.directory,
                                        '.'.join([os.path.split(self.sourceFile)[-1].split('.')[0],'.xlsx']))
-        self.checkpointIsOn = self.gConfig['checkpointIsOn'.lower()]
         self.workbook = Workbook()
 
     def writeToStore(self, dictTable):
@@ -40,8 +39,6 @@ class DocParserExcel(DocParserBase):
         suffix = self.targetFile.split('.')[-1]
         assert suffix in self.gConfig['excelSuffix'.lower()], \
             'suffix of %s is invalid,it must one of %s' % (self.targetFile, self.gConfig['excelSuffix'.lower()])
-        #if self.checkpointIsOn == False:
-            # 没有启用备份文件时,初始化workbook
         if os.path.exists(self.targetFile):
             os.remove(self.targetFile)
         self.workbook = Workbook()
