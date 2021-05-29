@@ -1,6 +1,7 @@
+import os
+
 from interpreterAnalysize.interpreterBaseClass import *
 from torch import optim,nn
-from functools import partial
 from torch.nn.utils.rnn import PackedSequence
 import torch
 #from torchvision import models
@@ -66,21 +67,14 @@ class CriteriaBaseH():
         return criteria
 
 
-class CheckpointModelH(CheckpointBase):
-    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, moduleName, max_to_keep):
-        super(CheckpointModelH, self).__init__(working_directory, logger, checkpointfile, checkpointIsOn)
-        self.model_savefile = os.path.join(self.directory, moduleName + '.model')
-        self.symbol_savefile = os.path.join(self.directory, moduleName + '.symbol')
-        self.max_to_keep = max_to_keep
-
+class CheckpointModelH(CheckpointModelBase):
     def save_model(self, net: nn.Module, optimizer: optim.Optimizer):
+        model_savefile = self._construct_modelfile()
         stateSaved = {'model':net.state_dict(),'optimizer': optimizer.state_dict()}
-        torch.save(stateSaved,self.model_savefile)
-        self.logger.info('success to save checkpoint to file %s'%self.model_savefile)
+        torch.save(stateSaved,model_savefile)
+        self.logger.info('success to save checkpoint to file %s'%model_savefile)
 
     def load_model(self, net: nn.Module, get_optimizer : Callable, ctx):
-        #model_savefile = self._get_model_file()
-        #if model_savefile is not None:
         if self.is_modelfile_exist():
             stateLoaded = torch.load(self.model_savefile, map_location=ctx)
             net.load_state_dict(stateLoaded['model'])
@@ -96,46 +90,7 @@ class CheckpointModelH(CheckpointBase):
             raise ValueError(
                 "failed to load the mode file(%s),it is not exists, you must train it first!" % self.model_savefile)
         return net, optimizer
-    '''
-    def saveCheckpoint(self):
-        stateSaved = {'model':self.net.state_dict(),'optimizer':self.get_optim_state()}
-        torch.save(stateSaved,self.model_savefile)
-        self.logger.info('success to save checkpoint to file %s'%self.model_savefile)
 
-
-    def loadCheckpoint(self):
-        model_savefile = self.getSaveFile()
-        if model_savefile is not None:
-            stateLoaded = torch.load(model_savefile,map_location=self.ctx)
-            self.net.load_state_dict(stateLoaded['model'])
-            self.net.to(self.ctx)
-            self.load_optim_state(stateLoaded['optimizer'])
-        else:
-            self.logger.error("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
-            raise ValueError("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
-
-    '''
-    def is_modelfile_exist(self):
-        isModelfileExist = False
-        #if self.model_savefile == NULLSTR:
-            #self.model_savefile = None
-        #    return False
-        if self.model_savefile is not None:
-            if os.path.exists(self.model_savefile):
-               isModelfileExist = True
-                #文件不存在
-        return isModelfileExist
-    '''
-    def _get_model_file(self):
-        if self.model_savefile == NULLSTR:
-            self.model_savefile = None
-            return None
-        if self.model_savefile is not None:
-            if os.path.exists(self.model_savefile)== False:
-               return None
-                #文件不存在
-        return self.model_savefile
-    '''
 
 #深度学习模型的基类
 class ModelBaseH(InterpreterBase):
@@ -262,54 +217,6 @@ class ModelBaseH(InterpreterBase):
     def init_state(self):
         pass
 
-    '''
-    def get_optim_state(self):
-        pass
-    '''
-    '''
-    def load_optim_state(self,state_dict):
-        pass
-    '''
-    '''
-    def saveCheckpoint(self):
-        stateSaved = {'model':self.net.state_dict(),'optimizer':self.get_optim_state()}
-        torch.save(stateSaved,self.model_savefile)
-        self.logger.info('success to save checkpoint to file %s'%self.model_savefile)
-    '''
-    '''
-    def loadCheckpoint(self):
-        model_savefile = self.getSaveFile()
-        if model_savefile is not None:
-            stateLoaded = torch.load(model_savefile,map_location=self.ctx)
-            self.net.load_state_dict(stateLoaded['model'])
-            self.net.to(self.ctx)
-            self.load_optim_state(stateLoaded['optimizer'])
-        else:
-            self.logger.error("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
-            raise ValueError("failed to load the mode file(%s),it is not exists, you must train it first!" % model_savefile)
-    '''
-    '''
-    def getSaveFile(self):
-        if self.model_savefile == '':
-            self.model_savefile = None
-            return None
-        if self.model_savefile is not None:
-            if os.path.exists(self.model_savefile)== False:
-               return None
-                #文件不存在
-        return self.model_savefile
-    '''
-    '''
-    def removeSaveFile(self):
-        if self.model_savefile is not None:
-            filename = os.path.join(os.getcwd() , self.model_savefile)
-            if os.path.exists(filename):
-                os.remove(filename)
-        if self.symbol_savefile is not None:
-            filename = os.path.join(os.getcwd(),self.symbol_savefile)
-            if os.path.exists(filename):
-                os.remove(filename)
-    '''
 
     def train(self,model_eval,getdataClass,gConfig,num_epochs):
         for epoch in range(num_epochs):

@@ -8,6 +8,7 @@
 from six import unichr
 import time
 import datetime
+import re
 from constant import *
 from datetime import date,timedelta,datetime
 
@@ -126,3 +127,11 @@ def get_function_explain(function) -> str:
     func_explain = func_doc_dict.get('explain', NULLSTR)
     func_explain = func_explain.strip().split('\n')[0]
     return func_explain
+
+def _is_matched(pattern,field):
+    isMatched = False
+    if isinstance(field, str) and isinstance(pattern, str) and pattern != NULLSTR:
+        matched = re.search(pattern, field)
+        if matched is not None:
+            isMatched = True
+    return isMatched

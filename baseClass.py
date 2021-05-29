@@ -655,7 +655,7 @@ class BaseClass(metaclass=abc.ABCMeta):
 
     def _get_report_type_by_filename(self, filename):
         #assert,因为repair_table会传进来一个文件 通用数据：适用所有年度报告.xlsx 不符合标准文件名
-        #assert self._is_matched('\\d+年',name),"name(%s) is invalid"%name
+        #assert utile._is_matched('\\d+年',name),"name(%s) is invalid"%name
         #type = filename
         reportType = NULLSTR
         #pattern = "\\d+年([\\u4E00-\\u9FA5]+)"
@@ -749,7 +749,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         module_name = module.split('.')[-1].lower()
         return module_name
 
-
+    '''
     def _is_matched(self,pattern,field):
         isMatched = False
         if isinstance(field, str) and isinstance(pattern, str) and pattern != NULLSTR:
@@ -757,7 +757,7 @@ class BaseClass(metaclass=abc.ABCMeta):
             if matched is not None:
                 isMatched = True
         return isMatched
-
+    '''
 
     def _get_merged_columns(self,tableName):
         mergedColumns = [key for key in self.commonFields.keys() if key != "ID"]

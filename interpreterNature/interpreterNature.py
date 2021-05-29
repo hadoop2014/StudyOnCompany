@@ -538,7 +538,7 @@ class InterpreterNature(InterpreterBase):
                 for type,times in value.items():
                     patterns = patterns + [company + '：' + time + type for time in times]
         matchPattern = '|'.join(patterns)
-        isFileMatched = self._is_matched(matchPattern, sourcefile)
+        isFileMatched = utile._is_matched(matchPattern, sourcefile)
         return isFileMatched
 
 
@@ -601,9 +601,9 @@ class InterpreterNature(InterpreterBase):
     def _is_file_selected(self, sourcefile):
         assert self.names_global['公司简称'] != NULLSTR and self.names_global['报告类型'] != NULLSTR and self.names_global['报告时间'] != NULLSTR\
             ,"parameter 公司简称,报告类型,报告年度 must not be NULL in 批量处理程序"
-        isFileSelected = self._is_matched('|'.join(self.names_global['公司简称']), sourcefile) \
-                         and self._is_matched('|'.join(self.names_global['报告类型']), sourcefile) \
-                         and self._is_matched('|'.join(self.names_global['报告时间']), sourcefile)
+        isFileSelected = utile._is_matched('|'.join(self.names_global['公司简称']), sourcefile) \
+                         and utile._is_matched('|'.join(self.names_global['报告类型']), sourcefile) \
+                         and utile._is_matched('|'.join(self.names_global['报告时间']), sourcefile)
         return isFileSelected
 
 
@@ -623,7 +623,7 @@ class InterpreterNature(InterpreterBase):
         parametercheck = self.gJsonInterpreter['parametercheck']
         for value in values:
             if key in parametercheck.keys():
-                #isCheckOk = self._is_matched(parametercheck[key],value)
+                #isCheckOk = utile._is_matched(parametercheck[key],value)
                 isCheckOk = self._standardize(parametercheck[key],value) == value
             assert isCheckOk,"Value(%s) is invalid,it must in list %s"%(value,parametercheck[key].split('|'))
 

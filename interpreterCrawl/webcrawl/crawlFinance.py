@@ -432,7 +432,7 @@ class CrawlFinance(CrawlBase):
         nameDiscard = self.dictWebsites[website]['nameDiscard']
         if nameDiscard != NULLSTR:
             pattern = '|'.join(nameDiscard)
-            if self._is_matched(pattern,fileName):
+            if utile._is_matched(pattern,fileName):
                 isFileNeeded = False
         return isFileNeeded
 
@@ -496,7 +496,7 @@ class CrawlFinance(CrawlBase):
 
 
     def _sedate_transfer(self, timelist):
-        assert isinstance(timelist,list) and self._is_matched('\\d+年',timelist[0]) and self._is_matched('\\d+年',timelist[-1])\
+        assert isinstance(timelist,list) and utile._is_matched('\\d+年',timelist[0]) and utile._is_matched('\\d+年',timelist[-1])\
             ,"timelist(%s) must be a list"%timelist
         seData = timelist[0].split('年')[0] + '-01-01' + '~' + timelist[-1].split('年')[0] + '-12-30'
         return seData

@@ -165,7 +165,7 @@ class ExcelVisualization(InterpreterBase):
         for col_letter in letter_list:
             col = sheet[col_letter]
             field_name = col[startrow].value
-            if self._is_matched(pattern_field,field_name):
+            if utile._is_matched(pattern_field,field_name):
                 operator = conditional_formatting[field_name]['operator']
                 if operator != NULLSTR:
                     threhold = conditional_formatting[field_name]['threshold']
@@ -277,13 +277,13 @@ class ExcelVisualization(InterpreterBase):
         percentage_field = [key for key,value in self.dictTables[tableName]['conditional_formatting'].items()
                             if value['value_format'] == 'percentage']
         pattern_percentage_field = '|'.join(percentage_field)
-        isCellPecentage = self._is_matched(pattern_percentage_field, cell.value)
+        isCellPecentage = utile._is_matched(pattern_percentage_field, cell.value)
         return isCellPecentage
 
 
     def _is_cell_emphasize(self,cell,tableName):
         pattern_emphasize = self.dictTables[tableName]['pattern_emphasize']
-        isCellEmphasize = self._is_matched(pattern_emphasize,cell.value)
+        isCellEmphasize = utile._is_matched(pattern_emphasize,cell.value)
         return isCellEmphasize
 
 
