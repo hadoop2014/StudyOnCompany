@@ -198,7 +198,8 @@
     "瀚川智能": "688022",
     "泰禾智能": "603656",
     "惠泰医疗": "688617",
-    "奥园美谷": "000615"
+    "奥园美谷": "000615",
+    "水羊股份": "300740"
   },
 
 
@@ -2270,7 +2271,7 @@
       "model": "rnn",
       "cpu_num": 0,
       "#used for max to keep checkpoint": "",
-      "max_to_keep" : 100,
+      "max_keep_models" : 100,
       "#used for max queue of tensorboard logging:default value = 10": "",
       "max_queue" : 10,
       "#用于paddle的logger.image(tag='input',num_samples=num_samples])": "",

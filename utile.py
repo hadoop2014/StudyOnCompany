@@ -9,6 +9,7 @@ from six import unichr
 import time
 import datetime
 import re
+import os
 from constant import *
 from datetime import date,timedelta,datetime
 
@@ -135,3 +136,8 @@ def _is_matched(pattern,field):
         if matched is not None:
             isMatched = True
     return isMatched
+
+
+def _construct_filename(directory, filename, suffix):
+    modelfile =  filename + get_today() + '.' + suffix
+    return os.path.join(directory, modelfile)

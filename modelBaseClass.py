@@ -6,50 +6,18 @@ import json
 from baseClass import *
 
 class CheckpointModelBase(CheckpointBase):
-    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, moduleName, max_to_keep):
-        super(CheckpointModelBase, self).__init__(working_directory, logger, checkpointfile, checkpointIsOn)
-        self.moduleName = moduleName
+    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, max_keep_checkpoint
+                 ,moduleName, max_keep_models):
+        super(CheckpointModelBase, self).__init__(working_directory, logger, checkpointfile, checkpointIsOn
+                                                  , max_keep_checkpoint)
+        self.prefix_modelfile = moduleName
         self.suffix_modelfile = 'model'
-        self.model_savefile = self._check_max_modelfiles(self.directory, moduleName, max_to_keep)
+        self.max_keep_models = max_keep_models
+        self.model_savefile = self._check_max_checkpoints(self.directory
+                                                          , self.prefix_modelfile
+                                                          , self.suffix_modelfile
+                                                          , self.max_keep_models)
 
-    def _check_max_modelfiles(self, directory, moduleName, max_to_keep):
-        """
-        explain: 检查保持的模型数量.
-            如果directory目录下的模型数据超过max_to_keep,则删除最老的模型
-        args:
-            directory - 模型文件所在的目录
-            moduleName - 模型文件的前缀名
-            max_to_keep - 能保留的最大模型文件个数
-        reutrn:
-            model_savefile - 模型所保存的文件名
-            1) 取directory目录下,日期最新的一个文件名
-            2) 如果directory目录下, 模型文件为空, 则构造一个日期为当天的模型文件名
-        """
-        files = os.listdir(directory)
-        files = [file for file in files if self._is_file_needed(file, moduleName)]
-        files = sorted(files, reverse=True)
-        if len(files) > 0:
-            model_savefile = os.path.join(directory, files[0])
-            if len(files) > max_to_keep:
-                files_discard = files[max_to_keep:]
-                for file in files_discard:
-                    os.remove(os.path.join(directory, file))
-        else:
-            model_savefile =  self._construct_modelfile()
-        return model_savefile
-
-    def _is_file_needed(self,fileName, moduleName):
-        isFileNeeded = False
-        if moduleName != NULLSTR and fileName != NULLSTR:
-            fileName = os.path.split(fileName)[-1]
-            suffix = fileName.split('.')[-1]
-            if utile._is_matched(moduleName, fileName) and suffix == self.suffix_modelfile:
-                isFileNeeded = True
-        return isFileNeeded
-
-    def _construct_modelfile(self):
-        modelfile =  self.moduleName + utile.get_today() + '.' + self.suffix_modelfile
-        return os.path.join(self.directory, modelfile)
 
     def is_modelfile_exist(self):
         isModelfileExist = False
@@ -65,8 +33,8 @@ class ModelBase(BaseClass):
         self.start_time = time.time()
         #self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.check_book = self.get_check_book()
-        self.model_savefile = os.path.join(self.workingspace.directory,
-                                           self._get_module_name() + '.model')# + self.gConfig['framework'])
+        #self.model_savefile = os.path.join(self.workingspace.directory,
+        #                                   self._get_module_name() + '.model')# + self.gConfig['framework'])
         self.symbol_savefile = os.path.join(self.workingspace.directory,
                                             self._get_module_name() + '.symbol')# + self.gConfig['framework'])
         self.losses_train = []
@@ -87,7 +55,7 @@ class ModelBase(BaseClass):
 
     def get_check_book(self):
         check_file = os.path.join(self.gConfig['config_directory'], self.gConfig['check_file'])
-        check_book = None
+        #check_book = None
         if os.path.exists(check_file):
             with open(check_file, encoding='utf-8') as check_f:
                 check_book = json.load(check_f)
@@ -95,10 +63,6 @@ class ModelBase(BaseClass):
             raise ValueError("%s is not exist,you must create first!" % check_file)
         return check_book
 
-    '''
-    def _get_class_name(self, gConfig):
-        return "ModelBase"
-    '''
 
     def get_net(self):
         pass
@@ -115,10 +79,6 @@ class ModelBase(BaseClass):
     def get_global_step(self):
         pass
 
-    '''
-    def saveCheckpoint(self):
-        pass
-    '''
 
     def run_step(self,epoch,train_iter,valid_iter,test_iter,epoch_per_print):
         loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test=None,None,None,None,None,None

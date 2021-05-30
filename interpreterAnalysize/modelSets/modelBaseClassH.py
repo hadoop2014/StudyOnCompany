@@ -1,5 +1,3 @@
-import os
-
 from interpreterAnalysize.interpreterBaseClass import *
 from torch import optim,nn
 from torch.nn.utils.rnn import PackedSequence
@@ -69,21 +67,19 @@ class CriteriaBaseH():
 
 class CheckpointModelH(CheckpointModelBase):
     def save_model(self, net: nn.Module, optimizer: optim.Optimizer):
-        model_savefile = self._construct_modelfile()
+        model_savefile = utile._construct_filename(self.directory, self.prefix_modelfile, self.suffix_modelfile)
         stateSaved = {'model':net.state_dict(),'optimizer': optimizer.state_dict()}
         torch.save(stateSaved,model_savefile)
-        self.logger.info('success to save checkpoint to file %s'%model_savefile)
+        self.logger.info('Success to save model to file %s' % model_savefile)
 
     def load_model(self, net: nn.Module, get_optimizer : Callable, ctx):
         if self.is_modelfile_exist():
             stateLoaded = torch.load(self.model_savefile, map_location=ctx)
             net.load_state_dict(stateLoaded['model'])
             net.to(ctx)
-            #self.load_optim_state(stateLoaded['optimizer'])
-            #optimizer = self.get_optimizer(self.gConfig['optimizer'], net.parameters())
             optimizer = get_optimizer(net.parameters())
             optimizer.load_state_dict(stateLoaded['optimizer'])
-            self.logger.info("Reading model parameters from %s" % self.model_savefile)
+            self.logger.info("Success to load model from file %s" % self.model_savefile)
         else:
             self.logger.error(
                 "failed to load the mode file(%s),it is not exists, you must train it first!" % self.model_savefile)
@@ -105,7 +101,7 @@ class ModelBaseH(InterpreterBase):
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
         self.learning_rate_decay_step = self.gConfig['learning_rate_decay_step']
         self.viewIsOn = self.gConfig['viewIsOn']
-        #self.max_to_keep = self.gConfig['max_to_keep']
+        #self.max_keep_models = self.gConfig['max_keep_models']
         self.ctx = self.get_ctx(self.gConfig['ctx'])
         self.init_sigma = self.gConfig['init_sigma']
         self.init_bias = self.gConfig['init_bias']
@@ -116,7 +112,7 @@ class ModelBaseH(InterpreterBase):
         self.bias_initializer = self.get_initializer('constant')
         self.checkpoint = self.create_space(CheckpointModelH
                                             , moduleName =  self._get_module_name()
-                                            , max_to_keep = self.gConfig['max_to_keep'])
+                                            , max_keep_models = self.gConfig['max_keep_models'])
         #self.set_default_tensor_type()  #设置默认的tensor在ｇｐｕ还是在ｃｐｕ上运算
 
 

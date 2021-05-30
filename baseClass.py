@@ -12,6 +12,7 @@ import re
 import sqlite3 as sqlite
 import pysnooper
 import utile
+import shutil
 from constant import *
 from typing import Type, Callable
 from pandas import DataFrame
@@ -369,11 +370,60 @@ class CheckpointBase(WorkingspaceBase):
         checkpointfile - 检查点文件名
         checkpointIsOn - 是否启用检查点功能
     """
-    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, **kwargs):
+    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, max_keep_checkpoint,**kwargs):
         super(CheckpointBase,self).__init__(working_directory, logger)
-        checkpointfile = os.path.join(self.directory, checkpointfile)
+        #checkpointfile = os.path.join(self.directory, checkpointfile)
         self.checkpointIsOn = checkpointIsOn
-        self.checkpoint , self.checkpointWriter = self._init_checkpoint(checkpointfile)
+        self.prefix_checkpointfile = checkpointfile.split('.')[0]
+        self.suffix_checkpointfile = checkpointfile.split('.')[-1]
+        self.max_keep_checkpoint = max_keep_checkpoint
+        checkpointfileName = self._check_max_checkpoints(self.directory
+                                                         , self.prefix_checkpointfile
+                                                         , self.suffix_checkpointfile
+                                                         , self.max_keep_checkpoint
+                                                         , copy_file=True)
+        self.checkpoint , self.checkpointWriter = self._init_checkpoint(checkpointfileName)
+
+    def _check_max_checkpoints(self, directory, prefix_checkpointfile, suffix_checkpointfile, max_keep_files, copy_file = False):
+        """
+        explain: 检查保持的检查点数量.
+            如果directory目录下的检查点文件超过max_keep_checkpoints,则删除最老的检查点
+        args:
+            directory - 检查点文件所在的目录
+            checkpointfile - 检查点文件的前缀名
+            max_keep_checkpoints - 能保留的最大检查点文件个数
+            copy_file - 把最新的文件拷贝一份, 文件名更新为当前时间. 对于checkpoint 设置copy_file = Ture, 对于model_savefile,则为False
+        reutrn:
+            checkpointfile - 检查点所保存的文件名
+            1) 取directory目录下,日期最新的一个文件名,
+            2) 如果directory目录下, 模型文件为空, 则构造一个日期为当天的模型文件名
+        """
+        files = os.listdir(directory)
+        files = [file for file in files if self._is_file_needed(file, prefix_checkpointfile, suffix_checkpointfile)]
+        files = sorted(files, reverse=True)
+        current_filename = utile._construct_filename(directory, prefix_checkpointfile, suffix_checkpointfile)
+        if len(files) > 0:
+            checkpointfile = os.path.join(directory, files[0])
+            if copy_file and current_filename != checkpointfile:
+                # 拷贝一份文件,名称命名为current_filename
+                shutil.copyfile(checkpointfile, current_filename)
+            else:
+                current_filename = checkpointfile
+            if len(files) > max_keep_files:
+                files_discard = files[max_keep_files:]
+                for file in files_discard:
+                    os.remove(os.path.join(directory, file))
+        return current_filename
+
+
+    def _is_file_needed(self, fileName, prefix_filename, suffix_filename):
+        isFileNeeded = False
+        if prefix_filename != NULLSTR and fileName != NULLSTR:
+            fileName = os.path.split(fileName)[-1]
+            suffix = fileName.split('.')[-1]
+            if utile._is_matched(prefix_filename, fileName) and suffix == suffix_filename:
+                isFileNeeded = True
+        return isFileNeeded
 
     def _init_checkpoint(self, checkpointfile):
         if self.checkpointIsOn:
@@ -409,6 +459,7 @@ class CheckpointBase(WorkingspaceBase):
         self.checkpoint.seek(0)
         self.checkpoint.truncate()
         self.checkpointWriter.writerows(content)
+        self.logger.info('Success to write checkpoint to file %s' % self.checkpoint.name)
 
     def _remove_duplicate(self,content, checkpoint_header, drop_duplicate, order_by):
         assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
@@ -482,8 +533,12 @@ class BaseClass(metaclass=abc.ABCMeta):
         if WorkingspaceBase.__subclasscheck__(SpaceBase):
             space_directory = os.path.join(self.gConfig['working_directory'], self._get_module_path())
             if CheckpointBase.__subclasscheck__(SpaceBase):
-                spacebase = SpaceBase(space_directory, self.logger, self.gConfig['checkpointfile'],
-                                      self.gConfig['checkpointIsOn'.lower()], **kwargs)
+                spacebase = SpaceBase(space_directory,
+                                      self.logger,
+                                      self.gConfig['checkpointfile'],
+                                      self.gConfig['checkpointIsOn'.lower()],
+                                      self.gConfig['max_keep_checkpoint'],
+                                      **kwargs)
             else:
                 spacebase = SpaceBase(space_directory, self.logger)
         elif LoggingspaceBase.__subclasscheck__(SpaceBase):
@@ -749,15 +804,6 @@ class BaseClass(metaclass=abc.ABCMeta):
         module_name = module.split('.')[-1].lower()
         return module_name
 
-    '''
-    def _is_matched(self,pattern,field):
-        isMatched = False
-        if isinstance(field, str) and isinstance(pattern, str) and pattern != NULLSTR:
-            matched = re.search(pattern, field)
-            if matched is not None:
-                isMatched = True
-        return isMatched
-    '''
 
     def _get_merged_columns(self,tableName):
         mergedColumns = [key for key in self.commonFields.keys() if key != "ID"]
