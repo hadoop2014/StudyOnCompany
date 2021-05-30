@@ -83,7 +83,7 @@ class CrawlFinance(CrawlBase):
                              self.dictWebsites[website]['drop_duplicate'],
                              self.dictWebsites[website]['orderBy'])
 
-        self.checkpoint.close()
+        #self.checkpoint.close()
 
 
     def _process_import_to_sqlite3(self, tableName, encoding = 'utf-8'):

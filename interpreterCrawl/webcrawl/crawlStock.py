@@ -43,7 +43,7 @@ class CrawlStock(CrawlBase):
         self.checkpoint.save(resultPaths, self.dictWebsites[website]['checkpointHeader'],
                              self.dictWebsites[website]['drop_duplicate'],
                              self.dictWebsites[website]['orderBy'])
-        self.checkpoint.close()
+        #self.checkpoint.close()
 
 
     def import_stock_data(self,tableName,scale):

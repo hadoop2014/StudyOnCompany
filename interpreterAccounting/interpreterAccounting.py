@@ -656,7 +656,6 @@ class InterpreterAccounting(InterpreterBase):
                 self.logger.info('remain failed to process %s\t tables:%s!' %(sourceFile,failedTable))
             else:
                 self.logger.info("all table is success processed %s!\n" % (sourceFile))
-                #self.docParser.save_checkpoint(fileName)
                 self.docParser.checkpoint.save(fileName)
             resultInfo = dict({'sourcefile': fileName, 'processtime':(time.time() - start_time)
                               ,'firstRowAllInvalid': firstRowAllInvalid

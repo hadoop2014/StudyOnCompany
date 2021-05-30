@@ -23,27 +23,32 @@ class CheckpointPdf(CheckpointBase):
     def save(self, content, checkpoint_header = NULLSTR, drop_duplicate = NULLSTR, order_by = NULLSTR):
         if self.checkpointIsOn == False:
             return
-        with self.checkpoint as checkpoint:
-            reader = checkpoint.read().splitlines()
-            reader = reader + [content]
-            reader.sort()
-            lines = [line + '\n' for line in reader]
-            checkpoint.seek(0)
-            checkpoint.truncate()
-            checkpoint.writelines(lines)
+        checkpoint = self._get_checkpoint()
+        reader = checkpoint.read().splitlines()
+        reader = reader + [content]
+        reader.sort()
+        lines = [line + '\n' for line in reader]
+        checkpoint.seek(0)
+        checkpoint.truncate()
+        checkpoint.writelines(lines)
+        checkpoint.close()
+        self.logger.info('Success to write checkpoint to file %s' % checkpoint.name)
 
+    @Multiprocess.lock
     def remove_checkpoint_files(self,sourcefiles):
         assert isinstance(sourcefiles,list),'Parameter sourcefiles must be list!'
         if self.checkpointIsOn == False:
             return
-        self.checkpoint.seek(0)
-        reader = self.checkpoint.read().splitlines()
+        checkpoint = self._get_checkpoint()
+        checkpoint.seek(0)
+        reader = checkpoint.read().splitlines()
         resultfiles = list(set(reader).difference(set(sourcefiles)))
         resultfiles.sort()
         lines = [line + '\n' for line in resultfiles]
-        self.checkpoint.seek(0)
-        self.checkpoint.truncate()
-        self.checkpoint.writelines(lines)
+        checkpoint.seek(0)
+        checkpoint.truncate()
+        checkpoint.writelines(lines)
+        checkpoint.close()
         removedfiles = list(set(reader).difference(set(resultfiles)))
         if len(removedfiles) > 0:
             removedlines = '\n\t\t\t\t'.join(removedfiles)

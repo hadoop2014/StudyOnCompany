@@ -8,13 +8,14 @@
 from loggerClass import *
 import functools
 import os
+import io
 import re
 import sqlite3 as sqlite
 import pysnooper
 import utile
 import shutil
 from constant import *
-from typing import Type, Callable
+from typing import Type, Callable, Optional
 from pandas import DataFrame
 import pandas as pd
 import csv
@@ -49,7 +50,7 @@ class Multiprocess():
     processPool = []
     processQueue = multiprocessing.Queue()
     processLock = multiprocessing.Lock()
-    semaphore = multiprocessing.Semaphore(multiprocessing.cpu_count())
+    semaphore = multiprocessing.Semaphore(multiprocessing.cpu_count() - 1)
 
     def __init__(self, function):
         self.function = function
@@ -113,6 +114,7 @@ class Multiprocess():
         taskResults = []
         for process in cls.processPool:
             process.join()
+            del process  #释放内存
         cls.processPool.clear()
         for _ in range(cls.processQueue.qsize()):
             taskResults.append(str(cls.processQueue.get()))
@@ -334,10 +336,13 @@ class SpaceBase(metaclass=abc.ABCMeta):
     def save(self, content, checkpoint_header, drop_duplicate, order_by):
         ...
 
-    def _remove_duplicate(self,content, checkpoint_header, drop_duplicate, order_by):
+    def _remove_duplicate(self,checkpoint, content, checkpoint_header, drop_duplicate, order_by):
         ...
 
     def close(self):
+        ...
+
+    def _get_checkpoint(self) -> Optional[io.TextIOWrapper]:
         ...
 
     def get_content(self):
@@ -377,22 +382,24 @@ class CheckpointBase(WorkingspaceBase):
         self.prefix_checkpointfile = checkpointfile.split('.')[0]
         self.suffix_checkpointfile = checkpointfile.split('.')[-1]
         self.max_keep_checkpoint = max_keep_checkpoint
-        checkpointfileName = self._check_max_checkpoints(self.directory
+        self.checkpointfile = self._check_max_checkpoints(self.directory
                                                          , self.prefix_checkpointfile
                                                          , self.suffix_checkpointfile
                                                          , self.max_keep_checkpoint
                                                          , copy_file=True)
-        self.checkpoint , self.checkpointWriter = self._init_checkpoint(checkpointfileName)
+        #self.checkpoint , self.checkpointWriter = self._init_checkpoint(self.checkpointfile)
+        self._init_checkpoint(self.checkpointfile)
 
     def _check_max_checkpoints(self, directory, prefix_checkpointfile, suffix_checkpointfile, max_keep_files, copy_file = False):
         """
-        explain: 检查保持的检查点数量.
-            如果directory目录下的检查点文件超过max_keep_checkpoints,则删除最老的检查点
+        explain: 检查保存的检查点文件数量.
+            如果directory目录下的检查点文件超过max_keep_checkpoints,则老化早期的检查点文件
         args:
             directory - 检查点文件所在的目录
-            checkpointfile - 检查点文件的前缀名
+            prefix_checkpointfile - 检查点文件的前缀名
+            suffix_checkpointfile - 检查点文件的后缀名
             max_keep_checkpoints - 能保留的最大检查点文件个数
-            copy_file - 把最新的文件拷贝一份, 文件名更新为当前时间. 对于checkpoint 设置copy_file = Ture, 对于model_savefile,则为False
+            copy_file - 把最新的文件拷贝一份, 文件名中的时间更新为当前时间. 对于checkpoint 设置copy_file = Ture, 对于model_savefile,则为False
         reutrn:
             checkpointfile - 检查点所保存的文件名
             1) 取directory目录下,日期最新的一个文件名,
@@ -415,7 +422,6 @@ class CheckpointBase(WorkingspaceBase):
                     os.remove(os.path.join(directory, file))
         return current_filename
 
-
     def _is_file_needed(self, fileName, prefix_filename, suffix_filename):
         isFileNeeded = False
         if prefix_filename != NULLSTR and fileName != NULLSTR:
@@ -431,45 +437,58 @@ class CheckpointBase(WorkingspaceBase):
                 # 第一次创建checkpoint情况, 如果文件不存在,则创建它
                 fw = open(checkpointfile,'w',newline='',encoding='utf-8')
                 fw.close()
-            checkpoint = open(checkpointfile, 'r+', newline='', encoding='utf-8')
-            checkpointWriter = csv.writer(checkpoint)
-        else:
-            if os.path.exists(checkpointfile):
-                os.remove(checkpointfile)
-            checkpoint = None
-            checkpointWriter = None
-        return checkpoint, checkpointWriter
+            #checkpoint = open(checkpointfile, 'r+', newline='', encoding='utf-8')
+            #checkpointWriter = csv.writer(checkpoint)
+        #else:
+            #if os.path.exists(checkpointfile):
+            #    os.remove(checkpointfile)
+        #    checkpoint = None
+        #    checkpointWriter = None
+        #return checkpoint, checkpointWriter
 
-    def close(self):
+    def _get_checkpoint(self) -> Optional[io.TextIOWrapper]:
         if self.checkpointIsOn:
-            self.checkpoint.close()
+            checkpoint = open(self.checkpointfile, 'r+', newline='', encoding='utf-8')
+            #checkpointWriter = csv.writer(checkpoint)
+        else:
+            checkpoint = None
+            #checkpointWriter = None
+        return checkpoint#, checkpointWriter
 
+    @Multiprocess.lock
     def get_content(self):
         if self.checkpointIsOn == False:
             return list()
-        reader = self.checkpoint.read().splitlines()
+        checkpoint = self._get_checkpoint()
+        reader = checkpoint.read().splitlines()
+        checkpoint.close()
         return reader
 
+
+    @Multiprocess.lock
     def save(self, content, checkpoint_header, drop_duplicate, order_by):
         assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
         if len(content) == 0 or self.checkpointIsOn == False:
             return
         #读取checkpoint内容,去掉重复记录,重新排序,写入文件
-        content = self._remove_duplicate(content, checkpoint_header, drop_duplicate, order_by)
-        self.checkpoint.seek(0)
-        self.checkpoint.truncate()
-        self.checkpointWriter.writerows(content)
-        self.logger.info('Success to write checkpoint to file %s' % self.checkpoint.name)
+        checkpoint = self._get_checkpoint()
+        checkpointWriter = csv.writer(checkpoint)
+        content = self._remove_duplicate(checkpoint, content, checkpoint_header, drop_duplicate, order_by)
+        checkpoint.seek(0)
+        checkpoint.truncate()
+        checkpointWriter.writerows(content)
+        checkpoint.close()
+        self.logger.info('Success to write checkpoint to file %s' % self.checkpointfile)
 
-    def _remove_duplicate(self,content, checkpoint_header, drop_duplicate, order_by):
+    def _remove_duplicate(self, checkpoint, content, checkpoint_header, drop_duplicate, order_by):
         assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
         resultContent = content
-        if len(content) == 0 or self.checkpoint == False:
+        if len(content) == 0 or checkpoint is None:
             return resultContent
         #checkpointHeader = self.dictWebsites[website]['checkpointHeader']
         #dataFrame = pd.read_csv(self.checkpointfile,names=checkpoint_header,dtype=str)
-        self.checkpoint.seek(0)
-        dataFrame = pd.read_csv(self.checkpoint, names=checkpoint_header,dtype=str)
+        checkpoint.seek(0)
+        dataFrame = pd.read_csv(checkpoint, names=checkpoint_header,dtype=str)
         dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpoint_header,dtype=str))
         # 根据数据第一列去重
         #dataFrame = dataFrame.drop_duplicates(self.dictWebsites[website]['drop_duplicate'], keep= 'last')
@@ -478,6 +497,17 @@ class CheckpointBase(WorkingspaceBase):
         dataFrame = dataFrame.sort_values(by=order_by, ascending=False)
         resultContent = dataFrame.values.tolist()
         return resultContent
+
+
+class StandardizeBase():
+    """
+    explain: 用于执行各种标准化
+        1) 包括对company,reporttype,time,code, 文件名的标准化.
+        2) 根据公司名company转化成标准化的公司代码code.
+    args:
+    """
+    def __init__(self):
+        ...
 
 
 class BaseClass(metaclass=abc.ABCMeta):
