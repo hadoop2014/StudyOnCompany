@@ -23,6 +23,7 @@ from sklearn.preprocessing import MaxAbsScaler
 import abc
 import threading
 import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
 #数据读写处理的基类
 
 # 用于定义单例,使用方法:
@@ -48,9 +49,10 @@ class Multiprocess():
         function - 被装饰的函数
     """
     processPool = []
+    #processPools = multiprocessing.Pool()
     processQueue = multiprocessing.Queue()
     processLock = multiprocessing.Lock()
-    semaphore = multiprocessing.Semaphore(multiprocessing.cpu_count() - 1)
+    semaphore = multiprocessing.Semaphore(multiprocessing.cpu_count())
 
     def __init__(self, function):
         self.function = function
@@ -77,7 +79,6 @@ class Multiprocess():
             reutrn:
                 func_wrap - 被装饰过后的函数
             """
-            self.semaphore.acquire()
             result = self.function(instance, *args)
             self.processQueue.put(result)
             self.semaphore.release()
@@ -97,11 +98,21 @@ class Multiprocess():
             if not instance.multiprocessingIsOn:
                 return function_wrap(*args)
             else:
+                self.semaphore.acquire()
                 process = multiprocessing.Process(target=function_wrap, args=(*args,))
-                self.processPool.append(process)
                 process.start()
+                self.processPool.append(process)
+                #self._process_pool_append(process)
         return mutiprocess_wrap
-
+    '''
+    def _process_pool_append(self,process):
+        self.processPool.append(process)
+        processPool = [process for process in self.processPool if process.is_alive()]
+        for process in self.processPool:
+            if not process.is_alive():
+                process.join()  #释放已经完成的子进程
+        self.processPool = processPool
+    '''
     @classmethod
     def release(cls):
         """
@@ -114,7 +125,6 @@ class Multiprocess():
         taskResults = []
         for process in cls.processPool:
             process.join()
-            del process  #释放内存
         cls.processPool.clear()
         for _ in range(cls.processQueue.qsize()):
             taskResults.append(str(cls.processQueue.get()))
