@@ -49,6 +49,7 @@ class MyTestCase(unittest.TestCase):
         input = input + '\n审计类型：未经审计'
         input = input + ' 主营业务分行业情况'
         input = input + ' 2016 年 1-6 月'
+        input = input + ' 公司在职员工为'
         self.interpreter.lexer.input(input)
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(-,'-',1,1)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'1,370,249,543.00',1,2)")
@@ -62,7 +63,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'0.05',1,48)")
         #self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(%,'%',1,52)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(),')',1,53)")
-        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'63340',1,55)")
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERO,'63340',1,55)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NAME,'SH',1,61)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(WEBSITE,'www.see.com.cn',1,64)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(EMAIL,'irm@qianhefood.com',1,79)")
@@ -125,6 +126,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(AUDITTYPE,'审计类型：未经审计',4,572)"),
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(SPECIALWORD,'主营业务分行业情况',4,582)"),
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(TIME,'2016 年 1-6 月',4,592)"),
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(CRITICAL,'公司在职员工为',4,605)"),
         self.assertEqual(self.interpreter.lexer.token().__str__(),"None")
 
     def run_interpreter_yacc(self):

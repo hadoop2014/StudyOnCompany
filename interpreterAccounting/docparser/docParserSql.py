@@ -276,35 +276,6 @@ class DocParserSql(DocParserBase):
         dataFrame.fillna(NONESTR,inplace=True)
         return dataFrame,countTotalFields
 
-    '''
-    @Multiprocess.lock
-    def _write_to_sqlite3(self, dataFrame:DataFrame,commonFields,tableName):
-        conn = self.database._get_connect()
-        dataFrame = dataFrame.T
-        sql_df = dataFrame.set_index(dataFrame.columns[0],inplace=False).T
-        isRecordExist = self.database._is_record_exist(conn, tableName, sql_df, commonFields)
-        if isRecordExist:
-            condition = self.database._get_condition(sql_df, commonFields)
-            sql = ''
-            sql = sql + 'delete from {}'.format(tableName)
-            sql = sql + '\nwhere ' + condition
-            self.database._sql_executer(sql)
-            self.logger.info("delete from {} where is {} {} {}!".format(tableName,sql_df['公司简称'].values[0]
-                                                                        ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
-            sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
-            conn.commit()
-            self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
-                                                                        ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
-        else:
-            if sql_df['公司简称'].shape[0] > 0:
-                sql_df.to_sql(name=tableName,con=conn,if_exists='append',index=False)
-                conn.commit()
-                self.logger.info("insert into {} where is {} {} {}!".format(tableName, sql_df['公司简称'].values[0]
-                                                                            ,sql_df['报告时间'].values[0],sql_df['报告类型'].values[0]))
-            else:
-                self.logger.error('sql_df is empty!')
-        conn.close()
-    '''
 
     def _rowPretreat(self,row):
         self.lastValue = None

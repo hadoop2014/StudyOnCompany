@@ -23,6 +23,7 @@ from sklearn.preprocessing import MaxAbsScaler
 import abc
 import threading
 import multiprocessing
+import psutil
 from concurrent.futures import ProcessPoolExecutor
 #数据读写处理的基类
 
@@ -107,10 +108,13 @@ class Multiprocess():
     '''
     def _process_pool_append(self,process):
         self.processPool.append(process)
-        processPool = [process for process in self.processPool if process.is_alive()]
+        #processPool = [process for process in self.processPool if process.is_alive()]
+        processPool = []
         for process in self.processPool:
             if not process.is_alive():
                 process.join()  #释放已经完成的子进程
+            else:
+                processPool.append(process)
         self.processPool = processPool
     '''
     @classmethod
@@ -430,6 +434,11 @@ class CheckpointBase(WorkingspaceBase):
                 files_discard = files[max_keep_files:]
                 for file in files_discard:
                     os.remove(os.path.join(directory, file))
+            for file in files[:max_keep_files]:
+                # 删除内容为空的文件
+                fullfile = os.path.join(directory, file)
+                if os.path.exists(fullfile) and os.path.getsize(fullfile) == 0:
+                    os.remove(fullfile)
         return current_filename
 
     def _is_file_needed(self, fileName, prefix_filename, suffix_filename):
