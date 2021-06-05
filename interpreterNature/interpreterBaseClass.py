@@ -18,7 +18,7 @@ class InterpreterBase(BaseClass):
 
 
     def _load_data(self,input=None):
-        file_context = self._get_file_context(self.mainprogram)
+        file_context = utile._get_file_context(self.mainprogram)
         self._data = file_context
         self._index = 0
         self._length = len(self._data)

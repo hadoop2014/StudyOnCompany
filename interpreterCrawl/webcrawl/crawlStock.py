@@ -28,8 +28,7 @@ class CrawlStock(CrawlBase):
                 , "parameter 公司简称(%s) 报告时间(%s) 报告类型(%s) is not valid parameter" \
                   % (self.gConfig['公司简称'], self.gConfig['报告时间'], self.gConfig['报告类型'])
             #stockList = self._process_stock_list(website)
-            #self._save_stock_list(stockList)
-            stockList = self._get_stock_list(self.gConfig['公司简称'])
+            stockList = self.standardStockcode._get_stockcode_dict(self.gConfig['公司简称'])
             # 把指数数据同时也下载了
             indexList = self._get_index_list(self.indexes)
             stockList = stockList + indexList
@@ -37,13 +36,12 @@ class CrawlStock(CrawlBase):
             resultPaths = self._process_save_to_sqlite3(resultPaths, website, encoding='gbk')
         elif scale == '全量':
             stockList = self._process_stock_list(website)
-            self._save_stock_list(stockList)
+            self.standardStockcode._save_stockcode_list(stockList)
         #resultPaths = self._process_fetch_stock_data(stockList, website)
         #resultPaths = self._process_save_to_sqlite3(resultPaths, website, encoding='gbk')
         self.checkpoint.save(resultPaths, self.dictWebsites[website]['checkpointHeader'],
                              self.dictWebsites[website]['drop_duplicate'],
                              self.dictWebsites[website]['orderBy'])
-        #self.checkpoint.close()
 
 
     def import_stock_data(self,tableName,scale):
@@ -54,7 +52,7 @@ class CrawlStock(CrawlBase):
                    and ('报告类型' in self.gConfig.keys() and self.gConfig['报告类型'] != NULLSTR) \
                 , "parameter 公司简称(%s) 报告时间(%s) 报告类型(%s) is not valid parameter" \
                   % (self.gConfig['公司简称'], self.gConfig['报告时间'], self.gConfig['报告类型'])
-            stockList = self._get_stock_list(self.gConfig['公司简称'])
+            stockList = self.standardStockcode._get_stockcode_dict(self.gConfig['公司简称'])
             resultPaths = self._process_construct_stock_list(stockList)
             self._process_import_to_sqlite3(resultPaths, tableName, encoding='gbk')
 
@@ -183,18 +181,6 @@ class CrawlStock(CrawlBase):
             # 如果是国债,则直接返回空
             pass
         return codeTransfer
-
-
-    def _save_stock_list(self,stockList):
-        assert isinstance(stockList, list),"parameter stockList(%s) must be a list!"% stockList
-        if os.path.exists(self.stockcodefile):
-            os.remove(self.stockcodefile)
-        stockList = sorted(stockList,key=lambda x: x[2] + x[1])
-        stockcodefile = open(self.stockcodefile, 'w', newline= '', encoding= 'utf-8')
-        stockcodefileWriter = csv.writer(stockcodefile)
-        stockcodefileWriter.writerows(stockList)
-        stockcodefile.close()
-        self.logger.info('sucess to write stock code into file %s'% self.stockcodefile)
 
     '''
     def _process_fetch_stock_info(self,resultPaths, website):

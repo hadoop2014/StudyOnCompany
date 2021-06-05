@@ -146,3 +146,14 @@ def construct_filename(directory, filename, suffix):
 def alias(name, dictAlias: dict):
     alias = dictAlias.get(name, name)
     return alias
+
+
+def _get_file_context(fileName):
+    file_object = open(fileName,encoding='utf-8')
+    try:
+        file_context = file_object.read()  # file_context是一个string，读取完后，就失去了对test.txt的文件引用
+    except Exception as e:
+        raise ValueError('读取文件(%s)失败:%s' % (fileName,str(e)))
+    finally:
+        file_object.close()
+    return file_context

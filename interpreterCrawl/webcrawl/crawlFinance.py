@@ -83,26 +83,19 @@ class CrawlFinance(CrawlBase):
                              self.dictWebsites[website]['drop_duplicate'],
                              self.dictWebsites[website]['orderBy'])
 
-        #self.checkpoint.close()
-
 
     def _process_import_to_sqlite3(self, tableName, encoding = 'utf-8'):
         assert tableName in self.tableNames, "tableName(%s) must be in table list(%s)" % (tableName, self.tableNames)
         checkpoint_content = self.checkpoint.get_content()
         if len(checkpoint_content) == 0:
             return
-
-        #checkpointHeader = self.dictWebsites[website]['checkpointHeader']
         checkpoint_content = [item.split(',') for item in checkpoint_content]
         columnsName = self._get_merged_columns(tableName)
         dataFrame = pd.DataFrame(checkpoint_content, columns=columnsName)
-        #dataFrame.columns = self._get_merged_columns(tableName)
         companys = self.gConfig['公司简称']
         reportTypes = self.gConfig['报告类型']
         dataFrameNeeded = dataFrame[dataFrame['公司简称'].isin(companys)]
         dataFrameNeeded = dataFrameNeeded[dataFrameNeeded['报告类型'].isin(reportTypes)]
-        #website = '巨潮资讯网'
-        #dictCompanys = self._get_deduplicate_companys(companys, self.gConfig['报告时间'], self.gConfig['报告类型'],website)
         for reportType in self.gConfig['报告类型']:
             dataFrameReportType = dataFrameNeeded[dataFrameNeeded['报告类型'] == reportType]
             self.database._write_to_sqlite3(dataFrameReportType, self.commonFields, tableName)
@@ -127,7 +120,6 @@ class CrawlFinance(CrawlBase):
         headers = self.dictWebsites[website]["headers"]
         query = self.dictWebsites[website]['query']
         query.update({'seDate': self._sedate_transfer(self.gConfig['报告时间'])})
-        #query.update({'category': self._category_transfer(self.gConfig['报告类型'], website)})
         companys = self.gConfig['公司简称']
         assert isinstance(companys,list),"Company(%s) is not valid,it must be a list!"%companys
         RESPONSE_TIMEOUT = self.dictWebsites[website]['RESPONSE_TIMEOUT']
@@ -191,7 +183,6 @@ class CrawlFinance(CrawlBase):
                 if path == NULLSTR:
                     self.logger.info('the filename (%s) is invalid!'% filename)
                     continue
-                #source_directory = os.path.join(self.source_directory,path)
                 filePath = os.path.join(path,filename)
                 publishingTime = self._get_publishing_time(url)
                 reportType = os.path.split(path)[-1]
@@ -353,11 +344,13 @@ class CrawlFinance(CrawlBase):
         # checkpointfile中已经有的company剔除掉
         # 因为从巨潮咨询网上下载年报数据时,2020年只能下载到2019年的,所以在这里报告时间要进行-1处理
         companysConstruct = []
+        sotckcodes = self.standardStockcode._get_stockcode_list(companys)
         for type in reportType:
             #reportTimeList = [self._year_plus(time, -1) for time in reportTime]
             reportTimeList = [self._get_crawl_time(time, type) for time in reportTime]
-            companysList = itertools.product(companys,reportTimeList,[type])
-            companysConstruct += [','.join(item) for item in companysList]
+            #companysList = itertools.product(companys,reportTimeList,[type])
+            sockcodesList = itertools.product(sotckcodes, reportTimeList, [type])
+            companysConstruct += [','.join(item) for item in sockcodesList]
         companysRequired = self._remove_companys_in_checkpoint(companysConstruct, website)
         companysDiff = set(companysConstruct).difference(set(companysRequired))
         if len(companysDiff) > 0:
@@ -367,8 +360,12 @@ class CrawlFinance(CrawlBase):
         companysResult = [','.join([item.split(',')[0],item.split(',')[-1]]) for item in companysRequired]
         companysResult = [item.split(',') for item in set(companysResult)]
         # 把相同公司的 上报类型 组合成列表,比如 千禾味业, ['年度报告','第一季度报告']
+        # 把公司代码转换回公司简称
+        #companyList = self.standardStockcode._get_company_list([company[0] for company in companysResult])
+        #companysResult = list(zip(companyList, [company[1] for company in companysResult]))
         dictCompanys = {}
-        for company,reportType in companysResult:
+        for stockcode,reportType in companysResult:
+            company = self.standardStockcode._get_company_by_code(stockcode)
             dictCompanys.setdefault(company,[]).append(reportType)
         return dictCompanys
 
@@ -386,29 +383,31 @@ class CrawlFinance(CrawlBase):
             '''
             1) 读取checkpoint文件内容, 拼接出元素为 "公司简称,报告时间,报告类型"的集合, 把这部分记录从companysConstruct中剔除
             2) 读取checkpoint文件中的 上市时间字段, 把把这部分记录从companysConstruct中剔除中报告时间 < 上市时间的记录剔除,
+               针对第一季度场景,一般情况下,比如2019年上市,2020年才会有第一季度报告, 所以需剔除 报告时间 <= 上市时间的记录
                比如: 执行器要求下载2015-2020年报,但是该公司在2017年上市,则companysConstruct中对应 公司代码,报告类型中 的2015年,2016年的记录被剔除
             '''
         """
         companysRequired = companysConstruct
-        #checkpoint = self.get_checkpoint()
         checkpoint_content = self.checkpoint.get_content()
         if len(checkpoint_content) == 0:
             return companysRequired
+        #filedsSelected = ['公司代码','报告类型','上市时间'] # ['公司简称','报告类型','上市时间']
         checkpointHeader = self.dictWebsites[website]['checkpointHeader']
         checkpoint = [item.split(',') for item in checkpoint_content]
         dataFrame = pd.DataFrame(checkpoint,columns=checkpointHeader)
-        dataFrameTimeToMarket = dataFrame[dataFrame['上市时间'] != NULLSTR][['公司简称','报告类型','上市时间']].drop_duplicates()
-        dataFrame = dataFrame[['公司简称','报告时间','报告类型']]
+        dataFrameTimeToMarket = dataFrame[dataFrame['上市时间'] != NULLSTR][['公司代码','报告类型','上市时间']].drop_duplicates()
+        dataFrame = dataFrame[['公司代码','报告时间','报告类型']]
         companysCheckpoint = [','.join(item) for item in dataFrame.values.tolist()]
         companysRequired = set(companysConstruct).difference(set(companysCheckpoint))
         companysRequired = set([company for company in companysRequired ])
-        dataFrameCompanysRequired = pd.DataFrame([company.split(',') for company in companysRequired],columns=['公司简称','报告时间','报告类型'])
-        dataFrameCompanysRequired = pd.merge(dataFrameCompanysRequired,dataFrameTimeToMarket,how='left',on=['公司简称','报告类型'])
+        dataFrameCompanysRequired = pd.DataFrame([company.split(',') for company in companysRequired],
+                                                 columns=['公司代码','报告时间','报告类型'])
+        dataFrameCompanysRequired = pd.merge(dataFrameCompanysRequired,dataFrameTimeToMarket,how='left',on=['公司代码','报告类型'])
         # 对于没有关联上的记录, 上市时间为 NaN,需要替换为NULLSTR,使得下一句的条件判断生效
         dataFrameCompanysRequired = dataFrameCompanysRequired.fillna(value=NULLSTR)
         dataFrameCompanysRequired['上市时间'].replace('nan',NULLSTR,inplace=True)
         dataFrameCompanysRequired = dataFrameCompanysRequired[dataFrameCompanysRequired['报告时间'] > dataFrameCompanysRequired['上市时间']]
-        companysRequired = set([','.join(item) for item in dataFrameCompanysRequired[['公司简称','报告时间','报告类型']].values.tolist()])
+        companysRequired = set([','.join(item) for item in dataFrameCompanysRequired[['公司代码','报告时间','报告类型']].values.tolist()])
         return companysRequired
 
 
@@ -463,11 +462,7 @@ class CrawlFinance(CrawlBase):
         pattern = self.gJsonInterpreter['TIME']+self.gJsonInterpreter['VALUE']+ '(（[\\u4E00-\\u9FA5]+）)*'
         matched = self.standard._standardize(pattern,title)
         if matched is not NaN:
-            timereport = matched
-            #time = self._get_time_by_filename(timereport)
-            #reportType = self.standard._get_report_type_by_filename(timereport) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
-            #reportType = self._get_report_type_alias(reportType)
-            #if reportType != NULLSTR:
+            timereport = matched.replace(' ',NULLSTR)
             #    timereport = time + reportType # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
         else:
             self.logger.error('%s title(%s) is error,the right one must like XXXX年(年度报告|第一季度报告|半年度报告|第三季度报告)!'

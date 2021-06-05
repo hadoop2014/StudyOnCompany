@@ -300,8 +300,9 @@ class InterpreterNature(InterpreterBase):
                 '''
         """
         companys = list(set(dictIndustryCategory.keys()))
-        companyCodes = self._get_stock_list(companys)
-        dataFrameCompanyCodes = pd.DataFrame(companyCodes, columns=self.gJsonBase['stockcodeHeader'])
+        companyCodes = self.standardStockcode._get_stockcode_dict(companys)
+        dataFrameCompanyCodes = pd.DataFrame(companyCodes,
+                                             columns = self.standardStockcode.stockcodeHeader)#columns=self.gJsonBase['stockcodeHeader'])
         # 增加一列 上报时间,取当前日期
         dataFrameCompanyCodes['报告时间'] = utile.get_time_now()
         dataFrameIndustryCategery = pd.DataFrame([[key,value] for key,value in dictIndustryCategory.items()], columns=['公司简称','行业分类'])

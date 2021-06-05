@@ -776,7 +776,8 @@ class StockAnalysize(InterpreterBase):
                 ,"parameter 公司简称(%s) 报告时间(%s) 报告类型(%s) is not valid parameter"\
                  %(self.gConfig['公司简称'],self.gConfig['报告时间'],self.gConfig['报告类型'])
             #批量处理模式时会进入此分支
-            dataFrame = pd.DataFrame(self._get_stock_list(self.gConfig['指数简称']),columns=self.gJsonBase['stockcodeHeader'])
+            dataFrame = pd.DataFrame(self.standardStockcode._get_stockcode_dict(self.gConfig['指数简称']),
+                                     columns=self.standardStockcode.stockcodeHeader)#,self.gJsonBase['stockcodeHeader'])
             condition = self.database._get_condition(dataFrame, self.commonFields)
             sql = ''
             sql = sql + '\nselect * '

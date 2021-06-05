@@ -637,6 +637,110 @@ class StandardizeBase():
             isFileNameValid = True
         return isFileNameValid
 
+    def _get_stockcode_dict(self, companyList) -> list:
+        ...
+
+    def _save_stockcode_list(self, stockList):
+        ...
+
+    def _get_stockcode_list(self, companyList) -> list:
+        ...
+
+    def _get_company_list(self, stockcodeList) -> list:
+        ...
+
+    def _get_company_by_code(self, stockcode) -> str:
+        ...
+
+class StandardizeStockcode(StandardizeBase):
+    def __init__(self,stockcodefile, stockcodeHeader, dictStockCode, *args, **kwargs):
+        super(StandardizeStockcode, self).__init__(*args, **kwargs)
+        self.stockcodefile = os.path.join(self.data_directory, stockcodefile)
+        self.stockcodeHeader = stockcodeHeader
+        self.dictStockCode = dictStockCode
+        self.cacheStockcodeDict = None
+
+    def _get_stockcode_frame(self):
+        stockcodeSpecial = [[company, code] for company, code in self.dictStockCode.items()]
+        stockcodeHeader = self.stockcodeHeader
+        if os.path.exists(self.stockcodefile):
+            dataFrame = pd.read_csv(self.stockcodefile, names=stockcodeHeader, dtype=str)
+            # stockcodeSpecial只有两列, 而stockcodeHeader有三列,最后一列为公司, 需要特殊处理
+            dataFrameSpecial = pd.DataFrame(stockcodeSpecial, columns=stockcodeHeader[0:-1])
+            dataFrameSpecial[stockcodeHeader[-1]] = '公司'
+            dataFrame = dataFrame.append(dataFrameSpecial)
+        else:
+            dataFrame = pd.DataFrame(stockcodeSpecial, columns=stockcodeHeader)
+        dataFrame = dataFrame.drop_duplicates()
+        return dataFrame
+
+    def _get_stockcode_dict(self, companys_or_codes, fieldIndex = 0):
+        '''
+        explain: 根据公司简称/公司代码列表返回[公司简称,公司代码,类型]的列表
+        args:
+            companys_or_codes - 公司简称/公司代码组成的列表
+            fieldIndex - stockcodeHeader的索引, stockcodeHeader为: ["公司简称","公司代码","类型"]
+                1) fieldIndex = 0时 companys_or_codes必须携带companys即公司简称列表
+                2) fieldIndex = 1时 companys_or_codes必须携带sockcodes即公司代码列表
+        return:
+            stockList - [公司简称,公司代码,类型]组成的列表
+        '''
+        assert isinstance(companys_or_codes, list), "Parameter companyList (%s) must be a list" % type(companys_or_codes)
+        stockList = []
+        if len(companys_or_codes) == 0:
+            return stockList
+        stockcodeFrame = self._get_stockcode_frame()
+        indexNeeded = stockcodeFrame[self.stockcodeHeader[fieldIndex]].isin(companys_or_codes) # 获取公司名称列表
+        stockcodeFrame = stockcodeFrame[indexNeeded]
+        stockList = stockcodeFrame.values.tolist()
+        companyDiffer = set(companys_or_codes).difference(set([company[fieldIndex] for company in stockList]))
+        if len(companyDiffer) > 0:
+            self.logger.info("failed to get these stock list fieldIndex = %d :%s " % (fieldIndex, companyDiffer))
+        return stockList
+
+    def _get_stockcode_list(self, companyList):
+        stockcodeDict = self._get_stockcode_dict(companyList)
+        stockcodeFrame = pd.DataFrame(stockcodeDict, columns=self.stockcodeHeader)
+        stockcodeFrame = stockcodeFrame[self.stockcodeHeader[1]]  # 获取公司代码列表
+        stockcodeList = stockcodeFrame.values.tolist()
+        return stockcodeList
+
+    def _get_company_by_code(self, stockcode):
+        if self.cacheStockcodeDict is None:
+            stockcodeFrame = self._get_stockcode_frame()
+            self.cacheStockcodeDict = dict(stockcodeFrame[[self.stockcodeHeader[1], self.stockcodeHeader[0]]].values.tolist())
+        company = self.cacheStockcodeDict.get(stockcode,NULLSTR)
+        company = self._get_company_alias(company)
+        return company
+
+    def __get__(self, instance, owner):
+        return instance
+
+    def _get_company_list(self, stockcodeList):
+        '''
+        explain: 根据公司代码列表返回公司简称列表
+        args:
+            stockcodeList - 公司代码组成的列表
+        return:
+            companyList - 公司简称组成的列表
+        '''
+        stockcodeDict = self._get_stockcode_dict(stockcodeList, fieldIndex = 1)
+        stockcodeFrame = pd.DataFrame(stockcodeDict, columns=self.stockcodeHeader)
+        stockcodeFrame = stockcodeFrame[self.stockcodeHeader[0]]  # 获取公司简称列表
+        companyList = stockcodeFrame.values.tolist()
+        return companyList
+
+    def _save_stockcode_list(self, stockList):
+        assert isinstance(stockList, list),"parameter stockList(%s) must be a list!"% stockList
+        if os.path.exists(self.stockcodefile):
+            os.remove(self.stockcodefile)
+        stockList = sorted(stockList,key=lambda x: x[2] + x[1])
+        stockcodefile = open(self.stockcodefile, 'w', newline= '', encoding= 'utf-8')
+        stockcodefileWriter = csv.writer(stockcodefile)
+        stockcodefileWriter.writerows(stockList)
+        stockcodefile.close()
+        self.logger.info('sucess to write stock code into file %s'% self.stockcodefile)
+
 
 class BaseClass(metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -652,8 +756,9 @@ class BaseClass(metaclass=abc.ABCMeta):
         self.loggingspace = self.create_space(LoggingspaceBase)
         self.checkpoint = self.create_space(CheckpointBase)
         self.standard = self.create_standard(StandardizeBase)
+        self.standardStockcode = self.create_standard(StandardizeStockcode)
         self.data_directory = gConfig['data_directory']
-        self.stockcodefile = os.path.join(self.data_directory,self.gConfig['stockcodefile'])
+        #self.stockcodefile = os.path.join(self.data_directory,self.gConfig['stockcodefile'])
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._data = list()
         self._index = 0
@@ -712,24 +817,28 @@ class BaseClass(metaclass=abc.ABCMeta):
         return DataBase(databasefile, self.logger)
 
     def create_standard(self, StandardizeBase) -> StandardizeBase:
-        standard = StandardizeBase(self.gConfig['data_directory'], self.logger,
-                                   self.gJsonBase['filenameStandardize'], self.gJsonBase['companyStandardize'],
-                                   self.gJsonBase['reportTypeStandardize'], self.gJsonBase['codeStandardize'],
-                                   self.gJsonBase['timeStandardize'], self.gJsonBase['tablePrefix'],
-                                   self.gJsonBase['reportType'],self.gJsonBase['reportTypeAlias'],
-                                   self.gJsonBase['companyAlias'], self.gJsonBase['filenameAlias'])
+        if StandardizeStockcode.__subclasscheck__(StandardizeBase):
+            standard = StandardizeBase(self.gConfig['stockcodefile'],self.gJsonBase['stockcodeHeader'],
+                                       self.gJsonBase['stockcode'],
+                                       self.gConfig['data_directory'], self.logger,
+                                       self.gJsonBase['filenameStandardize'], self.gJsonBase['companyStandardize'],
+                                       self.gJsonBase['reportTypeStandardize'], self.gJsonBase['codeStandardize'],
+                                       self.gJsonBase['timeStandardize'], self.gJsonBase['tablePrefix'],
+                                       self.gJsonBase['reportType'],self.gJsonBase['reportTypeAlias'],
+                                       self.gJsonBase['companyAlias'], self.gJsonBase['filenameAlias'])
+        else:
+            standard = StandardizeBase(self.gConfig['data_directory'], self.logger,
+                                       self.gJsonBase['filenameStandardize'], self.gJsonBase['companyStandardize'],
+                                       self.gJsonBase['reportTypeStandardize'], self.gJsonBase['codeStandardize'],
+                                       self.gJsonBase['timeStandardize'], self.gJsonBase['tablePrefix'],
+                                       self.gJsonBase['reportType'],self.gJsonBase['reportTypeAlias'],
+                                       self.gJsonBase['companyAlias'], self.gJsonBase['filenameAlias'])
         return standard
 
 
     def _get_interpreter_keyword(self):
         # 编译器,文件解析器共同使用的关键字
         ...
-
-    '''
-    def _get_filename_alias(self,filename):
-        aliasedFilename = utile.alias(filename, self.filenameAlias)
-        return aliasedFilename
-    '''
 
     def _get_dict_tables(self,tableNames,dictTablesBase):
         """
@@ -975,7 +1084,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         mergedColumns = mergedColumns + self.dictTables[tableName]['fieldName']
         return mergedColumns
 
-
+    '''
     def _get_file_context(self,fileName):
         file_object = open(fileName,encoding='utf-8')
         file_context = NULLSTR
@@ -986,8 +1095,8 @@ class BaseClass(metaclass=abc.ABCMeta):
         finally:
             file_object.close()
         return file_context
-
-
+    '''
+    '''
     def _get_stock_list(self, companyList):
         assert isinstance(companyList,list),"Parameter companyList (%s) must be a list" % type(companyList)
         stockList = []
@@ -1011,7 +1120,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         if len(companyDiffer) > 0:
             self.logger.info("failed to get these stock list:%s"%companyDiffer)
         return stockList
-
+    '''
 
     @property
     def index(self):

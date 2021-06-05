@@ -7,7 +7,7 @@
   "IMPORT": "导入",
   "WEBSITE": "巨潮资讯网|网易财经|股城网",
   "#TIME": "该定义不用于token,仅仅用于crawlFinance.的_get_publishing_time函数和_title_transfer函数",
-  "TIME": "\\d{4}[年]*([-]\\d{2}[-]\\d{2})*",
+  "TIME": "\\d{4}\\s*[年]*([-]\\d{2}[-]\\d{2})*",
   "#VALUE": "该定义不用于token,仅仅用于crawlFinance.py中的_secname_transfer函数",
   "VALUE": "[\\u4E00-\\u9FA5|A-Z|Ａ-Ｚ]+",
   "#TABLE": "该定义不用于token,用于建表. changed at 20201228,也用于token",
@@ -345,6 +345,26 @@
       "奥园美谷": {
         "stock": "000615",
         "secid": "gssz0000615",
+        "searchkey": ""
+      },
+      "蓝思科技": {
+        "stock": "300433",
+        "secid": "9900023791",
+        "searchkey": ""
+      },
+      "帝科股份": {
+        "stock": "300842",
+        "secid": "9900038394",
+        "searchkey": ""
+      },
+      "酒鬼酒": {
+        "stock": "000799",
+        "secid": "gssz0000799",
+        "searchkey": ""
+      },
+      "甘源食品": {
+        "stock": "002991",
+        "secid": "9900039782",
         "searchkey": ""
       }
     }
