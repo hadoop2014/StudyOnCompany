@@ -137,7 +137,7 @@ class InterpreterAnalysize(InterpreterBase):
         sqlFilename = self._manipulate_transfer(manipulate)
         for reportType in self.gConfig['报告类型']:
             sql_file = self.dictTables[tableName][sqlFilename]
-            tablePrefix = self._get_tableprefix_by_report_type(reportType)
+            tablePrefix = self.standard._get_tableprefix_by_report_type(reportType)
             sql_file = os.path.join(self.program_directory,tablePrefix,sql_file)
             if not os.path.exists(sql_file):
                 self.logger.error('%s script is not exist,you must create it first :%s!'% (manipulate, sql_file))

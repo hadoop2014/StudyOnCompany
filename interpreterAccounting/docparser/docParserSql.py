@@ -255,8 +255,8 @@ class DocParserSql(DocParserBase):
         dataframe = self._process_value_standardize(dataframe,tableName)
 
         #把dataframe写入sqlite3数据库
-        reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
-        targetTableName = self._get_tablename_by_report_type(reportType, tableName)
+        reportType = self.standard._get_report_type_by_filename(self.gConfig['sourcefile'])
+        targetTableName = self.standard._get_tablename_by_report_type(reportType, tableName)
         #with self.processLock:
             # 多进程写数据库时必须加锁
         self.database._write_to_sqlite3(dataframe,self.commonFields, targetTableName)
@@ -803,7 +803,7 @@ class DocParserSql(DocParserBase):
         if len(fieldFromHeader) != 0 :
             #对于从表头用于字段的表,如分季度主要财务数据,无形资产情况,合并所有者权益变动表, maxHeaders原样返回
             return maxHeaders
-        reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
+        reportType = self.standard._get_report_type_by_filename(self.gConfig['sourcefile'])
         if reportType != '年度报告':
             # 对于第一季度报告,第三季度报告,半年读报告,设置maxHeaders = 2,即只保留一行数据, 即当年数据,往年数据则去掉,因为第二行数据各财报的定义不一致
             maxHeaders = 2
@@ -831,14 +831,14 @@ class DocParserSql(DocParserBase):
 
     def _is_third_quarter_accounting_data(self,tableName):
         #如果是第三季度报告,主要会计数据,则返回Ture,这个数据需要特殊处理
-        reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
+        reportType = self.standard._get_report_type_by_filename(self.gConfig['sourcefile'])
         isThirdQuarterAccountingData = (reportType == '第三季度报告' and tableName == '主要会计数据')
         return isThirdQuarterAccountingData
 
 
     def _is_third_quarter_profit_data(self,tableName):
         #如果是第三季度报告,合并利润表,则返回Ture,这个数据需要特殊处理
-        reportType = self._get_report_type_by_filename(self.gConfig['sourcefile'])
+        reportType = self.standard._get_report_type_by_filename(self.gConfig['sourcefile'])
         isThirdQuarterAccountingData = (reportType == '第三季度报告' and tableName == '合并利润表')
         return isThirdQuarterAccountingData
 
@@ -872,9 +872,9 @@ class DocParserSql(DocParserBase):
         fieldAliasKeys = list(self.dictTables[tableName][tokenName + 'Alias'].keys())
         if len(fieldAliasKeys) > 0:
             if isinstance(fieldList,list):
-                aliasedFields = [self._alias(field, fieldAlias) for field in fieldList]
+                aliasedFields = [utile.alias(field, fieldAlias) for field in fieldList]
             else:
-                aliasedFields = self._alias(fieldList,fieldAlias)
+                aliasedFields = utile.alias(fieldList, fieldAlias)
         return aliasedFields
 
 
@@ -930,9 +930,9 @@ class DocParserSql(DocParserBase):
 
 
     def _create_tables(self):
-        for reportType in self.reportTypes:
+        for reportType in self.standard.reportTypes:
             tableNames = self.dictReportType[reportType]
-            tablePrefix = self._get_tableprefix_by_report_type(reportType)
+            tablePrefix = self.standard._get_tableprefix_by_report_type(reportType)
             self._create_tables_by_type(tablePrefix,tableNames)
 
 

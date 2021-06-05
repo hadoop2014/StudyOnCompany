@@ -129,7 +129,7 @@ def get_function_explain(function) -> str:
     func_explain = func_explain.strip().split('\n')[0]
     return func_explain
 
-def _is_matched(pattern,field):
+def is_matched(pattern, field):
     isMatched = False
     if isinstance(field, str) and isinstance(pattern, str) and pattern != NULLSTR:
         matched = re.search(pattern, field)
@@ -138,6 +138,11 @@ def _is_matched(pattern,field):
     return isMatched
 
 
-def _construct_filename(directory, filename, suffix):
+def construct_filename(directory, filename, suffix):
     modelfile =  filename + get_today() + '.' + suffix
     return os.path.join(directory, modelfile)
+
+
+def alias(name, dictAlias: dict):
+    alias = dictAlias.get(name, name)
+    return alias

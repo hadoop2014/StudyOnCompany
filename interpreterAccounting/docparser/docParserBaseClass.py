@@ -13,16 +13,16 @@ class DocParserBase(InterpreterBase):
         super(DocParserBase, self).__init__(gConfig)
         self.start_time = time.time()
         #self.model_savefile = os.path.join(self.workingspace.directory,self._get_class_name(self.gConfig) + '.model')
-        self.source_directory = os.path.join(self.data_directory,self.gConfig['source_directory'])
+        #self.source_directory = os.path.join(self.data_directory,self.gConfig['source_directory'])
         self.sourceFile = os.path.join(self.data_directory,self.gConfig['source_directory'],self.gConfig['sourcefile'])
 
     def _get_standardized_header(self,headerList,tableName):
         assert headerList is not None, 'sourceRow(%s) must not be None' % headerList
         fieldStandardize = self.dictTables[tableName]['headerStandardize']
         if isinstance(headerList, list):
-            standardizedFields = [self._standardize(fieldStandardize, field) for field in headerList]
+            standardizedFields = [self.standard._standardize(fieldStandardize, field) for field in headerList]
         else:
-            standardizedFields = self._standardize(fieldStandardize, headerList)
+            standardizedFields = self.standard._standardize(fieldStandardize, headerList)
         return standardizedFields
 
 

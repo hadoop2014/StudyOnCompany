@@ -170,7 +170,7 @@ class getdataBaseH(getdataBase):
         assert isinstance(self.gConfig['报告类型'],list) and self.gConfig['报告类型'][0] == '年度报告'\
             ,"报告类型(%s) != 年度报告,当前不支持该类型!"%self.gConfig['报告类型']
         if prefixNeeded:
-            tableNamePrefix = self._get_tableprefix_by_report_type(self.gConfig['报告类型'][0])
+            tableNamePrefix = self.standard._get_tableprefix_by_report_type(self.gConfig['报告类型'][0])
         else:
             tableNamePrefix = NULLSTR
         tableName = tableNamePrefix + tableName

@@ -285,7 +285,7 @@ class CrawlStock(CrawlBase):
         assert content != NULLSTR and isinstance(content, str), "content must not be NULL!"
         type = '公司'
         content = content.replace(' ',NULLSTR).replace('(',"（").replace(')',"）")
-        company, code = self._get_company_code_by_content(content)
+        company, code = self.standard._get_company_code_by_content(content)
         if company in self.gJsonBase['stockindex'].keys():
             type = '指数'
         else:

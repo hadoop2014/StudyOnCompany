@@ -187,7 +187,7 @@ class CrawlFinance(CrawlBase):
         dictTimeToMarkets = self._get_time_to_market(urllists)
         for filename,url in urllists.items():
             try:
-                path = self._get_path_by_filename(filename)
+                path = self.standard._get_path_by_filename(filename)
                 if path == NULLSTR:
                     self.logger.info('the filename (%s) is invalid!'% filename)
                     continue
@@ -195,7 +195,7 @@ class CrawlFinance(CrawlBase):
                 filePath = os.path.join(path,filename)
                 publishingTime = self._get_publishing_time(url)
                 reportType = os.path.split(path)[-1]
-                company, time, type, code = self._get_company_time_type_code_by_filename(filename)
+                company, time, type, code = self.standard._get_company_time_type_code_by_filename(filename)
                 resultPaths.append([time, code, company, reportType, publishingTime, filename, url])
                 if os.path.exists(filePath):
                     self.logger.info("File %s is already exists!" % filename)
@@ -229,7 +229,7 @@ class CrawlFinance(CrawlBase):
                            + type + '.PDF'
                 publishingTime = self._get_publishing_time(path["adjunctUrl"])
                 filename = self._adjust_filename(filename,publishingTime)
-                filename = self._get_filename_alias(filename)
+                filename = self.standard._get_filename_alias(filename)
                 adjunctSize = path['adjunctSize']
                 if '*' in filename:
                     filename = filename.replace('*', NULLSTR)
@@ -258,8 +258,8 @@ class CrawlFinance(CrawlBase):
         adjustedFilename = filename
         if publishingTime == NULLSTR:
             return adjustedFilename
-        #company,time,type,code = self._get_company_time_type_code_by_filename(filename)
-        time = self._get_time_by_filename(filename)
+        #company,time,type,code = self.standard._get_company_time_type_code_by_filename(filename)
+        time = self.standard._get_time_by_filename(filename)
         if time is NaN:
             time = str(strptime(publishingTime,'%Y-%m-%d').tm_year) + '年'
             code, name = filename.split('：')
@@ -342,7 +342,7 @@ class CrawlFinance(CrawlBase):
         dictTimToMarkets = dict()
         if len(urllists) == 0:
             return dictTimToMarkets
-        urllists = [list(self._get_company_time_type_code_by_filename(filename)) for filename, _ in urllists.items()]
+        urllists = [list(self.standard._get_company_time_type_code_by_filename(filename)) for filename, _ in urllists.items()]
         dataFrame = pd.DataFrame(urllists,columns=['company', 'time', 'type', 'code'])
         dataFrame = dataFrame.groupby(['code','type'])['time'].min()
         dictTimToMarkets = dict(dataFrame)
@@ -417,7 +417,7 @@ class CrawlFinance(CrawlBase):
         assert url != NULLSTR,"url must not be NULL!"
         publishingTime = NULLSTR
         pattern = self.gJsonInterpreter['TIME']
-        matched = self._standardize(pattern, url)
+        matched = self.standard._standardize(pattern, url)
         if matched is not NaN:
             publishingTime = matched
         else:
@@ -432,7 +432,7 @@ class CrawlFinance(CrawlBase):
         nameDiscard = self.dictWebsites[website]['nameDiscard']
         if nameDiscard != NULLSTR:
             pattern = '|'.join(nameDiscard)
-            if utile._is_matched(pattern,fileName):
+            if utile.is_matched(pattern, fileName):
                 isFileNeeded = False
         return isFileNeeded
 
@@ -461,11 +461,11 @@ class CrawlFinance(CrawlBase):
         title = re.sub('(\\d{4}年)_第三季度报告','\g<1>第三季度报告',title) # 解决 （600436）片仔癀：2020年第三季度报告,出现:2020年_第三季度报告
         #title = re.sub('(?!第)三季度报告全文','第三季度报告全文',title) #解决 金博股份：三季度报告全文.PDF
         pattern = self.gJsonInterpreter['TIME']+self.gJsonInterpreter['VALUE']+ '(（[\\u4E00-\\u9FA5]+）)*'
-        matched = self._standardize(pattern,title)
+        matched = self.standard._standardize(pattern,title)
         if matched is not NaN:
             timereport = matched
             #time = self._get_time_by_filename(timereport)
-            #reportType = self._get_report_type_by_filename(timereport) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
+            #reportType = self.standard._get_report_type_by_filename(timereport) # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
             #reportType = self._get_report_type_alias(reportType)
             #if reportType != NULLSTR:
             #    timereport = time + reportType # 解决 ST刚泰 2020年第三季度报告,出现:600687_2020年_三季度报告
@@ -484,7 +484,7 @@ class CrawlFinance(CrawlBase):
             company = ''.join(matched)
         #全角字符转换成半角字符，比如把 华侨城Ａ 转换成 华侨城A
         company = utile.strQ2B(company)
-        company = self._get_company_alias(company)
+        company = self.standard._get_company_alias(company)
         return company
 
 
@@ -496,7 +496,7 @@ class CrawlFinance(CrawlBase):
 
 
     def _sedate_transfer(self, timelist):
-        assert isinstance(timelist,list) and utile._is_matched('\\d+年',timelist[0]) and utile._is_matched('\\d+年',timelist[-1])\
+        assert isinstance(timelist,list) and utile.is_matched('\\d+年', timelist[0]) and utile.is_matched('\\d+年', timelist[-1])\
             ,"timelist(%s) must be a list"%timelist
         seData = timelist[0].split('年')[0] + '-01-01' + '~' + timelist[-1].split('年')[0] + '-12-30'
         return seData

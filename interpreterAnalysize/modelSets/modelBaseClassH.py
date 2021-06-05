@@ -67,7 +67,7 @@ class CriteriaBaseH():
 
 class CheckpointModelH(CheckpointModelBase):
     def save_model(self, net: nn.Module, optimizer: optim.Optimizer):
-        model_savefile = utile._construct_filename(self.directory, self.prefix_modelfile, self.suffix_modelfile)
+        model_savefile = utile.construct_filename(self.directory, self.prefix_modelfile, self.suffix_modelfile)
         stateSaved = {'model':net.state_dict(),'optimizer': optimizer.state_dict()}
         torch.save(stateSaved,model_savefile)
         self.logger.info('Success to save model to file %s' % model_savefile)
@@ -395,7 +395,7 @@ class ModelBaseH(InterpreterBase):
         mergedDataFrame = pd.concat(mergedFields, axis=0)
         mergedDataFrame = mergedDataFrame.dropna(axis=0).reset_index(drop=True)
         #for reportType in self.gConfig['报告类型']:
-        #    tablePrefix = self._get_tableprefix_by_report_type(reportType)
+        #    tablePrefix = self.standard._get_tableprefix_by_report_type(reportType)
         #    tableName = tablePrefix + self.gConfig['tableName']
         #    self._write_to_sqlite3(mergedDataFrame, tableName)
         #    self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'
@@ -409,7 +409,7 @@ class ModelBaseH(InterpreterBase):
 
     def process_write_to_sqlite3(self, mergedDataFrame):
         for reportType in self.gConfig['报告类型']:
-            tablePrefix = self._get_tableprefix_by_report_type(reportType)
+            tablePrefix = self.standard._get_tableprefix_by_report_type(reportType)
             tableName = tablePrefix + self.gConfig['tableName']
             self.database._write_to_sqlite3(mergedDataFrame, self.commonFields,tableName)
             self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'

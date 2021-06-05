@@ -52,7 +52,7 @@ class InterpreterBase(BaseClass):
         # 去掉tableName中带正则表达式保留字符的串,如 ()[].
         tableNames = [tableName for tableName in self.gJsonInterpreter['TABLE'].split('|') if not re.search('[()\[\]]',tableName)]
         # tableNames标准化,去掉正则表达式中的$^
-        tableNames = [self._standardize(self.gJsonInterpreter['TABLEStandardize'], tableName)
+        tableNames = [self.standard._standardize(self.gJsonInterpreter['TABLEStandardize'], tableName)
                            for tableName in tableNames]
         tableNames = [self._get_tablename_alias(tableName) for tableName in tableNames if tableName is not NaN]
         tableNames = list(set(tableNames + list(self.tableAlias.values())))
@@ -162,9 +162,9 @@ class InterpreterBase(BaseClass):
         assert fieldList is not None,'sourceRow(%s) must not be None'%fieldList
         fieldStandardize = self.dictTables[tableName]['fieldStandardize']
         if isinstance(fieldList,list):
-            standardizedFields = [self._standardize(fieldStandardize,field) for field in fieldList]
+            standardizedFields = [self.standard._standardize(fieldStandardize,field) for field in fieldList]
         else:
-            standardizedFields = self._standardize(fieldStandardize,fieldList)
+            standardizedFields = self.standard._standardize(fieldStandardize,fieldList)
         return standardizedFields
 
 
@@ -172,24 +172,24 @@ class InterpreterBase(BaseClass):
         assert keywordList is not None,'sourceRow(%s) must not be None'%keywordList
         #fieldStandardize = self.dictTables[tableName]['fieldStandardize']
         if isinstance(keywordList,list):
-            standardizedKeywords = [self._standardize(standardPattern,keyword) for keyword in keywordList]
+            standardizedKeywords = [self.standard._standardize(standardPattern,keyword) for keyword in keywordList]
         else:
-            standardizedKeywords = self._standardize(standardPattern,keywordList)
+            standardizedKeywords = self.standard._standardize(standardPattern,keywordList)
         return standardizedKeywords
 
 
     def _get_reference_alias(self,refernece):
-        aliasedRefernece = self._alias(refernece, self.referenceAlias)
+        aliasedRefernece = utile.alias(refernece, self.referenceAlias)
         return aliasedRefernece
 
 
     def _get_critical_alias(self,critical):
-        aliasedCritical = self._alias(critical, self.criticalAlias)
+        aliasedCritical = utile.alias(critical, self.criticalAlias)
         return aliasedCritical
 
 
     def _get_tablename_alias(self,tablename):
-        aliasedTablename = self._alias(tablename, self.tableAlias)
+        aliasedTablename = utile.alias(tablename, self.tableAlias)
         return aliasedTablename
 
 

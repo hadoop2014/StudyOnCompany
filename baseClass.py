@@ -50,7 +50,7 @@ class Multiprocess():
         function - 被装饰的函数
     """
     processPool = []
-    #processPools = multiprocessing.Pool()
+    multiprocessingIsOn = False
     processQueue = multiprocessing.Queue()
     processLock = multiprocessing.Lock()
     semaphore = multiprocessing.Semaphore(multiprocessing.cpu_count())
@@ -96,7 +96,7 @@ class Multiprocess():
             reutrn:
                 func_wrap - 被装饰过后的函数
             """
-            if not instance.multiprocessingIsOn:
+            if not self.multiprocessingIsOn:
                 return function_wrap(*args)
             else:
                 self.semaphore.acquire()
@@ -401,7 +401,6 @@ class CheckpointBase(WorkingspaceBase):
                                                          , self.suffix_checkpointfile
                                                          , self.max_keep_checkpoint
                                                          , copy_file=True)
-        #self.checkpoint , self.checkpointWriter = self._init_checkpoint(self.checkpointfile)
         self._init_checkpoint(self.checkpointfile)
 
     def _check_max_checkpoints(self, directory, prefix_checkpointfile, suffix_checkpointfile, max_keep_files, copy_file = False):
@@ -422,7 +421,7 @@ class CheckpointBase(WorkingspaceBase):
         files = os.listdir(directory)
         files = [file for file in files if self._is_file_needed(file, prefix_checkpointfile, suffix_checkpointfile)]
         files = sorted(files, reverse=True)
-        current_filename = utile._construct_filename(directory, prefix_checkpointfile, suffix_checkpointfile)
+        current_filename = utile.construct_filename(directory, prefix_checkpointfile, suffix_checkpointfile)
         if len(files) > 0:
             checkpointfile = os.path.join(directory, files[0])
             if copy_file and current_filename != checkpointfile:
@@ -446,7 +445,7 @@ class CheckpointBase(WorkingspaceBase):
         if prefix_filename != NULLSTR and fileName != NULLSTR:
             fileName = os.path.split(fileName)[-1]
             suffix = fileName.split('.')[-1]
-            if utile._is_matched(prefix_filename, fileName) and suffix == suffix_filename:
+            if utile.is_matched(prefix_filename, fileName) and suffix == suffix_filename:
                 isFileNeeded = True
         return isFileNeeded
 
@@ -456,23 +455,13 @@ class CheckpointBase(WorkingspaceBase):
                 # 第一次创建checkpoint情况, 如果文件不存在,则创建它
                 fw = open(checkpointfile,'w',newline='',encoding='utf-8')
                 fw.close()
-            #checkpoint = open(checkpointfile, 'r+', newline='', encoding='utf-8')
-            #checkpointWriter = csv.writer(checkpoint)
-        #else:
-            #if os.path.exists(checkpointfile):
-            #    os.remove(checkpointfile)
-        #    checkpoint = None
-        #    checkpointWriter = None
-        #return checkpoint, checkpointWriter
 
     def _get_checkpoint(self) -> Optional[io.TextIOWrapper]:
         if self.checkpointIsOn:
             checkpoint = open(self.checkpointfile, 'r+', newline='', encoding='utf-8')
-            #checkpointWriter = csv.writer(checkpoint)
         else:
             checkpoint = None
-            #checkpointWriter = None
-        return checkpoint#, checkpointWriter
+        return checkpoint
 
     @Multiprocess.lock
     def get_content(self):
@@ -504,15 +493,11 @@ class CheckpointBase(WorkingspaceBase):
         resultContent = content
         if len(content) == 0 or checkpoint is None:
             return resultContent
-        #checkpointHeader = self.dictWebsites[website]['checkpointHeader']
-        #dataFrame = pd.read_csv(self.checkpointfile,names=checkpoint_header,dtype=str)
         checkpoint.seek(0)
         dataFrame = pd.read_csv(checkpoint, names=checkpoint_header,dtype=str)
         dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpoint_header,dtype=str))
         # 根据数据第一列去重
-        #dataFrame = dataFrame.drop_duplicates(self.dictWebsites[website]['drop_duplicate'], keep= 'last')
         dataFrame = dataFrame.drop_duplicates(drop_duplicate, keep='last')
-        #order = self.dictWebsites[website]['orderBy']
         dataFrame = dataFrame.sort_values(by=order_by, ascending=False)
         resultContent = dataFrame.values.tolist()
         return resultContent
@@ -524,9 +509,133 @@ class StandardizeBase():
         1) 包括对company,reporttype,time,code, 文件名的标准化.
         2) 根据公司名company转化成标准化的公司代码code.
     args:
+        data_directory - 数据所存放的目录,包括股票代码表
+        logger - 日志记录器
+        filenameStandardize - 文件名标准化的正则表达式
+        companyStandardize - 公司名标准化的正则表达式
+        reportTypeStandardize - 财报类型标准化的正则表达式
+        codeStandardize - 公司代码标准化的正则表达式
+        timeStandardize - 财报上报时间标准化的正则表达式
+        tablePrefix - 表名的前缀, 取值为: 年度, 半年度, 季度
+        reportTypes - 上报类型, 取值为: "年度报告","半年度报告","第一季度报告","第三季度报告"
+        reportTypeAlias - 上报类型的别名
     """
-    def __init__(self):
-        ...
+    def __init__(self,data_directory, logger,
+                 filenameStandardize, companyStandardize, reportTypeStandardize, codeStandardize,
+                 timeStandardize, tablePrefix, reportTypes, reportTypeAlias, companyAlias, filenameAlias):
+        self.data_directory = data_directory
+        self.logger = logger
+        self.filenameStandardize = filenameStandardize
+        self.companyStandardize = companyStandardize
+        self.reportTypeStandardize = reportTypeStandardize
+        self.codeStandardize = codeStandardize
+        self.timeStandardize = timeStandardize
+        self.tablePrefix = tablePrefix
+        self.reportTypes = reportTypes
+        self.reportTypeAlias = reportTypeAlias
+        self.companyAlias = companyAlias
+        self.filenameAlias = filenameAlias
+
+
+    def _get_company_time_type_code_by_filename(self, filename):
+        time = self._get_time_by_filename(filename)
+        type = self._get_report_type_by_filename(filename)
+        company,code = self._get_company_code_by_content(filename)
+        return company,time,type,code
+
+
+    def _get_time_by_filename(self,filename):
+        timeStandardize = self.timeStandardize #self.gJsonBase['timeStandardize'] # '\\d+年'
+        time = self._standardize(timeStandardize, filename)
+        return time
+
+
+    def _get_company_code_by_content(self,content):
+        codeStandardize = self.codeStandardize #self.gJsonBase['codeStandardize'] # （\\d+）
+        code = self._standardize(codeStandardize, content)
+        if code is not NaN:
+            code = code.replace('（',NULLSTR).replace('）',NULLSTR)
+        companyStandardize = self.companyStandardize #self.gJsonBase['companyStandardize']   # "[*A-Z]*[\\u4E00-\\u9FA5]+[A-Z0-9]*"
+        company = self._standardize(companyStandardize, content)
+        return company,code
+
+
+    def _get_tablename_by_report_type(self, reportType, tableName):
+        # 根据报告类型转换成相应的表名,如第一季度报告,合并资产负债表 转成 季报合并资产负债表
+        assert reportType != NULLSTR, "reportType must not be NULL!"
+        tablePrefix = self._get_tableprefix_by_report_type(reportType)
+        return tablePrefix + tableName
+
+
+    def _get_report_type_by_filename(self, filename):
+        #assert,因为repair_table会传进来一个文件 通用数据：适用所有年度报告.xlsx 不符合标准文件名
+        reportType = NULLSTR
+        reportTypeStandardize = self.reportTypeStandardize #self.gJsonBase['reportTypeStandardize']  # "\\d+年([\\u4E00-\\u9FA5]+)"
+        matched = re.findall(reportTypeStandardize, filename)
+        if matched is not None and len(matched) > 0:
+            type = matched.pop()
+            reportType = self._get_report_type_alias(type)
+        return reportType
+
+
+    def _get_path_by_report_type(self, type):
+        path = NULLSTR
+        if type in self.reportTypes:
+            path = os.path.join(self.data_directory,type)
+            if not os.path.exists(path):
+                os.mkdir(path)
+        else:
+            self.logger.error("type(%s) is invalid ,which not in [%s] " % (type, self.reportTypes))
+        return path
+
+
+    def _get_path_by_filename(self, filename):
+        type = self._get_report_type_by_filename(filename)
+        path = self._get_path_by_report_type(type)
+        return path
+
+    def _standardize(self,fieldStandardize,field):
+        standardizedField = field
+        if isinstance(field, str) and isinstance(fieldStandardize, str) and fieldStandardize !="":
+            matched = re.search(fieldStandardize, field)
+            if matched is not None:
+                standardizedField = matched[0]
+            else:
+                standardizedField = NaN
+        return standardizedField
+
+    def _get_tableprefix_by_report_type(self, reportType):
+        assert reportType != NULLSTR,"reportType must not be NULL!"
+        tablePrefix = NULLSTR
+        dictTablePrefix = self.tablePrefix #self.gJsonBase['tablePrefix']
+        if reportType in dictTablePrefix.keys():
+            tablePrefix = dictTablePrefix[reportType]
+        else:
+            self.logger.error('reportType(%s) is invalid,it must one of %s'%(reportType,dictTablePrefix.keys()))
+        return tablePrefix
+
+    def _get_report_type_alias(self, reportType):
+        aliasedReportType = NULLSTR
+        reportTypeTotal = set(list(self.reportTypeAlias.keys()) + self.reportTypes)
+        if reportType in reportTypeTotal:
+            aliasedReportType = utile.alias(reportType, self.reportTypeAlias)
+        return aliasedReportType
+
+    def _get_company_alias(self,company):
+        aliasedCompany = utile.alias(company, self.companyAlias)
+        return aliasedCompany
+
+    def _get_filename_alias(self,filename):
+        aliasedFilename = utile.alias(filename, self.filenameAlias)
+        return aliasedFilename
+
+    def _is_file_name_valid(self,fileName):
+        assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
+        isFileNameValid = False
+        type = self._get_report_type_by_filename(fileName)
+        if type != NULLSTR:
+            isFileNameValid = True
+        return isFileNameValid
 
 
 class BaseClass(metaclass=abc.ABCMeta):
@@ -542,24 +651,23 @@ class BaseClass(metaclass=abc.ABCMeta):
         self.workingspace = self.create_space(WorkingspaceBase)
         self.loggingspace = self.create_space(LoggingspaceBase)
         self.checkpoint = self.create_space(CheckpointBase)
+        self.standard = self.create_standard(StandardizeBase)
         self.data_directory = gConfig['data_directory']
         self.stockcodefile = os.path.join(self.data_directory,self.gConfig['stockcodefile'])
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._data = list()
         self._index = 0
         self._length = len(self._data)
-        self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
-        self.reportTypes =  self.gJsonBase['reportType']
-        self.companyAlias = self.gJsonBase['companyAlias']
+        #self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
+        #self.reportTypes =  self.gJsonBase['reportType']
+        #self.companyAlias = self.gJsonBase['companyAlias']
         # 编译器,文件解析器共同使用的关键字
         self.commonFields = self.gJsonBase['公共表字段定义']
         self.tableNames = self.gJsonBase['TABLE'].split('|')
         self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
-        self.filenameAlias = self.gJsonBase['filenameAlias']
+        #self.filenameAlias = self.gJsonBase['filenameAlias']
         # 此处变量用于多进程
-        # 使用multiprocessing.Pool时,必须采用multiprocessing.Manager().Lock()进行加锁
-        self.multiprocessingIsOn = gConfig['multiprocessingIsOn'.lower()]
-
+        Multiprocess.multiprocessingIsOn = gConfig['multiprocessingIsOn'.lower()]
 
     def __iter__(self):
         return self
@@ -603,16 +711,25 @@ class BaseClass(metaclass=abc.ABCMeta):
         databasefile = os.path.join(self.gConfig['working_directory'], self.gConfig['database'])
         return DataBase(databasefile, self.logger)
 
+    def create_standard(self, StandardizeBase) -> StandardizeBase:
+        standard = StandardizeBase(self.gConfig['data_directory'], self.logger,
+                                   self.gJsonBase['filenameStandardize'], self.gJsonBase['companyStandardize'],
+                                   self.gJsonBase['reportTypeStandardize'], self.gJsonBase['codeStandardize'],
+                                   self.gJsonBase['timeStandardize'], self.gJsonBase['tablePrefix'],
+                                   self.gJsonBase['reportType'],self.gJsonBase['reportTypeAlias'],
+                                   self.gJsonBase['companyAlias'], self.gJsonBase['filenameAlias'])
+        return standard
+
 
     def _get_interpreter_keyword(self):
         # 编译器,文件解析器共同使用的关键字
         ...
 
-
+    '''
     def _get_filename_alias(self,filename):
-        aliasedFilename = self._alias(filename, self.filenameAlias)
+        aliasedFilename = utile.alias(filename, self.filenameAlias)
         return aliasedFilename
-
+    '''
 
     def _get_dict_tables(self,tableNames,dictTablesBase):
         """
@@ -679,7 +796,7 @@ class BaseClass(metaclass=abc.ABCMeta):
             self._index = 0
             self._length = len(self._data)
 
-
+    '''
     def _is_file_name_valid(self,fileName):
         assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
         isFileNameValid = False
@@ -694,8 +811,8 @@ class BaseClass(metaclass=abc.ABCMeta):
         if type != NULLSTR:
             isFileNameValid = True
         return isFileNameValid
-
-
+    '''
+    '''
     def _get_tableprefix_by_report_type(self, reportType):
         assert reportType != NULLSTR,"reportType must not be NULL!"
         tablePrefix = NULLSTR
@@ -705,7 +822,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         else:
             self.logger.error('reportType(%s) is invalid,it must one of %s'%(reportType,dictTablePrefix.keys()))
         return tablePrefix
-
+   '''
 
     def _get_token_type(self, local_name,value,typeLict,defaultType):
         #根据传入的TypeList,让lexer从defaultType中进一步细分出所需的type(从TypeList中选出)
@@ -720,7 +837,7 @@ class BaseClass(metaclass=abc.ABCMeta):
                 break
         return type
 
-
+    '''
     def _get_company_time_type_code_by_filename(self, filename):
         #timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
         #time = self._standardize('\\d+年',filename)
@@ -729,15 +846,15 @@ class BaseClass(metaclass=abc.ABCMeta):
         type = self._get_report_type_by_filename(filename)
         company,code = self._get_company_code_by_content(filename)
         return company,time,type,code
-
-
+    '''
+    '''
     def _get_time_by_filename(self,filename):
         timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
         #time = self._standardize('\\d+年',filename)
         time = self._standardize(timeStandardize, filename)
         return time
-
-
+    '''
+    '''
     def _get_company_code_by_content(self,content):
         codeStandardize = self.gJsonBase['codeStandardize'] # （\\d+）
         #code = self._standardize('（\\d+）',content)
@@ -748,15 +865,15 @@ class BaseClass(metaclass=abc.ABCMeta):
         #company = self._standardize("[*A-Z]*[\\u4E00-\\u9FA5]+[A-Z0-9]*",content)
         company = self._standardize(companyStandardize, content)
         return company,code
-
-
+    '''
+    '''
     def _get_tablename_by_report_type(self, reportType, tableName):
-        # 根据报告类型转换成相应的表名,如第一季度报告,合并资产负债表 转成 季报合并资产负债表
+        # 根据报告类_get_tablename_by_report_type型转换成相应的表名,如第一季度报告,合并资产负债表 转成 季报合并资产负债表
         assert reportType != NULLSTR, "reportType must not be NULL!"
         tablePrefix = self._get_tableprefix_by_report_type(reportType)
         return tablePrefix + tableName
-
-
+    '''
+    '''
     def _get_report_type_by_filename(self, filename):
         #assert,因为repair_table会传进来一个文件 通用数据：适用所有年度报告.xlsx 不符合标准文件名
         #assert utile._is_matched('\\d+年',name),"name(%s) is invalid"%name
@@ -767,11 +884,11 @@ class BaseClass(metaclass=abc.ABCMeta):
         matched = re.findall(reportTypeStandardize, filename)
         if matched is not None and len(matched) > 0:
             type = matched.pop()
-            #reportType = self._alias(type, self.reportTypeAlias)
+            #reportType = utile._alias(type, self.reportTypeAlias)
             reportType = self._get_report_type_alias(type)
         return reportType
-
-
+    '''
+    '''
     def _get_path_by_report_type(self, type):
         #reportTypes = self.gJsonBase['报告类型']
         #assert type in self.reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,self.reportTypes)
@@ -783,19 +900,18 @@ class BaseClass(metaclass=abc.ABCMeta):
         else:
             self.logger.error("type(%s) is invalid ,which not in [%s] " % (type, self.reportTypes))
         return path
-
-
+    '''
+    '''
     def _get_path_by_filename(self, filename):
         type = self._get_report_type_by_filename(filename)
-        #type = self._get_report_type_alias(type)
         path = self._get_path_by_report_type(type)
         return path
-
+    '''
 
     def _get_text(self,page):
         return page
 
-
+    '''
     def _standardize(self,fieldStandardize,field):
         standardizedField = field
         if isinstance(field, str) and isinstance(fieldStandardize, str) and fieldStandardize !="":
@@ -805,30 +921,30 @@ class BaseClass(metaclass=abc.ABCMeta):
             else:
                 standardizedField = NaN
         return standardizedField
-
+    '''
     def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:
             dictTable = list()
         return dictTable
 
-
+    '''
     def _get_report_type_alias(self, reportType):
         aliasedReportType = NULLSTR
         reportTypeTotal = set(list(self.reportTypeAlias.keys()) + self.reportTypes)
         if reportType in reportTypeTotal:
-            aliasedReportType = self._alias(reportType, self.reportTypeAlias)
+            aliasedReportType = utile.alias(reportType, self.reportTypeAlias)
         return aliasedReportType
-
-
+    '''
+    '''
     def _get_company_alias(self,company):
-        aliasedCompany = self._alias(company,self.companyAlias)
+        aliasedCompany = utile.alias(company, self.companyAlias)
         return aliasedCompany
-
-
+    '''
+    '''
     def _alias(self, name, dictAlias: dict):
         alias = dictAlias.get(name, name)
         return alias
-
+    '''
 
     def _write_table(self,tableName,table):
         pass

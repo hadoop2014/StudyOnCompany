@@ -40,7 +40,7 @@ class ExcelVisualization(InterpreterBase):
         #    workbook.remove(workbook['Sheet'])  # 删除空工作薄
         workbook,writer = self._get_workbook_and_writer(visualize_file)
         for reportType in self.gConfig['报告类型']:
-            tablePrefix = self._get_tableprefix_by_report_type(reportType)
+            tablePrefix = self.standard._get_tableprefix_by_report_type(reportType)
             sheetName = tablePrefix + tableName# + str(time.thread_time_ns())
             if sheetName in workbook.sheetnames:
                 # 先清空旧的工作薄
@@ -165,7 +165,7 @@ class ExcelVisualization(InterpreterBase):
         for col_letter in letter_list:
             col = sheet[col_letter]
             field_name = col[startrow].value
-            if utile._is_matched(pattern_field,field_name):
+            if utile.is_matched(pattern_field, field_name):
                 operator = conditional_formatting[field_name]['operator']
                 if operator != NULLSTR:
                     threhold = conditional_formatting[field_name]['threshold']
@@ -277,13 +277,13 @@ class ExcelVisualization(InterpreterBase):
         percentage_field = [key for key,value in self.dictTables[tableName]['conditional_formatting'].items()
                             if value['value_format'] == 'percentage']
         pattern_percentage_field = '|'.join(percentage_field)
-        isCellPecentage = utile._is_matched(pattern_percentage_field, cell.value)
+        isCellPecentage = utile.is_matched(pattern_percentage_field, cell.value)
         return isCellPecentage
 
 
     def _is_cell_emphasize(self,cell,tableName):
         pattern_emphasize = self.dictTables[tableName]['pattern_emphasize']
-        isCellEmphasize = utile._is_matched(pattern_emphasize,cell.value)
+        isCellEmphasize = utile.is_matched(pattern_emphasize, cell.value)
         return isCellEmphasize
 
 

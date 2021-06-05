@@ -91,9 +91,9 @@ class DocParserPdf(DocParserBase):
 
     def _get_tail(self):
         #在每一页的结尾增加TAIL EOF
-        #self._standardize(self.gJsonInterpreter['NAME'],self.gJsonInterpreter['TAIL'])为了解决（603960）克来机电：2017年年度报告.PDF
+        #self.standard._standardize(self.gJsonInterpreter['NAME'],self.gJsonInterpreter['TAIL'])为了解决（603960）克来机电：2017年年度报告.PDF
         #其(1) 现金流量表补充资料出现在页尾,如下"现金流量表补充资料　√适用 □不适用 审计报告第 68 页"
-        tail = self._standardize(self.gJsonInterpreter['NAME'],self.gJsonInterpreter['TAIL']) + ' ' + EOF
+        tail = self.standard._standardize(self.gJsonInterpreter['NAME'],self.gJsonInterpreter['TAIL']) + ' ' + EOF
         return tail
 
 

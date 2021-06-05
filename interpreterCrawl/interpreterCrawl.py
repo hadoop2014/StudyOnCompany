@@ -123,9 +123,9 @@ class InterpreterCrawl(InterpreterBase):
         assert self.names['公司简称'] != NULLSTR and self.names['报告类型'] != NULLSTR and self.names['报告时间'] != NULLSTR\
             ,"parameter 公司简称,报告类型,报告年度 must not be NULL in 批量处理程序"
 
-        isFileSelected = utile._is_matched('|'.join(self.names['公司简称']),sourcefile) \
-                         and utile._is_matched('|'.join(self.names['报告类型']),sourcefile) \
-                         and utile._is_matched('|'.join(self.names['报告时间']),sourcefile)
+        isFileSelected = utile.is_matched('|'.join(self.names['公司简称']), sourcefile) \
+                         and utile.is_matched('|'.join(self.names['报告类型']), sourcefile) \
+                         and utile.is_matched('|'.join(self.names['报告时间']), sourcefile)
         return isFileSelected
 
 

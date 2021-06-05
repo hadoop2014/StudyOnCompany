@@ -9,10 +9,11 @@ import logging
 import functools
 import time
 from logging import handlers
+from cloghandler import ConcurrentRotatingFileHandler
 # 默认日志格式
 import utile
 
-DEFAULT_LOG_FMT = "%(asctime)s %(filename)s [line:%(lineno)d] %(levelname)s: %(message)s"
+DEFAULT_LOG_FMT = "%(asctime)s %(process)s %(filename)s [line:%(lineno)d] %(levelname)s: %(message)s"
 # 默认时间格式
 DEFUALT_LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
 #把Logger变成为一个单例对象
@@ -45,8 +46,12 @@ class Logger():
         #filehandler = handlers.TimedRotatingFileHandler(filename=filename, when="midnight", interval=1,
         #                                                backupCount=backupCount,
         #                                                atTime=None,encoding="utf-8")
-        filehandler = handlers.RotatingFileHandler(filename=filename, mode='a', maxBytes=maxBytes,
-                                                   backupCount=backupCount, encoding="utf-8", delay=False)
+        # 支持多进程写日志
+        filehandler = ConcurrentRotatingFileHandler(filename = filename, maxBytes=maxBytes, backupCount=backupCount,
+                                                encoding='utf-8',delay=False)
+
+        #filehandler = handlers.RotatingFileHandler(filename=filename, mode='a', maxBytes=maxBytes,
+        #                                           backupCount=backupCount, encoding="utf-8", delay=False)
         # 2. 设置日志格式
         filehandler.setFormatter(self.formatter)
         # 3. 返回

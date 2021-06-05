@@ -4,6 +4,7 @@
 # @Author  : wu.hao
 # @File    : interpreterCrawl.py
 # @Note    : 用接近自然语言的解释器处理各类事务,用于处理财务数据爬取,财务数据提取,财务数据分析.
+import logging
 import multiprocessing
 from collections import Counter
 from ply import lex,yacc
@@ -273,7 +274,8 @@ class InterpreterNature(InterpreterBase):
     def doWork(self,lexer=None,debug=False,tracking=False):
         text = self._get_main_program()
         self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
-
+        # 关闭所有的日志
+        logging.shutdown()
 
     def _get_main_program(self):
         return self._get_text()
@@ -486,10 +488,10 @@ class InterpreterNature(InterpreterBase):
                 sourcefiles = os.listdir(source_directory)
             else:
                 for type  in self.names_global['报告类型']:
-                    source_directory = self._get_path_by_report_type(type)
+                    source_directory = self.standard._get_path_by_report_type(type)
                     if source_directory != NULLSTR:
                         sourcefiles = sourcefiles + os.listdir(source_directory)
-            sourcefilesValid = [sourcefile for sourcefile in sourcefiles if self._is_file_name_valid(sourcefile)]
+            sourcefilesValid = [sourcefile for sourcefile in sourcefiles if self.standard._is_file_name_valid(sourcefile)]
             sourcefilesInvalid = set(sourcefiles).difference(set(sourcefilesValid))
             if len(sourcefilesInvalid) > 0:
                 for sourcefile in sourcefilesInvalid:
@@ -539,7 +541,7 @@ class InterpreterNature(InterpreterBase):
                 for type,times in value.items():
                     patterns = patterns + [company + '：' + time + type for time in times]
         matchPattern = '|'.join(patterns)
-        isFileMatched = utile._is_matched(matchPattern, sourcefile)
+        isFileMatched = utile.is_matched(matchPattern, sourcefile)
         return isFileMatched
 
 
@@ -577,8 +579,8 @@ class InterpreterNature(InterpreterBase):
         filenameStandardize = self.gJsonBase['filenameStandardize']
         dictDuplicate = dict()
         for sourcefile in sourcefiles:
-            standardizedName = self._standardize(filenameStandardize,sourcefile)
-            company,time, reportType,code = self._get_company_time_type_code_by_filename(standardizedName) #解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
+            standardizedName = self.standard._standardize(filenameStandardize,sourcefile)
+            company,time, reportType,code = self.standard._get_company_time_type_code_by_filename(standardizedName) #解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
             if company is not NaN and time is not NaN and reportType is not NaN:
                 standardizedName = company + '：'+time + reportType
             if standardizedName is NaN:
@@ -602,9 +604,9 @@ class InterpreterNature(InterpreterBase):
     def _is_file_selected(self, sourcefile):
         assert self.names_global['公司简称'] != NULLSTR and self.names_global['报告类型'] != NULLSTR and self.names_global['报告时间'] != NULLSTR\
             ,"parameter 公司简称,报告类型,报告年度 must not be NULL in 批量处理程序"
-        isFileSelected = utile._is_matched('|'.join(self.names_global['公司简称']), sourcefile) \
-                         and utile._is_matched('|'.join(self.names_global['报告类型']), sourcefile) \
-                         and utile._is_matched('|'.join(self.names_global['报告时间']), sourcefile)
+        isFileSelected = utile.is_matched('|'.join(self.names_global['公司简称']), sourcefile) \
+                         and utile.is_matched('|'.join(self.names_global['报告类型']), sourcefile) \
+                         and utile.is_matched('|'.join(self.names_global['报告时间']), sourcefile)
         return isFileSelected
 
 
@@ -625,7 +627,7 @@ class InterpreterNature(InterpreterBase):
         for value in values:
             if key in parametercheck.keys():
                 #isCheckOk = utile._is_matched(parametercheck[key],value)
-                isCheckOk = self._standardize(parametercheck[key],value) == value
+                isCheckOk = self.standard._standardize(parametercheck[key],value) == value
             assert isCheckOk,"Value(%s) is invalid,it must in list %s"%(value,parametercheck[key].split('|'))
 
 
