@@ -370,7 +370,7 @@ class InterpreterNature(InterpreterBase):
             dictParameter.update(self.names_global)
             # 此处对_process_single_parse采用了多进程
             taskResult = self._process_single_parse(dictParameter)
-            taskResults.append(str(taskResult))
+            taskResults.append(taskResult)
         # 当采用多进程编程时,此处需要关闭多进程, 同时获取multiprocessing.Queue()中的函数返回值
         taskResults = Multiprocess.release()
         #self.interpreterAccounting.docParser.checkpoint.close()  #关闭checkpoint文件
@@ -384,7 +384,7 @@ class InterpreterNature(InterpreterBase):
             return
         self.interpreterAccounting.initialize(dictParameter)
         taskResult = self.interpreterAccounting.doWork(debug=False, tracking=False)
-        return taskResult
+        return str(taskResult)
 
 
     def _process_manipulate_table(self, command):

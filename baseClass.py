@@ -50,6 +50,7 @@ class Multiprocess():
         function - 被装饰的函数
     """
     processPool = []
+    taskResults = []
     multiprocessingIsOn = False
     processQueue = multiprocessing.Queue()
     processLock = multiprocessing.Lock()
@@ -82,6 +83,7 @@ class Multiprocess():
             """
             result = self.function(instance, *args)
             self.processQueue.put(result)
+            #self.taskResults.append(result)
             self.semaphore.release()
             return result
 
@@ -103,15 +105,21 @@ class Multiprocess():
                 process = multiprocessing.Process(target=function_wrap, args=(*args,))
                 process.start()
                 self.processPool.append(process)
+                if not self.processQueue.empty():
+                    # 当processQueue队列满时,会导致子进程处在阻塞状态, 从而主进程死锁. 因此在join前必须执行一次self.processQueue.get().
+                    self.taskResults.append(self.processQueue.get())
+                    instance.logger.info('Fetch data from processQueue, %d records!' % len(self.taskResults))
                 #self._process_pool_append(process)
         return mutiprocess_wrap
     '''
     def _process_pool_append(self,process):
         self.processPool.append(process)
-        #processPool = [process for process in self.processPool if process.is_alive()]
         processPool = []
         for process in self.processPool:
             if not process.is_alive():
+                # 当processQueue队列满时,会导致子进程处在阻塞状态, 从而主进程死锁. 因此在join前必须执行一次self.processQueue.get().
+                #if not self.processQueue.empty():
+                #    self.taskResults.append(self.processQueue.get())
                 process.join()  #释放已经完成的子进程
             else:
                 processPool.append(process)
@@ -126,13 +134,13 @@ class Multiprocess():
         reutrn:
             taskResults - 进程返回值的列表
         """
-        taskResults = []
+
         for process in cls.processPool:
             process.join()
         cls.processPool.clear()
         for _ in range(cls.processQueue.qsize()):
-            taskResults.append(str(cls.processQueue.get()))
-        return taskResults
+            cls.taskResults.append(str(cls.processQueue.get()))
+        return cls.taskResults
 
     @classmethod
     def lock(cls, func):
@@ -905,33 +913,6 @@ class BaseClass(metaclass=abc.ABCMeta):
             self._index = 0
             self._length = len(self._data)
 
-    '''
-    def _is_file_name_valid(self,fileName):
-        assert fileName != None and fileName != NULLSTR, "filename (%s) must not be None or NULL" % fileName
-        isFileNameValid = False
-        #reportTypes = self.gJsonBase['报告类型']
-        #pattern = '|'.join(self.reportTypes)
-        type = self._get_report_type_by_filename(fileName)
-        #if isinstance(pattern, str) and isinstance(fileName, str):
-        #    if pattern != NULLSTR:
-        #        matched = re.search(pattern, fileName)
-        #        if matched is not None:
-        #            isFileNameValid = True
-        if type != NULLSTR:
-            isFileNameValid = True
-        return isFileNameValid
-    '''
-    '''
-    def _get_tableprefix_by_report_type(self, reportType):
-        assert reportType != NULLSTR,"reportType must not be NULL!"
-        tablePrefix = NULLSTR
-        dictTablePrefix = self.gJsonBase['tablePrefix']
-        if reportType in dictTablePrefix.keys():
-            tablePrefix = dictTablePrefix[reportType]
-        else:
-            self.logger.error('reportType(%s) is invalid,it must one of %s'%(reportType,dictTablePrefix.keys()))
-        return tablePrefix
-   '''
 
     def _get_token_type(self, local_name,value,typeLict,defaultType):
         #根据传入的TypeList,让lexer从defaultType中进一步细分出所需的type(从TypeList中选出)
@@ -946,114 +927,16 @@ class BaseClass(metaclass=abc.ABCMeta):
                 break
         return type
 
-    '''
-    def _get_company_time_type_code_by_filename(self, filename):
-        #timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
-        #time = self._standardize('\\d+年',filename)
-        #time = self._standardize(timeStandardize, filename)
-        time = self._get_time_by_filename(filename)
-        type = self._get_report_type_by_filename(filename)
-        company,code = self._get_company_code_by_content(filename)
-        return company,time,type,code
-    '''
-    '''
-    def _get_time_by_filename(self,filename):
-        timeStandardize = self.gJsonBase['timeStandardize'] # '\\d+年'
-        #time = self._standardize('\\d+年',filename)
-        time = self._standardize(timeStandardize, filename)
-        return time
-    '''
-    '''
-    def _get_company_code_by_content(self,content):
-        codeStandardize = self.gJsonBase['codeStandardize'] # （\\d+）
-        #code = self._standardize('（\\d+）',content)
-        code = self._standardize(codeStandardize, content)
-        if code is not NaN:
-            code = code.replace('（',NULLSTR).replace('）',NULLSTR)
-        companyStandardize = self.gJsonBase['companyStandardize']   # "[*A-Z]*[\\u4E00-\\u9FA5]+[A-Z0-9]*"
-        #company = self._standardize("[*A-Z]*[\\u4E00-\\u9FA5]+[A-Z0-9]*",content)
-        company = self._standardize(companyStandardize, content)
-        return company,code
-    '''
-    '''
-    def _get_tablename_by_report_type(self, reportType, tableName):
-        # 根据报告类_get_tablename_by_report_type型转换成相应的表名,如第一季度报告,合并资产负债表 转成 季报合并资产负债表
-        assert reportType != NULLSTR, "reportType must not be NULL!"
-        tablePrefix = self._get_tableprefix_by_report_type(reportType)
-        return tablePrefix + tableName
-    '''
-    '''
-    def _get_report_type_by_filename(self, filename):
-        #assert,因为repair_table会传进来一个文件 通用数据：适用所有年度报告.xlsx 不符合标准文件名
-        #assert utile._is_matched('\\d+年',name),"name(%s) is invalid"%name
-        #type = filename
-        reportType = NULLSTR
-        #pattern = "\\d+年([\\u4E00-\\u9FA5]+)"
-        reportTypeStandardize = self.gJsonBase['reportTypeStandardize']  # "\\d+年([\\u4E00-\\u9FA5]+)"
-        matched = re.findall(reportTypeStandardize, filename)
-        if matched is not None and len(matched) > 0:
-            type = matched.pop()
-            #reportType = utile._alias(type, self.reportTypeAlias)
-            reportType = self._get_report_type_alias(type)
-        return reportType
-    '''
-    '''
-    def _get_path_by_report_type(self, type):
-        #reportTypes = self.gJsonBase['报告类型']
-        #assert type in self.reportTypes, "type(%s) is invalid ,which not in [%s] "%(type,self.reportTypes)
-        path = NULLSTR
-        if type in self.reportTypes:
-            path = os.path.join(self.data_directory,type)
-            if not os.path.exists(path):
-                os.mkdir(path)
-        else:
-            self.logger.error("type(%s) is invalid ,which not in [%s] " % (type, self.reportTypes))
-        return path
-    '''
-    '''
-    def _get_path_by_filename(self, filename):
-        type = self._get_report_type_by_filename(filename)
-        path = self._get_path_by_report_type(type)
-        return path
-    '''
 
     def _get_text(self,page):
         return page
 
-    '''
-    def _standardize(self,fieldStandardize,field):
-        standardizedField = field
-        if isinstance(field, str) and isinstance(fieldStandardize, str) and fieldStandardize !="":
-            matched = re.search(fieldStandardize, field)
-            if matched is not None:
-                standardizedField = matched[0]
-            else:
-                standardizedField = NaN
-        return standardizedField
-    '''
+
     def _merge_table(self, dictTable=None,interpretPrefix=None):
         if dictTable is None:
             dictTable = list()
         return dictTable
 
-    '''
-    def _get_report_type_alias(self, reportType):
-        aliasedReportType = NULLSTR
-        reportTypeTotal = set(list(self.reportTypeAlias.keys()) + self.reportTypes)
-        if reportType in reportTypeTotal:
-            aliasedReportType = utile.alias(reportType, self.reportTypeAlias)
-        return aliasedReportType
-    '''
-    '''
-    def _get_company_alias(self,company):
-        aliasedCompany = utile.alias(company, self.companyAlias)
-        return aliasedCompany
-    '''
-    '''
-    def _alias(self, name, dictAlias: dict):
-        alias = dictAlias.get(name, name)
-        return alias
-    '''
 
     def _write_table(self,tableName,table):
         pass
@@ -1084,43 +967,6 @@ class BaseClass(metaclass=abc.ABCMeta):
         mergedColumns = mergedColumns + self.dictTables[tableName]['fieldName']
         return mergedColumns
 
-    '''
-    def _get_file_context(self,fileName):
-        file_object = open(fileName,encoding='utf-8')
-        file_context = NULLSTR
-        try:
-            file_context = file_object.read()  # file_context是一个string，读取完后，就失去了对test.txt的文件引用
-        except Exception as e:
-            self.logger.error('读取文件(%s)失败:%s' % (fileName,str(e)))
-        finally:
-            file_object.close()
-        return file_context
-    '''
-    '''
-    def _get_stock_list(self, companyList):
-        assert isinstance(companyList,list),"Parameter companyList (%s) must be a list" % type(companyList)
-        stockList = []
-        stockcodeSpecial = [[company,code] for  company,code in self.gJsonBase['stockcode'].items()]
-        if len(companyList) == 0:
-            return stockList
-        stockcodeHeader = self.gJsonBase['stockcodeHeader']
-        if os.path.exists(self.stockcodefile):
-            dataFrame = pd.read_csv(self.stockcodefile,names=stockcodeHeader,dtype=str)
-            # stockcodeSpecial只有两列, 而stockcodeHeader有三列,最后一列为公司, 需要特殊处理
-            dataFrameSpecial = pd.DataFrame(stockcodeSpecial,columns=stockcodeHeader[0:-1])
-            dataFrameSpecial[stockcodeHeader[-1]] = '公司'
-            dataFrame = dataFrame.append(dataFrameSpecial)
-        else:
-            dataFrame = pd.DataFrame(stockcodeSpecial,columns=stockcodeHeader)
-        dataFrame = dataFrame.drop_duplicates()
-        indexNeeded = dataFrame[stockcodeHeader[0]].isin(companyList)
-        dataFrame = dataFrame[indexNeeded]
-        stockList = dataFrame.values.tolist()
-        companyDiffer = set(companyList).difference(set([company for company,_,_ in stockList]))
-        if len(companyDiffer) > 0:
-            self.logger.info("failed to get these stock list:%s"%companyDiffer)
-        return stockList
-    '''
 
     @property
     def index(self):
