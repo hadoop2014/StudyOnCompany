@@ -148,6 +148,7 @@ class InterpreterBase(BaseClass):
                 # 计算 年度报告,半年度报告,第一季度报告,第三季度报告 需要解析多少张表
                 dictTables[tableName].update(
                     {'max'+tokenName.title()+'Len':reduce(max,list(map(len,dictTables[tableName][tokenName + 'Name'])))})
+                #                                                                    list(dictTables[tableName][tokenName + 'Alias'].keys())
             horizontalTable = self.dictTables[tableName]['horizontalTable']
             if horizontalTable:
                 #正对水平表,maxFieldLen和maxHeaderLen需要互换

@@ -542,7 +542,8 @@ class InterpreterNature(InterpreterBase):
                 for type,times in value.items():
                     patterns = patterns + [company + '：' + time + type for time in times]
         matchPattern = '|'.join(patterns)
-        isFileMatched = utile.is_matched(matchPattern, sourcefile)
+        standardizeFileprefix = self.standard._get_standardize_fileprefix(sourcefile)
+        isFileMatched = utile.is_matched(matchPattern, standardizeFileprefix)
         return isFileMatched
 
 
@@ -577,27 +578,28 @@ class InterpreterNature(InterpreterBase):
     def _remove_duplicate_files(self,sourcefiles):
         #上峰水泥：2015年年度报告（更新后）.PDF和（000672）上峰水泥：2015年年度报告（更新后）.PDF并存时,则去掉前者(即去掉长度短的)
         assert isinstance(sourcefiles,list),"Parameter sourcefiles must be list!"
-        filenameStandardize = self.gJsonBase['filenameStandardize']
+        #filenameStandardize = self.gJsonBase['filenameStandardize']
         dictDuplicate = dict()
         for sourcefile in sourcefiles:
-            standardizedName = self.standard._standardize(filenameStandardize,sourcefile)
-            company,time, reportType,code = self.standard._get_company_time_type_code_by_filename(standardizedName) #解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
-            if company is not NaN and time is not NaN and reportType is not NaN:
-                standardizedName = company + '：'+time + reportType
-            if standardizedName is NaN:
+            #standardizedName = self.standard._standardize(filenameStandardize,sourcefile)
+            standardizedFileprefix = self.standard._get_standardize_fileprefix(sourcefile)
+            #company,time, reportType,code = self.standard._get_company_time_type_code_by_filename(standardizedName) #解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
+            #if company is not NaN and time is not NaN and reportType is not NaN:
+            #    standardizedName = company + '：'+time + reportType
+            if standardizedFileprefix is NaN:
                 self.logger.warning('Filename %s is invalid!'%sourcefile)
                 continue
             if len(dictDuplicate) == 0:
-                dictDuplicate.update({standardizedName:sourcefile})
+                dictDuplicate.update({standardizedFileprefix:sourcefile})
             else:
-                if standardizedName in dictDuplicate.keys():
-                    if len(dictDuplicate[standardizedName]) < len(sourcefile):
+                if standardizedFileprefix in dictDuplicate.keys():
+                    if len(dictDuplicate[standardizedFileprefix]) < len(sourcefile):
                         # 相同年份的财报,取文件名长的文件,示例: （300529）健帆生物：2018年年度报告.PDF 和 （603707）健友股份：2018年年度报告（修订版）.PDF,取后则
                         self.logger.info("File %s is duplicated and replaced by %s"
-                                         %(dictDuplicate[standardizedName],sourcefile))
-                        dictDuplicate.update({standardizedName:sourcefile})
+                                         %(dictDuplicate[standardizedFileprefix],sourcefile))
+                        dictDuplicate.update({standardizedFileprefix:sourcefile})
                 else:
-                    dictDuplicate.update({standardizedName: sourcefile})
+                    dictDuplicate.update({standardizedFileprefix: sourcefile})
         sourcefiles = dictDuplicate.values()
         return sourcefiles
 

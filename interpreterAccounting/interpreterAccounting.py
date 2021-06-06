@@ -220,6 +220,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional NUMERO
                         | optional NUMERO NUMERO NUMERO
                         | optional NUMERO '-' NUMERO
+                        | optional '-' DISCARD
                         | optional '(' NUMERO ')'
                         | optional '(' NAME ')'
                         | optional '（' LABEL '）'
@@ -233,6 +234,7 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '(' ')' NUMERIC NUMERIC NUMERIC
                         | NUMERIC
                         | empty '''
+            # optional '-' DISCARD 解决赣锋锂业：2019年年度报告, 主要会计数据表 前面出现一大段文字,中间出现 : 号-长期股权投资第十条
             # optional NUMERO '-' NUMERO 解决恩捷股份：2020年年度报告, 主营业务分行业经营情况出现在页尾,第二页出现:公告编号：2021-033
             # optional NUMERO NUMERO NUMERO 解决 华测导航：2018年第一季度报告全文,合并资产负债表,解析出 合并资产负债表 ...  2018 03 31
             # optional '(' ')' NUMERIC NUMERIC NUMERIC 解决白云山 2020年第三季度报告, 主要会计数据 搜索不到的问题
@@ -729,14 +731,11 @@ class InterpreterAccounting(InterpreterBase):
 
 
     def _get_first_row_all_invalid(self):
-        #isFirstRowAllInvalid = False
         if self.names['报告类型'] in self.dictReportType.keys():
             tableNames = self.dictReportType[self.names['报告类型']]
         else:
             tableNames = self.tableNames
         sumFirstRowAllInvalid = sum([self.names[tableName]['firstRowAllInvalid'] for tableName in tableNames])
-        #if sumFirstRowAllInvalid > 0:
-        #    isFirstRowAllInvalid = True
         return sumFirstRowAllInvalid
 
 

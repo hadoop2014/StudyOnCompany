@@ -23,8 +23,9 @@ from sklearn.preprocessing import MaxAbsScaler
 import abc
 import threading
 import multiprocessing
+import asyncio
 import psutil
-from concurrent.futures import ProcessPoolExecutor
+#from concurrent.futures import ProcessPoolExecutor
 #数据读写处理的基类
 
 # 用于定义单例,使用方法:
@@ -108,7 +109,7 @@ class Multiprocess():
                 if not self.processQueue.empty():
                     # 当processQueue队列满时,会导致子进程处在阻塞状态, 从而主进程死锁. 因此在join前必须执行一次self.processQueue.get().
                     self.taskResults.append(self.processQueue.get())
-                    instance.logger.info('Fetch data from processQueue, %d records!' % len(self.taskResults))
+                    #instance.logger.info('Fetch data from processQueue, %d records!' % len(self.taskResults))
                 #self._process_pool_append(process)
         return mutiprocess_wrap
     '''
@@ -551,6 +552,16 @@ class StandardizeBase():
         company,code = self._get_company_code_by_content(filename)
         return company,time,type,code
 
+    def _construct_standardize_filename(self,code, company, time, type):
+        filename = '（' + code + '）' + company + '：' + time + type + '.PDF'
+        return filename
+
+    def _get_standardize_fileprefix(self, filename):
+        standardize_filename = self._standardize(self.filenameStandardize, filename)
+        company, time, reportType, code = self._get_company_time_type_code_by_filename(standardize_filename)  # 解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
+        if company is not NaN and time is not NaN and reportType is not NaN:
+            standardize_filename = company + '：' + time + reportType
+        return standardize_filename
 
     def _get_time_by_filename(self,filename):
         timeStandardize = self.timeStandardize #self.gJsonBase['timeStandardize'] # '\\d+年'

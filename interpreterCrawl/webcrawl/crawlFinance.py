@@ -215,9 +215,9 @@ class CrawlFinance(CrawlBase):
                 urlPath = download_path + path["adjunctUrl"]
                 code = path["secCode"]
                 company = self._secname_transfer(path['secName'])
-                type = self._title_transfer(path['announcementTitle'],company)
+                timetype = self._title_transfer(path['announcementTitle'],company)
                 filename = '（' + code + '）' + company + '：' \
-                           + type + '.PDF'
+                           + timetype + '.PDF'
                 publishingTime = self._get_publishing_time(path["adjunctUrl"])
                 filename = self._adjust_filename(filename,publishingTime)
                 filename = self.standard._get_filename_alias(filename)
