@@ -326,8 +326,8 @@ class DocParserSql(DocParserBase):
                     value = re.sub('(^\\s*[（(]*[一二三四五六七八九十〇、]{1,3})[)）]*(?=[^\\u4E00-\\u9FA5])', NULLSTR, value) # 新城控股合并利润表中出现附注,数据中出现四(38)及一、四(38).  海康威视2019-2014年报合并资产负债表等 中的附注中出现 :  (五)2
                     value = re.sub('([（(]*[一二三四五六七八九十〇、]{1,3})[)）]*(?=[^\\u4E00-\\u9FA5])', NULLSTR, value)  # 执行两次,解决安琪酵母2014年报中,并资产负债表等 中的附注中出现 :五（一）
                     #解决高德红外2014年报中 主营业务分行业经营情况表中,出现（%）,改为通过headerStandardize来解决
-                    # 解决五粮液2020年年报,主要会计数据中,存在两列数据并列到了一列,同时后接一个None的场景和,其中总资产字段合并为一列时中间间隔1个空字符
-                    result = re.split("[ ]{1,}(?=\\d+)",value,maxsplit=1)
+                    # 解决五粮液2020年年报,主要会计数据中,存在两列数据并列到了一列,同时后接一个None的场景和,其中总资产字段合并为一列时中间间隔1个空字符,暂通过repair_list解决 at 20210612
+                    result = re.split("[ ]{2,}(?=\\d+)",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
                     value = value.replace(' ',NULLSTR)       # 解决石头科技2019年报,主营业务分行业经营情况中出现 "增加 7.30个 百 分 点" 和 "增加 8.65个 百 分"
@@ -587,6 +587,10 @@ class DocParserSql(DocParserBase):
                     if isinstance(firstHeader,str) and (firstHeader == '分红年度' or firstHeader == '年度'):
                         #firstHeader == '年度'是为了解决海螺水泥2018年年报普通股现金分红情况表中,表头是年度
                         value = [commonFiled,*dataFrame.index[1:].tolist()]
+                    elif isinstance(firstHeader, str) and firstHeader == '主要会计数据' \
+                        and self.standard._is_year_list(dataFrame.index[1:]):
+                        # firstHeader == '主要会计数据' 是为了解决国检集团2019年年报主要会计数据中, 只有2019年,2017年数据被留下来了
+                        value = [commonFiled, *dataFrame.index[1:].tolist()]
                     else:
                         value = [commonFiled,*[str(int(dictTable[commonFiled].split('年')[0]) - i) + '年'
                                        for i in range(len(dataFrame.iloc[:,0])-1)]]

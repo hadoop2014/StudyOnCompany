@@ -568,6 +568,18 @@ class StandardizeBase():
         time = self._standardize(timeStandardize, filename)
         return time
 
+    def _is_year(self, year):
+        "explain: 判断是否为年"
+        isYear = False
+        matchedYear = self._get_time_by_filename(year)
+        if matchedYear is not NaN:
+            isYear = True
+        return isYear
+
+    def _is_year_list(self, year_list):
+        "explain: 判断是否为年"
+        isYearList = [self._is_year(year) for year in year_list]
+        return all(isYearList)
 
     def _get_company_code_by_content(self,content):
         codeStandardize = self.codeStandardize #self.gJsonBase['codeStandardize'] # （\\d+）

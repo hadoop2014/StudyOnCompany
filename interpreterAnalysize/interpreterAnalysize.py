@@ -142,7 +142,7 @@ class InterpreterAnalysize(InterpreterBase):
             if not os.path.exists(sql_file):
                 self.logger.error('%s script is not exist,you must create it first :%s!'% (manipulate, sql_file))
                 continue
-            manipulate_sql = utile._get_file_context(sql_file)
+            manipulate_sql = utile.get_file_context(sql_file)
             manipulate_sql = manipulate_sql.format(tablePrefix)
             isSuccess = self.database._sql_executer_script(manipulate_sql)
             assert isSuccess,"failed to execute sql"

@@ -192,11 +192,13 @@ class DocParserPdf(DocParserBase):
             self.interpretPrefix = NULLSTR
             return dictTable
         if isinstance(savedTable, list):
-            if tableStartScore >= dictTable['tableStartScore'] and dictTable['tableEnd'] == False:
+            if tableStartScore >= dictTable['tableStartScore'] and dictTable['tableEnd'] == False and \
+                page_numbers[-1] - page_numbers[-2] > 1:
                 # 如果第二次搜索到同一张表, 而且tableStartScore更高, 且isTableEnd = False,则认为是正确的表, 则重新开始拼接表
                 # 解决国城矿业：2019年年度报告, 合并资产负债表出现两次, 后面一次是正确的
                 # 华侨城A：2020年半年度报告, 合并所有者权益变动表 P83页第一次出现 tableStartScore = 2, 但是P85页再次出现的表 tableStartScore = 3
                 #（600109）国金证券：2020年半年度报告.PDF,P43页第一次出现合并资产负债表,P57页出现真正的合并资产负债表
+                # 海天味业：2016年年度报告,合并资产负债表,没一个分页上都有合并资产负债表的表头,导致tableStartScore >= last one成立,增加page_numbers[-1] - page_numbers[-2] > 1的判断
                 savedTable = processedTable
                 self.logger.info('second searched table %s at page %d, whitch tableStartScore(%d) >= last one(%d)'
                                  %(tableName, page_numbers[-1], tableStartScore, dictTable['tableStartScore']))
@@ -267,10 +269,13 @@ class DocParserPdf(DocParserBase):
             if len(page_numbers) == 1:
                 #len(page_numers) == 1表示本表所在的第一页,需要明确判断出isTabletart = True 才能使得isTableEnd生效
                 if (isTableEnd and tableStartScore > 0 and maxTableEnd == False) \
-                    or (isTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0):
-                    # (isTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0)
-                    # 解决片仔癀：2016年年度报告,分季度财务数据的解析问题
+                    or (isTableEnd and not maxTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0)\
+                    or (isTableEnd and maxTableEnd and tableStartScore > maxTableStartScore and maxTableStartScore > 0):
+                    # (isTableEnd and not maxTableEnd and tableStartScore >= maxTableStartScore and maxTableStartScore > 0)
+                    # 解决片仔癀：2016年年度报告,分季度财务数据的解析问题,出现两张表,应该取后面一张
                     # and maxTableEnd == False 解决（601878）浙商证券：2020年半年度报告,主要会计数据的解析问题
+                    # (isTableEnd and maxTableEnd and tableStartScore > maxTableStartScore and maxTableStartScore > 0)
+                    # 国检集团：2019年年度报告, 主要会计数据同一页出现两张表,应该取前面一张
                     processedTable = table
                     maxTableStartScore = tableStartScore
                     maxTableEnd = isTableEnd
@@ -311,13 +316,17 @@ class DocParserPdf(DocParserBase):
     def _discard_last_row(self,table,tableName):
         #引入maxFieldLen是为了解决（002555）三七互娱：2018年年度报告.PDF,主要会计数据,在最后一个字段'归属于上市公司股东的净资产（元）'后面又加了一段无用的话,直接去掉
         maxFieldLen = self.dictTables[tableName]['maxFieldLen']
+        maxFieldLenPlus = self.dictTables[tableName]['maxFieldLenPlus']
         # 广济药业：2019年半年度报告,合并现金流量表,最后一行为 法定代表人：安靖 主管会计工作负责人:胡明峰 会计机构负责人：王琼,长度为 33,因此把此处从2改为1.3
+        # 避免 光明乳业：2015年年度报告,无形资产情况, 最后一个字段出现误判
         #table[-1][0].replace(' ',NULLSTR)增加了replace(' ',NULLSTR)解决赛轮轮胎：2020年年度报告,无形资产情况表,最后一个字段增加了几个空格,导致if语句误判
-        if isinstance(table[-1][0],str) and len(table[-1][0].replace(' ',NULLSTR)) > 1.3 * maxFieldLen:
+        #if isinstance(table[-1][0],str) and len(table[-1][0].replace(' ',NULLSTR)) > 1.3 * maxFieldLen:
+        if isinstance(table[-1][0], str) and len(table[-1][0].replace(' ', NULLSTR)) > maxFieldLen + maxFieldLenPlus:
             #去掉最后一个超长且无用的字段
             table = table[:-1]
         if len(table) > 0:
-            if isinstance(table[0][0],str) and len(table[0][0].replace(' ',NULLSTR)) > 1.5 * maxFieldLen:
+            #if isinstance(table[0][0],str) and len(table[0][0].replace(' ',NULLSTR)) > 1.5 * maxFieldLen:
+            if isinstance(table[0][0], str) and len(table[0][0].replace(' ', NULLSTR)) > maxFieldLen + maxFieldLenPlus:
             #解决广济药业2015年报,合并资产负债表的第一个单元格为: 合并资产负债表 编制单位：湖北广济药业股份有限公司 2015年12月31日 单位：人民币元'
                 table = table[1:]
         return  table

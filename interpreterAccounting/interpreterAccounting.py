@@ -232,8 +232,10 @@ class InterpreterAccounting(InterpreterBase):
                         | optional NAME NUMERIC
                         | optional '(' ')'
                         | optional '(' ')' NUMERIC NUMERIC NUMERIC
+                        | optional SPECIALWORD
                         | NUMERIC
                         | empty '''
+            # optional SPECIALWORD 解决海螺水泥2019年报,主营业务分行业经营情况的搜索问题
             # optional '-' DISCARD 解决赣锋锂业：2019年年度报告, 主要会计数据表 前面出现一大段文字,中间出现 : 号-长期股权投资第十条
             # optional NUMERO '-' NUMERO 解决恩捷股份：2020年年度报告, 主营业务分行业经营情况出现在页尾,第二页出现:公告编号：2021-033
             # optional NUMERO NUMERO NUMERO 解决 华测导航：2018年第一季度报告全文,合并资产负债表,解析出 合并资产负债表 ...  2018 03 31

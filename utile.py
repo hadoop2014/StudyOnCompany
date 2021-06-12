@@ -148,7 +148,7 @@ def alias(name, dictAlias: dict):
     return alias
 
 
-def _get_file_context(fileName):
+def get_file_context(fileName):
     file_object = open(fileName,encoding='utf-8')
     try:
         file_context = file_object.read()  # file_context是一个string，读取完后，就失去了对test.txt的文件引用
