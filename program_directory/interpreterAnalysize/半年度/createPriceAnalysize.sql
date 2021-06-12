@@ -165,6 +165,7 @@ from
                 报告时间,
                 strftime('%Y-%W', 报告时间) as 报告周
             from 股票交易数据
+            where 总市值 > 0 and 总市值 != 'None'  -- 解决立方制药 003020 出现无效数据,这些数据的总市值 = 0 or 总市值 = 'None'
         )y
         group by 公司代码
     )z
