@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from time import sleep
 from ply import lex,yacc
 
-
 class InterpreterAnalysize(InterpreterBase):
     def __init__(self,gConfig,memberModuleDict):
         super(InterpreterAnalysize, self).__init__(gConfig)
@@ -152,7 +151,9 @@ class InterpreterAnalysize(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
             return
-        visualize_file = self.dictTables[tableName]['visualize']
+        #visualize_file = self.dictTables[tableName]['visualize']
+        visualize = self.excelVisualization.create_visual(modelfile=self.dictTables[tableName]['visualize'])
+        visualize_file = visualize.model_filename
         if visualize_file == NULLSTR:
             self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
             return
@@ -164,7 +165,9 @@ class InterpreterAnalysize(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_visualize_table!')
             return
-        visualize_file = self.dictTables[tableName]['visualize']
+        #visualize_file = self.dictTables[tableName]['visualize']
+        visualize = self.excelVisualization.create_visual(modelfile = self.dictTables[tableName]['visualize'])
+        visualize_file = visualize.model_filename
         if visualize_file == NULLSTR:
             self.logger.warning('the visualize of table %s is NULL,it can not be visualized!'%tableName)
             return

@@ -110,22 +110,8 @@ class Multiprocess():
                     # 当processQueue队列满时,会导致子进程处在阻塞状态, 从而主进程死锁. 因此在join前必须执行一次self.processQueue.get().
                     self.taskResults.append(self.processQueue.get())
                     #instance.logger.info('Fetch data from processQueue, %d records!' % len(self.taskResults))
-                #self._process_pool_append(process)
         return mutiprocess_wrap
-    '''
-    def _process_pool_append(self,process):
-        self.processPool.append(process)
-        processPool = []
-        for process in self.processPool:
-            if not process.is_alive():
-                # 当processQueue队列满时,会导致子进程处在阻塞状态, 从而主进程死锁. 因此在join前必须执行一次self.processQueue.get().
-                #if not self.processQueue.empty():
-                #    self.taskResults.append(self.processQueue.get())
-                process.join()  #释放已经完成的子进程
-            else:
-                processPool.append(process)
-        self.processPool = processPool
-    '''
+
     @classmethod
     def release(cls):
         """
@@ -380,6 +366,9 @@ class SpaceBase(metaclass=abc.ABCMeta):
     def is_modelfile_exist(self):
         ...
 
+    def model_filename(self) -> str:
+        ...
+
 class WorkingspaceBase(SpaceBase):
     def __init__(self, working_directory, logger):
         super(WorkingspaceBase, self).__init__(working_directory, logger)
@@ -438,6 +427,7 @@ class CheckpointBase(WorkingspaceBase):
                 shutil.copyfile(checkpointfile, current_filename)
             else:
                 current_filename = checkpointfile
+
             if len(files) > max_keep_files:
                 files_discard = files[max_keep_files:]
                 for file in files_discard:
@@ -448,6 +438,19 @@ class CheckpointBase(WorkingspaceBase):
                 if os.path.exists(fullfile) and os.path.getsize(fullfile) == 0:
                     os.remove(fullfile)
         return current_filename
+
+    '''
+    def _get_current_file(self,directory, prefix_checkpointfile, suffix_checkpointfile, copy_file, last_file = NULLSTR):
+        current_filename = utile.construct_filename(directory, prefix_checkpointfile, suffix_checkpointfile)
+        if last_file != NULLSTR:
+            checkpointfile = os.path.join(directory, last_file)
+            if copy_file and current_filename != checkpointfile:
+                # 拷贝一份文件,名称命名为current_filename
+                shutil.copyfile(checkpointfile, current_filename)
+            else:
+                current_filename = checkpointfile
+        return current_filename
+    '''
 
     def _is_file_needed(self, fileName, prefix_filename, suffix_filename):
         isFileNeeded = False
@@ -847,7 +850,7 @@ class BaseClass(metaclass=abc.ABCMeta):
         databasefile = os.path.join(self.gConfig['working_directory'], self.gConfig['database'])
         return DataBase(databasefile, self.logger)
 
-    def create_standard(self, StandardizeBase) -> StandardizeBase:
+    def create_standard(self, StandardizeBase, **kwargs) -> StandardizeBase:
         if StandardizeStockcode.__subclasscheck__(StandardizeBase):
             standard = StandardizeBase(self.gConfig['stockcodefile'],self.gJsonBase['stockcodeHeader'],
                                        self.gJsonBase['stockcode'],
@@ -856,7 +859,8 @@ class BaseClass(metaclass=abc.ABCMeta):
                                        self.gJsonBase['reportTypeStandardize'], self.gJsonBase['codeStandardize'],
                                        self.gJsonBase['timeStandardize'], self.gJsonBase['tablePrefix'],
                                        self.gJsonBase['reportType'],self.gJsonBase['reportTypeAlias'],
-                                       self.gJsonBase['companyAlias'], self.gJsonBase['filenameAlias'])
+                                       self.gJsonBase['companyAlias'], self.gJsonBase['filenameAlias'],
+                                       **kwargs)
         else:
             standard = StandardizeBase(self.gConfig['data_directory'], self.logger,
                                        self.gJsonBase['filenameStandardize'], self.gJsonBase['companyStandardize'],

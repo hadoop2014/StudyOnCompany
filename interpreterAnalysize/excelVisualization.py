@@ -4,6 +4,7 @@
 # @Author  : wu.hao
 # @File    : dataVisualizeation.py
 # @Note    : 用于财务数据的可视化
+import os
 
 from interpreterAnalysize.interpreterBaseClass import *
 from openpyxl import load_workbook,Workbook
@@ -13,32 +14,67 @@ from openpyxl.formatting import Rule
 from openpyxl.formatting.rule import ColorScaleRule, CellIsRule, FormulaRule
 from openpyxl.styles.differential import DifferentialStyle
 import pandas as pd
+from functools import partial
+
+
+class CheckpointModelVisual(CheckpointModelBase) :
+
+    '''
+    explain: 该类用于保持模型数据所存放的文件的管理, 文件个数受max_keep_models控制,即一个model对应一个输出文件, 文件类型为xlsx
+    '''
+    def _init_modelfile(self, visualize_file):
+        '''
+        explain: 如果文件不存在,则创建它; 如果文件存在,尝试打开它,如果打不开,则删除该文件,重新创建.
+        '''
+        workbook = Workbook()
+        if not os.path.exists(visualize_file):
+            # 生成一个新文件
+            workbook.save(visualize_file)
+        try:
+            workbook = load_workbook(visualize_file)
+        except Exception as e:
+            # 删除文件重新执行一次
+            print(e)
+            self.logger.info('failed to load workbook,remove it and try load it again from file %s, !' % visualize_file)
+            if os.path.exists(visualize_file):
+                os.remove(visualize_file)
+                workbook.save(visualize_file)
+        finally:
+            workbook.close()
+
+
+    @classmethod
+    def copy_file_for_reader(cls,func):
+        '''
+        explain: 专门用于装饰read_and_visualize函数
+            1) 在该函数运行完后, 将结果excel拷贝一份到目标modelfile_basic中,这样每次可以用wps打开一个固定的excel.
+            2) 因为cls.modelfile_basic是类变量,在多进程下会被其他进程覆盖,因此不支持多进程
+        '''
+        @functools.wraps(func)
+        def wrap(self,visualize_file, *args):
+            func(self, visualize_file, *args)
+            if visualize_file != cls.modelfile_basic and cls.modelfile_basic != NULLSTR:
+                if os.path.exists(visualize_file):
+                    shutil.copyfile(visualize_file, cls.modelfile_basic)
+        return wrap
+
 
 
 class ExcelVisualization(InterpreterBase):
     def __init__(self,gConfig):
         super(ExcelVisualization, self).__init__(gConfig)
-        self.analysizeresult = os.path.join(self.workingspace.directory,gConfig['analysizeresult'])
+        # 用于创建visual对象的偏函数,该对象增加checkpoint属性, 利用max_keep_models参数控制文件个数
+        self.create_visual =  partial(self.create_space
+                                      , CheckpointModelVisual
+                                      , copy_file = True
+                                      , max_keep_models=self.gConfig['max_keep_models'])
 
-    '''
-    def _get_class_name(self, gConfig):
-        visualization_name = re.findall('(.*)Visualization', self.__class__.__name__).pop().lower()
-        return visualization_name
-    '''
-
-    def read_and_visualize(self,visualize_file,tableName,scale):
-        # 专门用于写文件
-        visualize_file = os.path.join(self.workingspace.directory,visualize_file)
-        #workbook = Workbook()
-        #writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
-        #writer.book = workbook
-        #writer.save()  # 生成一个新文件
-        #workbook = load_workbook(visualize_file)
-        #writer = pd.ExcelWriter(visualize_file,engine='openpyxl')
-        #writer.book = workbook
-        #if workbook.active.title == "Sheet":  # 表明这是一个空工作薄
-        #    workbook.remove(workbook['Sheet'])  # 删除空工作薄
-        workbook,writer = self._get_workbook_and_writer(visualize_file)
+    @CheckpointModelVisual.copy_file_for_reader
+    def read_and_visualize(self,visualize_file, tableName,scale):
+        '''
+        explian: 将结果数据写入excel文件并按照指定格式呈现
+        '''
+        workbook,writer = self.get_workbook_and_writer(visualize_file)
         for reportType in self.gConfig['报告类型']:
             tablePrefix = self.standard._get_tableprefix_by_report_type(reportType)
             sheetName = tablePrefix + tableName# + str(time.thread_time_ns())
@@ -64,26 +100,11 @@ class ExcelVisualization(InterpreterBase):
         workbook.close()
 
 
-    def _get_workbook_and_writer(self,visualize_file):
-        #if os.path.exists(visualize_file):
-        #    os.remove(visualize_file)
-        workbook = Workbook()
-        #writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
-        #writer.book = workbook
-        if not os.path.exists(visualize_file):
-            #writer.save()  # 生成一个新文件
-            workbook.save(visualize_file)
-        try:
-            workbook = load_workbook(visualize_file)
-        except Exception as e:
-            # 删除文件重新执行一次
-            print(e)
-            self.logger.info('failed to load workbook,remove it and try load it again from file %s, !' % visualize_file)
-            if os.path.exists(visualize_file):
-                os.remove(visualize_file)
-                #writer.save()
-                workbook.save(visualize_file)
-            workbook =load_workbook(visualize_file)
+    def get_workbook_and_writer(self,visualize_file):
+        '''
+        explain: 根据文件名获取workbook和writer
+        '''
+        workbook =load_workbook(visualize_file)
         writer = pd.ExcelWriter(visualize_file, engine='openpyxl')
         writer.book = workbook
         if workbook.active.title == "Sheet":  # 表明这是一个空工作薄

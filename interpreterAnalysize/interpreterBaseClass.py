@@ -24,10 +24,13 @@ class InterpreterBase(ModelBase):
         self.dictTables = self._get_dict_tables(self.tableNames,self.dictTables)
         self.models = self.gJsonInterpreter['MODEL'].split('|')
         self.dictModels = self._get_models_parameters(self.models)
+        # 将模型公告参数更新到gConfig中
+        self.gConfig.update(self._get_models_parameters_common())
 
 
     def _get_models_parameters(self,models):
         """
+        explain: 将interpreterBase.json中的'模型公共参数' 和 interpreterAnalysize.json中模型的参数进行融合
         args:
             models - 当前解释器配置文件下的所有模型名称,定义在文件interpreterAnalysize.json,如:
             公司价格预测模型
@@ -38,14 +41,7 @@ class InterpreterBase(ModelBase):
         """
         assert isinstance(models,list) and len(models) > 0,"models(%s) must be a list and not be NULL!"% models
         dictModels = {}
-        #dictModel = {}
-        dictModelCommon = {}
-        for key, value in self.gJsonBase['模型公共参数'].items():
-            # 把模型公共参数进行展开, 放到一个dict中
-            if isinstance(value, dict):
-                dictModelCommon.update(value)
-            else:
-                dictModelCommon.update({key: value})
+        dictModelCommon = self._get_models_parameters_common()
         for model in models:
             dictModel = dictModelCommon.copy()
             for key, value in self.gJsonInterpreter[model].items():
@@ -65,6 +61,20 @@ class InterpreterBase(ModelBase):
                 self.logger.error('model(%s) is not configure in interpreterAnalysize.json!' % (modelName))
             dictModels.update({model : dictModel})
         return dictModels
+
+
+    def _get_models_parameters_common(self):
+        '''
+        explain: 获取模型公共参数
+        '''
+        dictModelCommon = {}
+        for key, value in self.gJsonBase['模型公共参数'].items():
+            # 把模型公共参数进行展开, 放到一个dict中
+            if isinstance(value, dict):
+                dictModelCommon.update(value)
+            else:
+                dictModelCommon.update({key: value})
+        return dictModelCommon
 
 
     def interpretDefine(self):

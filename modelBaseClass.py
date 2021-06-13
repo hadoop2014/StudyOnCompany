@@ -6,18 +6,36 @@ import json
 from baseClass import *
 
 class CheckpointModelBase(CheckpointBase):
-    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, max_keep_checkpoint
-                 ,moduleName, max_keep_models):
+    '''
+    explian: 用于存放模型的基础类
+    args:
+         modelfile_basic - 模型的基本文件名, 在派生类CheckpointModelVisual中使用, 把模型结果数据拷贝到该文件中
+    '''
+    modelfile_basic = NULLSTR
+    def __init__(self, working_directory, logger, checkpointfile, checkpointIsOn, max_keep_checkpoint, max_keep_models
+                 ,copy_file = False,prefix_modelfile = NULLSTR, suffix_modelfile = 'model', modelfile = NULLSTR):
         super(CheckpointModelBase, self).__init__(working_directory, logger, checkpointfile, checkpointIsOn
                                                   , max_keep_checkpoint)
-        self.prefix_modelfile = moduleName
-        self.suffix_modelfile = 'model'
+        self.prefix_modelfile = prefix_modelfile
+        self.suffix_modelfile = suffix_modelfile
+        CheckpointModelBase.modelfile_basic = os.path.join(self.directory, modelfile)
+        if modelfile != NULLSTR and isinstance(modelfile,str):
+            self.prefix_modelfile = modelfile.split('.')[0]
+            self.suffix_modelfile = modelfile.split('.')[-1]
         self.max_keep_models = max_keep_models
         self.model_savefile = self._check_max_checkpoints(self.directory
                                                           , self.prefix_modelfile
                                                           , self.suffix_modelfile
-                                                          , self.max_keep_models)
+                                                          , self.max_keep_models
+                                                          , copy_file=copy_file)
+        self._init_modelfile(self.model_savefile)
 
+    def _init_modelfile(self, modelfile):
+        ...
+
+    @property
+    def model_filename(self):
+        return self.model_savefile
 
     def is_modelfile_exist(self):
         isModelfileExist = False
@@ -33,8 +51,6 @@ class ModelBase(BaseClass):
         self.start_time = time.time()
         #self.debugIsOn = self.gConfig['debugIsOn'.lower()]
         self.check_book = self.get_check_book()
-        #self.model_savefile = os.path.join(self.workingspace.directory,
-        #                                   self._get_module_name() + '.model')# + self.gConfig['framework'])
         self.symbol_savefile = os.path.join(self.workingspace.directory,
                                             self._get_module_name() + '.symbol')# + self.gConfig['framework'])
         self.losses_train = []

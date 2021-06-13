@@ -111,8 +111,8 @@ class ModelBaseH(InterpreterBase):
         self.weight_initializer = self.get_initializer(self.initializer)
         self.bias_initializer = self.get_initializer('constant')
         self.checkpoint = self.create_space(CheckpointModelH
-                                            , moduleName =  self._get_module_name()
-                                            , max_keep_models = self.gConfig['max_keep_models'])
+                                            , max_keep_models = self.gConfig['max_keep_models']
+                                            , prefix_modelfile=self._get_module_name())
         #self.set_default_tensor_type()  #设置默认的tensor在ｇｐｕ还是在ｃｐｕ上运算
 
 

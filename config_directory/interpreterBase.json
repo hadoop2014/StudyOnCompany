@@ -2470,7 +2470,7 @@
       "model": "rnn",
       "cpu_num": 0,
       "#used for max to keep checkpoint": "",
-      "max_keep_models" : 100,
+      "max_keep_models" : 200,
       "#used for max queue of tensorboard logging:default value = 10": "",
       "max_queue" : 10,
       "#用于paddle的logger.image(tag='input',num_samples=num_samples])": "",

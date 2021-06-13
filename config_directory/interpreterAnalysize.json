@@ -93,7 +93,7 @@
     "create": "createComprehensive.sql",
     "generate": "",
     "update": "",
-    "visualize": "FinanceAnalysis v1.0.xlsx",
+    "visualize": "FinanceAnalysis.xlsx",
     "sourceTable": "",
     "orderBy": ["公司投资等级 desc","公司代码","报告时间 desc"],
     "startrow": 1,
@@ -364,7 +364,7 @@
     "create": "createValueAnalysize.sql",
     "generate": "",
     "update": "",
-    "visualize": "FinanceAnalysis v1.0.xlsx",
+    "visualize": "FinanceAnalysis.xlsx",
     "sourceTable": "",
     "orderBy": [],
     "startrow": 1
@@ -485,7 +485,7 @@
     "trainer": {
       "k" : 5,
       "clip_gradient" : 1e-2,
-      "train_num_epoch" : 700,
+      "train_num_epoch" : 800,
       "learning_rate" : 1e-2,
       "learning_rate_decay_factor" : 0.8,
       "learning_rate_decay_step": 500,

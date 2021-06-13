@@ -275,7 +275,7 @@ class InterpreterNature(InterpreterBase):
         text = self._get_main_program()
         self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
         # 关闭所有的日志
-        logging.shutdown()
+        #logging.shutdown()
 
     def _get_main_program(self):
         return self._get_text()
