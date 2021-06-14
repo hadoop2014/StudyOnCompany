@@ -13,8 +13,11 @@ import os
 from constant import *
 from datetime import date,timedelta,datetime
 
-def get_time_now():
+def get_time_today():
     return time.strftime('%Y%m%d')
+
+def get_time_now():
+    return time.strftime('%H:%M:%S')
 
 def get_today():
     return datetime.now().strftime('%Y-%m-%d')

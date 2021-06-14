@@ -41,11 +41,11 @@ class Sqlite(SqilteBase):
                 if not sql_df.empty:
                     sql_df.to_sql(name=tableName, con=conn, if_exists='append', index=False)
                     conn.commit()
-                    self.logger.info("insert into {} at {}!".format(tableName, utile.get_time_now()))
+                    self.logger.info("insert into {} at {}!".format(tableName, utile.get_time_today()))
         else:
             sql_df.to_sql(name=tableName, con=conn, if_exists='replace', index=False)
             conn.commit()
-            self.logger.info("insert into {} at {}!".format(tableName, utile.get_time_now()))
+            self.logger.info("insert into {} at {}!".format(tableName, utile.get_time_today()))
         conn.close()
 
 
@@ -304,7 +304,7 @@ class InterpreterNature(InterpreterBase):
         dataFrameCompanyCodes = pd.DataFrame(companyCodes,
                                              columns = self.standardStockcode.stockcodeHeader)#columns=self.gJsonBase['stockcodeHeader'])
         # 增加一列 上报时间,取当前日期
-        dataFrameCompanyCodes['报告时间'] = utile.get_time_now()
+        dataFrameCompanyCodes['报告时间'] = utile.get_time_today()
         dataFrameIndustryCategery = pd.DataFrame([[key,value] for key,value in dictIndustryCategory.items()], columns=['公司简称','行业分类'])
         dataFrameMerged = pd.merge(dataFrameCompanyCodes,dataFrameIndustryCategery,how='left',on=['公司简称'])
         columnsName = self._get_merged_columns(tableName)

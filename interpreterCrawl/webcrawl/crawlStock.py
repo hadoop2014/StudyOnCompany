@@ -118,7 +118,7 @@ class CrawlStock(CrawlBase):
 
     def _process_construct_stock_list(self, stockList):
         #endTime = time.strftime('%Y%m%d')
-        endTime = utile.get_time_now()
+        endTime = utile.get_time_today()
         #endTime = self._get_last_week_day()
         stockList = self._get_deduplicate_stock(stockList,endTime)
         resultPaths = []

@@ -50,6 +50,7 @@ class MyTestCase(unittest.TestCase):
         input = input + ' 主营业务分行业情况'
         input = input + ' 2016 年 1-6 月'
         input = input + ' 公司在职员工为'
+        input = input + ' 2018 年 1 月 1 日-2018 年 09 月 30 日'
         self.interpreter.lexer.input(input)
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(-,'-',1,1)")
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(NUMERIC,'1,370,249,543.00',1,2)")
@@ -127,6 +128,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(SPECIALWORD,'主营业务分行业情况',4,582)"),
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(TIME,'2016 年 1-6 月',4,592)"),
         self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(CRITICAL,'公司在职员工为',4,605)"),
+        self.assertEqual(self.interpreter.lexer.token().__str__(),"LexToken(TIME,'2018 年 1 月 1 日-2018 年 09 月 30 日',4,613)"),
         self.assertEqual(self.interpreter.lexer.token().__str__(),"None")
 
     def run_interpreter_yacc(self):

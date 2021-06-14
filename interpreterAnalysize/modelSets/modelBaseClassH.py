@@ -1,3 +1,6 @@
+import time
+
+import utile
 from interpreterAnalysize.interpreterBaseClass import *
 from torch import optim,nn
 from torch.nn.utils.rnn import PackedSequence
@@ -60,17 +63,16 @@ class CriteriaBaseH():
         return self.forward(y_hat,y)
 
     def forward(self,y_hat,y):
-        #criteria = (y_hat.argmax(dim=1) == y.long()).sum().item()
         criteria = (y_hat.argmax(dim=1) == y).sum().item()
         return criteria
 
 
 class CheckpointModelH(CheckpointModelBase):
     def save_model(self, net: nn.Module, optimizer: optim.Optimizer):
-        model_savefile = utile.construct_filename(self.directory, self.prefix_modelfile, self.suffix_modelfile)
+        self.model_savefile = utile.construct_filename(self.directory, self.prefix_modelfile, self.suffix_modelfile)
         stateSaved = {'model':net.state_dict(),'optimizer': optimizer.state_dict()}
-        torch.save(stateSaved,model_savefile)
-        self.logger.info('Success to save model to file %s' % model_savefile)
+        torch.save(stateSaved,self.model_savefile)
+        self.logger.info('Success to save model to file %s' % self.model_savefile)
 
     def load_model(self, net: nn.Module, get_optimizer : Callable, ctx):
         if self.is_modelfile_exist():
@@ -87,6 +89,29 @@ class CheckpointModelH(CheckpointModelBase):
                 "failed to load the mode file(%s),it is not exists, you must train it first!" % self.model_savefile)
         return net, optimizer
 
+    @classmethod
+    def processing_checkpoint(cls,func):
+        @functools.wraps(func)
+        def wrap(self, *args):
+            start_time = time.time()
+            result = func(self, *args)
+            self.checkpoint.save_model(self.net, self.optimizer)
+            total_time = time.time() - start_time
+            taskResult = []
+            taskResult.append(os.path.split(self.checkpoint.model_savefile)[-1])
+            taskResult.append(utile.get_time_now())
+            taskResult.append(f"{total_time:10.2f}")
+            taskResult.append(f"{self.acces_train[-1]:10.4f}")
+            taskResult.append(f"{self.losses_train[-1]:10.4f}")
+            taskResult.append(f"{self.acces_test[-1]:10.4f}")
+            taskResult.append(f"{self.losses_test[-1]:10.4f}")
+            taskResult.append(f"{self.get_learningrate():10.6f}")
+            taskResult.append(f"{self.get_global_step():10d}")
+            taskResult.append(str(self.get_context()))
+            content = ','.join(taskResult)
+            self.checkpoint.save(content)
+            return result
+        return wrap
 
 #深度学习模型的基类
 class ModelBaseH(InterpreterBase):
@@ -101,7 +126,6 @@ class ModelBaseH(InterpreterBase):
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
         self.learning_rate_decay_step = self.gConfig['learning_rate_decay_step']
         self.viewIsOn = self.gConfig['viewIsOn']
-        #self.max_keep_models = self.gConfig['max_keep_models']
         self.ctx = self.get_ctx(self.gConfig['ctx'])
         self.init_sigma = self.gConfig['init_sigma']
         self.init_bias = self.gConfig['init_bias']
@@ -148,11 +172,9 @@ class ModelBaseH(InterpreterBase):
 
     def params_initialize(self, module):
         if type(module) == nn.Linear or type(module) == nn.Conv2d:
-            #print(self.weight_initializer,'\tnow initializer %s'%module)
             self.weight_initializer(module.weight.data)
             self.bias_initializer(module.bias.data)
         elif type(module) == nn.LSTM or type(module) == nn.GRU or type(module) == nn.RNN:
-            #for i in module.num_layers:
             self.weight_initializer(module.weight_hh_l0.data)
             self.weight_initializer(module.weight_ih_l0.data)
             self.bias_initializer(module.bias_hh_l0.data)
@@ -214,11 +236,11 @@ class ModelBaseH(InterpreterBase):
         pass
 
 
+    @CheckpointModelH.processing_checkpoint
     def train(self,model_eval,getdataClass,gConfig,num_epochs):
         for epoch in range(num_epochs):
             self.run_epoch(getdataClass,epoch)
-        #self.saveCheckpoint()
-        self.checkpoint.save_model(self.net, self.optimizer)
+        #self.checkpoint.save_model(self.net, self.optimizer)
         self.writer.close()
 
         return self.losses_train,self.acces_train,self.losses_valid,self.acces_valid,\
@@ -270,8 +292,6 @@ class ModelBaseH(InterpreterBase):
 
     def train_loss_acc(self, data_iter):
         acc_sum, loss_sum, n = 0, 0, 0
-        #loss_sum = 0
-        #n = 0
         self.init_state()  # 仅用于RNN,LSTM等
         self.net.train()
         for X, y in data_iter:
@@ -309,8 +329,6 @@ class ModelBaseH(InterpreterBase):
 
     def evaluate_loss_acc(self, data_iter):
         acc_sum, loss_sum, n = 0, 0, 0
-        #loss_sum = 0
-        #n = 0
         self.net.eval()
         for X, y in data_iter:
             try:
@@ -344,16 +362,13 @@ class ModelBaseH(InterpreterBase):
     def run_step(self,epoch,train_iter,valid_iter,test_iter, epoch_per_print):
         loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test=0,0,None,None,0,0
         loss_train,acc_train = self.train_loss_acc(train_iter)
-        #nd.waitall()
         if epoch % epoch_per_print == 0:
-            # print(features.shape,labels.shape)
             loss_test,acc_test = self.evaluate_loss_acc(test_iter)
             self.writer.add_scalar('test/loss', loss_test, self.get_global_step())
             self.writer.add_scalar('test/accuracy', acc_test, self.get_global_step())
             self.run_matrix(loss_train, loss_test)  # 仅用于rnn,lstm,ssd等
             self.predict(self.net)  # 仅用于rnn,lstm,ssd等
         if epoch % self.epochs_per_checkpoint == 0:
-            #self.saveCheckpoint()
             self.checkpoint.save_model(self.net, self.optimizer)
         return loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test
 
@@ -367,8 +382,6 @@ class ModelBaseH(InterpreterBase):
         keyfields_iter,valid_iter = getdataClass.getValidData(self.batch_size)
         mergedFields = []
         acc_sum, loss_sum, n = 0, 0, 0
-        #loss_sum = 0
-        #n = 0
         net.eval()
         for (X,y),keyfields in zip(keyfields_iter,valid_iter):
             try:
@@ -394,12 +407,6 @@ class ModelBaseH(InterpreterBase):
             n += self.get_batch_size(y)
         mergedDataFrame = pd.concat(mergedFields, axis=0)
         mergedDataFrame = mergedDataFrame.dropna(axis=0).reset_index(drop=True)
-        #for reportType in self.gConfig['报告类型']:
-        #    tablePrefix = self.standard._get_tableprefix_by_report_type(reportType)
-        #    tableName = tablePrefix + self.gConfig['tableName']
-        #    self._write_to_sqlite3(mergedDataFrame, tableName)
-        #    self.logger.info('success to apply model(%s) and write to predicted data to sqlite3: %s'
-        #                     %(self.gConfig['model'], tableName))
         self.process_write_to_sqlite3(mergedDataFrame)
         if n != 0:
             loss_sum /= n
@@ -473,18 +480,14 @@ class ModelBaseH(InterpreterBase):
         assert self.gConfig['mode'] in self.gConfig['modelist']\
             ,"mode(%s) must be in modelist: %s'(self.gConfig['mode'],self.gConfig['modelist']"
         if self.gConfig['mode'] == 'apply':
-            #self.loadCheckpoint()
             self.net, self.optimizer = self.checkpoint.load_model(self.net
                                                                   , partial(self.get_optimizer,self.gConfig['optimizer'])
                                                                   , self.ctx)
         elif self.gConfig['mode'] == 'pretrain':
             pass
         else:
-            #ckpt = self.getSaveFile()
             ckpt_used = self.gConfig['ckpt_used']
             if self.checkpoint.is_modelfile_exist() and ckpt_used:
-                #print("Reading model parameters from %s" % ckpt)
-                #self.loadCheckpoint()
                 self.net, self.optimizer = self.checkpoint.load_model(self.net
                                                                       , partial(self.get_optimizer,self.gConfig['optimizer'])
                                                                       , self.ctx)

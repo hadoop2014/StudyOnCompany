@@ -4,7 +4,6 @@
 # @Author  : wu.hao
 # @File    : dataVisualizeation.py
 # @Note    : 用于财务数据的可视化
-import os
 
 from interpreterAnalysize.interpreterBaseClass import *
 from openpyxl import load_workbook,Workbook
@@ -48,7 +47,7 @@ class CheckpointModelVisual(CheckpointModelBase) :
         '''
         explain: 专门用于装饰read_and_visualize函数
             1) 在该函数运行完后, 将结果excel拷贝一份到目标modelfile_basic中,这样每次可以用wps打开一个固定的excel.
-            2) 因为cls.modelfile_basic是类变量,在多进程下会被其他进程覆盖,因此不支持多进程
+            2) 因为cls.modelfile_basic是类变量,在多进程下会被其他进程覆盖,因此在多进程可能存在问题
         '''
         @functools.wraps(func)
         def wrap(self,visualize_file, *args):
@@ -57,7 +56,6 @@ class CheckpointModelVisual(CheckpointModelBase) :
                 if os.path.exists(visualize_file):
                     shutil.copyfile(visualize_file, cls.modelfile_basic)
         return wrap
-
 
 
 class ExcelVisualization(InterpreterBase):

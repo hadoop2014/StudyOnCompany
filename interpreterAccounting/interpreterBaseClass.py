@@ -15,15 +15,6 @@ class InterpreterBase(BaseClass):
         super(InterpreterBase, self).__init__(gConfig)
         self._get_interpreter_keyword()
 
-    '''
-    def _get_class_name(self, gConfig):
-        #获取解释器的名称
-        dataset_name = re.findall('Interpreter(.*)', self.__class__.__name__).pop().lower()
-        assert dataset_name in gConfig['interpreterlist'], \
-            'interpreterlist(%s) is invalid,one of it must be a substring (%s) of class name(%s)' % \
-            (gConfig['interpreterlist'], dataset_name, self.__class__.__name__)
-        return dataset_name
-    '''
 
     def _get_interpreter_keyword(self):
         #编译器,文件解析器共同使用的关键字

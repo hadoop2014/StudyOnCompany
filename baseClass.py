@@ -342,7 +342,7 @@ class SpaceBase(metaclass=abc.ABCMeta):
                 except:
                    self.logger('Failed to clear directory %s!'%full_file)
 
-    def save(self, content, checkpoint_header, drop_duplicate, order_by):
+    def save(self, content, checkpoint_header=NULLSTR, drop_duplicate=NULLSTR, order_by=NULLSTR):
         ...
 
     def _remove_duplicate(self,checkpoint, content, checkpoint_header, drop_duplicate, order_by):
@@ -439,19 +439,6 @@ class CheckpointBase(WorkingspaceBase):
                     os.remove(fullfile)
         return current_filename
 
-    '''
-    def _get_current_file(self,directory, prefix_checkpointfile, suffix_checkpointfile, copy_file, last_file = NULLSTR):
-        current_filename = utile.construct_filename(directory, prefix_checkpointfile, suffix_checkpointfile)
-        if last_file != NULLSTR:
-            checkpointfile = os.path.join(directory, last_file)
-            if copy_file and current_filename != checkpointfile:
-                # 拷贝一份文件,名称命名为current_filename
-                shutil.copyfile(checkpointfile, current_filename)
-            else:
-                current_filename = checkpointfile
-        return current_filename
-    '''
-
     def _is_file_needed(self, fileName, prefix_filename, suffix_filename):
         isFileNeeded = False
         if prefix_filename != NULLSTR and fileName != NULLSTR:
@@ -484,7 +471,7 @@ class CheckpointBase(WorkingspaceBase):
         checkpoint.close()
         return reader
 
-
+    '''
     @Multiprocess.lock
     def save(self, content, checkpoint_header, drop_duplicate, order_by):
         assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
@@ -513,7 +500,48 @@ class CheckpointBase(WorkingspaceBase):
         dataFrame = dataFrame.sort_values(by=order_by, ascending=False)
         resultContent = dataFrame.values.tolist()
         return resultContent
+    '''
+    def is_file_in_checkpoint(self,content):
+        if self.checkpointIsOn == False:
+            return False
+        reader = self.get_content()
+        if content in reader:
+            return True
 
+    @Multiprocess.lock
+    def save(self, content, checkpoint_header = NULLSTR, drop_duplicate = NULLSTR, order_by = NULLSTR):
+        if self.checkpointIsOn == False:
+            return
+        checkpoint = self._get_checkpoint()
+        reader = checkpoint.read().splitlines()
+        reader = reader + [content]
+        reader.sort()
+        lines = [line + '\n' for line in reader]
+        checkpoint.seek(0)
+        checkpoint.truncate()
+        checkpoint.writelines(lines)
+        checkpoint.close()
+        self.logger.info('Success to write checkpoint to file %s' % checkpoint.name)
+
+    @Multiprocess.lock
+    def remove_checkpoint_files(self,sourcefiles):
+        assert isinstance(sourcefiles,list),'Parameter sourcefiles must be list!'
+        if self.checkpointIsOn == False:
+            return
+        checkpoint = self._get_checkpoint()
+        checkpoint.seek(0)
+        reader = checkpoint.read().splitlines()
+        resultfiles = list(set(reader).difference(set(sourcefiles)))
+        resultfiles.sort()
+        lines = [line + '\n' for line in resultfiles]
+        checkpoint.seek(0)
+        checkpoint.truncate()
+        checkpoint.writelines(lines)
+        checkpoint.close()
+        removedfiles = list(set(reader).difference(set(resultfiles)))
+        if len(removedfiles) > 0:
+            removedlines = '\n\t\t\t\t'.join(removedfiles)
+            self.logger.info("Success to remove from checkpointfile : %s"%(removedlines))
 
 class StandardizeBase():
     """

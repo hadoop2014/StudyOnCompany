@@ -45,12 +45,45 @@ class SqliteCrawlBase(SqilteBase):
                                                                         ,sql_df['报告时间'].values[-1],sql_df['报告时间'].values[0]))
         conn.close()
 
-#深度学习模型的基类
+
+class CheckpointCrawl(CheckpointBase):
+
+    @Multiprocess.lock
+    def save(self, content, checkpoint_header, drop_duplicate, order_by):
+        assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
+        if len(content) == 0 or self.checkpointIsOn == False:
+            return
+        # 读取checkpoint内容,去掉重复记录,重新排序,写入文件
+        checkpoint = self._get_checkpoint()
+        checkpointWriter = csv.writer(checkpoint)
+        content = self._remove_duplicate(checkpoint, content, checkpoint_header, drop_duplicate, order_by)
+        checkpoint.seek(0)
+        checkpoint.truncate()
+        checkpointWriter.writerows(content)
+        checkpoint.close()
+        self.logger.info('Success to write checkpoint to file %s' % self.checkpointfile)
+
+    def _remove_duplicate(self, checkpoint, content, checkpoint_header, drop_duplicate, order_by):
+        assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
+        resultContent = content
+        if len(content) == 0 or checkpoint is None:
+            return resultContent
+        checkpoint.seek(0)
+        dataFrame = pd.read_csv(checkpoint, names=checkpoint_header, dtype=str)
+        dataFrame = dataFrame.append(pd.DataFrame(content, columns=checkpoint_header, dtype=str))
+        # 根据数据第一列去重
+        dataFrame = dataFrame.drop_duplicates(drop_duplicate, keep='last')
+        dataFrame = dataFrame.sort_values(by=order_by, ascending=False)
+        resultContent = dataFrame.values.tolist()
+        return resultContent
+
+
 class CrawlBase(InterpreterBase):
     def __init__(self,gConfig):
         super(CrawlBase, self).__init__(gConfig)
         self.start_time = time.time()
         self.database = self.create_database(SqliteCrawlBase)
+        self.checkpoint = self.create_space(CheckpointCrawl)
 
     def debug_info(self, info=None):
         if self.debugIsOn == False:

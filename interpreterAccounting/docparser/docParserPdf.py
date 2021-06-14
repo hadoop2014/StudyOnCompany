@@ -10,6 +10,7 @@ import pdfplumber
 import itertools
 from functools import reduce
 
+'''
 class CheckpointPdf(CheckpointBase):
 
     def is_file_in_checkpoint(self,content):
@@ -53,14 +54,14 @@ class CheckpointPdf(CheckpointBase):
         if len(removedfiles) > 0:
             removedlines = '\n\t\t\t\t'.join(removedfiles)
             self.logger.info("Success to remove from checkpointfile : %s"%(removedlines))
-
+'''
 
 class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
         self._interpretPrefix = NULLSTR
         self.debugExtractTable = self.gConfig["debugExtractTable".lower()]
-        self.checkpoint = self.create_space(CheckpointPdf)
+        #self.checkpoint = self.create_space(CheckpointPdf)
 
 
     def _load_data(self,sourceFile=None):
