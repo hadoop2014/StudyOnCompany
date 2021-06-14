@@ -47,7 +47,8 @@
     "宏磊股份": "仁东控股",
     "民盛金科": "仁东控股",
     "良信电器": "良信股份",
-    "双林生物": "双林股份"
+    "双林生物": "双林股份",
+    "ST联络": "联络互动"
   },
 
   "TABLE": "股票交易数据|财报发布信息|行业分类数据|公司价格分析表|指数趋势分析表",
@@ -971,6 +972,10 @@
     "光莆股份": {
       "半年度报告": ["2017年"],
       "snap_tolerance": 5.38
+    },
+    "联络互动": {
+      "年度报告": ["2018年"],
+      "snap_tolerance": 5.28
     }
   },
 
@@ -2488,7 +2493,10 @@
       "ckpt_used": true,
       "viewIsOn" : true,
       "debugIsOn" : false,
-      "lybric_filename": "jaychou_lyrics.txt.zip"
+      "lybric_filename": "jaychou_lyrics.txt.zip",
+      "checkpointHeader": ["模型文件名","训练时间","训练时长","训练集精度","训练集损失","测试集精度","测试集损失","训练步长","训练步数","训练设备","参数变化记录"],
+      "orderBy": ["模型文件名","训练时间"],
+      "drop_duplicate": "模型文件名"
     },
     "trainer": {
       "train_num_epoch" : 200,

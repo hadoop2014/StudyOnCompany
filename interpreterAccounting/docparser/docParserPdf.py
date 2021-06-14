@@ -10,58 +10,12 @@ import pdfplumber
 import itertools
 from functools import reduce
 
-'''
-class CheckpointPdf(CheckpointBase):
-
-    def is_file_in_checkpoint(self,content):
-        if self.checkpointIsOn == False:
-            return False
-        reader = self.get_content()
-        if content in reader:
-            return True
-
-    @Multiprocess.lock
-    def save(self, content, checkpoint_header = NULLSTR, drop_duplicate = NULLSTR, order_by = NULLSTR):
-        if self.checkpointIsOn == False:
-            return
-        checkpoint = self._get_checkpoint()
-        reader = checkpoint.read().splitlines()
-        reader = reader + [content]
-        reader.sort()
-        lines = [line + '\n' for line in reader]
-        checkpoint.seek(0)
-        checkpoint.truncate()
-        checkpoint.writelines(lines)
-        checkpoint.close()
-        self.logger.info('Success to write checkpoint to file %s' % checkpoint.name)
-
-    @Multiprocess.lock
-    def remove_checkpoint_files(self,sourcefiles):
-        assert isinstance(sourcefiles,list),'Parameter sourcefiles must be list!'
-        if self.checkpointIsOn == False:
-            return
-        checkpoint = self._get_checkpoint()
-        checkpoint.seek(0)
-        reader = checkpoint.read().splitlines()
-        resultfiles = list(set(reader).difference(set(sourcefiles)))
-        resultfiles.sort()
-        lines = [line + '\n' for line in resultfiles]
-        checkpoint.seek(0)
-        checkpoint.truncate()
-        checkpoint.writelines(lines)
-        checkpoint.close()
-        removedfiles = list(set(reader).difference(set(resultfiles)))
-        if len(removedfiles) > 0:
-            removedlines = '\n\t\t\t\t'.join(removedfiles)
-            self.logger.info("Success to remove from checkpointfile : %s"%(removedlines))
-'''
 
 class DocParserPdf(DocParserBase):
     def __init__(self,gConfig):
         super(DocParserPdf, self).__init__(gConfig)
         self._interpretPrefix = NULLSTR
         self.debugExtractTable = self.gConfig["debugExtractTable".lower()]
-        #self.checkpoint = self.create_space(CheckpointPdf)
 
 
     def _load_data(self,sourceFile=None):
@@ -157,8 +111,6 @@ class DocParserPdf(DocParserBase):
             keyName = dictTable['公司简称']
             reportType = dictTable['报告类型']
             if keyName in self.gJsonBase['table_settings'].keys():
-                #if dictTable['报告时间'] in self.gJsonBase['table_settings'][keyName]['报告时间'] \
-                #    and dictTable['报告类型'] == self.gJsonBase['table_settings'][keyName]['报告类型']:
                 if reportType in self.gJsonBase['table_settings'][keyName].keys():
                     if dictTable['报告时间'] in self.gJsonBase['table_settings'][keyName][reportType]:
                         snap_tolerance = self.gJsonBase['table_settings'][keyName]["snap_tolerance"]
@@ -226,8 +178,6 @@ class DocParserPdf(DocParserBase):
         processedTable = self._discard_last_row(processedTable,tableName)
         if len(processedTable) > 0:
             # 博通集成2019年年报, P93 ,搜到一张不需要的合并资产负债表,其中存在另外一张表只有一行, _discard_last_row处理后变成了空表
-            #processedTable = NULLSTR
-            #return processedTable, isTableEnd, isTableStart
             fieldList = [row[0] for row in processedTable]
             if self._is_row_all_invalid(fieldList):
                 isFirstRowAllInvalid = True

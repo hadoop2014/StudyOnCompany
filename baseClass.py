@@ -369,6 +369,9 @@ class SpaceBase(metaclass=abc.ABCMeta):
     def model_filename(self) -> str:
         ...
 
+    def processing_checkpoint(cls,func):
+        ...
+
 class WorkingspaceBase(SpaceBase):
     def __init__(self, working_directory, logger):
         super(WorkingspaceBase, self).__init__(working_directory, logger)
@@ -471,36 +474,6 @@ class CheckpointBase(WorkingspaceBase):
         checkpoint.close()
         return reader
 
-    '''
-    @Multiprocess.lock
-    def save(self, content, checkpoint_header, drop_duplicate, order_by):
-        assert isinstance(content,list),"Parameter content(%s) must be list"%(content)
-        if len(content) == 0 or self.checkpointIsOn == False:
-            return
-        #读取checkpoint内容,去掉重复记录,重新排序,写入文件
-        checkpoint = self._get_checkpoint()
-        checkpointWriter = csv.writer(checkpoint)
-        content = self._remove_duplicate(checkpoint, content, checkpoint_header, drop_duplicate, order_by)
-        checkpoint.seek(0)
-        checkpoint.truncate()
-        checkpointWriter.writerows(content)
-        checkpoint.close()
-        self.logger.info('Success to write checkpoint to file %s' % self.checkpointfile)
-
-    def _remove_duplicate(self, checkpoint, content, checkpoint_header, drop_duplicate, order_by):
-        assert isinstance(content, list), "Parameter content(%s) must be list" % (content)
-        resultContent = content
-        if len(content) == 0 or checkpoint is None:
-            return resultContent
-        checkpoint.seek(0)
-        dataFrame = pd.read_csv(checkpoint, names=checkpoint_header,dtype=str)
-        dataFrame = dataFrame.append(pd.DataFrame(content,columns=checkpoint_header,dtype=str))
-        # 根据数据第一列去重
-        dataFrame = dataFrame.drop_duplicates(drop_duplicate, keep='last')
-        dataFrame = dataFrame.sort_values(by=order_by, ascending=False)
-        resultContent = dataFrame.values.tolist()
-        return resultContent
-    '''
     def is_file_in_checkpoint(self,content):
         if self.checkpointIsOn == False:
             return False
@@ -542,6 +515,7 @@ class CheckpointBase(WorkingspaceBase):
         if len(removedfiles) > 0:
             removedlines = '\n\t\t\t\t'.join(removedfiles)
             self.logger.info("Success to remove from checkpointfile : %s"%(removedlines))
+
 
 class StandardizeBase():
     """
@@ -600,7 +574,9 @@ class StandardizeBase():
         return time
 
     def _is_year(self, year):
-        "explain: 判断是否为年"
+        '''
+        explain: 判断是否为年
+        '''
         isYear = False
         matchedYear = self._get_time_by_filename(year)
         if matchedYear is not NaN:
@@ -608,7 +584,9 @@ class StandardizeBase():
         return isYear
 
     def _is_year_list(self, year_list):
-        "explain: 判断是否为年"
+        '''
+        explain: 判断是否为年
+        '''
         isYearList = [self._is_year(year) for year in year_list]
         return all(isYearList)
 
@@ -820,19 +798,14 @@ class BaseClass(metaclass=abc.ABCMeta):
         self.standard = self.create_standard(StandardizeBase)
         self.standardStockcode = self.create_standard(StandardizeStockcode)
         self.data_directory = gConfig['data_directory']
-        #self.stockcodefile = os.path.join(self.data_directory,self.gConfig['stockcodefile'])
         self.unitestIsOn = gConfig['unittestIsOn'.lower()]
         self._data = list()
         self._index = 0
         self._length = len(self._data)
-        #self.reportTypeAlias = self.gJsonBase['reportTypeAlias']
-        #self.reportTypes =  self.gJsonBase['reportType']
-        #self.companyAlias = self.gJsonBase['companyAlias']
         # 编译器,文件解析器共同使用的关键字
         self.commonFields = self.gJsonBase['公共表字段定义']
         self.tableNames = self.gJsonBase['TABLE'].split('|')
         self.dictTables = {keyword: value for keyword,value in self.gJsonBase.items() if keyword in self.tableNames}
-        #self.filenameAlias = self.gJsonBase['filenameAlias']
         # 此处变量用于多进程
         Multiprocess.multiprocessingIsOn = gConfig['multiprocessingIsOn'.lower()]
 

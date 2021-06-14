@@ -108,6 +108,7 @@ class CheckpointModelH(CheckpointModelBase):
             taskResult.append(f"{self.get_learningrate():10.6f}")
             taskResult.append(f"{self.get_global_step():10d}")
             taskResult.append(str(self.get_context()))
+            taskResult.append(NULLSTR)
             content = ','.join(taskResult)
             self.checkpoint.save(content)
             return result
