@@ -498,7 +498,8 @@ class InterpreterNature(InterpreterBase):
                 for sourcefile in sourcefilesInvalid:
                      self.logger.warning('These file is can not be parse:%s'%sourcefile)
             if scale == '批量':
-                sourcefilesValid = [sourcefile  for sourcefile in sourcefilesValid if self._is_file_selected(sourcefile)]
+                stockcodes = self.standardStockcode._get_stockcode_list(self.names_global['公司简称'])
+                sourcefilesValid = [sourcefile  for sourcefile in sourcefilesValid if self._is_file_selected(sourcefile, stockcodes)]
             sourcefilesValid = self._remove_exclude_files(sourcefilesValid)
             sourcefilesValid = self._remove_duplicate_files(sourcefilesValid)
         if isForced == False:
@@ -604,10 +605,12 @@ class InterpreterNature(InterpreterBase):
         return sourcefiles
 
 
-    def _is_file_selected(self, sourcefile):
+    def _is_file_selected(self, sourcefile, stockcodes):
         assert self.names_global['公司简称'] != NULLSTR and self.names_global['报告类型'] != NULLSTR and self.names_global['报告时间'] != NULLSTR\
             ,"parameter 公司简称,报告类型,报告年度 must not be NULL in 批量处理程序"
-        isFileSelected = utile.is_matched('|'.join(self.names_global['公司简称']), sourcefile) \
+        #stockcodes = self.standardStockcode._get_stockcode_list(self.names_global['公司简称'])
+        #isFileSelected = utile.is_matched('|'.join(self.names_global['公司简称']), sourcefile) \
+        isFileSelected = utile.is_matched('|'.join(stockcodes), sourcefile) \
                          and utile.is_matched('|'.join(self.names_global['报告类型']), sourcefile) \
                          and utile.is_matched('|'.join(self.names_global['报告时间']), sourcefile)
         return isFileSelected

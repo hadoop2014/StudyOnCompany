@@ -47,6 +47,25 @@ class Sqlite(SqilteBase):
                 self.logger.error('sql_df is empty!')
         conn.close()
 
+class LoggerParser(Logger):
+    @classmethod
+    def log_runinfo(cls, text='running '):
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(self, *args, **kwargs):
+                result = func(self, *args, **kwargs)
+                resultForLog = result
+                columns = 0
+                if isinstance(result, tuple):
+                    resultForLog = result[0].T.copy()
+                    columns = result[0].iloc[0]
+                self.logger.info('%s %s() \n\t%s,%s%s,\t%s:\n\t%s\n\t%s\n\t columns=%s' %
+                                 (text, func.__name__, self.dataTable['公司名称'], self.dataTable['报告时间']
+                                  , self.dataTable['报告类型'], args[-1], '', resultForLog, columns))
+                return result
+            return wrapper
+        return decorator
+
 
 class DocParserSql(DocParserBase):
     def __init__(self,gConfig):
@@ -167,24 +186,6 @@ class DocParserSql(DocParserBase):
             dictTokens.update({token: '|'.join(pattern)})
         return dictTokens
 
-    '''
-    def loginfo(text='running '):
-        def decorator(func):
-            @functools.wraps(func)
-            def wrapper(self,*args, **kwargs):
-                result = func(self,*args, **kwargs)
-                resultForLog = result
-                columns = 0
-                if isinstance(result,tuple):
-                    resultForLog = result[0].T.copy()
-                    columns = result[0].iloc[0]
-                self.logger.info('%s %s() \n\t%s,%s%s,\t%s:\n\t%s\n\t%s\n\t columns=%s' %
-                                 (text, func.__name__,self.dataTable['公司名称'],self.dataTable['报告时间']
-                                  ,self.dataTable['报告类型'], args[-1],'', resultForLog,columns))
-                return result
-            return wrapper
-        return decorator
-    '''
 
     def writeToStore(self, dictTable):
         self.dataTable = dictTable
@@ -327,7 +328,7 @@ class DocParserSql(DocParserBase):
                     value = re.sub('([（(]*[一二三四五六七八九十〇、]{1,3})[)）]*(?=[^\\u4E00-\\u9FA5])', NULLSTR, value)  # 执行两次,解决安琪酵母2014年报中,并资产负债表等 中的附注中出现 :五（一）
                     #解决高德红外2014年报中 主营业务分行业经营情况表中,出现（%）,改为通过headerStandardize来解决
                     # 解决五粮液2020年年报,主要会计数据中,存在两列数据并列到了一列,同时后接一个None的场景和,其中总资产字段合并为一列时中间间隔1个空字符,暂通过repair_list解决 at 20210612
-                    result = re.split("[ ]{2,}(?=\\d+)",value,maxsplit=1)
+                    result = re.split("[ ]{2,}(?=[\\d-])",value,maxsplit=1)
                     if len(result) > 1:
                         value,self.lastValue = result
                     value = value.replace(' ',NULLSTR)       # 解决石头科技2019年报,主营业务分行业经营情况中出现 "增加 7.30个 百 分 点" 和 "增加 8.65个 百 分"
@@ -445,7 +446,7 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
 
-    @Logger.log_runinfo()
+    @LoggerParser.log_runinfo()
     def _process_field_merge_simple(self,dataFrame:DataFrame,tokenName,tableName):
         # 解决康泰生物2019年年报,主要会计数据解析不正确,每行中都出现了None
         # 解决贝达药业2018年年报无形资产情况表解析不正确
@@ -564,7 +565,7 @@ class DocParserSql(DocParserBase):
         return dataFrame
 
 
-    @Logger.log_runinfo()
+    @LoggerParser.log_runinfo()
     def _process_field_common(self, dataFrame, dictTable, countFieldDiscard,tableName):
         #在dataFrame前面插入公共字段
         fieldFromHeader = self.dictTables[tableName]["fieldFromHeader"]
