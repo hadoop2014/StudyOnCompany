@@ -371,6 +371,21 @@
         "stock": "002280",
         "secid": "9900007887",
         "searchkey": ""
+      },
+      "苏泊尔": {
+        "stock": "002032",
+        "secid": "gssz0002032",
+        "searchkey": ""
+      },
+      "华鲁恒升": {
+        "stock": "600426",
+        "secid": "gssh0600426",
+        "searchkey": ""
+      },
+      "海南椰岛": {
+        "stock": "600238",
+        "secid": "gssh0600238",
+        "searchkey": ""
       }
     }
   },
@@ -405,7 +420,7 @@
     "nameStandardize": "",
     "nameDiscard": [],
     "RESPONSE_TIMEOUT": 10,
-    "WAIT_TIME": 3
+    "WAIT_TIME": 4
   },
 
 

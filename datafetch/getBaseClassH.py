@@ -232,17 +232,22 @@ class getdataBaseH(getdataBase):
                 else:
                     dictScaler = dictFieldScaler[dictTablePreprocessing[key]['dependent']]
                 method = dictTablePreprocessing[key]['method']
-                if dictTablePreprocessing[key]['scale'] == 'group':
-                    dataFrameScaled = dataGroups[key].apply(lambda group : pd.Series(
-                        np.squeeze(getattr(dictScaler[group.name],method)(np.expand_dims(group,axis=1))),index=group.index
-                    ))
-                    dataFrameScaled = dataFrameScaled.swaplevel(0,-1).droplevel(-1)
-                    dataFrameResult[key] = dataFrameScaled
-                elif dictTablePreprocessing[key]['scale'] == 'whole':
-                    dataFrameScaled = dataFrame[key].transform(lambda group : pd.Series(
-                        np.squeeze(getattr(dictScaler,method)(np.expand_dims(group,axis=1))),index=group.index
-                    ))
-                    dataFrameResult[key] = dataFrameScaled
+                try:
+                    if dictTablePreprocessing[key]['scale'] == 'group':
+                        dataFrameScaled = dataGroups[key].apply(lambda group : pd.Series(
+                            np.squeeze(getattr(dictScaler[group.name],method)(np.expand_dims(group,axis=1))),index=group.index
+                        ))
+                        dataFrameScaled = dataFrameScaled.swaplevel(0,-1).droplevel(-1)
+                        dataFrameResult[key] = dataFrameScaled
+                    elif dictTablePreprocessing[key]['scale'] == 'whole':
+                        dataFrameScaled = dataFrame[key].transform(lambda group : pd.Series(
+                            np.squeeze(getattr(dictScaler,method)(np.expand_dims(group,axis=1))),index=group.index
+                        ))
+                        dataFrameResult[key] = dataFrameScaled
+                except Exception as e:
+                    # key 值在interpreterBase.json中配置,但是没有出现在数据dataFrame中,直接跳过,处理下一个key值
+                    self.logger.info(str(e) + f" {key} may be is not in dataFrame!")
+                    continue
             dataFrameResult = dataFrameResult.sort_values(by=orderBy, ascending=True) # 公司价格分析表采用的是 ['公司代码','报告时间'], 指数趋势分析表用的是 ["公司代码","趋势简称","报告时间"],
         return dataFrameResult
 

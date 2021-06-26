@@ -508,9 +508,9 @@ class InterpreterNature(InterpreterBase):
             if isinstance(checkpoint,list) and len(checkpoint) > 0:
                 sourcefilesRemainder = set(sourcefilesValid).difference(set(checkpoint))
                 sourcefilesDone = set(sourcefilesValid).difference(set(sourcefilesRemainder))
-                if len(sourcefilesDone) > 0:
-                    for sourcefile in sourcefilesDone:
-                        self.logger.info('the file %s is already in checkpointfile,no need to process!'%sourcefile)
+                #if len(sourcefilesDone) > 0:
+                #    for sourcefile in sourcefilesDone:
+                #        self.logger.info('the file %s is already in checkpointfile,no need to process!'%sourcefile)
                 sourcefiles = sourcefilesRemainder
             else:
                 sourcefiles = sourcefilesValid

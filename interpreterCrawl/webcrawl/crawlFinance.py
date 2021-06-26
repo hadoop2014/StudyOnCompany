@@ -177,6 +177,7 @@ class CrawlFinance(CrawlBase):
         publishingTime = NULLSTR
         time, code, company = NULLSTR, NULLSTR, NULLSTR
         dictTimeToMarkets = self._get_time_to_market(urllists)
+        RESPONSE_TIMEOUT = self.dictWebsites[website]['RESPONSE_TIMEOUT']
         for filename,url in urllists.items():
             try:
                 path = self.standard._get_path_by_filename(filename)
@@ -191,7 +192,7 @@ class CrawlFinance(CrawlBase):
                 if os.path.exists(filePath):
                     self.logger.info("File %s is already exists!" % filename)
                     continue
-                response = requests.get(url)
+                response = requests.get(url,timeout=RESPONSE_TIMEOUT)
                 file = open(filePath, "wb")
                 file.write(response.content)
                 file.close()
