@@ -69,13 +69,13 @@ class lenet(nn.Module):
         return x
 
 
-class lenetModel(ModelBaseH):
+class lenetModelH(ModelBaseH):
     def __init__(self,gConfig):
-        super(lenetModel,self).__init__(gConfig)
+        super(lenetModelH,self).__init__(gConfig)
 
 
     def _init_parameters(self):
-        super(lenetModel, self)._init_parameters()
+        super(lenetModelH, self)._init_parameters()
         self.loss = nn.CrossEntropyLoss().to(self.ctx)
         getdataClass = self.gConfig['getdataClass']
         self.resizedshape = getdataClass.resizedshape
@@ -98,7 +98,7 @@ class lenetModel(ModelBaseH):
         y_hat = self.net(X)
         loss = self.loss(y_hat, y).sum()
         loss.backward()
-        if self.global_step == 0 or self.global_step == 1:
+        if self.get_global_step() == 0 or self.get_global_step() == 1:
             self.debug_info()
         self.optimizer.step()
         loss = loss.item()
@@ -115,10 +115,19 @@ class lenetModel(ModelBaseH):
         return loss,acc
 
 
+    def get_global_step(self):
+        global_step = 0
+        if len(self.optimizer.state_dict()['state']) > 0:
+            global_step = self.optimizer.state_dict()['state'][0]['step']
+        return global_step
+
+
     def get_input_shape(self):
         return self.input_shape
 
+    def apply_model(self, net):
+        self.logger.info('rnnModel.apply_model has not be implement')
 
 def create_object(gConfig):
-    model=lenetModel(gConfig=gConfig)
+    model=lenetModelH(gConfig=gConfig)
     return model

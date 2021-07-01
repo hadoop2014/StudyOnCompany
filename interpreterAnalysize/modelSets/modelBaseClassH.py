@@ -297,14 +297,17 @@ class ModelBaseH(InterpreterBase):
         self.net.train()
         for X, y in data_iter:
             try:
-                X = X.asnumpy()
-                y = y.asnumpy()
+                #X = X.asnumpy()
+                #y = y.asnumpy()
                 #if not isinstance(X, PackedSequence):
-                X = torch.tensor(X, device=self.ctx)
+                #X = torch.tensor(X, device=self.ctx)
                 # y = torch.tensor(y, device=self.ctx, dtype=torch.long)
-                y = torch.tensor(y, device=self.ctx)
+                #y = torch.tensor(y, device=self.ctx)
+                X = X.to(self.ctx)
+                y = y.to(self.ctx)
             except:
-                pass
+                X = torch.tensor(X, device=self.ctx)
+                y = torch.tensor(y, device=self.ctx)
                 #if not isinstance(X,PackedSequence):
                     #X = np.array(X)
                 #    X = X.numpy()
@@ -333,14 +336,17 @@ class ModelBaseH(InterpreterBase):
         self.net.eval()
         for X, y in data_iter:
             try:
-                X = X.asnumpy()
-                y = y.asnumpy()
+                #X = X.asnumpy()
+                #y = y.asnumpy()
                 #if not isinstance(X, PackedSequence):
-                X = torch.tensor(X, device=self.ctx)
+                #X = torch.tensor(X, device=self.ctx)
                 # y = torch.tensor(y,device=self.ctx,dtype=torch.long)
-                y = torch.tensor(y, device=self.ctx)
+                #y = torch.tensor(y, device=self.ctx)
+                X = X.to(self.ctx)
+                y = y.to(self.ctx)
             except:
-                pass
+                X = torch.tensor(X, device=self.ctx)
+                y = torch.tensor(y, device=self.ctx)
                 #if not isinstance(X,PackedSequence):
                     #X = np.array(X)
                 #    X = X.numpy()
@@ -386,13 +392,14 @@ class ModelBaseH(InterpreterBase):
         net.eval()
         for (X,y),keyfields in zip(keyfields_iter,valid_iter):
             try:
-                X = X.asnumpy()
-                y = y.asnumpy()
+                #X = X.asnumpy()
+                #y = y.asnumpy()
                 #if not isinstance(X, PackedSequence):
+                X = X.to(self.ctx)
+                y = y.to(self.ctx)
+            except:
                 X = torch.tensor(X, device=self.ctx)
                 y = torch.tensor(y, device=self.ctx)
-            except:
-                pass
             #    if not isinstance(X,PackedSequence):
                     #X = np.array(X)
             #        X = X.numpy()

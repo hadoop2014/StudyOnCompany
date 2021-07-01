@@ -19,6 +19,7 @@
       "excelVisualization":"interpreterAnalysize.excelVisualization",
       "stockAnalysize": "interpreterAnalysize.stockAnalysize",
       "modelLenetH": "interpreterAnalysize.modelSets.lenetModelH",
+      "modelLenetT": "interpreterAnalysize.modelSets.lenetModelT",
       "modelRnnH": "interpreterAnalysize.modelSets.rnnModelH",
       "modelRnnregressionH": "interpreterAnalysize.modelSets.rnnregressionModelH",
       "modelRnndetectionH": "interpreterAnalysize.modelSets.rnndetectionModelH"

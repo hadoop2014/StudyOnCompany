@@ -9,7 +9,7 @@
   "ANALYSIZE": "指数趋势分析",
   "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表|指数趋势分析表",
   "HANDLE": "训练|应用",
-  "MODEL": "公司价格预测模型|指数趋势预测模型",
+  "MODEL": "公司价格预测模型|指数趋势预测模型|测试专用模型",
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
 
@@ -464,6 +464,19 @@
     }
   },
 
+  "测试专用模型": {
+    "environment": {
+      "mode": "train",
+      "ctx": "gpu",
+      "framework": "pytorch",
+      "dataset": "mnist",
+      "model": "lenet",
+      "#tableName": "应用 公司价格预测模型, 结果数据写入 公司价格预测表",
+      "tableName": "",
+      "ckpt_used": false,
+      "viewIsOn" : true
+    }
+  },
 
   "公司价格预测模型": {
     "environment": {
@@ -608,6 +621,8 @@
     },
     "net": {
       "activation": "sigmoid",
+      "batch_first": false,
+      "dropout": 0.0,
       "resize": 0,
       "input_dim_x" : 28,
       "input_dim_y" : 28,

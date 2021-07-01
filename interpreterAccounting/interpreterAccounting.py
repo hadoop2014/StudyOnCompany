@@ -5,7 +5,6 @@
 # @File    : interpreterAccounting.py
 # @Note    : 用于从财务报表中提取财务数据
 from ply import lex,yacc
-import time
 from xlrd.biffh import XLRDError
 from interpreterAccounting.interpreterBaseClass import *
 
@@ -297,7 +296,8 @@ class InterpreterAccounting(InterpreterBase):
                          | CRITICAL '-'
                          | CRITICAL empty
                          | CRITICAL LOCATION
-                         | CRITICAL company'''
+                         | CRITICAL company '''
+            # CRITICAL '（' unit '）' 解决三一重工财报中, 其他表的单位为'千元',而关键数据表中的 研发投入金额,其单位为元
             critical = self._get_critical_alias(p[1])
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})

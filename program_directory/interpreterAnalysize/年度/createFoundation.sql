@@ -82,7 +82,7 @@ select
     j.发布时间,
     case when a.在职员工的数量合计 != '' then a.在职员工的数量合计 else a.当期领取薪酬员工总人数 end as 在职员工的数量合计,
     f.支付给职工及为职工支付的现金,
-    case when c.应付职工薪酬 != '' then replace(c.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期末余额）,
+    case when c.应付职工薪酬 != '' then c.货币单位 * replace(c.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期末余额）,
     c.应付职工薪酬（期初余额）,
     b.营业收入,
     b.归属于上市公司股东的净利润,
@@ -104,17 +104,17 @@ select
         as 归属于上市公司股东的净资产（上期）,
     case when b.总资产（上期） is not NULL then b.总资产（上期） else c.总资产（上期） end
         as 总资产（上期）,
-    e.营业成本,
-    case when e.投资收益 != '' then e.投资收益 else 0 end as 投资收益,
-    e.三、营业利润,
-    e.四、利润总额,
-    e.所得税费用,
-    e.五、净利润,
-    case when e.销售费用 is not NULL and e.销售费用 != '' then replace(e.销售费用,',','') else 0 end
+    e.货币单位 * replace(e.营业成本,',','') as 营业成本,
+    case when e.投资收益 != '' then e.货币单位 * replace(e.投资收益,',','') else 0 end as 投资收益,
+    e.货币单位 * replace(e.三、营业利润,',','') as 三、营业利润,
+    e.货币单位 * replace(e.四、利润总额,',','') as 四、利润总额,
+    e.货币单位 * replace(e.所得税费用,',','') as 所得税费用,
+    e.货币单位 * replace(e.五、净利润,',','') as 五、净利润,
+    case when e.销售费用 is not NULL and e.销售费用 != '' then e.货币单位 * replace(e.销售费用,',','') else 0 end
         as 销售费用,
-    case when e.管理费用 is not NULL and e.管理费用 != '' then replace(e.管理费用,',','') else 0 end
+    case when e.管理费用 is not NULL and e.管理费用 != '' then e.货币单位 * replace(e.管理费用,',','') else 0 end
         as 管理费用,
-    case when e.财务费用 is not NULL and e.财务费用 != '' then replace(e.财务费用,',','') else 0 end
+    case when e.财务费用 is not NULL and e.财务费用 != '' then e.货币单位 * replace(e.财务费用,',','') else 0 end
         as 财务费用,
     case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else
         case when e.研发费用 is not NULL and e.研发费用 != '' then replace(e.研发费用,',','') else 0 end
@@ -124,72 +124,73 @@ select
     case when g.固定资产折旧、油气资产折耗、生产性生物资产折旧 is not NULL and g.固定资产折旧、油气资产折耗、生产性生物资产折旧 != ''
     then
         case when g.使用权资产摊销 is not NULL and g.使用权资产摊销 != ''
-        then replace(g.固定资产折旧、油气资产折耗、生产性生物资产折旧,',','') + replace(g.使用权资产摊销,',','')
-        else replace(g.固定资产折旧、油气资产折耗、生产性生物资产折旧,',','')  end
+        then g.货币单位 * replace(g.固定资产折旧、油气资产折耗、生产性生物资产折旧,',','') + g.货币单位 * replace(g.使用权资产摊销,',','')
+        else g.货币单位 * replace(g.固定资产折旧、油气资产折耗、生产性生物资产折旧,',','')  end
     else
         case when g.使用权资产摊销 is not NULL and g.使用权资产摊销 != ''
-        then replace(g.使用权资产摊销,',','')
+        then g.货币单位 * replace(g.使用权资产摊销,',','')
         else 0 end
     end as 固定资产折旧、油气资产折耗、生产性生物资产折旧,
-    case when g.无形资产摊销 is not NULL then replace(g.无形资产摊销,',','') else 0 end as 无形资产摊销,
-    case when g.长期待摊费用摊销 is not NULL then replace(g.长期待摊费用摊销,',','') else 0 end as 长期待摊费用摊销,
+    case when g.无形资产摊销 is not NULL then g.货币单位 * replace(g.无形资产摊销,',','') else 0 end as 无形资产摊销,
+    case when g.长期待摊费用摊销 is not NULL then g.货币单位 * replace(g.长期待摊费用摊销,',','') else 0 end as 长期待摊费用摊销,
     --"无形资产-内部研发","所得税税率",
     b.期末总股本,
-    replace(c.固定资产,',','') as 固定资产,
-    case when c.在建工程 != '' then c.在建工程 else 0 end as 在建工程,
+    c.货币单位 * replace(c.固定资产,',','') as 固定资产,
+    case when c.在建工程 != '' then c.货币单位 * replace(c.在建工程,',','') else 0 end as 在建工程,
     case when h.期末账面价值 != '' then h.期末账面价值 else 0 end as 土地使用权,
-    case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.投资性房地产 else 0 end as 投资性房地产,
+    case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.货币单位 * replace(c.投资性房地产,',','') else 0 end as 投资性房地产,
     --case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
-    case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
-    case when c.预收款项 is not NULL and 预收款项 != '' then replace(c.预收款项,',','') else 0 end as 预收款项,
-    case when c.应付票据及应付账款 is not NULL then replace(c.应付票据及应付账款,',','') else
-        case when c.应付账款 is not NULL and c.应付票据 is not NULL
-            then replace(c.应付账款,',','') + replace(c.应付票据,',','') else 0
+    case when c.商誉 != '' then c.货币单位 * replace(c.商誉,',','') else 0 end as 商誉,
+    case when c.预收款项 is not NULL and 预收款项 != '' then c.货币单位 * replace(c.预收款项,',','') else 0 end as 预收款项,
+    case when c.应付票据及应付账款 is not NULL then c.货币单位 * replace(c.应付票据及应付账款,',','') else
+        case when c.应付账款 is not NULL and c.货币单位 * replace(c.应付票据,',','') is not NULL
+            then c.货币单位 * replace(c.应付账款,',','') + c.货币单位 * replace(c.应付票据,',','') else 0
         end
     end as 应付票据及应付账款,
-    case when c.应付账款 is not NULL then replace(c.应付账款,',','') else 0 end as 应付账款,
-    case when c.预付款项 is not NULL then replace(c.预付款项,',','') else 0 end as 预付款项,
-    case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then replace(c.应收票据及应收账款,',','') else
-        case when c.应收账款 is not NULL and c.应收账款 != '' then replace(c.应收账款,',','') else 0 end
+    case when c.应付账款 is not NULL then c.货币单位 * replace(c.应付账款,',','') else 0 end as 应付账款,
+    case when c.预付款项 is not NULL then c.货币单位 * replace(c.预付款项,',','') else 0 end as 预付款项,
+    case when c.应收票据及应收账款 is not NULL and c.应收账款 is NULL then c.货币单位 * replace(c.应收票据及应收账款,',','') else
+        case when c.应收账款 is not NULL and c.应收账款 != '' then c.货币单位 * replace(c.应收账款,',','') else 0 end
     end as 应收账款,
-    case when c.应收票据 is not NULL and c.应收票据 != '' then replace(c.应收票据,',','') else 0 end as 应收票据,
-    case when c.流动资产合计 is not NULL then replace(c.流动资产合计,',','')
+    case when c.应收票据 is not NULL and c.应收票据 != '' then c.货币单位 * replace(c.应收票据,',','') else 0 end as 应收票据,
+    case when c.流动资产合计 is not NULL then c.货币单位 * replace(c.流动资产合计,',','')
         -- 解决国金证券 没有 流动资产合计 字段
-        else replace(c.资产总计,',','')
-            - case when c.可供出售金融资产 != '' then replace(c.可供出售金融资产,',','') else 0 end
-            - case when c.持有至到期投资 != '' then replace(c.持有至到期投资,',','') else 0 end
-            - case when c.长期股权投资 != '' then replace(c.长期股权投资,',','') else 0 end
-            - case when c.投资性房地产 != '' then replace(c.投资性房地产,',','') else 0 end
-            - case when c.固定资产 != '' then replace(c.固定资产,',','') else 0 end
-            - case when c.在建工程 != '' then replace(c.在建工程,',','') else 0 end
-            - case when c.无形资产 != '' then replace(c.无形资产,',','') else 0 end
-            - case when c.商誉 != '' then replace(c.商誉,',','') else 0 end
-            - case when c.长期待摊费用 != '' and c.长期待摊费用 is not NULL then replace(c.长期待摊费用,',','') else 0 end
-            - case when c.递延所得税资产 != '' then replace(c.递延所得税资产,',','') else 0 end
+        else c.货币单位 * replace(c.资产总计,',','')
+            - case when c.可供出售金融资产 != '' then c.货币单位 * replace(c.可供出售金融资产,',','') else 0 end
+            - case when c.持有至到期投资 != '' then c.货币单位 * replace(c.持有至到期投资,',','') else 0 end
+            - case when c.长期股权投资 != '' then c.货币单位 * replace(c.长期股权投资,',','') else 0 end
+            - case when c.投资性房地产 != '' then c.货币单位 * replace(c.投资性房地产,',','') else 0 end
+            - case when c.固定资产 != '' then c.货币单位 * replace(c.固定资产,',','') else 0 end
+            - case when c.在建工程 != '' then c.货币单位 * replace(c.在建工程,',','') else 0 end
+            - case when c.无形资产 != '' then c.货币单位 * replace(c.无形资产,',','') else 0 end
+            - case when c.商誉 != '' then c.货币单位 * replace(c.商誉,',','') else 0 end
+            - case when c.长期待摊费用 != '' and c.长期待摊费用 is not NULL then c.货币单位 * replace(c.长期待摊费用,',','') else 0 end
+            - case when c.递延所得税资产 != '' then c.货币单位 * replace(c.递延所得税资产,',','') else 0 end
         end
         as 流动资产合计,
     c.负债合计,
-    case when c.流动负债合计 is not NULL then replace(c.流动负债合计,',','')
+    case when c.流动负债合计 is not NULL then c.货币单位 * replace(c.流动负债合计,',','')
         -- 解决国金证券 没有 流动负债合计 字段
-        else replace(c.负债合计,',','')
-            - case when c.长期借款 != '' then replace(c.长期借款,',','') else 0 end
-            - case when c.应付债券 != '' then replace(c.应付债券,',','') else 0 end
-            - case when c.递延所得税负债 != '' then replace(c.递延所得税负债,',','') else 0 end
+        else c.货币单位 * replace(c.负债合计,',','')
+            - case when c.长期借款 != '' then c.货币单位 * replace(c.长期借款,',','') else 0 end
+            - case when c.应付债券 != '' then c.货币单位 * replace(c.应付债券,',','') else 0 end
+            - case when c.递延所得税负债 != '' then c.货币单位 * replace(c.递延所得税负债,',','') else 0 end
         --    - iif(c.长期借款 != '', replace(c.长期借款,',',''),0)
         --    - iif(c.应付债券 != '', replace(c.应付债券,',',''),0)
         --    - iif(c.递延所得税负债 != '' , replace(c.递延所得税负债,',',''),0)
         end
         as 流动负债合计,
-    case when c.存货 != '' then c.存货 else 0 end as 存货,
+    case when c.存货 != '' then c.货币单位 * replace(c.存货,',','') else 0 end as 存货,
     c.货币资金,
-    case when c.短期借款 is not NULL and c.短期借款 != '' then c.短期借款 else 0 end as 短期借款,
-    case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != '' then c.一年内到期的非流动负债 else 0 end
+    case when c.短期借款 is not NULL and c.短期借款 != '' then c.货币单位 * replace(c.短期借款,',','') else 0 end as 短期借款,
+    case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != ''
+        then c.货币单位 * replace(c.一年内到期的非流动负债,',','') else 0 end
         as 一年内到期的非流动负债,
-    case when c.长期借款 is not NULL and c.长期借款 != '' then c.长期借款 else 0 end as 长期借款,
-    case when c.应付债券 is not NULL and c.应付债券 != '' then c.应付债券 else 0 end as 应付债券,
-    case when f.销售商品、提供劳务收到的现金 is not NULL then replace(f.销售商品、提供劳务收到的现金,',','')
+    case when c.长期借款 is not NULL and c.长期借款 != '' then c.货币单位 * replace(c.长期借款,',','') else 0 end as 长期借款,
+    case when c.应付债券 is not NULL and c.应付债券 != '' then c.货币单位 * replace(c.应付债券,',','') else 0 end as 应付债券,
+    case when f.销售商品、提供劳务收到的现金 is not NULL then f.销售商品、提供劳务收到的现金
         -- 解决国金证券 没有 销售商品、提供劳务收到的现金 字段, 用 收取利息、手续费及佣金的现金 字段来取代
-        else replace(f.收取利息、手续费及佣金的现金,',','') end
+        else f.收取利息、手续费及佣金的现金 end
         as 销售商品、提供劳务收到的现金,
     f.六、期末现金及现金等价物余额,
     f.五、现金及现金等价物净增加额
@@ -197,10 +198,12 @@ from
 (
     select x.*,
         case when 本期费用化研发投入 = '' and 研发投入金额 != '' and 本期资本化研发投入 != ''
-            then round(replace(研发投入金额,',','') - replace(本期资本化研发投入,',',''),2) else replace(本期费用化研发投入,',','') end
+            then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期资本化研发投入,',',''),2)
+            else x.货币单位 * replace(本期费用化研发投入,',','') end
             as 本期费用化研发投入修正,
         case when 本期资本化研发投入 = '' and 研发投入金额 != '' and 本期费用化研发投入 != ''
-            then round(replace(研发投入金额,',','') - replace(本期费用化研发投入,',',''),2) else replace(本期资本化研发投入,',','') end
+            then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期费用化研发投入,',',''),2)
+            else x.货币单位 * replace(本期资本化研发投入,',','') end
             as 本期资本化研发投入修正
     from {0}关键数据表 x
     where (x.在职员工的数量合计 != '' or x.当期领取薪酬员工总人数 != '') and x.报告类型 = '{0}报告'
@@ -211,37 +214,25 @@ left join
         x.公司代码,
         x.公司简称,
         x.报告类型,
-        case when x.货币单位 > 1 then x.货币单位 * replace(x.营业收入,',','') else replace(x.营业收入,',','') end as 营业收入,
-        case when x.货币单位 > 1 then x.货币单位 * replace(x.归属于上市公司股东的净利润,',','') else replace(x.归属于上市公司股东的净利润,',','') end
-            as 归属于上市公司股东的净利润,
-        case when x.货币单位 > 1 then x.货币单位 * replace(x.归属于上市公司股东的扣除非经常性损益的净利润,',','') else replace(x.归属于上市公司股东的扣除非经常性损益的净利润,',','') end
-            as 归属于上市公司股东的扣除非经常性损益的净利润,
-        case when x.货币单位 > 1 then x.货币单位 * replace(x.经营活动产生的现金流量净额,',','') else replace(x.经营活动产生的现金流量净额,',','') end
-            as 经营活动产生的现金流量净额,
+        x.货币单位 * replace(x.营业收入,',','') as 营业收入,
+        x.货币单位 * replace(x.归属于上市公司股东的净利润,',','') as 归属于上市公司股东的净利润,
+        x.货币单位 * replace(x.归属于上市公司股东的扣除非经常性损益的净利润,',','') as 归属于上市公司股东的扣除非经常性损益的净利润,
+        x.货币单位 * replace(x.经营活动产生的现金流量净额,',','') as 经营活动产生的现金流量净额,
         case when x.归属于上市公司股东的净资产 is not NULL
-            then
-                case when x.货币单位 > 1 then x.货币单位 * replace(x.归属于上市公司股东的净资产,',','') else replace(x.归属于上市公司股东的净资产,',','') end
-            else replace(z.归属于母公司所有者权益（或股东权益）合计,',','') end as 归属于上市公司股东的净资产,
+            then x.货币单位 * replace(x.归属于上市公司股东的净资产,',','')
+            else z.货币单位 * replace(z.归属于母公司所有者权益（或股东权益）合计,',','')  end as 归属于上市公司股东的净资产,
         case when x.总资产 is not NULL
-            then
-                case when x.货币单位 > 1 then x.货币单位 * replace(x.总资产,',','') else replace(x.总资产,',','')  end
-            else replace(z.负债和所有者权益（或股东权益）总计,',','') end as 总资产,
+            then x.货币单位 * replace(x.总资产,',','')
+            else z.货币单位 * replace(z.负债和所有者权益（或股东权益）总计,',','') end as 总资产,
         case when x.期末总股本 is not NULL
-            then
-                case when x.货币单位 > 1 then x.货币单位 * replace(x.期末总股本,',','') else replace(x.期末总股本,',','') end
-            else replace(z.实收资本（或股本）,',','') end as 期末总股本,
-        case when y.货币单位 > 1 then y.货币单位 * replace(y.营业收入,',','') else replace(y.营业收入,',','') end
-            as 营业收入（上期）,
-        case when y.货币单位 > 1 then y.货币单位 * replace(y.归属于上市公司股东的净利润,',','') else replace(y.归属于上市公司股东的净利润,',','') end
-            as 归属于上市公司股东的净利润（上期）,
-        case when y.货币单位 > 1 then y.货币单位 * replace(y.归属于上市公司股东的扣除非经常性损益的净利润,',','') else replace(y.归属于上市公司股东的扣除非经常性损益的净利润,',','') end
-            as 归属于上市公司股东的扣除非经常性损益的净利润（上期）,
-        case when y.货币单位 > 1 then y.货币单位 * replace(y.经营活动产生的现金流量净额,',','') else replace(y.经营活动产生的现金流量净额,',','') end
-            as 经营活动产生的现金流量净额（上期）,
-        case when y.货币单位 > 1 then y.货币单位 * replace(y.归属于上市公司股东的净资产,',','') else replace(y.归属于上市公司股东的净资产,',','') end
-            as 归属于上市公司股东的净资产（上期）,
-        case when y.货币单位 > 1 then y.货币单位 * replace(y.总资产,',','') else replace(y.总资产,',','') end
-            as 总资产（上期）
+            then x.货币单位 * replace(x.期末总股本,',','')
+            else z.货币单位 * replace(z.实收资本（或股本）,',','') end as 期末总股本,
+        y.货币单位 * replace(y.营业收入,',','') as 营业收入（上期）,
+        y.货币单位 * replace(y.归属于上市公司股东的净利润,',','') as 归属于上市公司股东的净利润（上期）,
+        y.货币单位 * replace(y.归属于上市公司股东的扣除非经常性损益的净利润,',','') as 归属于上市公司股东的扣除非经常性损益的净利润（上期）,
+        y.货币单位 * replace(y.经营活动产生的现金流量净额,',','') as 经营活动产生的现金流量净额（上期）,
+        y.货币单位 * replace(y.归属于上市公司股东的净资产,',','') as 归属于上市公司股东的净资产（上期）,
+        y.货币单位 * replace(y.总资产,',','') as 总资产（上期）
     from {0}主要会计数据 x
     left join {0}主要会计数据 y
     left join {0}合并资产负债表 z
@@ -251,9 +242,9 @@ left join
 left join
 (
     select x.*,
-        case when y.应付职工薪酬 != '' then replace(y.应付职工薪酬,',','') else 0 end as 应付职工薪酬（期初余额）,
-        replace(y.归属于母公司所有者权益（或股东权益）合计,',','') as 归属于上市公司股东的净资产（上期）,
-        replace(y.负债和所有者权益（或股东权益）总计,',','') as 总资产（上期）
+        case when y.应付职工薪酬 != '' then y.货币单位 * replace(y.应付职工薪酬,',','')  else 0 end as 应付职工薪酬（期初余额）,
+        y.货币单位 * replace(y.归属于母公司所有者权益（或股东权益）合计,',','')  as 归属于上市公司股东的净资产（上期）,
+        y.货币单位 * replace(y.负债和所有者权益（或股东权益）总计,',','') as 总资产（上期）
     from {0}合并资产负债表 x
     left join {0}合并资产负债表 y
     where x.报告时间 - y.报告时间 = 1
@@ -264,9 +255,9 @@ left join
 (
     select x.报告时间,x.公司代码,x.报告类型,
         case when x.现金分红金额（含税） != ''
-        then
-            case when x.货币单位 > 1 then x.货币单位 * replace(x.现金分红金额（含税）,',','') else replace(x.现金分红金额（含税）,',','') end
-        else 0 end as 现金分红金额（含税）,
+        then x.货币单位 * replace(x.现金分红金额（含税）,',','')
+        else 0 end
+            as 现金分红金额（含税）,
         case when x.现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率 != ''
         then
             round(replace(x.现金分红金额占合并报表中归属于上市公司普通股股东的净利润的比率,'%','')/100.0,4)
@@ -276,15 +267,13 @@ left join
 left join {0}合并利润表 e
 left join (
     select x.报告时间,x.报告类型,x.公司代码,x.公司简称,
-        x.支付给职工及为职工支付的现金,
-        x.销售商品、提供劳务收到的现金,
-        x.收取利息、手续费及佣金的现金,
-        x.六、期末现金及现金等价物余额,
-        x.五、现金及现金等价物净增加额,
-        case when x.货币单位 > 1 then x.货币单位 * replace(x.经营活动产生的现金流量净额,',','') else replace(x.经营活动产生的现金流量净额,',','') end
-            as 经营活动产生的现金流量净额,
-        case when y.货币单位 > 1 then y.货币单位 * replace(y.经营活动产生的现金流量净额,',','') else replace(y.经营活动产生的现金流量净额,',','') end
-            as 经营活动产生的现金流量净额（上期）
+        x.货币单位 * replace(x.支付给职工及为职工支付的现金,',','')  as 支付给职工及为职工支付的现金,
+        x.货币单位 * replace(x.销售商品、提供劳务收到的现金,',','')  as 销售商品、提供劳务收到的现金,
+        x.货币单位 * replace(x.收取利息、手续费及佣金的现金,',','')  as 收取利息、手续费及佣金的现金,
+        x.货币单位 * replace(x.六、期末现金及现金等价物余额,',','')  as 六、期末现金及现金等价物余额,
+        x.货币单位 * replace(x.五、现金及现金等价物净增加额,',','')  as 五、现金及现金等价物净增加额,
+        x.货币单位 * replace(x.经营活动产生的现金流量净额,',','')  as 经营活动产生的现金流量净额,
+        y.货币单位 * replace(y.经营活动产生的现金流量净额,',','')  as 经营活动产生的现金流量净额（上期）
     from {0}合并现金流量表 x
     left join {0}合并现金流量表 y
     on (x.报告时间 - y.报告时间 = 1 and x.报告类型 = y.报告类型 and x.公司代码 = y.公司代码)
@@ -303,13 +292,14 @@ left join
     )x
     left join
     (
-        select 报告时间,公司代码,报告类型,公司简称,replace(期末账面价值,',','') as 期末账面价值
+        select 报告时间,公司代码,报告类型,公司简称,货币单位 * replace(期末账面价值,',','') as 期末账面价值
         from {0}无形资产情况 x
         where 项目 = '土地使用权'
     )y
     on x.报告时间 = y.报告时间 and x.公司代码 = y.公司代码 and x.报告类型 = y.报告类型
 )h
 left join 行业分类数据 i
+on a.公司代码 = i.公司代码
 left join
 (
     --同一个公司同一年度可能会发布两次财报, 第二次为第一次发布财报的修正, 但是我们认为第一次发布的财报影响更大, 因此取第一次发布的时间为准
@@ -324,7 +314,7 @@ where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a
     and (a.报告时间 = f.报告时间 and a.公司代码 = f.公司代码 and a.报告类型 = f.报告类型)
     and (a.报告时间 = g.报告时间 and a.公司代码 = g.公司代码 and a.报告类型 = g.报告类型)
     and (a.报告时间 = h.报告时间 and a.公司代码 = h.公司代码 and a.报告类型 = h.报告类型)
-    and (a.公司代码 = i.公司代码)
+    --and (a.公司代码 = i.公司代码)
     and (a.报告时间 = j.报告时间 and a.公司代码 = j.公司代码 and a.报告类型 = j.报告类型)
     and (a.报告时间 != '' and a.公司代码 != '' and a.报告类型 != '')
 order by a.报告时间,a.公司代码,a.报告类型;

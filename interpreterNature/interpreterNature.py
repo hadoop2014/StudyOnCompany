@@ -610,9 +610,10 @@ class InterpreterNature(InterpreterBase):
             ,"parameter 公司简称,报告类型,报告年度 must not be NULL in 批量处理程序"
         #stockcodes = self.standardStockcode._get_stockcode_list(self.names_global['公司简称'])
         #isFileSelected = utile.is_matched('|'.join(self.names_global['公司简称']), sourcefile) \
+        standardizeFileprefix = self.standard._get_standardize_fileprefix(sourcefile)
         isFileSelected = utile.is_matched('|'.join(stockcodes), sourcefile) \
-                         and utile.is_matched('|'.join(self.names_global['报告类型']), sourcefile) \
-                         and utile.is_matched('|'.join(self.names_global['报告时间']), sourcefile)
+                         and utile.is_matched('|'.join(self.names_global['报告类型']), standardizeFileprefix) \
+                         and utile.is_matched('|'.join(self.names_global['报告时间']), standardizeFileprefix)
         return isFileSelected
 
 

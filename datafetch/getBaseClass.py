@@ -35,12 +35,16 @@ class getdataBase(BaseClass):
 
 
     def get_rawshape(self,gConfig):
+        ...
+
+    '''
+    def get_rawshape(self,gConfig):
         dataset_name = self.get_dataset_name(gConfig)
         if dataset_name not in self.gConfig:
             raise ValueError('dataset(%s) has not be configed in datasetlist(%s)'
                              %(dataset_name,gConfig['datasetlist']))
         return [gConfig[dataset_name]['channels'],gConfig[dataset_name]['dim_x'],gConfig[dataset_name]['dim_y']]
-
+    '''
 
     def get_dataset_name(self,gConfig):
         dataset_name = re.findall('get(.*)Data', self.__class__.__name__).pop().lower()

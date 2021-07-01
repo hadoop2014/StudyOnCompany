@@ -2,24 +2,98 @@
 import tensorflow as tf
 from tensorflow import keras
 from interpreterAnalysize.interpreterBaseClass import *
-import numpy as np
+
+
+class CheckpointModelT(CheckpointModelBase):
+    def save_model(self, net: keras.Sequential, optimizer):
+        self.checkpoint = tf.train.Checkpoint(model=net, optimizer=optimizer)  # varible=self.global_step)
+        self.model_savefile = utile.construct_filename(self.directory, self.prefix_modelfile, self.suffix_modelfile)
+        self.manager = tf.train.CheckpointManager(self.checkpoint, directory=self.directory,
+                                                  checkpoint_name=self.model_savefile,
+                                                  max_to_keep=self.max_keep_models)
+        self.manager.save()
+        self.logger.info('Success to save model to file %s' % self.model_savefile)
+
+    def load_model(self, net: keras.Sequential, optimizer , ctx):
+        self.checkpoint = tf.train.Checkpoint(model=net, optimizer=optimizer)  # varible=self.global_step)
+        #self.manager = tf.train.CheckpointManager(self.checkpoint, directory=self.workingspace.directory,
+        #                                          checkpoint_name=self.checkpoint_filename,
+        #                                          max_to_keep=self.max_keep_models)
+
+        # if 'pretrained_model' in self.gConfig:
+        #    self.saver.restore(self.session, self.gConfig['pretrained_model'])
+        # ckpt = tf.train.get_checkpoint_state(self.gConfig['working_directory'])
+        ckpt = tf.train.latest_checkpoint(self.directory)
+        # if ckpt and ckpt.model_checkpoint_path and ckpt_used:
+        if ckpt:
+            self.logger.info("success to load model from %s" % ckpt)
+            # self.net.load_models(self.model_savefile)
+            # tf.train.Checkpoint(x=self.global_step).restore(tf.train.latest_checkpoint(self.working_directory))
+            # self.manager.restore(ckpt)
+            self.checkpoint.restore(ckpt)
+            # self.net.load_weights(ckpt)
+            #self.global_step = self.optimizer.iterations
+        else:
+            self.logger.error(
+                "failed to load the mode file(%s),it is not exists, you must train it first!" % ckpt)
+            raise ValueError(
+                "failed to load the mode file(%s),it is not exists, you must train it first!" % ckpt)
+        return net, optimizer
+
+    def is_modelfile_exist(self):
+        isModelfileExist = False
+        ckpt = tf.train.latest_checkpoint(self.directory)
+        if ckpt:
+               isModelfileExist = True
+        return isModelfileExist
+
+    @classmethod
+    def processing_checkpoint(cls,func):
+        @functools.wraps(func)
+        def wrap(self, *args):
+            start_time = time.time()
+            result = func(self, *args)
+            self.checkpoint.save_model(self.net, self.optimizer)
+            total_time = time.time() - start_time
+            taskResult = []
+            taskResult.append(os.path.split(self.checkpoint.model_savefile)[-1])
+            taskResult.append(utile.get_time_now())
+            taskResult.append(f"{total_time:10.2f}")
+            taskResult.append(f"{self.acces_train[-1]:10.4f}")
+            taskResult.append(f"{self.losses_train[-1]:10.4f}")
+            taskResult.append(f"{self.acces_test[-1]:10.4f}")
+            taskResult.append(f"{self.losses_test[-1]:10.4f}")
+            taskResult.append(f"{self.get_learningrate():10.6f}")
+            taskResult.append(f"{self.get_global_step():10d}")
+            taskResult.append(str(self.get_context()))
+            taskResult.append(NULLSTR)
+            content = ','.join(taskResult)
+            self.checkpoint.save(content)
+            return result
+        return wrap
+
 
 #深度学习模型的基类
 class modelBaseT(InterpreterBase):
     def __init__(self,gConfig):
         super(modelBaseT, self).__init__(gConfig)
+        self.net = keras.Sequential()
+
+    def _init_parameters(self):
+        super(modelBaseT, self)._init_parameters()
         self.learning_rate_value = self.gConfig['learning_rate']
         self.learning_rate_decay_factor = self.gConfig['learning_rate_decay_factor']
         self.decay_steps = self.gConfig['decay_steps']
         self.init_sigma = self.gConfig['init_sigma']
         self.init_bias = self.gConfig['init_bias']
         self.momentum = self.gConfig['momentum']
-        self.max_to_keep = self.gConfig['max_to_keep']
+        self.max_keep_models = self.gConfig['max_keep_models']
         self.max_queue = self.gConfig['max_queue']
         self.initializer = self.gConfig['initializer']
         self.optimizer = self.gConfig['optimizer']
+        #self.optimizer = self.get_optimizer(self.gConfig['optimizer'])
         self.tfdbgIsOn = self.gConfig['tfdbgIsOn'.lower()]
-        self.keeps =self.gConfig['keeps']
+        self.keeps = 1 - self.gConfig['dropout']
         self.init_framework()
         #self.log_savefile='.'.join([self.get_model_name(gConfig),'log'])
         self.global_step = tf.Variable(0, trainable=False, name='global_step',dtype=tf.int64)
@@ -34,7 +108,10 @@ class modelBaseT(InterpreterBase):
         self.writer = tf.summary.create_file_writer(self.loggingspace.directory)
         with self.writer.as_default():
             tf.summary.trace_on()
-        self.net = keras.Sequential()
+        self.checkpoint = self.create_space(CheckpointModelT
+                                            , max_keep_models = self.gConfig['max_keep_models']
+                                            , prefix_modelfile=self._get_module_name())
+        #self.net = keras.Sequential()
 
     def get_net(self):
         return
@@ -116,14 +193,16 @@ class modelBaseT(InterpreterBase):
 
 
     def get_globalstep(self):
+        #return tf.train.get_or_create_global_step()
         return self.global_step
 
-
+    '''
     def saveCheckpoint(self):
         #checkpoint_path = os.path.join(self.working_directory, self.checkpoint_filename)
         #self.net.save(self.model_savefile)
         #tf.train.Checkpoint(x=self.global_step).save(self.working_directory)
         self.manager.save()
+    '''
 
     def train(self,model_eval,getdataClass,gConfig,num_epochs):
         for epoch in range(num_epochs):
@@ -157,8 +236,8 @@ class modelBaseT(InterpreterBase):
                   '\tgrad.std=%.6f'%grad.numpy().std())
 
     def run_train_loss_acc(self,X,y,keeps):
-        loss,acc,merged = None,None,None
-        return loss,acc,merged
+        loss,acc = None,None
+        return loss,acc
 
     def run_eval_loss_acc(self, X, y, keeps=1.0):
         loss,acc = None,None
@@ -231,40 +310,60 @@ class modelBaseT(InterpreterBase):
             with self.writer.as_default():
                 tf.summary.scalar(name='test/loss',data=loss_test,step=self.optimizer.iterations)
                 tf.summary.scalar(name='test/accuracy',data=acc_test,step=self.optimizer.iterations)
+        if epoch % self.epochs_per_checkpoint == 0:
+            self.checkpoint.save_model(self.net, self.optimizer)
         return loss_train, acc_train,loss_valid,acc_valid,loss_test,acc_test
 
     def get_input_shape(self):
         pass
 
-    def initialize(self,ckpt_used):
-        if os.path.exists(self.logging_directory) == False:
-            os.makedirs(self.logging_directory)
-        if os.path.exists(self.working_directory) == False:
-            os.makedirs(self.working_directory)
-        #tf.gfile.DeleteRecursively(self.logging_directory)
-        self.checkpoint = tf.train.Checkpoint(model=self.net,optimizer = self.optimizer)#varible=self.global_step)
-        self.manager = tf.train.CheckpointManager(self.checkpoint, directory=self.workingspace.directory,
-                                                  checkpoint_name=self.checkpoint_filename, max_to_keep=self.max_to_keep)
+    def initialize(self,dictParameter = None):
+        assert dictParameter is not None,'dictParameter must not be None!'
 
-        if 'pretrained_model' in self.gConfig:
-            self.saver.restore(self.session, self.gConfig['pretrained_model'])
+        self.gConfig.update(dictParameter)
+        self._init_parameters()
+        self.loggingspace.clear_directory(self.loggingspace.directory)
+
+        #self.checkpoint = tf.train.Checkpoint(model=self.net,optimizer = self.optimizer)#varible=self.global_step)
+        #self.manager = tf.train.CheckpointManager(self.checkpoint, directory=self.workingspace.directory,
+        #                                          checkpoint_name=self.checkpoint_filename, max_to_keep=self.max_keep_models)
+
+        #if 'pretrained_model' in self.gConfig:
+        #    self.saver.restore(self.session, self.gConfig['pretrained_model'])
         #ckpt = tf.train.get_checkpoint_state(self.gConfig['working_directory'])
-        ckpt = tf.train.latest_checkpoint(self.workingspace.directory)
+        #ckpt = tf.train.latest_checkpoint(self.workingspace.directory)
         #if ckpt and ckpt.model_checkpoint_path and ckpt_used:
-        if ckpt and ckpt_used:
-            print("Reading model parameters from %s" % ckpt)
+        assert self.gConfig['mode'] in self.gConfig['modelist'] \
+            , "mode(%s) must be in modelist: %s'(self.gConfig['mode'],self.gConfig['modelist']"
+        if self.gConfig['mode'] == 'apply':
+            self.net, self.optimizer = self.checkpoint.load_model(self.net,self.optimizer)
+        elif self.gConfig['mode'] == 'pretrain':
+            pass
+        else:
+            ckpt_used = self.gConfig['ckpt_used']
+            if self.checkpoint.is_modelfile_exist() and ckpt_used:
+                self.net, self.optimizer = self.checkpoint.load_model(self.net,self.optimizer)
+                self.global_step = self.optimizer.iterations
+            else:
+                print("Created model with fresh parameters.")
+                print("Created model with fresh parameters.")
+                self.global_step = tf.constant([0], dtype=tf.int64)
+                self.net.build(input_shape=self.get_input_shape())
+
+        #if ckpt and ckpt_used:
+        #    print("Reading model parameters from %s" % ckpt)
             #self.net.load_models(self.model_savefile)
             #tf.train.Checkpoint(x=self.global_step).restore(tf.train.latest_checkpoint(self.working_directory))
             #self.manager.restore(ckpt)
-            self.checkpoint.restore(ckpt)
+        #    self.checkpoint.restore(ckpt)
             #self.net.load_weights(ckpt)
-            self.global_step = self.optimizer.iterations
-            self.net.build(input_shape=self.get_input_shape())
+        #    self.global_step = self.optimizer.iterations
+        #    self.net.build(input_shape=self.get_input_shape())
             #self.net = keras.models.load_model(ckpt)
-        else:
-            print("Created model with fresh parameters.")
-            self.global_step = tf.constant([0],dtype=tf.int64)
-            self.net.build(input_shape=self.get_input_shape())
+        #else:
+        #    print("Created model with fresh parameters.")
+        #    self.global_step = tf.constant([0],dtype=tf.int64)
+        #    self.net.build(input_shape=self.get_input_shape())
         self.net.summary()
 
 
