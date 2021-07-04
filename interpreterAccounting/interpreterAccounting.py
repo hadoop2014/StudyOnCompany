@@ -143,6 +143,9 @@ class InterpreterAccounting(InterpreterBase):
             self.names['货币单位'] = self._unit_transfer(self.names['unit'])
             self.names['unit'] = NULLSTR
             self.names['货币名称'] = self.names['currency']
+            if tableName == '研发投入情况表':
+                # 针对研发投入情况表, 只获取其货币单位, 不做实际解析, 该货币单位设定为关键数据表的货币单位, 因为关键数据表中包含了研发投入金额
+                self.names["关键数据表"].update({"货币单位": self.names['货币单位']})
             self._process_fetch_table(tableName, tableBegin=True, interpretPrefix=interpretPrefix)
             self.logger.info(' '.join([str(word.type) for word in p.slice]))
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
@@ -292,12 +295,17 @@ class InterpreterAccounting(InterpreterBase):
 
         def p_fetchdata_critical(p):
             '''fetchdata : CRITICAL term fetchdata
+                         | CRITICAL fetchdata
                          | CRITICAL term
                          | CRITICAL '-'
-                         | CRITICAL empty
                          | CRITICAL LOCATION
-                         | CRITICAL company '''
-            # CRITICAL '（' unit '）' 解决三一重工财报中, 其他表的单位为'千元',而关键数据表中的 研发投入金额,其单位为元
+                         | CRITICAL company
+                         | CRITICAL unit term
+                         | CRITICAL criticaloptional term '''
+            # CRITICAL unit 解决中芯国际 2020年报, 出现: 研发投入情况表 单位: 千元
+            # CRITICAL discard unit解决紫金矿业2016年报,研发投入情况表 适用 单位: 万元 的unit识别问题
+            # CRITICAL empty 去掉,采用CRITICAL getchdata替换
+            # CRITICAL unit term 解决三一重工财报中, 其他表的单位为'千元',而关键数据表中的 研发投入金额,其单位为元
             critical = self._get_critical_alias(p[1])
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})
@@ -316,7 +324,17 @@ class InterpreterAccounting(InterpreterBase):
                         self.names.update({critical: self._eliminate_duplicates(p[2])})
                     elif self.names['address'] != NULLSTR:
                         self.names.update({critical: self.names['address']})
-            self.logger.info('fetchdata critical %s->%s %s page %d' % (p[1],critical,p[2],self.currentPageNumber))
+                elif len(p.slice) > 3 :
+                    self.names.update({critical: p[3]})
+                    if p.slice[2].type == 'unit':
+                        # 针对研发投入金额（元） 8,555,951,000.00,参见比亚迪财报
+                        #self.names.update({critical:p[3]})
+                        self.names["关键数据表"].update({"货币单位":self.names['货币单位']})
+
+
+            self.logger.info('fetchdata critical %s->%s %s, page %d' % (p[1],critical
+                                                                       ,' '.join([str(word.value) for word in p.slice[2:]])
+                                                                       ,self.currentPageNumber))
 
 
         def p_fetchdata_wrong(p):
@@ -326,7 +344,21 @@ class InterpreterAccounting(InterpreterBase):
                          | REFERENCE NUMERO LOCATION
                          | REFERENCE REFERENCE
                          | REFERENCE DISCARD
-                         | REFERENCE LABEL'''
+                         | REFERENCE LABEL
+                         | REFERENCE NUMERO NUMERO DISCARD
+                         | CRITICAL NAME
+                         | CRITICAL DISCARD'''
+            # CRITICAL fetchdata增加后必须增加CRITICAl DISCARD
+            # CRITICAl criticaloptional语法生效后,必须加 CRITICAL criticaloptional DISCARD
+            # CRITICAl NAME 解决中芯国际2020年年度报告, 公司注册地址 Cricket Square, Hutchins Drive, P.O. Box
+            p[0] = p[1]
+
+
+        def p_optional_critical(p):
+            '''criticaloptional : '（' discard
+                                | '（' discard '）'  '''
+            # DISCARD DISCARD, 解决 资金矿业 2016年报, 研发投入情况表, 单位: 万元 的unit识别问题, 去掉, 通过 TABLE optional unit解决
+            # '（' discard 解决资金矿业 2016年报,出现: 在职员工的数量合计（境内企业员工和境外企业      17,445
             p[0] = p[1]
 
 
@@ -361,6 +393,8 @@ class InterpreterAccounting(InterpreterBase):
                          | company TIME NUMERO
                          | company TIME LABEL
                          | company TIME LOCATION
+                         | company TIME TIME
+                         | company TIME COMPANY
                          | company selectable DISCARD
                          | company selectable NAME NUMERIC
                          | company selectable NAME NUMERO
@@ -371,6 +405,7 @@ class InterpreterAccounting(InterpreterBase):
             # company DISCARD 去掉
             # company PUNCTUATION 去掉
             # company NAME DISCARD 去掉
+            # company TIME COMPANY, company TIME TIME, 在比亚迪2020年报中出现
             # 去掉COMPANY UNIT,原因是正泰电器2018年财报中出现fetchtable : TABLE optional TIME DISCARD COMPANY UNIT error,出现了语法冲突
             # 去掉COMPANY NUMERIC,原因是大立科技2018年年报中合并资产负债表出现在页尾会出现判断失误.
             # TIME REPORT 解决千和味业2019年财报中出现  "2019年年度报告",修改为在skipword中增加REPORT
@@ -685,6 +720,9 @@ class InterpreterAccounting(InterpreterBase):
         table = self._construct_table(tableName)
         #isFirstRowAllInvalid = self._get_first_row_all_invalid()
         self.names[tableName].update({'tableName': tableName,'table':table, 'tableBegin': True,"tableEnd":True})
+        if self.names[tableName]['货币单位'] != NULLSTR:
+            # 如果self.names['关键数据表']['货币单位'] 已经被赋值, 则采用该值更新self.names['货币单位']
+            self.names.update({'货币单位':self.names[tableName]['货币单位']})
         self._parse_table(tableName)
 
 
@@ -978,6 +1016,7 @@ class InterpreterAccounting(InterpreterBase):
                                           ,'table':NULLSTR,'tableStartScore': 0,'tableBegin':False,'tableEnd':False
                                           ,'firstRowAllInvalid': False
                                           ,"page_numbers":list(),"interpretPrefix": NULLSTR}})
+        self.names['关键数据表'].update({"货币单位":NULLSTR})
         self.names.update({'unit':NULLSTR,'currency':NULLSTR,'company':NULLSTR,'time':NULLSTR,'address':NULLSTR})
         for commonField,_ in self.commonFields.items():
             self.names.update({commonField:NULLSTR})

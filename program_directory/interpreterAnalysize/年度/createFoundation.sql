@@ -117,10 +117,10 @@ select
     case when e.财务费用 is not NULL and e.财务费用 != '' then e.货币单位 * replace(e.财务费用,',','') else 0 end
         as 财务费用,
     case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else
-        case when e.研发费用 is not NULL and e.研发费用 != '' then replace(e.研发费用,',','') else 0 end
+        case when e.研发费用 is not NULL and e.研发费用 != '' then e.货币单位 * replace(e.研发费用,',','') else 0 end
         end as 研发费用,
     case when a.本期资本化研发投入修正 != '' then a.本期资本化研发投入修正 else 0 end as 资本化研发投入,
-    case when g.资产减值准备 != '' then replace(g.资产减值准备,',','') else 0 end as 资产减值准备 ,
+    case when g.资产减值准备 != '' then g.货币单位 * replace(g.资产减值准备,',','') else 0 end as 资产减值准备 ,
     case when g.固定资产折旧、油气资产折耗、生产性生物资产折旧 is not NULL and g.固定资产折旧、油气资产折耗、生产性生物资产折旧 != ''
     then
         case when g.使用权资产摊销 is not NULL and g.使用权资产摊销 != ''
@@ -168,7 +168,7 @@ select
             - case when c.递延所得税资产 != '' then c.货币单位 * replace(c.递延所得税资产,',','') else 0 end
         end
         as 流动资产合计,
-    c.负债合计,
+    c.货币单位 * replace(c.负债合计,',','') as 负债合计,
     case when c.流动负债合计 is not NULL then c.货币单位 * replace(c.流动负债合计,',','')
         -- 解决国金证券 没有 流动负债合计 字段
         else c.货币单位 * replace(c.负债合计,',','')
@@ -181,7 +181,7 @@ select
         end
         as 流动负债合计,
     case when c.存货 != '' then c.货币单位 * replace(c.存货,',','') else 0 end as 存货,
-    c.货币资金,
+    c.货币单位 * replace(c.货币资金,',','') as 货币单位,
     case when c.短期借款 is not NULL and c.短期借款 != '' then c.货币单位 * replace(c.短期借款,',','') else 0 end as 短期借款,
     case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != ''
         then c.货币单位 * replace(c.一年内到期的非流动负债,',','') else 0 end
