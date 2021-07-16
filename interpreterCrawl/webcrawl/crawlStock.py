@@ -17,8 +17,11 @@ class CrawlStock(CrawlBase):
     def __init__(self,gConfig):
         super(CrawlStock, self).__init__(gConfig)
 
-
+    @Logger.log_runtime
     def crawl_stock_data(self,website,scale):
+        '''
+        explain: 爬取股票交易数据
+        '''
         assert website in self.dictWebsites.keys(),"website(%s) is not in valid set(%s)"%(website,self.dictWebsites.keys())
         resultPaths = []
         if scale == '批量':
@@ -42,6 +45,7 @@ class CrawlStock(CrawlBase):
         self.checkpoint.save(resultPaths, self.dictWebsites[website]['checkpointHeader'],
                              self.dictWebsites[website]['drop_duplicate'],
                              self.dictWebsites[website]['orderBy'])
+        self.logger.info(f"总爬取了{len(resultPaths)}个股票交易数据")
 
 
     def import_stock_data(self,tableName,scale):

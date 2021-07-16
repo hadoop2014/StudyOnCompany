@@ -374,7 +374,7 @@ class InterpreterNature(InterpreterBase):
         # 当采用多进程编程时,此处需要关闭多进程, 同时获取multiprocessing.Queue()中的函数返回值
         taskResults = Multiprocess.release()
         #self.interpreterAccounting.docParser.checkpoint.close()  #关闭checkpoint文件
-        self.logger.info('运行结果汇总如下:\n\t\t\t\t' + '\n\t\t\t\t'.join(taskResults))
+        self.logger.info('运行结果汇总如下(总%d个文件):\n\t\t\t\t'%len(taskResults) + '\n\t\t\t\t'.join(taskResults))
 
 
     @Multiprocess

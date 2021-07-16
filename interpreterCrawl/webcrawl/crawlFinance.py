@@ -61,8 +61,11 @@ class CrawlFinance(CrawlBase):
         else:
             self.logger.error('now only support scale 批量, but scale(%s) is finded'%scale)
 
-
+    @Logger.log_runtime
     def crawl_finance_data(self,website,scale):
+        '''
+        explain: 爬取公司财报
+        '''
         assert website in self.dictWebsites.keys(),"website(%s) is not in valid set(%s)"%(website,self.dictWebsites.keys())
         if scale == '批量':
             assert ('公司简称' in self.gConfig.keys() and self.gConfig['公司简称'] != NULLSTR) \
@@ -82,6 +85,7 @@ class CrawlFinance(CrawlBase):
         self.checkpoint.save(resultPaths, self.dictWebsites[website]['checkpointHeader'],
                              self.dictWebsites[website]['drop_duplicate'],
                              self.dictWebsites[website]['orderBy'])
+        self.logger.info(f"获取{len(resultPaths)}个公司财报信息")
 
 
     def _process_import_to_sqlite3(self, tableName, encoding = 'utf-8'):

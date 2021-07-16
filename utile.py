@@ -125,11 +125,14 @@ def get_function_explain(function) -> str:
     '''
     explain : 从函数的__doc__中取出函数的用途说明,及explain后的一段文字(只取第一行)
     '''
-    func_doc = function.__doc__.strip()
-    func_doc = func_doc.split(':')
-    func_doc_dict = dict((func_doc[index - 1], word) for index, word in enumerate(func_doc) if index % 2 == 1 )
-    func_explain = func_doc_dict.get('explain', NULLSTR)
-    func_explain = func_explain.strip().split('\n')[0]
+    func_explain = NULLSTR
+    func_doc = function.__doc__
+    if func_doc is not None:
+        func_doc = func_doc.strip()
+        func_doc = func_doc.split(':')
+        func_doc_dict = dict((func_doc[index - 1], word) for index, word in enumerate(func_doc) if index % 2 == 1 )
+        func_explain = func_doc_dict.get('explain', NULLSTR)
+        func_explain = func_explain.strip().split('\n')[0]
     return func_explain
 
 def is_matched(pattern, field):

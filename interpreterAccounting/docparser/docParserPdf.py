@@ -145,13 +145,14 @@ class DocParserPdf(DocParserBase):
             self.interpretPrefix = NULLSTR
             return dictTable
         if isinstance(savedTable, list):
-            if tableStartScore >= dictTable['tableStartScore'] and dictTable['tableEnd'] == False and \
-                page_numbers[-1] - page_numbers[-2] > 1:
+            if dictTable['tableEnd'] == False and \
+                (tableStartScore > dictTable['tableStartScore'] or
+                (tableStartScore == dictTable['tableStartScore'] and page_numbers[-1] - page_numbers[-2] > 1)):
                 # 如果第二次搜索到同一张表, 而且tableStartScore更高, 且isTableEnd = False,则认为是正确的表, 则重新开始拼接表
                 # 解决国城矿业：2019年年度报告, 合并资产负债表出现两次, 后面一次是正确的
                 # 华侨城A：2020年半年度报告, 合并所有者权益变动表 P83页第一次出现 tableStartScore = 2, 但是P85页再次出现的表 tableStartScore = 3
                 #（600109）国金证券：2020年半年度报告.PDF,P43页第一次出现合并资产负债表,P57页出现真正的合并资产负债表
-                # 海天味业：2016年年度报告,合并资产负债表,没一个分页上都有合并资产负债表的表头,导致tableStartScore >= last one成立,增加page_numbers[-1] - page_numbers[-2] > 1的判断
+                # 海天味业：2016年年度报告,合并资产负债表,每一个分页上都有合并资产负债表的表头,导致tableStartScore >= last one成立,增加page_numbers[-1] - page_numbers[-2] > 1的判断
                 savedTable = processedTable
                 self.logger.info('second searched table %s at page %d, whitch tableStartScore(%d) >= last one(%d)'
                                  %(tableName, page_numbers[-1], tableStartScore, dictTable['tableStartScore']))

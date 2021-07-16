@@ -734,6 +734,8 @@ class InterpreterAccounting(InterpreterBase):
         criticalTableName = "关键数据表"
         if isRepairListsInvalid == False and criticalTableName not in failedTable:
             return repairedTable
+        # 修正的报表默认货币单位为1
+        self.names['货币单位'] = 1
         for tableName in sorted(tableList):
             self.logger.info('now start to repair %s'%tableName)
             table = self._repair_table(sourceFile, tableName)
@@ -873,7 +875,7 @@ class InterpreterAccounting(InterpreterBase):
                                  % (company,reportTime,reportType,tableName,fieldsDiff))
                 return table
             # 把数据转化为str类型
-            dictRepairData = dict([key,str(value)] for key,value in dictRepairData.items())
+            dictRepairData = dict([(key,str(value)) for key,value in dictRepairData.items()])
             table = self._construct_table(tableName, dictRepairData)
         except Exception as e:
             print(e)
