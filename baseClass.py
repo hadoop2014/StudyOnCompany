@@ -735,7 +735,7 @@ class StandardizeStockcode(StandardizeBase):
         stockList = stockcodeFrame.values.tolist()
         companyDiffer = set(companys_or_codes).difference(set([company[fieldIndex] for company in stockList]))
         if len(companyDiffer) > 0:
-            self.logger.info("failed to get these stock list fieldIndex = %d :%s " % (fieldIndex, companyDiffer))
+            self.logger.info("failed to get these stock list :%s, please check it at stockcode of interpreterBase.json" % (companyDiffer))
         return stockList
 
     def _get_stockcode_list(self, companyList):
