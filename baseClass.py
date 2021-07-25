@@ -564,6 +564,7 @@ class StandardizeBase():
     def _get_standardize_fileprefix(self, filename):
         standardize_filename = self._standardize(self.filenameStandardize, filename)
         company, time, reportType, code = self._get_company_time_type_code_by_filename(standardize_filename)  # 解决白云山:2020年第一季度报告,和白云山:2020年第一季度报告全文,取后者
+        company = self._get_company_alias(company)
         if company is not NaN and time is not NaN and reportType is not NaN:
             standardize_filename = company + '：' + time + reportType
         return standardize_filename

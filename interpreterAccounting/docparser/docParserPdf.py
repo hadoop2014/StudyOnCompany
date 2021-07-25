@@ -108,7 +108,7 @@ class DocParserPdf(DocParserBase):
         #新增join_tolerance,解决康泰生物：2018年年度报告.PDF中合并利润表,合并资产负债表的解析不正确问题
         join_tolerance = self.gJsonBase['table_settings'][keyName]["join_tolerance"]
         if dictTable['公司简称'] != NULLSTR:
-            keyName = dictTable['公司简称']
+            keyName = self.standard._get_company_alias(dictTable['公司简称'])
             reportType = dictTable['报告类型']
             if keyName in self.gJsonBase['table_settings'].keys():
                 if reportType in self.gJsonBase['table_settings'][keyName].keys():
@@ -233,6 +233,11 @@ class DocParserPdf(DocParserBase):
                     maxTableEnd = isTableEnd
                     maxFirstRowAllInvalid = isFirstRowAllInvalid
                     #break
+                elif tableStartScore > maxTableStartScore and maxTableEnd:
+                    ...
+                    #（002407）多氟多：2020年年度报告,主要会计解析不对, 出现两张表,第一张表 tableStartScore = 2, isTableEnd = True为正确的表
+                    # 第二张表 tableStartScore = 3, isTableEnd = False为错误的表
+                    # 这种情况 do nothing
                 elif tableStartScore > maxTableStartScore:
                     processedTable = table
                     maxTableStartScore = tableStartScore

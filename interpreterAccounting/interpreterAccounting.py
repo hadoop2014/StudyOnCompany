@@ -787,6 +787,7 @@ class InterpreterAccounting(InterpreterBase):
         notRequired = self.gJsonBase['repair_lists']['notRequired']
         #company,reportTime,reportType,code = self._get_time_type_by_name(fileName)
         company, reportTime, reportType, code = self.standard._get_company_time_type_code_by_filename(fileName)
+        company =  self.standard._get_company_alias(company)  # 公司名称标准化
         notRequiredLists = set()
         for tableName in failedTable:
             if tableName in notRequired.keys():

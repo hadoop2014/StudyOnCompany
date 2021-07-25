@@ -531,8 +531,8 @@ class InterpreterNature(InterpreterBase):
         resultSourcefiles = [sourcefile for sourcefile in sourcefiles if not self._is_file_in_black_lists(sourcefile)]
         diffSourcefiles = set(sourcefiles).difference(set(resultSourcefiles))
         if len(diffSourcefiles) > 0:
-            self.logger.info('these file is in black_lists of interpreterBase.json, now no need to process:\n\t%s'
-                             % '\n\t'.join(sorted(diffSourcefiles)))
+            self.logger.info('these file is in black_lists of interpreterBase.json, now no need to process\n\t')
+            #                 % '\n\t'.join(sorted(diffSourcefiles)))
         return resultSourcefiles
 
 
@@ -571,8 +571,8 @@ class InterpreterNature(InterpreterBase):
             sourcefiles = [sourcefile for sourcefile in sourcefiles if re.search(excludeFilesPattern,sourcefile) is None]
         removedFiles = set(rawSourceFiles).difference(set(sourcefiles))
         if len(removedFiles) > 0:
-            self.logger.info('these file is in black_lists 例外文件 and 例外文件特征 of interpreterBase.json, now no need to process:\n\t%s'
-                             % '\n\t'.join(sorted(removedFiles)))
+            self.logger.info('these file is in black_lists 例外文件 and 例外文件特征 of interpreterBase.json, now no need to process: like %s'%excludeFilesPattern)
+            #                 % '\n\t'.join(sorted(removedFiles)))
         return sourcefiles
 
 
