@@ -130,6 +130,7 @@ class DocParserPdf(DocParserBase):
         tableName = dictTable['tableName']
         fetchTables = self._get_tables(dictTable)
         page_numbers = dictTable['page_numbers']
+
         processedTable, isTableEnd, tableStartScore, isFirstRowAllInvalid = self._process_table(page_numbers, fetchTables, tableName)
         dictTable.update({'tableEnd':isTableEnd})
         dictTable.update({'firstRowAllInvalid': isFirstRowAllInvalid})
@@ -233,11 +234,13 @@ class DocParserPdf(DocParserBase):
                     maxTableEnd = isTableEnd
                     maxFirstRowAllInvalid = isFirstRowAllInvalid
                     #break
-                elif tableStartScore > maxTableStartScore and maxTableEnd:
-                    ...
+                #elif tableStartScore > maxTableStartScore and maxTableEnd:
+                #    ...
                     #（002407）多氟多：2020年年度报告,主要会计解析不对, 出现两张表,第一张表 tableStartScore = 2, isTableEnd = True为正确的表
-                    # 第二张表 tableStartScore = 3, isTableEnd = False为错误的表
-                    # 这种情况 do nothing
+                    # 第二张表 tableStartScore = 3, isTableEnd = False为错误的表.
+                    # 这种情况 do nothing,, 通过 "headerSecond": "\\d+\\s*年|本报告期末|年初至报告期末|本报告期|本年比上", 来解决
+                    # （300184）力源信息：2020年年度报告, 主营业务分行业经营情况, 第一张表 tableStartScore = 1, isTableEnd = True为错误的表,
+                    #  第二张tableStartScore = 2, isTableEnd = False为正确的表,  必须去掉该分支
                 elif tableStartScore > maxTableStartScore:
                     processedTable = table
                     maxTableStartScore = tableStartScore

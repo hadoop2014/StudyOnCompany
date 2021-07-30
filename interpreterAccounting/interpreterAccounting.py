@@ -330,6 +330,8 @@ class InterpreterAccounting(InterpreterBase):
                         # 针对研发投入金额（元） 8,555,951,000.00,参见比亚迪财报
                         #self.names.update({critical:p[3]})
                         self.names["关键数据表"].update({"货币单位":self.names['货币单位']})
+                    elif p.slice[2].type == 'term':
+                        self.names.update({critical: p[2]})
 
 
             self.logger.info('fetchdata critical %s->%s %s, page %d' % (p[1],critical
@@ -717,7 +719,8 @@ class InterpreterAccounting(InterpreterBase):
 
     def _process_critical_table(self,tableName = '关键数据表'):
         assert tableName is not None and tableName != NULLSTR,"tableName must not be None"
-        table = self._construct_table(tableName)
+        quick_repair_list = self._fetch_quick_repair_list(tableName)
+        table = self._construct_table(tableName, quick_repair_list)
         #isFirstRowAllInvalid = self._get_first_row_all_invalid()
         self.names[tableName].update({'tableName': tableName,'table':table, 'tableBegin': True,"tableEnd":True})
         if self.names[tableName]['货币单位'] != NULLSTR:
@@ -864,8 +867,14 @@ class InterpreterAccounting(InterpreterBase):
         # 部分2014年财报数据中,没有 在职员工数量, 采用 quickRepair修复
         #assert tableName != NULLSTR,"Parameter: sourceFile(%s) tableName(%s) must not be NULL!" %  tableName
         assert tableName == "关键数据表","Now only support quick repair 关键数据表, %s is not supported!"%tableName
-        company, reportTime, reportType = self.names['公司简称'], self.names['报告时间'], self.names['报告类型']
+        #company, reportTime, reportType = self.names['公司简称'], self.names['报告时间'], self.names['报告类型']
         table = []
+        dictRepairData = self._fetch_quick_repair_list(tableName)
+        if dictRepairData is None:
+            self.logger.info('some error occured when repair %s, may be it not configured in quickRepaired of interpreterBase.json' % (tableName))
+            return table
+        table = self._construct_table(tableName, dictRepairData)
+        '''
         try:
             quick_repair_lists = self.gJsonBase['repair_lists']['quickRepaired']
             dictRepairData = quick_repair_lists[company][reportType][reportTime][tableName]
@@ -881,7 +890,28 @@ class InterpreterAccounting(InterpreterBase):
         except Exception as e:
             print(e)
             self.logger.info('some error occured when repair %s, may be it not configured in quickRepaired of interpreterBase.json'%(tableName))
+        '''
         return table
+
+
+    def _fetch_quick_repair_list(self,tableName):
+        company, reportTime, reportType = self.names['公司简称'], self.names['报告时间'], self.names['报告类型']
+        dictRepairData = None
+        try:
+            quick_repair_lists = self.gJsonBase['repair_lists']['quickRepaired']
+            dictRepairData = quick_repair_lists[company][reportType][reportTime][tableName]
+            fields = self.dictTables[tableName]['fieldName']
+            fieldsDiff = set(dictRepairData.keys()).difference(fields)
+            if len(fieldsDiff) > 0:
+                self.logger.info('error configured field(%s) in quickRepaired of interpreterBase.json at (%s %s %s %s) : %s'
+                                 % (fieldsDiff,company,reportTime,reportType,tableName,fieldsDiff))
+                return None
+            # 把数据转化为str类型
+            dictRepairData = dict([(key, str(value)) for key, value in dictRepairData.items()])
+            #table = self._construct_table(tableName, dictRepairData)
+        except Exception as e:
+            ...
+        return dictRepairData
 
 
     def _check_table_file(self,company, reportType, reportTime,tableFile):
