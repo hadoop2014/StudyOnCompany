@@ -103,7 +103,7 @@ select
         as 经营活动产生的现金流量净额（上期）,
     case when b.归属于上市公司股东的净资产（上期） is not NULL then b.归属于上市公司股东的净资产（上期） else c.归属于上市公司股东的净资产（上期） end
         as 归属于上市公司股东的净资产（上期）,
-    case when b.总资产（上期） is not NULL then b.总资产（上期） else c.总资产（上期） end
+    case when b.总资产（上期） is not NULL and b.总资产（上期） != 0 then b.总资产（上期） else c.总资产（上期） end
         as 总资产（上期）,
     e.货币单位 * replace(e.营业成本,',','') as 营业成本,
     case when e.投资收益 != '' then e.货币单位 * replace(e.投资收益,',','') else 0 end as 投资收益,
@@ -207,8 +207,7 @@ from
             then
                 case when 本期资本化研发投入 != ''
                 then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期资本化研发投入,',',''),2)
-                --else x.货币单位 * round(replace(研发投入金额,',','') ,2) end
-                else 0 end
+                else x.货币单位 * round(replace(研发投入金额,',','') ,2) end
             else 0 end
         else x.货币单位 * replace(本期费用化研发投入,',','') end
             as 本期费用化研发投入修正,
@@ -232,7 +231,7 @@ left join
         case when x.归属于上市公司股东的净资产 is not NULL
             then x.货币单位 * replace(x.归属于上市公司股东的净资产,',','')
             else z.货币单位 * replace(z.归属于母公司所有者权益（或股东权益）合计,',','')  end as 归属于上市公司股东的净资产,
-        case when x.总资产 is not NULL
+        case when x.总资产 is not NULL and x.总资产 != ''
             then x.货币单位 * replace(x.总资产,',','')
             else z.货币单位 * replace(z.负债和所有者权益（或股东权益）总计,',','') end as 总资产,
         case when x.期末总股本 is not NULL
@@ -243,7 +242,10 @@ left join
         y.货币单位 * replace(y.归属于上市公司股东的扣除非经常性损益的净利润,',','') as 归属于上市公司股东的扣除非经常性损益的净利润（上期）,
         y.货币单位 * replace(y.经营活动产生的现金流量净额,',','') as 经营活动产生的现金流量净额（上期）,
         y.货币单位 * replace(y.归属于上市公司股东的净资产,',','') as 归属于上市公司股东的净资产（上期）,
-        y.货币单位 * replace(y.总资产,',','') as 总资产（上期）
+        case when y.总资产 is not null and y.总资产 != ''
+            then y.货币单位 * replace(y.总资产,',','')
+            else 0 end
+            as 总资产（上期）
     from {0}主要会计数据 x
     left join {0}主要会计数据 y
     left join {0}合并资产负债表 z

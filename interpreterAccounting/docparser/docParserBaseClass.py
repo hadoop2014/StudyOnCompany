@@ -70,9 +70,12 @@ class DocParserBase(InterpreterBase):
 
 
     def _is_row_all_invalid(self,row):
-        mergedField = reduce(self._merge,row)
-        #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
-        isRowAllInvalid = not self._is_valid(mergedField)
+        assert isinstance(row,list),'row must be a list!'
+        isRowAllInvalid = False
+        if len(row) > 1:
+            mergedField = reduce(self._merge,row)
+            #解决上峰水泥2017年中出现" ,None,None,None,None,None"的情况,以及其他年报中出现"None,,None,,None"的情况.
+            isRowAllInvalid = not self._is_valid(mergedField)
         return isRowAllInvalid
 
 

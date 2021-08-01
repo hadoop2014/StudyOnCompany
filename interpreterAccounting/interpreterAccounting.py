@@ -314,7 +314,7 @@ class InterpreterAccounting(InterpreterBase):
             # CRITICAL unit term 解决三一重工财报中, 其他表的单位为'千元',而关键数据表中的 研发投入金额,其单位为元
             critical = self._get_critical_alias(p[1])
             if p.slice[2].type == '-':
-                p.slice[2].value = '0'
+                p.slice[2].value = NULLSTR
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})
                 if critical == '公司地址':
@@ -332,14 +332,18 @@ class InterpreterAccounting(InterpreterBase):
                         self.names.update({critical: self._eliminate_duplicates(p[2])})
                     elif self.names['address'] != NULLSTR:
                         self.names.update({critical: self.names['address']})
-                elif len(p.slice) > 3 :
-                    self.names.update({critical: p[3]})
-                    if p.slice[2].type == 'unit' or p.slice[3].type == 'unit':
-                        # 针对研发投入金额（元） 8,555,951,000.00,参见比亚迪财报
-                        #self.names.update({critical:p[3]})
-                        self.names["关键数据表"].update({"货币单位":self.names['货币单位']})
-                    if p.slice[2].type == 'term':
-                        self.names.update({critical: p[2]})
+            if len(p.slice) > 3 :
+                # 对于 CRITICAL unit term, CRITICAL criticaloptional term, CRITICAL term unit 三种场景, 允许后面覆盖前面
+                self.names.update({critical: p[3]})
+                if p.slice[2].type == 'unit' or p.slice[3].type == 'unit':
+                    # 针对研发投入金额（元） 8,555,951,000.00,参见比亚迪财报
+                    #self.names.update({critical:p[3]})
+                    self.names["关键数据表"].update({"货币单位":self.names['货币单位']})
+                if p.slice[2].type == 'term':
+                    self.names.update({critical: p[2]})
+            elif p.slice[2].type == 'term':
+                # 解决（600201）生物股份：2020年年度报告.PDF,出现两次研发投入,第一次 费用化研发投入 1.31 亿元,第二次是正确的,要覆盖掉第一次
+                self.names.update({critical: p[2]})
             self.logger.info('fetchdata critical %s->%s %s, page %d' % (p[1],critical
                                                                        ,' '.join([str(word.value) for word in p.slice[2:]])
                                                                        ,self.currentPageNumber))
@@ -750,9 +754,10 @@ class InterpreterAccounting(InterpreterBase):
         if isRepairListsInvalid == False and criticalTableName not in failedTable:
             return repairedTable
         # 修正的报表默认货币单位为1
-        self.names['货币单位'] = 1
+        #self.names['货币单位'] = 1
         for tableName in sorted(tableList):
             self.logger.info('now start to repair %s'%tableName)
+            self.names['货币单位'] = self.names[tableName]['货币单位']
             table = self._repair_table(sourceFile, tableName)
             if len(table) > 0:
                 self.names[tableName].update({'tableName': tableName, 'table': table, 'tableBegin': True, "tableEnd": True})
@@ -886,23 +891,6 @@ class InterpreterAccounting(InterpreterBase):
             self.logger.info('some error occured when repair %s, may be it not configured in quickRepaired of interpreterBase.json' % (tableName))
             return table
         table = self._construct_table(tableName, dictRepairData)
-        '''
-        try:
-            quick_repair_lists = self.gJsonBase['repair_lists']['quickRepaired']
-            dictRepairData = quick_repair_lists[company][reportType][reportTime][tableName]
-            fields = self.dictTables[tableName]['fieldName']
-            fieldsDiff = set(dictRepairData.keys()).difference(fields)
-            if len(fieldsDiff) > 0:
-                self.logger.info('error configured field in quickRepaired of interpreterBase.json at (%s %s %s %s) : %s'
-                                 % (company,reportTime,reportType,tableName,fieldsDiff))
-                return table
-            # 把数据转化为str类型
-            dictRepairData = dict([(key,str(value)) for key,value in dictRepairData.items()])
-            table = self._construct_table(tableName, dictRepairData)
-        except Exception as e:
-            print(e)
-            self.logger.info('some error occured when repair %s, may be it not configured in quickRepaired of interpreterBase.json'%(tableName))
-        '''
         return table
 
 
@@ -1034,7 +1022,8 @@ class InterpreterAccounting(InterpreterBase):
             '千元': 1000,
             '万元': 10000,
             '百万元': 1000000,
-            '千万元': 10000000
+            '千万元': 10000000,
+            "亿元": 100000000
         })
         unitStandardize = self.standard._standardize("(元|千元|万元|百万元|千万元)",unit)
         if unitStandardize in transfer.keys():

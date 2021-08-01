@@ -181,15 +181,11 @@ class DocParserPdf(DocParserBase):
         if len(processedTable) > 0:
             # 博通集成2019年年报, P93 ,搜到一张不需要的合并资产负债表,其中存在另外一张表只有一行, _discard_last_row处理后变成了空表
             fieldList = [row[0] for row in processedTable]
-            if self._is_row_all_invalid(fieldList):
+            if self._is_row_all_invalid(fieldList) :
                 isFirstRowAllInvalid = True
                 self.logger.warning('the first row of tables is all invalid:%s'% processedTable)
-            headerList = processedTable[0]
             #解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
-            tableStartScore = 0
-            if len(processedTable[0]) > 1:
-                secondFieldList = [row[1] for row in processedTable]
-                tableStartScore = self._is_table_start_simple(tableName, fieldList, secondFieldList, headerList)
+            tableStartScore = self._is_table_start(tableName, fieldList, processedTable)
             isTableEnd = self._is_table_end(tableName,fieldList)
         if len(tables) == 1:
             #（000652）泰达股份：2019年年度报告.PDF P40页出现了错误的普通股现金分红情况表的语句,这个时候不能够把带有值的processedTable返回
@@ -214,11 +210,9 @@ class DocParserPdf(DocParserBase):
             if self._is_row_all_invalid(fieldList):
                 isFirstRowAllInvalid = True
                 self.logger.warning('the first row of tables is all invalid:%s'%table)
-            secondFieldList = [row[1] for row in table]
-            headerList = table[0]
             #浙江鼎力2018年年报,分季度主要财务数据,表头单独在一页中,而表头的第一个字段刚好为空,因此不能做mergedHeaders是否为空字符串的判断.
+            tableStartScore = self._is_table_start(tableName, fieldList, table)
             isTableEnd = self._is_table_end(tableName, fieldList)
-            tableStartScore = self._is_table_start_simple(tableName, fieldList, secondFieldList, headerList)
             if len(page_numbers) == 1:
                 #len(page_numers) == 1表示本表所在的第一页,需要明确判断出isTabletart = True 才能使得isTableEnd生效
                 if (isTableEnd and tableStartScore > 0 and maxTableEnd == False) \
@@ -291,54 +285,118 @@ class DocParserPdf(DocParserBase):
                 table = table[1:]
         return  table
 
+
+    def _is_table_start(self,tableName,fieldList,table):
+        '''
+        explain: 通过匹配表头字段判断是否是目标表的开始
+        args:
+            tableName - 目标表名称
+            fieldList - 目标表第一列,即字段所在的列
+            table - 目标表内容
+        return:
+            tableStartScore - 表头字段的匹配分数,分数越高就越可能是目标表
+            1) 匹配第一列,即第一个表头 + 字段列
+            2) 匹配第二列,即第二个表头
+            3) 匹配第三列,即第三个表头
+            4) 匹配第一行,即第一表头 + 第二表头 + 第三表头
+        '''
+        headerList = table[0]
+        # 解决三诺生物2019年年报第60页,61页出现错误的合并资产负债表,需要跳过去
+        tableStartScore = 0
+        thirdFieldList = NULLSTR
+        if len(table[0]) > 1:
+            secondFieldList = [row[1] for row in table]
+            if len(table[0]) > 2:
+                thirdFieldList = [row[2] for row in table]
+            tableStartScore = self._is_table_start_simple(tableName, fieldList, secondFieldList, thirdFieldList,
+                                                          headerList)
+        return tableStartScore
+
+
     #@pysnooper.snoop()
-    def _is_table_start_simple(self,tableName,fieldList,secondFieldList,headerList):
+    def _is_table_start_simple(self,tableName,fieldList,secondFieldList,thirdFieldList,headerList):
         # 解决隆基股份2018年年度报告的无形资产情况,同一页中出现多张表也有相同的表头的第一字段'项目'
         # 针对合并所有者权益表,第一个表头"项目",并不是出现在talbe[0][0],而是出现在第一列的第一个有效名称中
         # 解决海螺水泥2018年年报中,主要会计数据的表头为'项 目'和规范的表头'主要会计数据'不一致,采用方法使得该表头失效
         # 解决通策医疗2019年年报中无形资产情况表所在的页中,存在另外一个表头 "项目名称",会导致用"^项目"去匹配时出现误判
         assert isinstance(fieldList, list) and isinstance(secondFieldList, list), \
             "fieldList and headerList must be list,but now get %s %s" % (type(fieldList), type(secondFieldList))
-        tableStartScore, isTableStartFirst, isTableStartSecond, isTableStartTree = 0, False, False, False
         mergedFields = reduce(self._merge, fieldList)
-        mergedFieldsSecond = reduce(self._merge, secondFieldList)
-        mergedHeaders = reduce(self._merge, headerList)
-        headerFirst = self.dictTables[tableName]["headerFirst"]
-        headerSecond = self.dictTables[tableName]["headerSecond"]
-        fieldFirst = self.dictTables[tableName]['fieldFirst']
-        #assert fieldFirst != NULLSTR and headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
-        assert headerFirst != NULLSTR and headerSecond != NULLSTR, 'the first field of %s must not be NULL' % tableName
-        #headerFirst,headerSecond,fieldFirst已经在_fields_replace_punctuate中把英文标点替换成中文了
-        headerFirst = headerFirst.replace('(', '（').replace(')', '）').replace('[','（').replace(']','）')   # 在正则表达式中,'()'是元符号,需要替换成中文符号
-        headerSecond = headerSecond.replace('(', '（').replace(')', '）').replace('[','（').replace(']','）')
-        fieldFirst = fieldFirst.replace('(', '（').replace(')', '）').replace('[','（').replace(']','）')
         #考虑两种情况,表头的第一个字段为空,则直接以fieldFirst来匹配,如果不为空,则以表头第一个字段 + fieldFirst 来匹配
-        patternHeaderFirst = '|'.join(['^' + header + field for (header,field)
-                                       in itertools.product(headerFirst.split('|'),fieldFirst.split('|'))])
-        patternHeaderSecond = '|'.join(['^' + field for field in headerSecond.split('|')])
-        patternHeaders = '|'.join(['^' + header + headerNext for (header,headerNext)
-                                   in itertools.product(headerFirst.split('|'),headerSecond.split('|'))])
-        #patternHeaders = '|'.join(['^' + header for header in headerFirst.split('|')])
-        if isinstance(mergedFields, str) and isinstance(patternHeaderFirst, str) :
-            mergedFields = mergedFields.replace('(', '（').replace(')', '）').replace('[','（').replace(']','）').replace(' ', NULLSTR)
-            #mergedFields = self._replace_fieldname(mergedFields)
-            matched = re.search(patternHeaderFirst, mergedFields)
-            if matched is not None:
-                isTableStartFirst = True
-        if isinstance(mergedFieldsSecond, str) and isinstance(patternHeaderSecond, str) :
-            mergedFieldsSecond = mergedFieldsSecond.replace('(', '（').replace(')', '）').replace('(', '（').replace(')', '）').replace('[','（').replace(']','）').replace(' ', NULLSTR)
-            matched = re.search(patternHeaderSecond, mergedFieldsSecond)
-            if matched is not None:
-                isTableStartSecond = True
-        if isinstance(mergedHeaders,str) and isinstance(patternHeaders,str):
-            #解决华东医药2015年年报,主营业务分行业经营情况, 第一行的第一列,第二列字段全部为空的场景,采用repair_list修复,不再采用这个
-            #解决鲁商发展2016年报,主营业务分行业经营情况, 出现在页尾,且只有一行, 主营业务分行业情况,采用repair_list修复,不再采用这个
-            mergedHeaders = mergedHeaders.replace('(', '（').replace(')', '）').replace('(', '（').replace(')', '）').replace('[','（').replace(']','）').replace(' ', NULLSTR)
-            matched = re.search(patternHeaders,mergedHeaders)
-            if matched is not None:
-                isTableStartTree = True
-        tableStartScore = isTableStartFirst + isTableStartSecond + isTableStartTree
+        patternHeaderFirst = self._get_table_header_pattern(tableName,'headerFirst','fieldFirst')
+        isTableStartFirst = self._table_start_match(mergedFields,patternHeaderFirst)
+
+        #解决华东医药2015年年报,主营业务分行业经营情况, 第一行的第一列,第二列字段全部为空的场景,采用repair_list修复,不再采用这个
+        #解决鲁商发展2016年报,主营业务分行业经营情况, 出现在页尾,且只有一行, 主营业务分行业情况,采用repair_list修复,不再采用这个
+        mergedFieldsSecond = reduce(self._merge, secondFieldList)
+        patternHeaderSecond = self._get_table_header_pattern(tableName,'headerSecond')
+        isTableStartSecond = self._table_start_match(mergedFieldsSecond, patternHeaderSecond)
+
+        isTableStartThird = False
+        if thirdFieldList:
+            mergedFieldsThird = reduce(self._merge, thirdFieldList)
+            patternHeaderThird = self._get_table_header_pattern(tableName,'headerThird')
+            isTableStartThird = self._table_start_match(mergedFieldsThird, patternHeaderThird)
+
+        mergedHeaders = reduce(self._merge, headerList)
+        patternHeaders = self._get_table_header_pattern(tableName,'headerFirst','headerSecond')
+        isTableStartFourth = self._table_start_match(mergedHeaders,patternHeaders)
+
+        tableStartScore = isTableStartFirst + isTableStartSecond + isTableStartThird + isTableStartFourth
         return int(tableStartScore)
+
+
+    def _get_table_header_pattern(self,tableName,keyFirst,keySecond = NULLSTR):
+        '''
+        explain: 从表的配置中读取表头,转化为正则表达式
+        args:
+            keyFirst - 第一个表头名
+            keySecond - 第二个表头名,默认为NULLSTR, 取其他值时,此时返回的pattern为两个表头拼接而成
+        return:
+            patternHeader - 表头的正则表达式
+            1) keySecond为NULLSTR, patternHeader为keyFirst所指的表头转化为正则表达式
+            2) keySecond不为NULLSTR, patternHeader为keyFirst和keySecond所值的表头拼接成正则表达式,拼接方法为内积
+        '''
+        assert keyFirst,'keyfirst must not be NULLSTR!'
+        patternHeader = NULLSTR
+        try:
+            headerFirst = self.dictTables[tableName][keyFirst]
+            # 在正则表达式中,'()[]'是元符号,需要替换成中文符号
+            headerFirst = headerFirst.replace('(', '（').replace(')', '）').replace('[', '（').replace(']', '）')
+            if headerFirst and keySecond:
+                headerSecond = self.dictTables[tableName][keySecond]
+                headerSecond = headerSecond.replace('(', '（').replace(')', '）').replace('[', '（').replace(']', '）')
+                patternHeader = '|'.join(['^' + headerF + headerS for (headerF, headerS)
+                                               in itertools.product(headerFirst.split('|'), headerSecond.split('|'))])
+            elif headerFirst:
+                # 针对keySecond 为NULLSTR的场景
+                patternHeader = '|'.join(['^' + field for field in headerFirst.split('|')])
+        except Exception as e:
+            self.logger(e)
+            raise ValueError(f'keyFirst:{keyFirst} or keySecond:{keySecond} is not a invalid key of table:{tableName}')
+        return patternHeader
+
+
+    def _table_start_match(self,mergedHeader,patternHeader):
+        '''
+        explain: 利用正则表达式匹配表头,匹配成功得一分
+        args:
+            mergedHeader - 表头字段的聚合
+            patternHeader - 用于匹配表头字段的正则表达式
+        return:
+            isTableStartMatched - 表头匹配成功为True,反之为False
+            1) 如果patternHeader和mergedHeader为NULLSTR,直接返回False
+            2) 如果用patternHeader匹配到mergedHeader,返回True
+        '''
+        isTableStartMatched = False
+        if isinstance(mergedHeader, str) and isinstance(patternHeader, str) \
+            and patternHeader and mergedHeader:
+            mergedHeader = mergedHeader.replace('(', '（').replace(')', '）').replace('[', '（').replace(']', '）')\
+                .replace(' ', NULLSTR)
+            matched = re.search(patternHeader, mergedHeader)
+            if matched is not None:
+                isTableStartMatched = True
+        return isTableStartMatched
 
 
     def _is_table_end(self,tableName,fieldList):
