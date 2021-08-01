@@ -293,20 +293,28 @@ class InterpreterAccounting(InterpreterBase):
                              ,p[3],self._get_reference_alias(p[3]),p[4]))
 
 
-        def p_fetchdata_critical(p):
-            '''fetchdata : CRITICAL term fetchdata
-                         | CRITICAL fetchdata
+        #def p_fetchdata_critical(p):
+        #    '''fetchdata : fetchdata fetchword
+        #                 | fetchword'''
+        #    ...
+
+        def p_fetchword_critical(p):
+            '''fetchdata : CRITICAL fetchdata
                          | CRITICAL term
                          | CRITICAL '-'
                          | CRITICAL LOCATION
                          | CRITICAL company
                          | CRITICAL unit term
-                         | CRITICAL criticaloptional term '''
+                         | CRITICAL criticaloptional term
+                         | CRITICAL term unit'''
+            # CRITICAL term unit解决 晨名纸业2014年财报,出现: 2014年度研发支出总额46,982.65万元
             # CRITICAL unit 解决中芯国际 2020年报, 出现: 研发投入情况表 单位: 千元
             # CRITICAL discard unit解决紫金矿业2016年报,研发投入情况表 适用 单位: 万元 的unit识别问题
             # CRITICAL empty 去掉,采用CRITICAL getchdata替换
             # CRITICAL unit term 解决三一重工财报中, 其他表的单位为'千元',而关键数据表中的 研发投入金额,其单位为元
             critical = self._get_critical_alias(p[1])
+            if p.slice[2].type == '-':
+                p.slice[2].value = '0'
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})
                 if critical == '公司地址':
@@ -326,14 +334,12 @@ class InterpreterAccounting(InterpreterBase):
                         self.names.update({critical: self.names['address']})
                 elif len(p.slice) > 3 :
                     self.names.update({critical: p[3]})
-                    if p.slice[2].type == 'unit':
+                    if p.slice[2].type == 'unit' or p.slice[3].type == 'unit':
                         # 针对研发投入金额（元） 8,555,951,000.00,参见比亚迪财报
                         #self.names.update({critical:p[3]})
                         self.names["关键数据表"].update({"货币单位":self.names['货币单位']})
-                    elif p.slice[2].type == 'term':
+                    if p.slice[2].type == 'term':
                         self.names.update({critical: p[2]})
-
-
             self.logger.info('fetchdata critical %s->%s %s, page %d' % (p[1],critical
                                                                        ,' '.join([str(word.value) for word in p.slice[2:]])
                                                                        ,self.currentPageNumber))
@@ -349,7 +355,10 @@ class InterpreterAccounting(InterpreterBase):
                          | REFERENCE LABEL
                          | REFERENCE NUMERO NUMERO DISCARD
                          | CRITICAL NAME
-                         | CRITICAL DISCARD'''
+                         | CRITICAL DISCARD
+                         | CRITICAL unit HEADER
+                         | CRITICAL '(' NUMERO ')' '''
+            # CRITICAL unit HEADER 针对 （002223）鱼跃医疗：2014年年度报告.PDF 出现 '研发支出 单位：元 项目 2014 年度'
             # CRITICAL fetchdata增加后必须增加CRITICAl DISCARD
             # CRITICAl criticaloptional语法生效后,必须加 CRITICAL criticaloptional DISCARD
             # CRITICAl NAME 解决中芯国际2020年年度报告, 公司注册地址 Cricket Square, Hutchins Drive, P.O. Box
@@ -548,13 +557,16 @@ class InterpreterAccounting(InterpreterBase):
                     | CURRENCY UNIT
                     | CURRENCY DISCARD UNIT
                     | '（' UNIT '）'
+                    | '(' UNIT ')'
                     | '(' DISCARD CURRENCY UNIT ')'
                     | '（' DISCARD CURRENCY UNIT '）'
                     | '(' DISCARD CURRENCY UNIT DISCARD ')'
                     | '（' DISCARD CURRENCY UNIT DISCARD '）'
                     | '(' CURRENCY UNIT ')'
+                    | '（' CURRENCY UNIT '）'
                     | UNIT CURRENCY AUDITTYPE
                     | UNIT CURRENCY '）' '''
+            # '（' CURRENCY UNIT '）' 解决潍柴动力2018年报中出现: 研发投入金额（人民币 元）
             # '（' DISCARD CURRENCY UNIT DISCARD '）' 解决招商银行 2020年第一季度报告,主要会计数据的搜索问题: 未经审计合并资产负债表 （除特别注明外，货币单位均以人民币百万元列示）
             # UNIT CURRENCY '）'解决生益科技2019年报 合并所有权益变动表,P90页碰到了 '）专项储备'.
             #  UNIT CURRENCY AUDITTYPE解决鲁商发展：2015年第三季度报告 出现 单位：元 币种:人民币 审计类型：未经审计

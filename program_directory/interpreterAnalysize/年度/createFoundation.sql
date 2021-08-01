@@ -38,6 +38,7 @@ create table if not exists {0}财务分析基础表 (
     管理费用 REAL,
     财务费用 REAL,
     研发费用 REAL,
+    费用化研发投入 REAL,
     资本化研发投入 REAL,
     资产减值准备 REAL,
     固定资产折旧、油气资产折耗、生产性生物资产折旧 REAL,
@@ -116,9 +117,12 @@ select
         as 管理费用,
     case when e.财务费用 is not NULL and e.财务费用 != '' then e.货币单位 * replace(e.财务费用,',','') else 0 end
         as 财务费用,
-    case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else
-        case when e.研发费用 is not NULL and e.研发费用 != '' then e.货币单位 * replace(e.研发费用,',','') else 0 end
-        end as 研发费用,
+    case when e.研发费用 is not NULL and e.研发费用 != '' then e.货币单位 * replace(e.研发费用,',','') else 0 end
+        as 研发费用,
+    --case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else
+    --    case when e.研发费用 is not NULL and e.研发费用 != '' then e.货币单位 * replace(e.研发费用,',','') else 0 end
+    --    end as 研发费用,
+    case when a.本期费用化研发投入修正 != '' then a.本期费用化研发投入修正 else 0 end as 费用化研发投入,
     case when a.本期资本化研发投入修正 != '' then a.本期资本化研发投入修正 else 0 end as 资本化研发投入,
     case when g.资产减值准备 != '' then g.货币单位 * replace(g.资产减值准备,',','') else 0 end as 资产减值准备 ,
     case when g.固定资产折旧、油气资产折耗、生产性生物资产折旧 is not NULL and g.固定资产折旧、油气资产折耗、生产性生物资产折旧 != ''
@@ -197,13 +201,20 @@ select
 from
 (
     select x.*,
-        case when 本期费用化研发投入 = '' and 研发投入金额 != '' and 本期资本化研发投入 != ''
-            then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期资本化研发投入,',',''),2)
-            else x.货币单位 * replace(本期费用化研发投入,',','') end
+        case when 本期费用化研发投入 = ''
+        then
+            case when 研发投入金额 != ''
+            then
+                case when 本期资本化研发投入 != ''
+                then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期资本化研发投入,',',''),2)
+                --else x.货币单位 * round(replace(研发投入金额,',','') ,2) end
+                else 0 end
+            else 0 end
+        else x.货币单位 * replace(本期费用化研发投入,',','') end
             as 本期费用化研发投入修正,
         case when 本期资本化研发投入 = '' and 研发投入金额 != '' and 本期费用化研发投入 != ''
-            then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期费用化研发投入,',',''),2)
-            else x.货币单位 * replace(本期资本化研发投入,',','') end
+        then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期费用化研发投入,',',''),2)
+        else x.货币单位 * replace(本期资本化研发投入,',','') end
             as 本期资本化研发投入修正
     from {0}关键数据表 x
     where (x.在职员工的数量合计 != '' or x.当期领取薪酬员工总人数 != '') and x.报告类型 = '{0}报告'
