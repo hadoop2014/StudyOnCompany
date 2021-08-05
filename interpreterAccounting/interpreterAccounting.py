@@ -234,10 +234,9 @@ class InterpreterAccounting(InterpreterBase):
                         | optional NAME NUMERIC
                         | optional '(' ')'
                         | optional '(' ')' NUMERIC NUMERIC NUMERIC
-                        | optional SPECIALWORD
                         | NUMERIC
                         | empty '''
-            # optional SPECIALWORD 解决海螺水泥2019年报,主营业务分行业经营情况的搜索问题
+            # optional SPECIALWORD 解决海螺水泥2019年报,主营业务分行业经营情况的搜索问题, 不再需要,去掉,20210805
             # optional '-' DISCARD 解决赣锋锂业：2019年年度报告, 主要会计数据表 前面出现一大段文字,中间出现 : 号-长期股权投资第十条
             # optional NUMERO '-' NUMERO 解决恩捷股份：2020年年度报告, 主营业务分行业经营情况出现在页尾,第二页出现:公告编号：2021-033
             # optional NUMERO NUMERO NUMERO 解决 华测导航：2018年第一季度报告全文,合并资产负债表,解析出 合并资产负债表 ...  2018 03 31
@@ -341,7 +340,8 @@ class InterpreterAccounting(InterpreterBase):
                     self.names["关键数据表"].update({"货币单位":self.names['货币单位']})
                 if p.slice[2].type == 'term':
                     self.names.update({critical: p[2]})
-            elif p.slice[2].type == 'term':
+            elif p.slice[2].type == 'term' \
+                and (critical != '公司地址' and critical != '注册地址' and critical != '公司名称'):
                 # 解决（600201）生物股份：2020年年度报告.PDF,出现两次研发投入,第一次 费用化研发投入 1.31 亿元,第二次是正确的,要覆盖掉第一次
                 self.names.update({critical: p[2]})
             self.logger.info('fetchdata critical %s->%s %s, page %d' % (p[1],critical
@@ -358,8 +358,9 @@ class InterpreterAccounting(InterpreterBase):
                          | REFERENCE DISCARD
                          | REFERENCE LABEL
                          | REFERENCE NUMERO NUMERO DISCARD
-                         | CRITICAL NAME
+                         | CRITICAL CRITICAL DISCARD
                          | CRITICAL DISCARD
+                         | CRITICAL NAME
                          | CRITICAL unit HEADER
                          | CRITICAL '(' NUMERO ')' '''
             # CRITICAL unit HEADER 针对 （002223）鱼跃医疗：2014年年度报告.PDF 出现 '研发支出 单位：元 项目 2014 年度'
@@ -473,6 +474,7 @@ class InterpreterAccounting(InterpreterBase):
                        | content CRITICAL
                        | content TAIL
                        | content LABEL
+                       | content PAGENO
                        | TIME
                        | NAME
                        | PUNCTUATION
@@ -487,6 +489,7 @@ class InterpreterAccounting(InterpreterBase):
                        | HEADER
                        | LABEL
                        | AUDITTYPE
+                       | REPORT
                        | '%'
                        | '％'
                        | '-'
@@ -526,6 +529,7 @@ class InterpreterAccounting(InterpreterBase):
                        | NUMERIC
                        | PUNCTUATION
                        | LABEL
+                       | PAGENO
                        | '-'
                        | '%'
                        | '％' '''
@@ -605,21 +609,23 @@ class InterpreterAccounting(InterpreterBase):
             '''finis : NUMERO
                      | NUMERO HEADER
                      | HEADER
-                     | SPECIALWORD
                      | empty '''
+            # SPECIALWORD 不再需要,去掉20210605
             p[0] = '\n'.join([str(slice) for slice in p if slice is not None])
 
 
         def p_tail(p):
             '''tail : TAIL
                     | NUMERO TAIL
-                    | '-' NUMERO TAIL
                     | NUMERO NUMERO TAIL
-                    | SPECIALWORD NUMERO NUMERO TAIL'''
+                    | PAGENO TAIL
+                    | PAGENO PAGENO TAIL'''
+            # PAGENO TAIL 解决 国际医学：2015年半年度报告,合并所有者权益变动表 在页尾时的搜索问题
+            # PAGENO PAGENO TAIL 解决 金陵体育：2018年年度,合并现金流量表 单位：元  第 90 页 共 187 页
             # DISCARD NUMERO TAIL 解决 郑煤机：2016年半年度报告, 无形资产情况表出现在页尾的情况,如: 无形资产情况 单位：元 币种：人民币 附注第 40 页, 采用 CURRENCY来解决
-            # -' NUMERO TAIL 解决 爱朋医疗：2019年第三季度报告全文 ,合并利润表出现在页尾, 合并年初到报告期末利润表 单位：元 - 18 -
+            # -' NUMERO TAIL 解决 爱朋医疗：2019年第三季度报告全文 ,合并利润表出现在页尾, 合并年初到报告期末利润表 单位：元 - 18 - ,去的该语句,采用PAGENO TAIL取代
             # tail : TAIL 解决三全食品2019年报, 主营业务分行业经营情况出现在页尾,但是没有页码的情况
-            # SPECIALWORD NUMERO NUMERO TAIL 解决苏博特：2018年年度,主营业务分行业经营情况出现在页尾,且只有一行表头: 主营业务分行业情况
+            # SPECIALWORD NUMERO NUMERO TAIL 解决苏博特：2018年年度,主营业务分行业经营情况出现在页尾,且只有一行表头: 主营业务分行业情况,不再需要,去掉
             # tail : TAIL 解决华侨城A 2016年, 无形资产情况出现在页尾,但是没有页码
             tail = ' '.join([str(slice) for slice in p if slice is not None])
             p[0] = p[1]
