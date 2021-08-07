@@ -63,6 +63,7 @@ create table if not exists {0}财务分析基础表 (
     存货 REAL,
     货币资金 REAL,
     短期借款 REAL,
+    合同负债 REAL,
     一年内到期的非流动负债 REAL,
     长期借款 REAL,
     应付债券 REAL,
@@ -187,6 +188,7 @@ select
     case when c.存货 != '' then c.货币单位 * replace(c.存货,',','') else 0 end as 存货,
     c.货币单位 * replace(c.货币资金,',','') as 货币单位,
     case when c.短期借款 is not NULL and c.短期借款 != '' then c.货币单位 * replace(c.短期借款,',','') else 0 end as 短期借款,
+    case when c.合同负债 is not NULL and c.合同负债 != '' then c.货币单位 * replace(c.合同负债,',','') else 0 end as 合同负债,
     case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != ''
         then c.货币单位 * replace(c.一年内到期的非流动负债,',','') else 0 end
         as 一年内到期的非流动负债,
@@ -206,13 +208,13 @@ from
             case when 研发投入金额 != ''
             then
                 case when 本期资本化研发投入 != ''
-                then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期资本化研发投入,',',''),2)
+                then x.货币单位 * round(replace(研发投入金额,',','') -  replace(本期资本化研发投入,',',''),2)
                 else x.货币单位 * round(replace(研发投入金额,',','') ,2) end
             else 0 end
         else x.货币单位 * replace(本期费用化研发投入,',','') end
             as 本期费用化研发投入修正,
         case when 本期资本化研发投入 = '' and 研发投入金额 != '' and 本期费用化研发投入 != ''
-        then x.货币单位 * round(replace(研发投入金额,',','') - x.货币单位 * replace(本期费用化研发投入,',',''),2)
+        then x.货币单位 * round(replace(研发投入金额,',','') -  replace(本期费用化研发投入,',',''),2)
         else x.货币单位 * replace(本期资本化研发投入,',','') end
             as 本期资本化研发投入修正
     from {0}关键数据表 x

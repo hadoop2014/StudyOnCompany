@@ -91,17 +91,17 @@ class getdataBase(BaseClass):
         return wapper
 
 
-    @getdataForUnittest.__get__(object)
+    @getdataForUnittest.__get__(object,type)
     def getTrainData(self,batch_size):
         return self.train_iter
 
 
-    @getdataForUnittest.__get__(object)
+    @getdataForUnittest.__get__(object,type)
     def getTestData(self,batch_size):
         return self.test_iter
 
 
-    @getdataForUnittest.__get__(object)
+    @getdataForUnittest.__get__(object,type)
     def getValidData(self,batch_size):  # ,batch_size,time_steps):
         pass
 

@@ -6,6 +6,7 @@
 # @Note    : 用接近自然语言的解释器处理各类事务,用于处理财务数据爬取,财务数据提取,财务数据分析.
 import logging
 import multiprocessing
+import re
 from collections import Counter
 from ply import lex,yacc
 import copy
@@ -502,6 +503,8 @@ class InterpreterNature(InterpreterBase):
                 sourcefilesValid = [sourcefile  for sourcefile in sourcefilesValid if self._is_file_selected(sourcefile, stockcodes)]
             sourcefilesValid = self._remove_exclude_files(sourcefilesValid)
             sourcefilesValid = self._remove_duplicate_files(sourcefilesValid)
+            # 对sorcefilesVlaid 按照 code + time 进行排序
+            sourcefilesValid = sorted(sourcefilesValid, key=lambda x : ''.join(re.findall('\\d+',x)))
         if isForced == False:
             #checkpoint = self.interpreterAccounting.docParser.get_checkpoint()
             checkpoint = self.interpreterAccounting.docParser.checkpoint.get_content()

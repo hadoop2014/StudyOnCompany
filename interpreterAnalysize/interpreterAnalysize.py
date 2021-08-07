@@ -123,7 +123,7 @@ class InterpreterAnalysize(InterpreterBase):
         tableName = self.gJsonInterpreter['analysizeTable'][analysize]
         assert tableName in self.tableNames, 'tableName(%s) is invalid ,it must be in %s' % self.tableNames
         if scale != '批量':
-            self.logger.warning('the scale %s is not support,now only support scale \'批量\'' % p[1])
+            self.logger.warning('the scale %s is not support,now only support scale \'批量\'' % scale)
         if analysize == '指数趋势分析':
             self.stockAnalysize.initialize(self.gConfig)
             self.stockAnalysize.stock_index_trend_analysize(tableName,scale)

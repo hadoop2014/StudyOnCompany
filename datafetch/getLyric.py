@@ -67,9 +67,9 @@ class getLyricData(getdataBase):
 
         :param reader: the data reader to read from.
         :type reader: callable
-        :param transformer: a list of transformer.
-        :type transformer: list
-        :return: the transformed reader.
+        :param transformers: a list of transformer.
+        :type transformers: list
+        :return: the transformers reader.
         :rtype: callable
         """
         def transform_reader():

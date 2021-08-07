@@ -7,6 +7,7 @@
 from ply import lex,yacc
 from xlrd.biffh import XLRDError
 from interpreterAccounting.interpreterBaseClass import *
+from constant import *
 
 
 class InterpreterAccounting(InterpreterBase):
@@ -143,9 +144,7 @@ class InterpreterAccounting(InterpreterBase):
             self.names['货币单位'] = self._unit_transfer(self.names['unit'])
             self.names['unit'] = NULLSTR
             self.names['货币名称'] = self.names['currency']
-            if tableName == '研发投入情况表':
-                # 针对研发投入情况表, 只获取其货币单位, 不做实际解析, 该货币单位设定为关键数据表的货币单位, 因为关键数据表中包含了研发投入金额
-                self.names["关键数据表"].update({"货币单位": self.names['货币单位']})
+            self._table_special_action(tableName)  # 搜索到 研发投入情况表 后的特殊处理
             self._process_fetch_table(tableName, tableBegin=True, interpretPrefix=interpretPrefix)
             self.logger.info(' '.join([str(word.type) for word in p.slice]))
             self.logger.info('\nprefix: %s:' % interpretPrefix.replace('\n', '\t') + str(self.names[tableName]))
@@ -292,11 +291,6 @@ class InterpreterAccounting(InterpreterBase):
                              ,p[3],self._get_reference_alias(p[3]),p[4]))
 
 
-        #def p_fetchdata_critical(p):
-        #    '''fetchdata : fetchdata fetchword
-        #                 | fetchword'''
-        #    ...
-
         def p_fetchword_critical(p):
             '''fetchdata : CRITICAL fetchdata
                          | CRITICAL term
@@ -312,7 +306,7 @@ class InterpreterAccounting(InterpreterBase):
             # CRITICAL empty 去掉,采用CRITICAL getchdata替换
             # CRITICAL unit term 解决三一重工财报中, 其他表的单位为'千元',而关键数据表中的 研发投入金额,其单位为元
             critical = self._get_critical_alias(p[1])
-            if p.slice[2].type == '-':
+            if p.slice[2].type == '-' or p.slice[2].type == 'fetchdata':
                 p.slice[2].value = NULLSTR
             if self.names[critical] == NULLSTR :
                 self.names.update({critical:p[2]})
@@ -331,19 +325,20 @@ class InterpreterAccounting(InterpreterBase):
                         self.names.update({critical: self._eliminate_duplicates(p[2])})
                     elif self.names['address'] != NULLSTR:
                         self.names.update({critical: self.names['address']})
-            if len(p.slice) > 3 :
-                # 对于 CRITICAL unit term, CRITICAL criticaloptional term, CRITICAL term unit 三种场景, 允许后面覆盖前面
-                self.names.update({critical: p[3]})
-                if p.slice[2].type == 'unit' or p.slice[3].type == 'unit':
-                    # 针对研发投入金额（元） 8,555,951,000.00,参见比亚迪财报
-                    #self.names.update({critical:p[3]})
-                    self.names["关键数据表"].update({"货币单位":self.names['货币单位']})
-                if p.slice[2].type == 'term':
+                # 解决广誉远：2020年年度报告中, 先搜索到了 研发投入情况表 的 本期费用化研发投入, 但是后面又搜索到了 费用化研发投入, 前面一个是正确的.
+                if len(p.slice) > 3 :
+                    # 对于 CRITICAL unit term, CRITICAL criticaloptional term, CRITICAL term unit 三种场景, 允许后面覆盖前面
+                    self.names.update({critical: p[3]})
+                    if p.slice[2].type == 'unit' or p.slice[3].type == 'unit':
+                        # 针对研发投入金额（元） 8,555,951,000.00,参见比亚迪财报
+                        #self.names.update({critical:p[3]})
+                        self.names["关键数据表"].update({"货币单位":self.names['货币单位']})
+                    if p.slice[2].type == 'term':
+                        self.names.update({critical: p[2]})
+                elif p.slice[2].type == 'term' \
+                    and critical not in ['公司地址' ,'注册地址', '公司名称']:
+                    # 解决（600201）生物股份：2020年年度报告.PDF,出现两次研发投入,第一次 费用化研发投入 1.31 亿元,第二次是正确的,要覆盖掉第一次
                     self.names.update({critical: p[2]})
-            elif p.slice[2].type == 'term' \
-                and (critical != '公司地址' and critical != '注册地址' and critical != '公司名称'):
-                # 解决（600201）生物股份：2020年年度报告.PDF,出现两次研发投入,第一次 费用化研发投入 1.31 亿元,第二次是正确的,要覆盖掉第一次
-                self.names.update({critical: p[2]})
             self.logger.info('fetchdata critical %s->%s %s, page %d' % (p[1],critical
                                                                        ,' '.join([str(word.value) for word in p.slice[2:]])
                                                                        ,self.currentPageNumber))
@@ -598,6 +593,7 @@ class InterpreterAccounting(InterpreterBase):
                     | TIME REPORT'''
             # 仅用于fetchtable
             p[0] = p[1]
+
 
         def p_term(p):
             '''term : NUMERIC
@@ -965,6 +961,19 @@ class InterpreterAccounting(InterpreterBase):
         return category
 
 
+    def _table_special_action(self, tableName):
+        '''
+        explain : 搜索到研发投入情况表后,使得'本期费用化研发投入', '本期资本化研发投入', '研发投入金额'失效
+        '''
+        if tableName ==  '研发投入情况表':
+            # 针对研发投入情况表, 只获取其货币单位, 不做实际解析, 该货币单位设定为关键数据表的货币单位, 因为关键数据表中包含了研发投入金额
+            self.names["关键数据表"].update({"货币单位": self.names['货币单位']})
+            # 让研发投入情况表之前获取到的 本期费用化研发投入,本期资本化研发投入,研发投入金额 作废
+            # 解决（600201）生物股份：2020年年度报告.PDF,出现两次研发投入,第一次 费用化研发投入 1.31 亿元,第二次是正确的,要覆盖掉第一次
+            for critical in ['本期费用化研发投入', '本期资本化研发投入', '研发投入金额']:
+                self.names[critical] = NULLSTR
+
+
     def _construct_table(self,tableName,dictRepairData = None):
         headers = self.dictTables[tableName]['headerName']
         fields = self.dictTables[tableName]['fieldName']
@@ -1031,7 +1040,7 @@ class InterpreterAccounting(InterpreterBase):
             '千万元': 10000000,
             "亿元": 100000000
         })
-        unitStandardize = self.standard._standardize("(元|千元|万元|百万元|千万元)",unit)
+        unitStandardize = self.standard._standardize("(元|千元|万元|百万元|千万元|亿元)",unit)
         if unitStandardize in transfer.keys():
             unitStandardize = transfer[unitStandardize]
         else:

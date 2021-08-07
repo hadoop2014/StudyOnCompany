@@ -105,7 +105,7 @@ class DocParserBase(InterpreterBase):
         return wapper
 
 
-    @getdataForUnittest.__get__(object)
+    @getdataForUnittest.__get__(object,type)
     def getTrainData(self,batch_size):
         return
 
