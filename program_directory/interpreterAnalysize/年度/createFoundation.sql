@@ -1,4 +1,75 @@
 --参数{0}会被替换成报告类型,如: 年报,半年报,季报
+drop table if exists 股票分析基础表;
+create table if not exists 股票分析基础表 (
+    --ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    报告时间 DATE NOT NULL,
+    公司代码 INTEGER NOT NULL,
+    年初报告周 CHAR(10),
+    年末报告周 CHAR(10),
+    年初周平均总市值 REAL,
+    年末周平均总市值 REAL
+);
+
+
+insert into 股票分析基础表
+select a.报告时间,
+    a.公司代码,
+    a.年初报告周,
+    a.年末报告周,
+    c.周平均总市值 as 年初周平均总市值,
+    b.周平均总市值 as 年末周平均总市值
+from
+(
+    select  公司代码,
+        报告时间,
+        min(报告周) as 年初报告周,
+        max(报告周) as 年末报告周
+    from
+    (
+        select 公司代码,
+            strftime('%Y年', 报告时间) as 报告时间,
+            strftime('%Y-%W', 报告时间) as 报告周
+        from 股票交易数据
+        where 总市值 >  0 and 总市值 != 'None'
+    )x
+    group by 公司代码, 报告时间
+)a
+left join
+(
+    select  公司代码,
+        报告时间,
+        报告周,
+        round(avg(总市值), 0) as 周平均总市值
+    from
+    (
+        select 公司代码,
+            strftime('%Y年', 报告时间) as 报告时间,
+            strftime('%Y-%W', 报告时间) as 报告周,
+            总市值
+        from 股票交易数据
+    )y
+    group by 公司代码, 报告时间, 报告周
+)b
+on a.公司代码 = b.公司代码 and a.报告时间 = b.报告时间 and a.年末报告周 = b.报告周
+left join
+(
+    select  公司代码,
+        报告时间,
+        报告周,
+        round(avg(总市值), 0) as 周平均总市值
+    from
+    (
+        select 公司代码,
+            strftime('%Y年', 报告时间) as 报告时间,
+            strftime('%Y-%W', 报告时间) as 报告周,
+            总市值
+        from 股票交易数据
+    )y
+    group by 公司代码, 报告时间, 报告周
+)c
+on a.公司代码 = c.公司代码 and a.报告时间 = c.报告时间 and a.年初报告周 = c.报告周;
+
+
 drop table if exists {0}财务分析基础表;
 create table if not exists {0}财务分析基础表 (
     --ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,25 +122,28 @@ create table if not exists {0}财务分析基础表 (
     土地使用权 REAL,
     投资性房地产 REAL,
     商誉 REAL,
+    合同负债 REAL,
     预收款项 REAL,
     应付票据及应付账款 REAL,
     应付账款 REAL,
     预付款项 REAL,
     应收账款 REAL,
-    应收票据 NMERIC,
+    应收票据 REAL,
+    合同资产 REAL,
     流动资产合计 REAL,
     负债合计 REAL,
     流动负债合计 REAL,
     存货 REAL,
     货币资金 REAL,
     短期借款 REAL,
-    合同负债 REAL,
     一年内到期的非流动负债 REAL,
     长期借款 REAL,
     应付债券 REAL,
     销售商品、提供劳务收到的现金 REAL,
     六、期末现金及现金等价物余额 REAL,
-    五、现金及现金等价物净增加额 REAL
+    五、现金及现金等价物净增加额 REAL,
+    年化利润增长率 REAL,
+    年化市值增长率 REAL
 );
 
 insert into {0}财务分析基础表
@@ -146,9 +220,10 @@ select
     case when c.投资性房地产 is not NULL and c.投资性房地产 != '' then c.货币单位 * replace(c.投资性房地产,',','') else 0 end as 投资性房地产,
     --case when c.商誉 != '' then c.商誉 else 0 end as 商誉,
     case when c.商誉 != '' then c.货币单位 * replace(c.商誉,',','') else 0 end as 商誉,
+    case when c.合同负债 is not NULL and c.合同负债 != '' then c.货币单位 * replace(c.合同负债,',','') else 0 end as 合同负债,
     case when c.预收款项 is not NULL and 预收款项 != '' then c.货币单位 * replace(c.预收款项,',','') else 0 end as 预收款项,
     case when c.应付票据及应付账款 is not NULL then c.货币单位 * replace(c.应付票据及应付账款,',','') else
-        case when c.应付账款 is not NULL and c.货币单位 * replace(c.应付票据,',','') is not NULL
+        case when c.应付账款 is not NULL and c.应付票据 is not NULL
             then c.货币单位 * replace(c.应付账款,',','') + c.货币单位 * replace(c.应付票据,',','') else 0
         end
     end as 应付票据及应付账款,
@@ -158,6 +233,7 @@ select
         case when c.应收账款 is not NULL and c.应收账款 != '' then c.货币单位 * replace(c.应收账款,',','') else 0 end
     end as 应收账款,
     case when c.应收票据 is not NULL and c.应收票据 != '' then c.货币单位 * replace(c.应收票据,',','') else 0 end as 应收票据,
+    case when c.合同资产 is not NULL and c.合同资产 != '' then c.货币单位 * replace(c.合同资产,',','') else 0 end as 合同资产,
     case when c.流动资产合计 is not NULL then c.货币单位 * replace(c.流动资产合计,',','')
         -- 解决国金证券 没有 流动资产合计 字段
         else c.货币单位 * replace(c.资产总计,',','')
@@ -188,7 +264,6 @@ select
     case when c.存货 != '' then c.货币单位 * replace(c.存货,',','') else 0 end as 存货,
     c.货币单位 * replace(c.货币资金,',','') as 货币单位,
     case when c.短期借款 is not NULL and c.短期借款 != '' then c.货币单位 * replace(c.短期借款,',','') else 0 end as 短期借款,
-    case when c.合同负债 is not NULL and c.合同负债 != '' then c.货币单位 * replace(c.合同负债,',','') else 0 end as 合同负债,
     case when c.一年内到期的非流动负债 is not NULL and c.一年内到期的非流动负债 != ''
         then c.货币单位 * replace(c.一年内到期的非流动负债,',','') else 0 end
         as 一年内到期的非流动负债,
@@ -199,7 +274,20 @@ select
         else f.收取利息、手续费及佣金的现金 end
         as 销售商品、提供劳务收到的现金,
     f.六、期末现金及现金等价物余额,
-    f.五、现金及现金等价物净增加额
+    f.五、现金及现金等价物净增加额,
+    case when b.报告时间 - k.报告时间 > 0
+    then
+        case when sign(b.归属于上市公司股东的净利润) > 0
+        then
+            power(b.归属于上市公司股东的净利润 / round(k.归属于上市公司股东的净利润,0), 1/round(b.报告时间 - k.报告时间,0)) - 1
+        else -1.0 end
+    else 0 end
+        as 年化利润增长率,
+    case when b.报告时间 - k.上市时间 > 0
+    then
+        power(b.年末周平均总市值 / round(k.年末周平均总市值,0), 1/round(b.报告时间 - k.上市时间,0)) - 1
+    else 0 end
+        as 年化市值增长率
 from
 (
     select x.*,
@@ -247,10 +335,13 @@ left join
         case when y.总资产 is not null and y.总资产 != ''
             then y.货币单位 * replace(y.总资产,',','')
             else 0 end
-            as 总资产（上期）
+            as 总资产（上期）,
+        round(u.年末周平均总市值,0) as 年末周平均总市值
     from {0}主要会计数据 x
     left join {0}主要会计数据 y
     left join {0}合并资产负债表 z
+    left join 股票分析基础表 u
+    on x.公司代码 = u.公司代码 and x.报告时间 = u.报告时间 and x.报告类型 = '{0}报告'
     where (x.报告时间 - y.报告时间 = 1 and x.报告类型 = y.报告类型 and x.公司代码 = y.公司代码)
         and (x.报告时间 = z.报告时间 and x.公司代码 = z.公司代码 and x.报告类型 = z.报告类型)
 )b
@@ -335,6 +426,58 @@ left join
     from 财报发布信息
     group by 公司代码, 报告时间, 报告类型
 )j
+left join
+(
+    select x.公司代码,x.报告类型,
+        x.报告时间,
+        y.公司简称,
+        y.报告时间,
+        y.货币单位 * replace(y.归属于上市公司股东的净利润,',','') as 归属于上市公司股东的净利润,
+        y.货币单位 * replace(y.归属于上市公司股东的扣除非经常性损益的净利润,',','') as 归属于上市公司股东的扣除非经常性损益的净利润,
+        case when z.报告时间 is not NULL then z.报告时间 else u.报告时间 - 1 end as 上市时间,  --对于没有财报发布时间比上市时间早的情况, 将上市时间提早1年
+        case when z.报告时间 is not null then z.年末周平均总市值 else u.年初周平均总市值 end as 年末周平均总市值
+    from
+    (
+        -- 找到第一个为正数的 归属于上市公司股东的净利润 所在的年份
+        select 公司代码, 报告类型,
+            min(报告时间) as 报告时间
+        from
+        (
+            select i.公司代码,
+                 i.报告类型,
+                 j.报告时间,
+                 j.货币单位 * replace(j.归属于上市公司股东的净利润,',','') as 归属于上市公司股东的净利润,
+                 j.货币单位 * replace(j.归属于上市公司股东的扣除非经常性损益的净利润,',','') as 归属于上市公司股东的扣除非经常性损益的净利润
+            from {0}关键数据表 i
+            left join {0}主要会计数据 j
+            on i.公司代码 = j.公司代码 and i.报告类型= j.报告类型 and i.报告时间 - j.报告时间 = 1
+        )u
+        where sign(u.归属于上市公司股东的净利润) > 0
+        group by u.公司代码, u.报告类型
+    )x
+    left join {0}主要会计数据 y
+    on x.公司代码 = y.公司代码 and x.报告类型= y.报告类型 and x.报告时间 = y.报告时间
+    left join 股票分析基础表 z
+    on x.公司代码 = z.公司代码 and x.报告时间 = z.报告时间 and x.报告类型 = '{0}报告'
+    left join
+    (
+        select i.公司代码,
+            j.报告时间,
+            j.年初报告周,
+            j.年初周平均总市值
+        from
+        (
+            select 公司代码,
+                min(年初报告周) as 年初报告周
+            from 股票分析基础表
+            group by 公司代码
+        )i
+        left join 股票分析基础表 j
+        on i.公司代码 = j.公司代码 and i.年初报告周 = j.年初报告周
+    )u
+    on x.公司代码 = u.公司代码 and x.报告类型 = '{0}报告'
+)k
+on a.公司代码 = k.公司代码 and a.报告类型 = k.报告类型
 where (a.报告时间 = b.报告时间 and a.公司代码 = b.公司代码 and a.报告类型 = b.报告类型)
     and (a.报告时间 = c.报告时间 and a.公司代码 = c.公司代码 and a.报告类型 = c.报告类型)
     and (a.报告时间 = d.报告时间 and a.公司代码 = d.公司代码 and a.报告类型 = d.报告类型)

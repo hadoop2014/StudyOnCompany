@@ -2,14 +2,14 @@
   "#tokens": ["操作",       "表",   "展示",     "处理规模","模型", "操作",   "数据分析",   "执行"],
   "tokens":  ["MANIPULATE","TABLE","VISUALIZE","SCALE", "MODEL","HANDLE","ANALYSIZE","EXECUTE"],
 
-  "SCALE" : "全量|批量|单次",
+  "SCALE" : "全量|批量|单次|定量",
   "MANIPULATE": "创建|更新",
   "VISUALIZE": "展示",
   "EXECUTE": "运行|强制运行",
   "ANALYSIZE": "指数趋势分析",
-  "TABLE": "财务分析基础表|财务分析综合表|公司价值分析表|公司价格分析表|指数趋势分析表",
+  "TABLE": "财务分析基础表|财务分析综合表|公司价格预测表|公司价格分析表|指数趋势分析表",
   "HANDLE": "训练|应用",
-  "MODEL": "公司价格预测模型|指数趋势预测模型|测试专用模型",
+  "MODEL": "公司价格预测模型|公司价值预测模型|指数趋势预测模型|测试专用模型",
   "#literals": "保留字符:(NUMBER)表示-NUMBER,':'表示赋值,['(',')','-','：',':','（','）','%','/']",
   "literals": ["(",")","（","）","-","%","％"],
 
@@ -352,12 +352,30 @@
         "color_index": 2,
         "operator": "greaterThan",
         "value_format": "percentage"
+      },
+      "年化利润增长率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "年化市值增长率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
+      "公司投资等级": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "",
+        "value_format": "percentage"
       }
     }
   },
 
 
-  "公司价值分析表": {
+  "公司价格预测表": {
     "fieldName": [],
     "fieldDiscard": [],
     "parent": "财务分析综合表",
@@ -471,8 +489,21 @@
       "framework": "pytorch",
       "dataset": "mnist",
       "model": "lenet",
-      "#tableName": "应用 公司价格预测模型, 结果数据写入 公司价格预测表",
       "tableName": "",
+      "ckpt_used": false,
+      "viewIsOn" : true
+    }
+  },
+
+  "公司价值预测模型": {
+    "environment": {
+      "mode": "train",
+      "ctx": "gpu",
+      "framework": "pytorch",
+      "dataset": "finance",
+      "model": "rnnregression",
+      "#tableName": "应用 公司价值预测模型, 结果数据写入 公司价值预测表",
+      "tableName": "公司价值预测表",
       "ckpt_used": false,
       "viewIsOn" : true
     }
@@ -485,8 +516,8 @@
       "framework": "pytorch",
       "dataset": "finance",
       "model": "rnnregression",
-      "#tableName": "应用 公司价格预测模型, 结果数据写入 公司价格预测表",
-      "tableName": "公司价格预测表",
+      "#tableName": "应用 公司价格预测模型, 结果数据写入 公司价格预测中间表",
+      "tableName": "公司价格预测中间表",
       "ckpt_used": false,
       "viewIsOn" : true
     }

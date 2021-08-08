@@ -49,8 +49,8 @@ class StockAnalysize(InterpreterBase):
         explain: 指数趋势分析
         '''
         if scale == '批量':
-            assert '指数简称' in self.gConfig.keys() and self.gConfig['指数简称'] != NULLSTR\
-                ,'parameter 指数简称(%s) is not valid!' % self.gConfig['指数简称']
+            assert '指数简称' in self.gConfig.keys() and self.gConfig['指数简称']\
+                ,'parameter 指数简称(%s) is invalid or empty!' % self.gConfig['指数简称']
             sourceTableName = self.dictTables[tableName]['sourceTable']
             dataFrame = self._sql_to_dataframe(tableName, sourceTableName,scale)
             conn = self.database._get_connect()

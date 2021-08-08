@@ -274,7 +274,7 @@ class InterpreterNature(InterpreterBase):
 
     def doWork(self,lexer=None,debug=False,tracking=False):
         text = self._get_main_program()
-        self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
+        self.parser.parse(text,lexer=self.lexer,debug=False,tracking=tracking)
         # 关闭所有的日志
         #logging.shutdown()
 
@@ -392,7 +392,7 @@ class InterpreterNature(InterpreterBase):
         if self.unitestIsOn:
             self.logger.info('Now in unittest mode,do nothing in _process_single_analysize!')
             return
-        assert self.names_global['报告时间'] != NULLSTR and self.names_global['报告类型'] != NULLSTR \
+        assert self.names_global['报告时间']  and self.names_global['报告类型']  \
             , "报告时间,报告类型为空,必须在参数配置中明确配置!"
         self.gConfig.update(self.names_global)
         self.interpreterAnalysize.initialize(self.gConfig)
@@ -647,6 +647,7 @@ class InterpreterNature(InterpreterBase):
         self.names_global['报告类型'] = NULLSTR
         self.names_global['指数简称'] = []
         self.names_global['行业分类'] = {}
+        self.names_global['公司组合'] = []
         self.names_local['timelist'] = NULLSTR
         self.names_local['valuelist'] = NULLSTR
 

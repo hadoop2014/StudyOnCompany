@@ -141,6 +141,22 @@ class ExcelVisualization(InterpreterBase):
             sql = sql + '\nwhere (' + ' or '.join(['公司简称 =' + '\'' +  company + '\''   for company in self.gConfig['公司简称']]) + ')'
             sql = sql + '    and (' + ' or '.join(['报告时间 =' + '\'' + reporttime + '\'' for reporttime in self.gConfig['报告时间']]) + ')'
             sql = sql + '    and (' + ' or '.join(['报告类型 =' + '\'' + reportype + '\'' for reportype in self.gConfig['报告类型']]) + ')'
+        elif scale == "定量":
+            assert ('公司组合' in self.gConfig.keys() and self.gConfig['公司组合']) \
+                   and ('报告时间' in self.gConfig.keys() and self.gConfig['报告时间']) \
+                   and ('报告类型' in self.gConfig.keys() and self.gConfig['报告类型']) \
+                , "parameter 公司组合(%s) 报告时间(%s) 报告类型(%s) is not valid parameter" \
+                  % (self.gConfig['公司组合'], self.gConfig['报告时间'], self.gConfig['报告类型'])
+            # 批量处理模式时会进入此分支
+            sql = ''
+            sql = sql + '\nselect * '
+            sql = sql + '\nfrom %s' % (sourceTableName)
+            sql = sql + '\nwhere (' + ' or '.join(
+                ['公司简称 =' + '\'' + company + '\'' for company in self.gConfig['公司组合']]) + ')'
+            sql = sql + '    and (' + ' or '.join(
+                ['报告时间 =' + '\'' + reporttime + '\'' for reporttime in self.gConfig['报告时间']]) + ')'
+            sql = sql + '    and (' + ' or '.join(
+                ['报告类型 =' + '\'' + reportype + '\'' for reportype in self.gConfig['报告类型']]) + ')'
         else:
             sql = ''
             sql = sql + '\nselect * '
