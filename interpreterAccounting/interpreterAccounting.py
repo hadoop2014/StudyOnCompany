@@ -229,12 +229,14 @@ class InterpreterAccounting(InterpreterBase):
                         | optional '（' TIME DISCARD '）'
                         | optional '(' AUDITTYPE ')'
                         | optional '（' AUDITTYPE '）'
+                        | optional '（' DISCARD '）'
                         | optional NAME
                         | optional NAME NUMERIC
                         | optional '(' ')'
                         | optional '(' ')' NUMERIC NUMERIC NUMERIC
                         | NUMERIC
                         | empty '''
+            # optional '（' DISCARD '）' 解决 创业慧康：2015年半年度报告（更新后） 的 主要会计数据 出现在页尾, 在下一页搜索时碰到 '创业软件股份有限公司 2015 年半年度报告全文（更正后）'
             # optional SPECIALWORD 解决海螺水泥2019年报,主营业务分行业经营情况的搜索问题, 不再需要,去掉,20210805
             # optional '-' DISCARD 解决赣锋锂业：2019年年度报告, 主要会计数据表 前面出现一大段文字,中间出现 : 号-长期股权投资第十条
             # optional NUMERO '-' NUMERO 解决恩捷股份：2020年年度报告, 主营业务分行业经营情况出现在页尾,第二页出现:公告编号：2021-033
@@ -657,7 +659,10 @@ class InterpreterAccounting(InterpreterBase):
         for data in self.docParser:
             self.currentPageNumber = self.docParser.index
             text = self.docParser._get_text(data)
-            self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
+            try:
+                self.parser.parse(text,lexer=self.lexer,debug=debug,tracking=tracking)
+            except Exception as e:
+                self.logger.error(f'some error occured in function self.parser.parse:{e}')
         self._process_critical_table()
         firstRowAllInvalid = self._get_first_row_all_invalid()
         sourceFile = os.path.split(self.docParser.sourceFile)[-1]

@@ -105,6 +105,7 @@ create table if not exists {0}财务分析基础表 (
     四、利润总额 REAL,
     所得税费用 REAL,
     五、净利润 REAL,
+    税金及附加 REAL,
     销售费用 REAL,
     管理费用 REAL,
     财务费用 REAL,
@@ -139,10 +140,14 @@ create table if not exists {0}财务分析基础表 (
     一年内到期的非流动负债 REAL,
     长期借款 REAL,
     应付债券 REAL,
+    长期应付款 REAL,
     销售商品、提供劳务收到的现金 REAL,
     六、期末现金及现金等价物余额 REAL,
     五、现金及现金等价物净增加额 REAL,
+    投资活动产生的现金流量净额 REAL,
+    筹资活动产生的现金流量净额 REAL,
     年化利润增长率 REAL,
+    年化扣非利润增长率 REAL,
     年化市值增长率 REAL
 );
 
@@ -186,6 +191,8 @@ select
     e.货币单位 * replace(e.四、利润总额,',','') as 四、利润总额,
     e.货币单位 * replace(e.所得税费用,',','') as 所得税费用,
     e.货币单位 * replace(e.五、净利润,',','') as 五、净利润,
+    case when e.税金及附加 is not NULL and e.税金及附加 != '' then e.货币单位 * replace(e.税金及附加,',','') else 0 end
+        as 税金及附加,
     case when e.销售费用 is not NULL and e.销售费用 != '' then e.货币单位 * replace(e.销售费用,',','') else 0 end
         as 销售费用,
     case when e.管理费用 is not NULL and e.管理费用 != '' then e.货币单位 * replace(e.管理费用,',','') else 0 end
@@ -269,12 +276,15 @@ select
         as 一年内到期的非流动负债,
     case when c.长期借款 is not NULL and c.长期借款 != '' then c.货币单位 * replace(c.长期借款,',','') else 0 end as 长期借款,
     case when c.应付债券 is not NULL and c.应付债券 != '' then c.货币单位 * replace(c.应付债券,',','') else 0 end as 应付债券,
+    case when c.长期应付款 is not NULL and c.长期应付款 != '' then c.货币单位 * replace(c.长期应付款,',','') else 0 end as 长期应付款,
     case when f.销售商品、提供劳务收到的现金 is not NULL then f.销售商品、提供劳务收到的现金
         -- 解决国金证券 没有 销售商品、提供劳务收到的现金 字段, 用 收取利息、手续费及佣金的现金 字段来取代
         else f.收取利息、手续费及佣金的现金 end
         as 销售商品、提供劳务收到的现金,
     f.六、期末现金及现金等价物余额,
     f.五、现金及现金等价物净增加额,
+    f.投资活动产生的现金流量净额,
+    f.筹资活动产生的现金流量净额,
     case when b.报告时间 - k.报告时间 > 0
     then
         case when sign(b.归属于上市公司股东的净利润) > 0
@@ -283,6 +293,14 @@ select
         else -1.0 end
     else 0 end
         as 年化利润增长率,
+    case when b.报告时间 - k.报告时间 > 0
+    then
+        case when sign(b.归属于上市公司股东的扣除非经常性损益的净利润) > 0
+        then
+            power(b.归属于上市公司股东的扣除非经常性损益的净利润 / round(k.归属于上市公司股东的扣除非经常性损益的净利润,0), 1/round(b.报告时间 - k.报告时间,0)) - 1
+        else -1.0 end
+    else 0 end
+        as 年化扣非利润增长率,
     case when b.报告时间 - k.上市时间 > 0
     then
         power(b.年末周平均总市值 / round(k.年末周平均总市值,0), 1/round(b.报告时间 - k.上市时间,0)) - 1
@@ -385,6 +403,8 @@ left join (
         x.货币单位 * replace(x.收取利息、手续费及佣金的现金,',','')  as 收取利息、手续费及佣金的现金,
         x.货币单位 * replace(x.六、期末现金及现金等价物余额,',','')  as 六、期末现金及现金等价物余额,
         x.货币单位 * replace(x.五、现金及现金等价物净增加额,',','')  as 五、现金及现金等价物净增加额,
+        x.货币单位 * replace(x.投资活动产生的现金流量净额,',','')  as 投资活动产生的现金流量净额,
+        x.货币单位 * replace(x.筹资活动产生的现金流量净额,',','')  as 筹资活动产生的现金流量净额,
         x.货币单位 * replace(x.经营活动产生的现金流量净额,',','')  as 经营活动产生的现金流量净额,
         y.货币单位 * replace(y.经营活动产生的现金流量净额,',','')  as 经营活动产生的现金流量净额（上期）
     from {0}合并现金流量表 x
@@ -452,7 +472,7 @@ left join
             left join {0}主要会计数据 j
             on i.公司代码 = j.公司代码 and i.报告类型= j.报告类型 and i.报告时间 - j.报告时间 = 1
         )u
-        where sign(u.归属于上市公司股东的净利润) > 0
+        where sign(u.归属于上市公司股东的净利润) > 0 and sign(u.归属于上市公司股东的扣除非经常性损益的净利润) > 0
         group by u.公司代码, u.报告类型
     )x
     left join {0}主要会计数据 y

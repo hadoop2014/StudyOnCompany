@@ -365,6 +365,12 @@
         "operator": "greaterThan",
         "value_format": "percentage"
       },
+      "年化扣非利润增长率": {
+        "threshold": 0.3,
+        "color_index": 2,
+        "operator": "greaterThan",
+        "value_format": "percentage"
+      },
       "公司投资等级": {
         "threshold": 0.3,
         "color_index": 2,

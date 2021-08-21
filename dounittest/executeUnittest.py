@@ -19,7 +19,7 @@ class MyTestCase(unittest.TestCase):
         interpreterAccounting = InterpreterAssemble().interpreter_assemble('accounting')
         interpreterAccounting.initialize(dictParameter={'sourcefile':interpreterAccounting.gConfig['sourcefile']})
         #interpreterAccounting.docParser._set_dataset(list([0,21,34,40,83,103]))
-        interpreterAccounting.docParser._set_dataset(list([0,97,98,99,100]))
+        interpreterAccounting.docParser._set_dataset(list([0,4,5, 6]))
         interpreterAccounting.docParser.checkpoint.remove_checkpoint_files(list([interpreterAccounting.gConfig['sourcefile']]))
         interpreterAccounting.doWork(debug=True,tracking=False)
 

@@ -30,17 +30,23 @@ class DocParserPdf(DocParserBase):
     def _get_text(self,page=None):
         #interpretPrefix用于处理比如合并资产负债表分布在多个page页面的情况
         #用于模拟文件结束符EOF,在interpretAccounting中单一个fetchtable语句刚好在文件尾的时候,解释器会碰到EOF缺失错误,所以在每一个page后补充EOF规避问题.
-        if self._index == 1:
-            #解决贵州茅台年报中,贵州茅台酒股份有限公司2018 年年度报告,被解析成"贵州茅台酒股份有限公司 年年度报告 2018
-            pageText = page.extract_text(y_tolerance=4)
-        else:
-            pageText = page.extract_text()
-        if pageText is not None:
-            pageText = self._interpretPrefix + pageText.rstrip() + self._get_tail()
-        else:
-            #千禾味业：2019年度审计报告.PDF文件中全部是图片,没有文字,需要做特殊处理
-            pageText = self._interpretPrefix + self._get_tail()
-            self.logger.error('the %s page %d\'s text of is be None' % (self.sourceFile,self._index))
+        pageText = None
+        try:
+            if self._index == 1:
+                #解决贵州茅台年报中,贵州茅台酒股份有限公司2018 年年度报告,被解析成"贵州茅台酒股份有限公司 年年度报告 2018
+                pageText = page.extract_text(y_tolerance=4)
+            else:
+                pageText = page.extract_text()
+
+            if pageText is not None:
+                pageText = self._interpretPrefix + pageText.rstrip() + self._get_tail()
+            else:
+                #千禾味业：2019年度审计报告.PDF文件中全部是图片,没有文字,需要做特殊处理
+                pageText = self._interpretPrefix + self._get_tail()
+                self.logger.error('the %s page %d\'s text of is be None' % (self.sourceFile,self._index))
+        except Exception as e:
+            # 解决 （601139）深圳燃气：2015年半年度报告.PDF 解析时出现异常
+            self.logger.error('some error occured in function page.extract_text:%s'%str(e))
         return pageText
 
 
