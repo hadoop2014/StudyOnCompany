@@ -66,7 +66,7 @@ Pillow @ file:///tmp/build/80754af9/pillow_1617383569452/work
 ply==3.11
 pre-commit==2.12.1
 prompt-toolkit @ file:///tmp/build/80754af9/prompt-toolkit_1616415428029/work
-protobuf==3.15.8
+protobuf==3.18.3
 ptyprocess @ file:///tmp/build/80754af9/ptyprocess_1609355006118/work/dist/ptyprocess-0.7.0-py2.py3-none-any.whl
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
