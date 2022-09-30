@@ -35,7 +35,7 @@ ipython-genutils @ file:///tmp/build/80754af9/ipython_genutils_1606773439826/wor
 itsdangerous==1.1.0
 jedi==0.17.0
 Jinja2==2.11.3
-joblib==1.0.1
+joblib==1.2.0
 jsonpatch==1.32
 jsonpointer==2.1
 Keras-Preprocessing==1.1.2
