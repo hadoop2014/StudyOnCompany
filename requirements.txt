@@ -7,7 +7,7 @@ backcall @ file:///home/ktietz/src/ci/backcall_1611930011877/work
 bce-python-sdk==0.8.60
 beautifulsoup4 @ file:///home/linux1/recipes/ci/beautifulsoup4_1610988766420/work
 cachetools==4.2.2
-certifi==2020.12.5
+certifi==2022.12.7
 cfgv==3.2.0
 chardet==4.0.0
 click==7.1.2
